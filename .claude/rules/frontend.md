@@ -13,9 +13,11 @@ paths:
 - **Search state lives in the URL** (nuqs), so a shared link reproduces the same results.
 - **Forms**: React Hook Form + Zod; show server validation errors from problem+json `errors[]` next to the fields.
 - **Honest copy**: no fake urgency, no countdowns except a real hold expiry, and the full monthly price, deposit and mandatory charges together. Strings go in message files (i18n-ready).
+- **Translations**: translate in server components and pass plain strings to client components; add a scoped `NextIntlClientProvider` only where a client component must format messages itself (ADR 0011).
+- **JavaScript budget**: lazy-load code most visitors don't use (dialogs, the map, vendor SDKs); check the home page's JS with `make lighthouse`.
 - **Accessibility (WCAG 2.2 AA)**: Radix/shadcn primitives, labelled controls, visible focus, keyboard access to the result list and map pins, AA contrast; axe checks in component and E2E tests.
 - **Performance**: dynamic-import the map SDK and load it only on the map view; `next/image` with correct `sizes`; `next/font`; no blocking third-party scripts; respect the JS budget in ARCHITECTURE §16.
 - **Security**: CSP nonces (no inline scripts without one); only truly public values in `NEXT_PUBLIC_*` (map key restricted by referrer, Razorpay key id); never render owner-supplied HTML.
-- **Protected areas**: `/owner`, `/ops` and account routes are `noindex`, with auth checked in middleware **and** again on the server.
+- **Protected areas**: `/owner`, `/ops` and account routes are `noindex`, with auth checked in `src/proxy.ts` (Next.js 16's middleware) **and** again on the server.
 - **Brand** name, colours and logo come only from `src/config/brand.ts`.
 - **Map** code depends only on the `MapProvider` interface, never on a vendor SDK directly outside its adapter.

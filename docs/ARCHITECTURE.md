@@ -127,10 +127,12 @@ Use current stable versions and pin them. Verify third-party APIs against offici
     │   └── tests/                 # unit/, integration/, contract/, load/ (k6)
     └── web/
         ├── package.json  next.config.ts  .env.example
+        ├── messages/              # en-IN.json (typed translations)
+        ├── src/proxy.ts           # per-request CSP nonce (Next.js 16's middleware)
         ├── src/app/               # routes (see section 16)
         ├── src/features/          # search, map, property, visits, booking, pricing, owner, ops
         ├── src/components/        # ui/ (shadcn), layout/, shared
-        ├── src/lib/               # api client wrapper, auth, money formatting, analytics, flags
+        ├── src/lib/               # api client wrapper, auth, money formatting, analytics, flags, security, monitoring
         ├── src/config/brand.ts    # the ONLY place the brand name and colours live
         └── tests/                 # unit/, e2e/
 ```
@@ -516,7 +518,7 @@ Compliance POST /v1/grievances  POST /v1/data-requests
 
 ## 16. Frontend architecture
 
-- Route groups: `(marketing)` home, about, pricing, contact, legal pages; `(discover)` `/search`, `/pg/[slug]`, `/pg-near/[campus]`, `/pg-in/[locality]`; `(account)` login, profile; `(student)` `/visits`, `/bookings/[code]`; `/owner/*` dashboard; `/ops/*` console. Owner, ops and account routes are `noindex` and protected in middleware **and** on the server.
+- Route groups: `(marketing)` home, about, pricing, contact, legal pages; `(discover)` `/search`, `/pg/[slug]`, `/pg-near/[campus]`, `/pg-in/[locality]`; `(account)` login, profile; `(student)` `/visits`, `/bookings/[code]`; `/owner/*` dashboard; `/ops/*` console. Owner, ops and account routes are `noindex` and protected in `src/proxy.ts` (Next.js 16's name for middleware) **and** on the server.
 - Server Components by default; Client Components for the map, filters, booking flow and editors.
 - Data: server-side calls through the typed client with cookies forwarded; client-side through TanStack Query with conventional query keys; no ad-hoc `fetch`.
 - The URL is the source of truth for search state (nuqs). Minimal global state.
@@ -525,7 +527,8 @@ Compliance POST /v1/grievances  POST /v1/data-requests
 - Performance: dynamic import of the map; `next/image` with CDN variants; `next/font`; route-level code splitting; budget on mid-range Android over 4G of LCP < 2.5 s, INP < 200 ms, CLS < 0.1, initial JS < 200 KB gzip on PG pages.
 - PWA: manifest, icons, a service worker for the app shell and the shortlist; never cache authenticated API responses.
 - Accessibility: WCAG 2.2 AA; Radix primitives; visible focus; labels; colour contrast; axe checks in CI.
-- i18n-ready from day one (strings in message files; English first, Hindi later).
+- i18n-ready from day one (strings in message files; English first, Hindi later). next-intl with typed keys; server components translate and client components receive plain strings, so the browser ships no message formatter unless a page needs client-side formatting (ADR 0011).
+- Security headers: `src/proxy.ts` sets a per-request nonce CSP (pages render per request; step 3.4 revisits this for ISR); static headers live in `next.config.ts` (ADR 0011).
 - Brand name, colours and logo only in `src/config/brand.ts`.
 
 ## 17. Security

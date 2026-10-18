@@ -15,8 +15,10 @@ An online platform for booking verified PG (paying guest) beds in Delhi NCR. Stu
 You need [uv](https://docs.astral.sh/uv/getting-started/installation/), [pnpm](https://pnpm.io/installation) (the standalone version needs no Node.js) and git; Docker from build step 0.2. You don't install Python or Node.js yourself: uv provides Python 3.14 and pnpm provides Node.js 24, the versions pinned in the repository.
 
 ```sh
-make setup    # check the tools, install dependencies and the git hooks
+make setup    # check the tools, install dependencies, Playwright's Chromium and the git hooks
+make dev      # run the infrastructure, API, worker and web app (http://localhost:3000)
 make check    # lint, typecheck and test everything
+make e2e      # browser tests against a production build of the web app
 make          # list every command
 ```
 
