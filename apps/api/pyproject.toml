@@ -4,17 +4,30 @@ version = "0.1.0"
 description = "API and background worker for the PG booking platform."
 requires-python = ">=3.14"
 dependencies = [
+    "alembic==1.20.0",
+    "asyncpg==0.32.0",
     "fastapi==0.143.0",
+    "opentelemetry-exporter-otlp-proto-http==1.45.1",
+    "opentelemetry-instrumentation-redis==0.66b1",
+    "opentelemetry-instrumentation-sqlalchemy==0.66b1",
+    "opentelemetry-sdk==1.45.1",
+    "pydantic-settings==2.15.0",
+    "redis==8.1.0",
+    "sentry-sdk==2.71.0",
+    "sqlalchemy[asyncio]==2.1.4",
+    "structlog==26.1.0",
     "uvicorn[standard]==0.54.0",
 ]
 
 [dependency-groups]
 dev = [
     "httpx==0.28.1",
+    "import-linter==2.15",
     "mypy==2.4.0",
     "pre-commit==4.6.2",
     "pytest==9.1.1",
     "ruff==0.17.0",
+    "testcontainers==4.15.0",
 ]
 
 [build-system]
@@ -80,8 +93,17 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+# Migrations are standalone scripts Alembic generates; keep their imports plain.
+"migrations/**/*.py" = ["TC001", "TC002", "TC003"]
+# FastAPI evaluates route signatures at runtime, so their imports must stay real imports.
+"src/app/modules/*/router.py" = ["TC001", "TC002", "TC003"]
 "tests/**/*.py" = [
     "S101",    # assert is how pytest works
+    "S105",    # throwaway credentials for test containers
+    "S106",
+    "TC001",   # tests define FastAPI routes inline, which read annotations at runtime
+    "TC002",
+    "TC003",
     "S603",    # tests start the app's own entrypoints as subprocesses
     "SLF001",  # tests may inspect internals
 ]
@@ -89,6 +111,7 @@ ignore = [
 [tool.ruff.lint.flake8-type-checking]
 # Pydantic and SQLAlchemy read annotations at runtime, so their imports must stay real imports.
 runtime-evaluated-base-classes = [
+    "app.core.schemas.ApiModel",
     "pydantic.BaseModel",
     "pydantic_settings.BaseSettings",
     "sqlalchemy.orm.DeclarativeBase",
@@ -112,7 +135,8 @@ ban-relative-imports = "all"
 # ---------------------------------------------------------------------------------------------
 [tool.mypy]
 strict = true
-files = ["src", "tests"]
+files = ["src", "tests", "migrations"]
+plugins = ["pydantic.mypy"]
 warn_unreachable = true
 enable_error_code = [
     "deprecated",
@@ -127,6 +151,11 @@ enable_error_code = [
     "unused-awaitable",
 ]
 
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
 [[tool.mypy.overrides]]
 module = ["app.core.money", "app.modules.*.domain", "app.modules.*.domain.*"]
 disallow_any_explicit = true
@@ -137,7 +166,46 @@ disallow_any_explicit = true
 [tool.pytest]
 minversion = "9.0"
 testpaths = ["tests"]
+markers = ["integration: needs Docker; runs PostgreSQL and Valkey in throwaway containers"]
 addopts = ["-ra", "--import-mode=importlib"]
 # strict_config, strict_markers, strict_xfail and strict_parametrization_ids.
 strict = true
 filterwarnings = ["error"]
+
+# ---------------------------------------------------------------------------------------------
+# import-linter: the module and layer rules (CLAUDE.md, ARCHITECTURE §5), run by `make lint`
+# ---------------------------------------------------------------------------------------------
+[tool.importlinter]
+root_packages = ["app"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Modules are layered: router > service > schemas | policies | repository > models > domain"
+type = "layers"
+containers = ["app.modules.*"]
+layers = ["(router)", "(service)", "(schemas) | (policies) | (repository)", "(models)", "(domain)"]
+
+[[tool.importlinter.contracts]]
+name = "Domain code is pure: no web framework, database, cache, HTTP client, settings or logging"
+type = "forbidden"
+source_modules = ["app.modules.*.domain"]
+forbidden_modules = [
+    "fastapi",
+    "starlette",
+    "sqlalchemy",
+    "asyncpg",
+    "redis",
+    "httpx",
+    "pydantic_settings",
+    "structlog",
+    "app.config",
+    "app.core.db",
+    "app.core.redis",
+    "app.core.logging",
+]
+
+[[tool.importlinter.contracts]]
+name = "Config and core never depend on business modules or the entrypoints"
+type = "forbidden"
+source_modules = ["app.config", "app.core"]
+forbidden_modules = ["app.modules", "app.main", "app.worker"]

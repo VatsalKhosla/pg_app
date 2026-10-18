@@ -1,28 +1,85 @@
-"""HTTP API entrypoint: ``uvicorn app.main:create_app --factory``.
+"""HTTP API entrypoint and composition root: ``uvicorn app.main:create_app --factory``."""
 
-Step 0.3 grows this into the full app factory (settings, logging, errors, readiness, middleware).
-"""
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
-from importlib.metadata import version
-from typing import Literal
-
+import structlog
 from fastapi import FastAPI
-from pydantic import BaseModel, ConfigDict
+from starlette.middleware.cors import CORSMiddleware
+
+from app.config import BRAND_NAME, Settings, get_settings
+from app.core.db import create_engine, create_sessionmaker
+from app.core.errors import install_error_handlers
+from app.core.logging import configure_logging
+from app.core.redis import create_redis
+from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
+from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
+from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
+from app.modules.system.router import router as system_router
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from starlette.types import Scope
+
+# Headers the web app may send on cross-origin requests (CSRF arrives in step 1.1, idempotency
+# keys in step 0.4).
+CORS_ALLOWED_HEADERS = ["Content-Type", "X-CSRF-Token", "Idempotency-Key", REQUEST_ID_HEADER]
+CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+
+logger = structlog.stdlib.get_logger(__name__)
 
 
-class Health(BaseModel):
-    """Liveness: the process is up and serving requests."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    status: Literal["ok"]
+def _is_probe(scope: Scope) -> bool:
+    return scope.get("path") in PROBE_PATHS
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="PG platform API", version=version("pg-platform-api"))
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
+    configure_logging(level=settings.log_level, fmt=settings.log_format)
+    configure_sentry(settings)
 
-    @app.get("/healthz", tags=["health"], summary="Liveness check")
-    async def healthz() -> Health:
-        return Health(status="ok")
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        engine = create_engine(settings, application_name=settings.otel_service_name)
+        redis = create_redis(settings)
+        tracer_provider = configure_tracing(settings, engine=engine)
+        app.state.engine = engine
+        app.state.sessionmaker = create_sessionmaker(engine)
+        app.state.redis = redis
+        logger.info("api started", environment=settings.app_env, version=SERVICE_VERSION)
+        try:
+            yield
+        finally:
+            await redis.aclose()
+            await engine.dispose()
+            if tracer_provider is not None:
+                tracer_provider.shutdown()
+            logger.info("api stopped")
 
+    interactive_docs = settings.app_env != "production"
+    app = FastAPI(
+        title=f"{BRAND_NAME} API",
+        version=SERVICE_VERSION,
+        lifespan=lifespan,
+        docs_url="/docs" if interactive_docs else None,
+        redoc_url="/redoc" if interactive_docs else None,
+        telemetry={"exclude": _is_probe},
+    )
+    install_error_handlers(app)
+    # Added innermost first, so a request passes RequestContext, SecurityHeaders, CORS and then
+    # BodySizeLimit before reaching a route.
+    app.add_middleware(BodySizeLimitMiddleware, max_bytes=settings.max_request_body_bytes)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_allowed_origins),
+        allow_credentials=True,
+        allow_methods=CORS_ALLOWED_METHODS,
+        allow_headers=CORS_ALLOWED_HEADERS,
+        expose_headers=[REQUEST_ID_HEADER],
+        max_age=600,
+    )
+    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_deployed)
+    app.add_middleware(RequestContextMiddleware)
+    app.include_router(system_router)
     return app

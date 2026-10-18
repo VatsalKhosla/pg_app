@@ -9,14 +9,17 @@ on SIGINT or SIGTERM.
 import argparse
 import asyncio
 import contextlib
-import logging
 import signal
 from pathlib import Path
 
-logger = logging.getLogger("app.worker")
+import structlog
+
+from app.config import LoggingSettings
+from app.core.logging import configure_logging
+
+logger = structlog.stdlib.get_logger("app.worker")
 
 DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 5.0
-LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 
 
 async def run(
@@ -76,7 +79,8 @@ def main(argv: list[str] | None = None) -> None:
     heartbeat_file: Path | None = args.heartbeat_file
     interval: float = args.heartbeat_interval
 
-    logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+    logging_settings = LoggingSettings()
+    configure_logging(level=logging_settings.log_level, fmt=logging_settings.log_format)
     if heartbeat_file is not None:
         heartbeat_file.parent.mkdir(parents=True, exist_ok=True)
     asyncio.run(_serve(heartbeat_file=heartbeat_file, interval=interval))
