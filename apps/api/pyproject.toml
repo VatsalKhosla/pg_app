@@ -1,0 +1,129 @@
+[project]
+name = "pg-platform-api"
+version = "0.1.0"
+description = "API and background worker for the PG booking platform."
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "mypy==2.4.0",
+    "pre-commit==4.6.2",
+    "pytest==9.1.1",
+    "ruff==0.17.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv]
+required-version = ">=0.13.1"
+# Supply-chain cooldown: resolve only distributions uploaded at least a week ago (ADR 0007).
+exclude-newer = "1 week"
+
+[tool.uv.build-backend]
+module-name = "app"
+
+# ---------------------------------------------------------------------------------------------
+# Ruff: lint + format
+# ---------------------------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = [
+    "A",     # shadowed builtins
+    "ASYNC", # blocking calls in async code
+    "B",     # bugbear
+    "BLE",   # blind except
+    "C4",    # comprehensions
+    "DTZ",   # naive datetimes
+    "E",     # pycodestyle errors
+    "ERA",   # commented-out code
+    "F",     # pyflakes
+    "FURB",  # refurb
+    "G",     # logging format strings
+    "I",     # import sorting
+    "LOG",   # logging misuse
+    "N",     # naming
+    "PERF",  # performance anti-patterns
+    "PIE",   # misc lints
+    "PL",    # pylint
+    "PT",    # pytest style
+    "PTH",   # pathlib over os.path
+    "RET",   # return statements
+    "RSE",   # raise statements
+    "RUF",   # ruff-specific
+    "S",     # bandit security rules
+    "SIM",   # simplifications
+    "SLF",   # private member access
+    "T10",   # debugger leftovers
+    "T20",   # print statements (use structlog)
+    "TC",    # imports only needed for typing
+    "TID",   # tidy imports and banned APIs
+    "UP",    # modern syntax
+    "W",     # pycodestyle warnings
+]
+ignore = [
+    "PLR0913", # FastAPI handlers and services take many injected dependencies by design
+    "PLR2004", # magic values: money maths uses literal basis points (10_000) on purpose
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",    # assert is how pytest works
+    "SLF001",  # tests may inspect internals
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+# "Now" comes only from the injectable clock (CLAUDE.md, engineering rules); app.core.clock is
+# the single place allowed to read the system time.
+"datetime.datetime.now".msg = "Read the time from the injectable clock (app.core.clock)."
+"datetime.datetime.utcnow".msg = "Read the time from the injectable clock (app.core.clock)."
+"datetime.datetime.today".msg = "Read the time from the injectable clock (app.core.clock)."
+"datetime.date.today".msg = "Read the date from the injectable clock (app.core.clock)."
+"time.time".msg = "Read the time from the injectable clock (app.core.clock)."
+"time.time_ns".msg = "Read the time from the injectable clock (app.core.clock)."
+
+# ---------------------------------------------------------------------------------------------
+# mypy: strict everywhere, and no explicit Any in the pure domain core
+# ---------------------------------------------------------------------------------------------
+[tool.mypy]
+strict = true
+files = ["src", "tests"]
+warn_unreachable = true
+enable_error_code = [
+    "deprecated",
+    "exhaustive-match",
+    "ignore-without-code",
+    "mutable-override",
+    "possibly-undefined",
+    "redundant-expr",
+    "redundant-self",
+    "truthy-bool",
+    "truthy-iterable",
+    "unused-awaitable",
+]
+
+[[tool.mypy.overrides]]
+module = ["app.core.money", "app.modules.*.domain", "app.modules.*.domain.*"]
+disallow_any_explicit = true
+
+# ---------------------------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------------------------
+[tool.pytest]
+minversion = "9.0"
+testpaths = ["tests"]
+addopts = ["-ra", "--import-mode=importlib"]
+# strict_config, strict_markers, strict_xfail and strict_parametrization_ids.
+strict = true
+filterwarnings = ["error"]
