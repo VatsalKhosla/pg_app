@@ -150,15 +150,18 @@ policies.py    Authorization rules: can(actor, action, resource) -> bool.
 - Cross-module side effects go through **domain events written to the outbox** in the same transaction (e.g., `booking.activated` → ledger posting and owner invoice; `pricing.rules_changed` → recompute price summaries).
 
 ### Core building blocks (`core/`)
-- `money.py`: paise as `int`, basis-point maths, half-up rounding, formatting helpers for logs. No floats anywhere.
-- `clock.py`: injectable clock; tests freeze and advance time.
-- `ids.py`: internal `bigint` identity keys; public UUIDv7 `public_id` in all APIs; human booking codes (8 chars, Crockford base32, e.g. `BK-7F3K2Q9M`).
-- `outbox.py`: `enqueue(session, kind, payload, run_at=None, dedupe_key=None)`; worker claims with `FOR UPDATE SKIP LOCKED`, retries with exponential backoff and jitter, marks `dead` after max attempts, alerts on dead jobs. Every handler is idempotent.
-- `idempotency.py`: `Idempotency-Key` header support (store key, user, route, request hash and response for 24 h; same key with a different body → 422).
+Built in step 0.4; ADR 0010 records the design choices.
+- `money.py`: paise as `int`, basis points as `int`, exact half-up rounding (ties away from zero), rounding to steps, Indian digit grouping for logs. No floats anywhere. Pure.
+- `clock.py`: the injectable clock, the only code allowed to read the system time (ruff enforces); `FrozenClock` lets tests stop and move time. `calendar.py` turns moments into dates in India (pure).
+- `ids.py`: internal `bigint` identity keys; public UUIDv7 `public_id` in all APIs; human booking codes (8 chars, Crockford base32, e.g. `BK-7F3K2Q9M`), normalised when typed (case, spaces, O/0, I/L/1). Pure.
+- `outbox.py`: `enqueue(session, kind, payload, *, clock, run_at=None, dedupe_key=None)` in the caller's transaction. Workers claim with `FOR UPDATE SKIP LOCKED` under a lease (5 min), so a dead worker's job is taken over. A handler's work and the job's done mark commit together. Failures retry with exponential backoff and jitter (10 s doubling to 1 h) and go `dead` after `max_attempts` (10), with an error log and metrics. Done jobs are kept 7 days, dead ones 30. Every handler is idempotent.
+- `scheduler.py`: periodic jobs (`Every(interval)`, `DailyAt(time)` in India time) enqueued per slot with the dedupe key `schedule:<name>:<slot>`, so any number of workers run each slot once. `app/jobs.py` lists every handler and schedule.
+- `idempotency.py`: `Idempotency-Key` support built into the service's own transaction rather than middleware. The key, scope (user), route, request hash and response are stored for 24 h. A retry replays the stored response (`Idempotent-Replayed: true`), concurrent duplicates run the work once, a rollback releases the key, and the same key with a different request → 422.
 - `errors.py`: RFC 9457 problem+json with a stable machine `code`.
-- `ratelimit.py`: Redis sliding-window limits per IP, user and route.
-- `audit.py`: append-only audit log for staff, owner and money actions.
-
+- `ratelimit.py`: Redis sliding-window limits per IP, user, phone or route, computed atomically in Lua with the injectable clock's time. Subjects are stored only as HMAC digests. Each limit fails open or closed when Redis is down; over the limit → 429 with `Retry-After`.
+- `audit.py`: append-only audit log for staff, owner and money actions, written in the action's transaction. A trigger refuses UPDATE, DELETE and TRUNCATE.
+- `flags.py`: typed feature flags (`Flag`), defaults in code, overrides in `feature_flags`, cached per process for ≤ 30 s; a bad value or an unreachable database falls back to the default.
+- `hashing.py`: keyed digests (HMAC with `SECRET_KEY`) for personal data that must be matched but not stored.
 ## 6. Data model
 
 All tables have `id bigint generated always as identity`, `created_at`, `updated_at`; user-visible rows also have `public_id uuid unique`. Money columns end in `_paise` (`bigint`, `CHECK (>= 0)` unless noted). Rates are basis points (`_bps`). Times are `timestamptz` (UTC). Move-in/out are `date` (Asia/Kolkata).
@@ -482,7 +485,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 ## 15. API conventions
 
 - REST over JSON at `/v1`; plural nouns; JSON fields in camelCase (Pydantic alias generator), Python in snake_case.
-- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `OTP_INVALID`, `OTP_LOCKED`, `RATE_LIMITED`, `PRICING_CONFIG_ERROR`. Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status.
+- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `OTP_INVALID`, `OTP_LOCKED`, `RATE_LIMITED`, `PRICING_CONFIG_ERROR`. Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status. Idempotency: `IDEMPOTENCY_KEY_REQUIRED` and `IDEMPOTENCY_KEY_INVALID` (400), `IDEMPOTENCY_KEY_REUSED` (422), `IDEMPOTENCY_KEY_CONFLICT` (409).
 - Probes: `GET /healthz` (liveness) and `GET /readyz` (database and Redis reachable, 503 otherwise) sit outside `/v1`, need no authentication, and are left out of tracing and info-level access logs.
 - Money: integer paise with names ending in `Paise`; the client formats with `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`.
 - Dates: `YYYY-MM-DD` for move-in; timestamps in ISO 8601 UTC; display in IST.
