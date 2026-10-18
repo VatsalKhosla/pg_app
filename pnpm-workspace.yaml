@@ -20,5 +20,15 @@ allowBuilds:
   # Its postinstall (napi-postinstall) only downloads the native binding when the package
   # manager skipped it; pnpm installs @unrs/resolver-binding-<platform> itself. Reviewed 2026-10-18.
   unrs-resolver: false
+  # Reviewed 2026-10-19, both via next-intl's message tooling: the scripts only fetch or compile
+  # a native binary when its prebuilt platform package is missing; pnpm installs that package.
+  "@parcel/watcher": false
+  "@swc/core": false
+# Lighthouse (dev only) accepts puppeteer-core ^25.9. From 25.13, puppeteer-core depends on
+# chromium-bidi 157.x, published since 2026-09-30 without the provenance its earlier releases had,
+# which trustPolicy refuses. 25.12.0 uses chromium-bidi 17.0.2, which has provenance. Reviewed
+# 2026-10-19; drop the override once chromium-bidi releases carry provenance again.
+overrides:
+  puppeteer-core: 25.12.0
 # Exact versions in package.json; the lockfile pins everything else.
 savePrefix: ""
