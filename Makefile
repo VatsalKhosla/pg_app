@@ -12,6 +12,7 @@ MAKEFLAGS += --warn-undefined-variables --no-builtin-rules --no-print-directory
 API_DIR := apps/api
 API := uv run --directory $(API_DIR) --locked
 WEB := pnpm --filter @pg-platform/web
+COMPOSE := docker compose -f infra/docker-compose.yml
 
 ##@ Setup
 
@@ -19,7 +20,7 @@ WEB := pnpm --filter @pg-platform/web
 help: ## List the available commands
 	@awk 'BEGIN { FS = ":.*## " } \
 	    /^##@/ { printf "\n%s\n", substr($$0, 5) } \
-	    /^[a-zA-Z0-9_-]+:.*## / { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	    /^[a-zA-Z0-9_-]+:.*## / { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 .PHONY: doctor
 doctor: ## Check that the required tools are installed
@@ -30,6 +31,28 @@ setup: doctor ## Install all dependencies and the git hooks
 	uv sync --directory $(API_DIR) --locked
 	pnpm install --frozen-lockfile
 	uv run --project $(API_DIR) --locked pre-commit install --install-hooks
+
+##@ Local development
+
+.PHONY: dev
+dev: infra-up ## Run the infrastructure, API, worker and web app together (Ctrl-C stops the apps)
+	@scripts/dev.sh
+
+.PHONY: infra-up
+infra-up: ## Start PostgreSQL, Valkey, S3 and Mailpit and wait until they are healthy
+	$(COMPOSE) up --detach --build --wait
+
+.PHONY: infra-down
+infra-down: ## Stop the infrastructure (local data is kept)
+	$(COMPOSE) down
+
+.PHONY: infra-reset
+infra-reset: ## Stop the infrastructure and delete all its local data
+	$(COMPOSE) down --volumes
+
+.PHONY: health
+health: ## Check that every local service is up
+	@scripts/dev-health.sh
 
 ##@ Quality
 

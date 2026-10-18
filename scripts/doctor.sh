@@ -10,7 +10,6 @@ missing() {
   printf '  MISSING  %s\n           install: %s\n' "$1" "$2"
   failed=1
 }
-later() { printf '  later    %s\n           install: %s\n' "$1" "$2"; }
 
 echo "Checking the toolchain:"
 
@@ -33,9 +32,9 @@ else
 fi
 
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-  ok "docker $(docker --version | awk '{print $3}' | tr -d ,) with compose"
+  ok "docker $(docker --version | awk '{print $3}' | tr -d ,) with compose $(docker compose version --short)"
 else
-  later "docker with compose (needed from step 0.2 for make dev)" "https://docs.docker.com/get-docker/"
+  missing "docker with compose v2 (runs the local infrastructure for make dev)" "https://docs.docker.com/get-docker/"
 fi
 
 exit "$failed"

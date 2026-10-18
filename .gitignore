@@ -35,6 +35,9 @@ playwright-report/
 test-results/
 *.log
 
+# Local runtime state (worker heartbeat and friends)
+.run/
+
 # Infra
 .terraform/
 *.tfstate
