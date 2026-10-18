@@ -1,0 +1,63 @@
+{
+  "Brand": {
+    "tagline": "Verified PG beds in Delhi NCR"
+  },
+  "Metadata": {
+    "description": "Find a verified PG bed near your college in Delhi NCR. Book a visit, reserve with a refundable token and move in."
+  },
+  "Layout": {
+    "skipToContent": "Skip to content",
+    "mainNavigation": "Main",
+    "footerNavigation": "Footer",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "menuTitle": "Menu"
+  },
+  "Navigation": {
+    "howItWorks": "How it works",
+    "students": "Students and parents",
+    "owners": "PG owners"
+  },
+  "Home": {
+    "status": "Coming soon",
+    "intro": "Find a safe, verified bed near your college or coaching hub. Book a visit, reserve the bed with a small refundable token and move in.",
+    "steps": {
+      "title": "How it works",
+      "find": {
+        "title": "Find",
+        "body": "Browse verified PGs on a map, near your college or coaching hub."
+      },
+      "visit": {
+        "title": "Visit",
+        "body": "Book a visit and see the room before you decide."
+      },
+      "reserve": {
+        "title": "Reserve",
+        "body": "Hold your bed with a small token that counts toward your first month's rent."
+      },
+      "moveIn": {
+        "title": "Move in",
+        "body": "Your token stays protected until you have moved in and checked the room."
+      }
+    },
+    "students": {
+      "title": "For students and parents",
+      "body": "Students pay no platform fee. Someone from our team visits every building, checks its safety and takes the photos before it is listed."
+    },
+    "owners": {
+      "title": "For PG owners",
+      "body": "Fill your beds with verified tenants. You pay a one-time placement fee for each tenant we place."
+    }
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "body": "This page doesn't exist or has moved.",
+    "home": "Go to the home page"
+  },
+  "Error": {
+    "title": "Something went wrong",
+    "body": "This page couldn't load. Please try again.",
+    "referenceLabel": "Error reference",
+    "retry": "Try again"
+  }
+}
