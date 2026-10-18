@@ -1,0 +1,12 @@
+# Prettier also skips everything in .gitignore.
+
+# Hand-written docs and Claude Code config keep their authors' formatting.
+*.md
+.claude/
+
+# Python is formatted by ruff.
+apps/api/
+
+# Generated files.
+pnpm-lock.yaml
+packages/api-client/src/generated/

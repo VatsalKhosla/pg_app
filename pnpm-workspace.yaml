@@ -1,0 +1,24 @@
+packages:
+  - apps/web
+  - packages/*
+
+# Supply-chain guards (docs/adr/0007-toolchain-and-dependency-policy.md).
+# Install only versions published at least 7 days ago (value in minutes).
+minimumReleaseAge: 10080
+# Fail when a package's publishing trust level drops between versions (for example a release
+# without provenance after releases with it), a common sign of a hijacked maintainer account.
+trustPolicy: no-downgrade
+# Reviewed exceptions only, each pinned to one exact version with the reason.
+trustPolicyExclude:
+  # 2023 backport of the CVE-2022-25883 fix to semver 6.x, published by npm CLI maintainer
+  # lukekarrys by hand (no provenance) after the automated 7.5.x releases had it. Reviewed
+  # 2026-10-18. Used by eslint-plugin-import via eslint-config-next.
+  - semver@6.3.1
+# Dependencies may run install scripts only when allowed here after review.
+strictDepBuilds: true
+allowBuilds:
+  # Its postinstall (napi-postinstall) only downloads the native binding when the package
+  # manager skipped it; pnpm installs @unrs/resolver-binding-<platform> itself. Reviewed 2026-10-18.
+  unrs-resolver: false
+# Exact versions in package.json; the lockfile pins everything else.
+savePrefix: ""

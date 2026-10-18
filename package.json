@@ -1,0 +1,23 @@
+{
+  "name": "pg-platform",
+  "private": true,
+  "description": "PG booking platform monorepo: web app (apps/web) and generated API client (packages/api-client). The API lives in apps/api (uv).",
+  "packageManager": "pnpm@12.12.0",
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24.22.0",
+      "onFail": "download"
+    }
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "3.9.10"
+  }
+}
