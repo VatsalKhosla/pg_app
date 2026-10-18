@@ -1,0 +1,63 @@
+# Git hooks, installed by `make setup`. Run them on every file with:
+#   uv run --project apps/api pre-commit run --all-files
+#
+# Linters run as local hooks from the project's own lockfiles (uv.lock, pnpm-lock.yaml), so hook
+# versions never drift from `make lint`. Third-party hook repositories are pinned to commit SHAs.
+minimum_pre_commit_version: "4.6.2"
+default_install_hook_types: [pre-commit]
+exclude: ^packages/api-client/src/generated/
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+        # Generated; pnpm 12 writes it as two YAML documents (toolchain env, then dependencies).
+        exclude: ^pnpm-lock\.yaml$
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e # frozen: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check (api)
+        entry: uv run --directory apps/api --locked ruff check --fix
+        language: system
+        files: ^apps/api/.*\.pyi?$
+        pass_filenames: false
+      - id: ruff-format
+        name: ruff format (api)
+        entry: uv run --directory apps/api --locked ruff format
+        language: system
+        files: ^apps/api/.*\.pyi?$
+        pass_filenames: false
+      - id: mypy
+        name: mypy --strict (api)
+        entry: uv run --directory apps/api --locked mypy
+        language: system
+        files: ^apps/api/(.*\.pyi?|pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+      - id: eslint
+        name: eslint (web)
+        # ESLint runs from apps/web, so strip that prefix from the paths pre-commit passes in.
+        entry: bash -c 'cd apps/web && exec pnpm exec eslint --max-warnings=0 --fix --no-warn-ignored "${@#apps/web/}"' --
+        language: system
+        files: ^apps/web/.*\.(c|m)?(j|t)sx?$
+      - id: prettier
+        name: prettier
+        entry: pnpm exec prettier --write --ignore-unknown
+        language: system
+        types: [text]
