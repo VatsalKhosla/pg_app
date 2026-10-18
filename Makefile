@@ -33,6 +33,7 @@ setup: doctor ## Install all dependencies and the git hooks
 	uv sync --directory $(API_DIR) --locked
 	pnpm install --frozen-lockfile
 	uv run --project $(API_DIR) --locked pre-commit install --install-hooks
+	$(WEB) exec playwright install chromium
 	@scripts/env-sync.sh
 
 .PHONY: env
@@ -75,7 +76,7 @@ migration: ## Generate a migration from model changes: make migration m="add boo
 ##@ Quality
 
 .PHONY: check
-check: lint typecheck test-api ## Lint, typecheck and test everything (run before finishing any step)
+check: lint typecheck test-api test-web ## Lint, typecheck and test everything (run before finishing any step)
 
 .PHONY: lint
 lint: ## Lint and check formatting and the layer rules (ruff, import-linter, eslint, prettier)
@@ -106,3 +107,21 @@ test-api: ## Run all API tests, unit and integration (integration tests need Doc
 .PHONY: test-api-unit
 test-api-unit: ## Run the API unit tests only (no Docker needed)
 	$(API) pytest -m "not integration"
+
+.PHONY: test-web
+test-web: ## Run the web unit and component tests (Vitest)
+	$(WEB) run test
+
+.PHONY: e2e
+e2e: web-build ## Run the browser tests against a production build (Playwright)
+	$(WEB) run e2e
+
+.PHONY: lighthouse
+lighthouse: web-build ## Audit the home page with Lighthouse (mobile); fails below 90
+	$(WEB) run lighthouse
+
+##@ Build
+
+.PHONY: web-build
+web-build: ## Build the web app for production
+	$(WEB) exec next build $$(scripts/next-bundler-flag.sh)

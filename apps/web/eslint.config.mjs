@@ -23,5 +23,14 @@ export default defineConfig([
   },
   // Last: turn off stylistic rules that Prettier owns.
   prettier,
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    // Test output (Playwright's HTML report ships its own scripts).
+    "playwright-report/**",
+    "test-results/**",
+    "coverage/**",
+  ]),
 ]);
