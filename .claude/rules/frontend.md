@@ -6,6 +6,7 @@ paths:
 
 # Frontend rules (apps/web)
 
+- **Read the bundled Next.js docs first.** This Next.js version is newer than most training data: check the guide in `apps/web/node_modules/next/dist/docs/` before using a Next.js API or convention (see `apps/web/AGENTS.md`, which `next dev` maintains).
 - **Server Components by default.** Add `"use client"` only for interactive pieces: the map, filters, forms, the booking flow and editors.
 - **API access** only through the typed client wrapper in `src/lib/api`. No raw `fetch` to the API and no hand-written API types; regenerate with `make gen-client`.
 - **Never compute money in the browser.** Prices, fees, tokens, refunds and "due at move-in" come from the server (quotes, bookings). Format with the shared `formatINR()` helper (`Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`).
