@@ -1,0 +1,14 @@
+{
+  "identities": [
+    {
+      "name": "pg-platform-dev",
+      "credentials": [
+        {
+          "accessKey": "pg-platform-dev",
+          "secretKey": "pg-platform-dev-only"
+        }
+      ],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}
