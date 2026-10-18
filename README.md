@@ -1,23 +1,34 @@
-# PG booking platform — starter kit for Claude Code
+# PG booking platform
 
-This folder holds no code yet. It gives Claude Code everything it needs to build the platform properly: the business rules, the architecture and a step-by-step plan.
+An online platform for booking verified PG (paying guest) beds in Delhi NCR. Students find PGs on a map, book a visit, reserve a bed with a small refundable token and move in; owners pay a one-time placement fee. The brand name is still undecided.
 
-## How to start
-1. Copy this whole folder (including the hidden `.claude` folder) into an empty project folder or a new GitHub repository. On a Mac, press Cmd+Shift+. in Finder to see hidden folders.
-2. Open the folder in VS Code and start Claude Code there.
-3. Paste the kickoff prompt from the bottom of `docs/BUILD_PLAN.md`.
-4. After that, type `/next-step` to build one step at a time, and `/phase-review 3` (for example) at the end of each phase.
+| Path | What it holds |
+|---|---|
+| `apps/api` | FastAPI API and background worker (Python 3.14, uv) |
+| `apps/web` | Next.js web app: public site, owner dashboard and ops console |
+| `packages/api-client` | Typed API client, generated from the API's OpenAPI schema |
+| `infra/` | Local infrastructure (Docker Compose), and Terraform later |
+| `docs/` | Product context, architecture, build plan and decision records (ADRs) |
 
-## What's inside
+## Getting started
+
+You need [uv](https://docs.astral.sh/uv/getting-started/installation/), [pnpm](https://pnpm.io/installation) (the standalone version needs no Node.js) and git; Docker from build step 0.2. You don't install Python or Node.js yourself: uv provides Python 3.14 and pnpm provides Node.js 24, the versions pinned in the repository.
+
+```sh
+make setup    # check the tools, install dependencies and the git hooks
+make check    # lint, typecheck and test everything
+make          # list every command
+```
+
+## How the work is organised
+
 | File | Purpose |
 |---|---|
-| `CLAUDE.md` | Loaded automatically every session: the product in brief, the 12 business rules, the stack, commands and how to work |
-| `docs/PRODUCT_CONTEXT.md` | The business behind the code: fees, dynamic pricing, trust design, leakage, regulation, open decisions |
+| `CLAUDE.md` | Loaded by Claude Code every session: the product in brief, the business rules the code enforces, the stack, commands and how to work |
+| `docs/PRODUCT_CONTEXT.md` | The business behind the code: fees, dynamic pricing, trust design, leakage, regulation, open decisions. Read it before touching anything about money |
 | `docs/ARCHITECTURE.md` | System design, data model, booking state machine, pricing engine, payments and ledger, map, security, scaling, testing |
-| `docs/BUILD_PLAN.md` | Phases 0–9 with numbered steps and "done when" checks, plus the founders' parallel tasks |
-| `.claude/settings.json` | Stops Claude Code reading `.env` files and keys, and pre-approves the safe `make` commands |
-| `.claude/rules/` | Backend, frontend, money and security rules that load only when Claude edits matching files |
-| `.claude/skills/` | The `/next-step` and `/phase-review` commands |
+| `docs/BUILD_PLAN.md` | Phases 0–9 with numbered steps and "done when" checks, plus the founders' own tasks |
+| `docs/adr/` | Decision records |
+| `.claude/` | Claude Code settings, the rules that load for matching files, and the `/next-step` and `/phase-review` commands |
 
-## Do these yourselves in week 1
-The founders' task list at the top of `docs/BUILD_PLAN.md` has the jobs Claude Code can't do. Start SMS DLT registration and Razorpay KYC first, because they take the longest.
+Claude Code builds one step at a time with `/next-step` and reviews a finished phase with `/phase-review <n>`. The founders' tasks Claude Code can't do (company, SMS DLT registration, Razorpay KYC, lawyer, CA) are at the top of `docs/BUILD_PLAN.md`; start the slow ones first.

@@ -45,8 +45,9 @@ Start the slow ones in week 1.
 
 ## Phase 0 — Foundations
 
-- [ ] **0.1 Monorepo scaffold.** Create the layout in ARCHITECTURE §4: `apps/api` (uv project), `apps/web` (Next.js, pnpm), `packages/api-client`, `infra/`, root `Makefile`, `.editorconfig`, `.gitignore`, pre-commit hooks (ruff, ruff-format, mypy, eslint, prettier, gitleaks). Add `.env.example` files.
+- [x] **0.1 Monorepo scaffold.** Create the layout in ARCHITECTURE §4: `apps/api` (uv project), `apps/web` (Next.js, pnpm), `packages/api-client`, `infra/`, root `Makefile`, `.editorconfig`, `.gitignore`, pre-commit hooks (ruff, ruff-format, mypy, eslint, prettier, gitleaks). Add `.env.example` files.
   *Done when* `make setup`, `make lint` and `make typecheck` succeed on the empty skeleton.
+  *Note (2026-10-18):* uv + Python 3.14, pnpm 12 (pins Node 24 itself), Next 16.4, TypeScript 6.0 and ESLint 9 (newer majors lack plugin support), a 7-day release cooldown and SHA-pinned hooks (ADR 0007). `make check` is lint + typecheck + test-api until test-web (0.5) and client staleness (0.6) exist; the API Dockerfile waits for 0.3.
 
 - [ ] **0.2 Local infrastructure.** `infra/docker-compose.yml` with PostGIS (extensions: postgis, btree_gist, pg_trgm, citext), Redis, MinIO (S3) and Mailpit. `make dev` starts infra, API (reload), worker and web together.
   *Done when* a fresh clone runs `make setup && make dev` and all services are healthy.
