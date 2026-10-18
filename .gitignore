@@ -14,6 +14,7 @@ CLAUDE.local.md
 .venv/
 __pycache__/
 *.pyc
+*.egg-info/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
@@ -25,10 +26,14 @@ node_modules/
 .next/
 out/
 .turbo/
+.vercel/
 *.tsbuildinfo
+next-env.d.ts
+.eslintcache
 coverage/
 playwright-report/
 test-results/
+*.log
 
 # Infra
 .terraform/
