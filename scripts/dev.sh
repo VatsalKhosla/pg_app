@@ -28,7 +28,8 @@ case "${NEXT_BUNDLER:-auto}" in
     ;;
 esac
 
-api="uv run --directory apps/api --locked uvicorn app.main:create_app --factory --reload --reload-dir src --host 127.0.0.1 --port $api_port"
+# --no-access-log: the API writes one structured line per request itself (with the request id).
+api="uv run --directory apps/api --locked uvicorn app.main:create_app --factory --reload --reload-dir src --host 127.0.0.1 --port $api_port --no-access-log"
 worker="uv run --directory apps/api --locked watchfiles --filter python 'python -m app.worker --heartbeat-file .run/worker.heartbeat' src"
 web="pnpm --filter @pg-platform/web exec next dev --hostname 127.0.0.1 --port $web_port $web_bundler_flag"
 

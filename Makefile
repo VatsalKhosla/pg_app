@@ -13,6 +13,8 @@ API_DIR := apps/api
 API := uv run --directory $(API_DIR) --locked
 WEB := pnpm --filter @pg-platform/web
 COMPOSE := docker compose -f infra/docker-compose.yml
+# Message for `make migration m="..."`.
+m ?=
 
 ##@ Setup
 
@@ -31,11 +33,12 @@ setup: doctor ## Install all dependencies and the git hooks
 	uv sync --directory $(API_DIR) --locked
 	pnpm install --frozen-lockfile
 	uv run --project $(API_DIR) --locked pre-commit install --install-hooks
+	@[ -f $(API_DIR)/.env ] || { install -m 600 $(API_DIR)/.env.example $(API_DIR)/.env && echo "Created $(API_DIR)/.env (readable only by you) from .env.example"; }
 
 ##@ Local development
 
 .PHONY: dev
-dev: infra-up ## Run the infrastructure, API, worker and web app together (Ctrl-C stops the apps)
+dev: infra-up migrate ## Run the infrastructure, API, worker and web app together (Ctrl-C stops the apps)
 	@scripts/dev.sh
 
 .PHONY: infra-up
@@ -54,15 +57,27 @@ infra-reset: ## Stop the infrastructure and delete all its local data
 health: ## Check that every local service is up
 	@scripts/dev-health.sh
 
+##@ Database
+
+.PHONY: migrate
+migrate: ## Apply all database migrations (alembic upgrade head)
+	$(API) alembic upgrade head
+
+.PHONY: migration
+migration: ## Generate a migration from model changes: make migration m="add bookings" (review it!)
+	@[ -n "$(m)" ] || { echo 'usage: make migration m="what changed"' >&2; exit 2; }
+	$(API) alembic revision --autogenerate -m "$(m)"
+
 ##@ Quality
 
 .PHONY: check
 check: lint typecheck test-api ## Lint, typecheck and test everything (run before finishing any step)
 
 .PHONY: lint
-lint: ## Lint and check formatting (ruff, eslint, prettier)
+lint: ## Lint and check formatting and the layer rules (ruff, import-linter, eslint, prettier)
 	$(API) ruff check
 	$(API) ruff format --check
+	$(API) lint-imports
 	$(WEB) run lint
 	pnpm exec prettier --check .
 
@@ -81,5 +96,9 @@ fmt: ## Auto-fix lint findings and format all code
 ##@ Tests
 
 .PHONY: test-api
-test-api: ## Run the API tests (pytest)
+test-api: ## Run all API tests, unit and integration (integration tests need Docker)
 	$(API) pytest
+
+.PHONY: test-api-unit
+test-api-unit: ## Run the API unit tests only (no Docker needed)
+	$(API) pytest -m "not integration"
