@@ -1,28 +1,41 @@
-"""Background worker entrypoint: ``python -m app.worker``.
+"""Background worker: runs outbox jobs and periodic schedules (``python -m app.worker``).
 
-Step 0.4 adds outbox job processing and the scheduler. Until then the worker proves the process
-life cycle the platform relies on: it starts, reports liveness by touching a heartbeat file (read
-by ``make health`` locally and by a container health check in production) and shuts down cleanly
-on SIGINT or SIGTERM.
+Several consumers claim jobs concurrently (``WORKER_CONCURRENCY``), the scheduler enqueues
+periodic jobs, and a heartbeat file shows the process is alive (read by ``make health`` locally
+and by a container health check in production). SIGINT or SIGTERM stops claiming, lets the jobs
+in hand finish and exits 0. Losing the database doesn't stop the worker: it logs, backs off and
+retries until the database is back or it is told to stop.
 """
 
 import argparse
 import asyncio
 import contextlib
+import os
 import signal
+import socket
+from datetime import timedelta
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import structlog
 
-from app.config import LoggingSettings
+from app.config import Settings
+from app.core.clock import Clock, SystemClock
+from app.core.db import create_engine, create_sessionmaker
 from app.core.logging import configure_logging
+from app.core.outbox import JobRegistry, OutboxWorker
+from app.core.scheduler import ScheduledJob, Scheduler
+from app.jobs import SCHEDULES, build_registry
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 logger = structlog.stdlib.get_logger("app.worker")
 
 DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 5.0
 
 
-async def run(
+async def heartbeat(
     *,
     stop: asyncio.Event,
     heartbeat_file: Path | None,
@@ -33,7 +46,6 @@ async def run(
 
     ``beat`` (optional) is set after every heartbeat, so callers can wait for one.
     """
-    logger.info("worker started")
     while not stop.is_set():
         if heartbeat_file is not None:
             # A thread, so a slow disk (NFS, a container volume) can't stall the event loop.
@@ -42,15 +54,67 @@ async def run(
             beat.set()
         with contextlib.suppress(TimeoutError):
             await asyncio.wait_for(stop.wait(), timeout=interval)
-    logger.info("worker stopped")
 
 
-async def _serve(*, heartbeat_file: Path | None, interval: float) -> None:
+async def serve(
+    settings: Settings,
+    *,
+    stop: asyncio.Event,
+    heartbeat_file: Path | None,
+    heartbeat_interval: float,
+    clock: Clock,
+    registry: JobRegistry,
+    schedules: Sequence[ScheduledJob],
+) -> None:
+    engine = create_engine(settings, application_name="pg-platform-worker")
+    sessionmaker = create_sessionmaker(engine)
+    identity = f"{socket.gethostname()}:{os.getpid()}"
+    logger.info(
+        "worker started",
+        consumers=settings.worker_concurrency,
+        job_kinds=sorted(registry.kinds),
+        schedules=[job.name for job in schedules],
+    )
+    try:
+        async with asyncio.TaskGroup() as group:
+            group.create_task(
+                heartbeat(stop=stop, heartbeat_file=heartbeat_file, interval=heartbeat_interval)
+            )
+            group.create_task(
+                Scheduler(sessionmaker=sessionmaker, clock=clock, jobs=schedules).run(stop)
+            )
+            for number in range(settings.worker_concurrency):
+                consumer = OutboxWorker(
+                    sessionmaker=sessionmaker,
+                    registry=registry,
+                    clock=clock,
+                    worker_id=f"{identity}:{number}",
+                    batch_size=settings.worker_batch_size,
+                    lease=timedelta(seconds=settings.outbox_lease_seconds),
+                    idle_wait=timedelta(seconds=settings.worker_poll_interval_seconds),
+                )
+                group.create_task(consumer.run(stop))
+    finally:
+        await engine.dispose()
+        logger.info("worker stopped")
+
+
+async def _serve_until_signalled(
+    settings: Settings, *, heartbeat_file: Path | None, heartbeat_interval: float
+) -> None:
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
-    await run(stop=stop, heartbeat_file=heartbeat_file, interval=interval)
+    await serve(
+        settings,
+        stop=stop,
+        heartbeat_file=heartbeat_file,
+        heartbeat_interval=heartbeat_interval,
+        clock=SystemClock(),
+        registry=build_registry(),
+        schedules=SCHEDULES,
+    )
 
 
 def _positive_seconds(value: str) -> float:
@@ -79,11 +143,13 @@ def main(argv: list[str] | None = None) -> None:
     heartbeat_file: Path | None = args.heartbeat_file
     interval: float = args.heartbeat_interval
 
-    logging_settings = LoggingSettings()
-    configure_logging(level=logging_settings.log_level, fmt=logging_settings.log_format)
+    settings = Settings()
+    configure_logging(level=settings.log_level, fmt=settings.log_format)
     if heartbeat_file is not None:
         heartbeat_file.parent.mkdir(parents=True, exist_ok=True)
-    asyncio.run(_serve(heartbeat_file=heartbeat_file, interval=interval))
+    asyncio.run(
+        _serve_until_signalled(settings, heartbeat_file=heartbeat_file, heartbeat_interval=interval)
+    )
 
 
 if __name__ == "__main__":

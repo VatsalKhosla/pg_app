@@ -8,9 +8,12 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.config import BRAND_NAME, Settings, get_settings
+from app.core.clock import Clock, SystemClock
 from app.core.db import create_engine, create_sessionmaker
 from app.core.errors import install_error_handlers
+from app.core.flags import FeatureFlags
 from app.core.logging import configure_logging
+from app.core.ratelimit import RateLimiter
 from app.core.redis import create_redis
 from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
@@ -34,19 +37,27 @@ def _is_probe(scope: Scope) -> bool:
     return scope.get("path") in PROBE_PATHS
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, *, clock: Clock | None = None) -> FastAPI:
+    """Build the API. Tests pass their own ``settings`` and a ``FrozenClock``."""
     settings = settings or get_settings()
+    clock = clock or SystemClock()
     configure_logging(level=settings.log_level, fmt=settings.log_format)
     configure_sentry(settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         engine = create_engine(settings, application_name=settings.otel_service_name)
+        sessionmaker = create_sessionmaker(engine)
         redis = create_redis(settings)
         tracer_provider = configure_tracing(settings, engine=engine)
+        app.state.clock = clock
         app.state.engine = engine
-        app.state.sessionmaker = create_sessionmaker(engine)
+        app.state.sessionmaker = sessionmaker
         app.state.redis = redis
+        app.state.rate_limiter = RateLimiter(
+            redis, clock, secret=settings.secret_key.get_secret_value().encode()
+        )
+        app.state.flags = FeatureFlags(sessionmaker, clock)
         logger.info("api started", environment=settings.app_env, version=SERVICE_VERSION)
         try:
             yield

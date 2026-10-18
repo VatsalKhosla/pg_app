@@ -13,11 +13,19 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config import DatabaseSettings
-from app.core.db import Base
 from app.core.logging import configure_logging
+from app.models import Base
 
 config = context.config
 target_metadata = Base.metadata
+
+# Tables that extensions create and own (PostGIS's spatial reference systems). Autogenerate must
+# never propose dropping them just because no model describes them.
+EXTENSION_TABLES = frozenset({"spatial_ref_sys"})
+
+
+def _include_name(name: str | None, type_: str, _parent_names: object) -> bool:
+    return not (type_ == "table" and name in EXTENSION_TABLES)
 
 
 def _database_url() -> str:
@@ -37,6 +45,7 @@ def _configure(*, connection: Connection | None = None, url: str | None = None) 
         literal_binds=offline,
         dialect_opts={"paramstyle": "named"} if offline else None,
         target_metadata=target_metadata,
+        include_name=_include_name,
         compare_type=True,
         compare_server_default=True,
         transaction_per_migration=True,

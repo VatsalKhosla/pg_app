@@ -1,55 +1,67 @@
 import asyncio
+import os
 import signal
 import subprocess
 import sys
 import time
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 
-from app.worker import main, run
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from app.worker import heartbeat, main
 
 
-def test_run_beats_then_stops_promptly(tmp_path: Path) -> None:
-    heartbeat = tmp_path / "worker.heartbeat"
+def test_heartbeat_beats_then_stops_promptly(tmp_path: Path) -> None:
+    heartbeat_file = tmp_path / "worker.heartbeat"
 
     async def scenario() -> None:
         stop, beat = asyncio.Event(), asyncio.Event()
-        worker = asyncio.create_task(
-            run(stop=stop, heartbeat_file=heartbeat, interval=60, beat=beat)
+        task = asyncio.create_task(
+            heartbeat(stop=stop, heartbeat_file=heartbeat_file, interval=60, beat=beat)
         )
         await asyncio.wait_for(beat.wait(), timeout=5)
         stop.set()
-        await asyncio.wait_for(worker, timeout=1)  # far sooner than the 60 s interval
+        await asyncio.wait_for(task, timeout=1)  # far sooner than the 60 s interval
 
     asyncio.run(scenario())
-    assert heartbeat.exists()
+    assert heartbeat_file.exists()
 
 
-def test_worker_process_exits_cleanly_on_sigterm(tmp_path: Path) -> None:
-    # SIGTERM is what ECS (and Docker) send to stop a container.
-    heartbeat = tmp_path / "worker.heartbeat"
-    command = [sys.executable, "-m", "app.worker", "--heartbeat-file", str(heartbeat)]
+def test_worker_survives_an_unreachable_database_and_exits_cleanly_on_sigterm(
+    tmp_path: Path,
+) -> None:
+    # SIGTERM is what ECS (and Docker) send to stop a container. Nothing listens on port 9, so
+    # every claim fails: the worker must keep beating, back off, and still stop cleanly.
+    heartbeat_file = tmp_path / "worker.heartbeat"
+    environment = os.environ | {
+        "DATABASE_URL": "postgresql+asyncpg://test:test@127.0.0.1:9/test",
+        "REDIS_URL": "redis://:test@127.0.0.1:9/0",
+        "SECRET_KEY": "test-only-secret-key-0123456789abcdef",
+        "LOG_FORMAT": "json",
+    }
+    command = [sys.executable, "-m", "app.worker", "--heartbeat-file", str(heartbeat_file)]
     with subprocess.Popen(
         [*command, "--heartbeat-interval", "0.05"],
+        cwd=tmp_path,  # no .env here
+        env=environment,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
     ) as process:
-        deadline = time.monotonic() + 15
-        while not heartbeat.exists():
+        deadline = time.monotonic() + 30
+        while not heartbeat_file.exists():
             assert process.poll() is None, "worker exited before its first heartbeat"
-            assert time.monotonic() < deadline, "no heartbeat within 15 s"
+            assert time.monotonic() < deadline, "no heartbeat within 30 s"
             time.sleep(0.05)
+        time.sleep(0.5)  # long enough for the first failed claims
+        assert process.poll() is None, "worker stopped on its own"
 
         process.send_signal(signal.SIGTERM)
-        output, _ = process.communicate(timeout=15)
+        output, _ = process.communicate(timeout=30)
 
-    assert process.returncode == 0
+    assert process.returncode == 0, output
     assert "worker started" in output
+    assert "outbox claim failed" in output
     assert "worker stopped" in output
 
 

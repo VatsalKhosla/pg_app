@@ -45,6 +45,8 @@ class DatabaseSettings(LoggingSettings):
 
 
 class Settings(DatabaseSettings):
+    # Keys HMACs that pseudonymise personal data (rate-limit keys now, OTP codes from step 1.2).
+    secret_key: SecretStr = Field(min_length=32)
     redis_url: SecretStr
     cors_allowed_origins: Annotated[tuple[str, ...], NoDecode] = ()
     max_request_body_bytes: int = Field(default=1_048_576, gt=0)
@@ -52,6 +54,12 @@ class Settings(DatabaseSettings):
     sentry_traces_sample_rate: float = Field(default=0.0, ge=0.0, le=1.0)
     otel_exporter_otlp_endpoint: str | None = None
     otel_service_name: str = "pg-platform-api"
+
+    # Worker: concurrent outbox consumers, jobs per claim, idle poll interval, job lease.
+    worker_concurrency: int = Field(default=2, ge=1)
+    worker_batch_size: int = Field(default=10, ge=1)
+    worker_poll_interval_seconds: float = Field(default=1.0, gt=0)
+    outbox_lease_seconds: int = Field(default=300, ge=10)
 
     @field_validator("redis_url")
     @classmethod

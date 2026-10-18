@@ -16,12 +16,14 @@ dependencies = [
     "sentry-sdk==2.71.0",
     "sqlalchemy[asyncio]==2.1.4",
     "structlog==26.1.0",
+    "tzdata==2026.5",
     "uvicorn[standard]==0.54.0",
 ]
 
 [dependency-groups]
 dev = [
     "httpx==0.28.1",
+    "hypothesis==6.169.0",
     "import-linter==2.15",
     "mypy==2.4.0",
     "pre-commit==4.6.2",
@@ -95,6 +97,8 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # Migrations are standalone scripts Alembic generates; keep their imports plain.
 "migrations/**/*.py" = ["TC001", "TC002", "TC003"]
+# The injectable clock is the one place allowed to read the system time.
+"src/app/core/clock.py" = ["TID251"]
 # FastAPI evaluates route signatures at runtime, so their imports must stay real imports.
 "src/app/modules/*/router.py" = ["TC001", "TC002", "TC003"]
 "tests/**/*.py" = [
@@ -111,6 +115,9 @@ ignore = [
 [tool.ruff.lint.flake8-type-checking]
 # Pydantic and SQLAlchemy read annotations at runtime, so their imports must stay real imports.
 runtime-evaluated-base-classes = [
+    "app.core.db.AppendOnlyModel",
+    "app.core.db.Base",
+    "app.core.db.Model",
     "app.core.schemas.ApiModel",
     "pydantic.BaseModel",
     "pydantic_settings.BaseSettings",
@@ -157,7 +164,13 @@ init_typed = true
 warn_required_dynamic_aliases = true
 
 [[tool.mypy.overrides]]
-module = ["app.core.money", "app.modules.*.domain", "app.modules.*.domain.*"]
+module = [
+    "app.core.calendar",
+    "app.core.ids",
+    "app.core.money",
+    "app.modules.*.domain",
+    "app.modules.*.domain.*",
+]
 disallow_any_explicit = true
 
 # ---------------------------------------------------------------------------------------------
@@ -188,7 +201,7 @@ layers = ["(router)", "(service)", "(schemas) | (policies) | (repository)", "(mo
 [[tool.importlinter.contracts]]
 name = "Domain code is pure: no web framework, database, cache, HTTP client, settings or logging"
 type = "forbidden"
-source_modules = ["app.modules.*.domain"]
+source_modules = ["app.core.calendar", "app.core.ids", "app.core.money", "app.modules.*.domain"]
 forbidden_modules = [
     "fastapi",
     "starlette",
@@ -208,4 +221,4 @@ forbidden_modules = [
 name = "Config and core never depend on business modules or the entrypoints"
 type = "forbidden"
 source_modules = ["app.config", "app.core"]
-forbidden_modules = ["app.modules", "app.main", "app.worker"]
+forbidden_modules = ["app.modules", "app.jobs", "app.main", "app.models", "app.worker"]

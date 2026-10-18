@@ -17,10 +17,18 @@ REDIS_URL = "redis://:redis-secret-password@cache.internal:6379/0"
 def environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.MonkeyPatch:
     """A clean environment in a directory with no .env file."""
     monkeypatch.chdir(tmp_path)
-    for name in ("APP_ENV", "DATABASE_URL", "REDIS_URL", "CORS_ALLOWED_ORIGINS", "SENTRY_DSN"):
+    for name in (
+        "APP_ENV",
+        "DATABASE_URL",
+        "REDIS_URL",
+        "SECRET_KEY",
+        "CORS_ALLOWED_ORIGINS",
+        "SENTRY_DSN",
+    ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("DATABASE_URL", DATABASE_URL)
     monkeypatch.setenv("REDIS_URL", REDIS_URL)
+    monkeypatch.setenv("SECRET_KEY", "test-only-secret-key-0123456789abcdef")
     return monkeypatch
 
 
@@ -72,6 +80,13 @@ def test_rejects_urls_with_the_wrong_scheme(
     environment.setenv(name, value)
 
     with pytest.raises(ValidationError):
+        Settings()
+
+
+def test_the_secret_key_must_be_at_least_32_characters(environment: pytest.MonkeyPatch) -> None:
+    environment.setenv("SECRET_KEY", "too-short")
+
+    with pytest.raises(ValidationError, match="secret_key"):
         Settings()
 
 

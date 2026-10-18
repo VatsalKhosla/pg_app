@@ -58,9 +58,12 @@ class AppError(Exception):
     code: ClassVar[str] = "INTERNAL_ERROR"
     title: ClassVar[str] = "Internal server error"
 
-    def __init__(self, detail: str | None = None) -> None:
+    def __init__(
+        self, detail: str | None = None, *, headers: Mapping[str, str] | None = None
+    ) -> None:
         super().__init__(detail or self.title)
         self.detail = detail
+        self.headers = dict(headers or {})
 
 
 class NotFoundError(AppError):
@@ -148,7 +151,12 @@ async def _on_app_error(request: Request, exc: Exception) -> JSONResponse:
     if not isinstance(exc, AppError):  # registered for AppError only
         raise exc
     return problem_response(
-        request.scope, status=exc.status, code=exc.code, title=exc.title, detail=exc.detail
+        request.scope,
+        status=exc.status,
+        code=exc.code,
+        title=exc.title,
+        detail=exc.detail,
+        headers=exc.headers,
     )
 
 
