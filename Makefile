@@ -33,12 +33,16 @@ setup: doctor ## Install all dependencies and the git hooks
 	uv sync --directory $(API_DIR) --locked
 	pnpm install --frozen-lockfile
 	uv run --project $(API_DIR) --locked pre-commit install --install-hooks
-	@[ -f $(API_DIR)/.env ] || { install -m 600 $(API_DIR)/.env.example $(API_DIR)/.env && echo "Created $(API_DIR)/.env (readable only by you) from .env.example"; }
+	@scripts/env-sync.sh
+
+.PHONY: env
+env: ## Create apps/api/.env, or add settings that .env.example gained since
+	@scripts/env-sync.sh
 
 ##@ Local development
 
 .PHONY: dev
-dev: infra-up migrate ## Run the infrastructure, API, worker and web app together (Ctrl-C stops the apps)
+dev: env infra-up migrate ## Run the infrastructure, API, worker and web app together (Ctrl-C stops the apps)
 	@scripts/dev.sh
 
 .PHONY: infra-up
@@ -60,7 +64,7 @@ health: ## Check that every local service is up
 ##@ Database
 
 .PHONY: migrate
-migrate: ## Apply all database migrations (alembic upgrade head)
+migrate: env ## Apply all database migrations (alembic upgrade head)
 	$(API) alembic upgrade head
 
 .PHONY: migration
