@@ -49,8 +49,9 @@ Start the slow ones in week 1.
   *Done when* `make setup`, `make lint` and `make typecheck` succeed on the empty skeleton.
   *Note (2026-10-18):* uv + Python 3.14, pnpm 12 (pins Node 24 itself), Next 16.4, TypeScript 6.0 and ESLint 9 (newer majors lack plugin support), a 7-day release cooldown and SHA-pinned hooks (ADR 0007). `make check` is lint + typecheck + test-api until test-web (0.5) and client staleness (0.6) exist; the API Dockerfile waits for 0.3.
 
-- [ ] **0.2 Local infrastructure.** `infra/docker-compose.yml` with PostGIS (extensions: postgis, btree_gist, pg_trgm, citext), Redis, MinIO (S3) and Mailpit. `make dev` starts infra, API (reload), worker and web together.
+- [x] **0.2 Local infrastructure.** `infra/docker-compose.yml` with PostGIS (extensions: postgis, btree_gist, pg_trgm, citext), Redis, MinIO (S3) and Mailpit. `make dev` starts infra, API (reload), worker and web together.
   *Done when* a fresh clone runs `make setup && make dev` and all services are healthy.
+  *Note (2026-10-18):* PostgreSQL 18 + PostGIS 3.6 (own multi-arch image matching RDS), Valkey 8.1 for Redis, SeaweedFS 4.48 for S3 (MinIO no longer publishes images) and Mailpit, with loopback-only ports, digest-pinned images and health checks (ADR 0008). `make dev` runs a minimal API (`/healthz`) and heartbeat worker that 0.3 and 0.4 grow, and switches the web app to webpack on glibc < 2.29; `make health` passed on a fresh clone. Starlette's TestClient now wants `httpx2`; tests use httpx's ASGI transport until the founders approve adding it.
 
 - [ ] **0.3 API skeleton.** App factory, pydantic-settings config, structlog JSON logging with request ids, RFC 9457 error handler, `/healthz` and `/readyz` (DB + Redis), CORS allowlist, security headers, OpenTelemetry and Sentry wiring (no-op without DSN), async SQLAlchemy session per request, Alembic initialised with a first migration that enables the extensions, import-linter contracts for the layer rules.
   *Done when* `/readyz` reports DB and Redis OK, OpenAPI is served, and import-linter passes.

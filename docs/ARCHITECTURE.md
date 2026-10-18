@@ -69,7 +69,7 @@ flowchart LR
 | API | Python 3.12+, FastAPI, Pydantic v2 | A founder already works in FastAPI; typed; OpenAPI out of the box |
 | ORM / migrations | SQLAlchemy 2 (async, asyncpg), Alembic, GeoAlchemy2 | Mature, explicit transactions, PostGIS types |
 | Database | PostgreSQL 16+ with `postgis`, `btree_gist`, `pg_trgm`, `citext` | Geo queries, exclusion constraints, fuzzy search in one database |
-| Cache / rate limits | Redis | Simple, fast; nothing durable lives only in Redis |
+| Cache / rate limits | Redis protocol: Valkey locally, ElastiCache for Valkey expected in production (ADR 0008) | Simple, fast; nothing durable lives only in Redis |
 | Jobs | Outbox table + worker using `SELECT … FOR UPDATE SKIP LOCKED`; scheduler in the worker | Jobs are enqueued in the same transaction as the change that caused them; no broker to run |
 | Python tooling | uv, ruff (incl. security rules), mypy strict, import-linter, pytest, pytest-asyncio, hypothesis, testcontainers, schemathesis, polyfactory | Fast, strict, testable |
 | Web | Next.js (App Router), React, TypeScript strict | SSR/ISR for SEO pages, one app for public site, owner dashboard and ops console |
@@ -94,7 +94,8 @@ Use current stable versions and pin them. Verify third-party APIs against offici
 ├── .github/workflows/             # ci.yml, security.yml, e2e.yml, deploy-*.yml
 ├── docs/                          # product context, architecture, build plan, adr/, runbooks/
 ├── infra/
-│   ├── docker-compose.yml         # postgres+postgis, redis, minio, mailpit
+│   ├── docker-compose.yml         # postgres+postgis, valkey (redis), seaweedfs (s3), mailpit
+│   ├── postgres/                  # Dockerfile: PostgreSQL 18 + PostGIS 3.6 (amd64 and arm64)
 │   └── terraform/                 # added in Phase 8
 ├── packages/
 │   └── api-client/                # src/generated/ is GENERATED from OpenAPI — never edit by hand
@@ -578,7 +579,7 @@ Coverage gates: ≥ 90% branches in `pricing`, `booking`, `payments` and `ledger
 
 ## 21. Environments, CI/CD and deployment
 
-- **Local**: `make dev` runs docker-compose (PostGIS, Redis, MinIO, Mailpit), the API with reload, the worker, and Next.js. `make seed` loads realistic sample data (fictional PGs with plausible rents from PRODUCT_CONTEXT, verified geo seeds).
+- **Local**: `make dev` runs docker-compose (PostGIS, Valkey for Redis, SeaweedFS for S3, Mailpit), the API with reload, the worker, and Next.js; `make health` checks them all. `make seed` loads realistic sample data (fictional PGs with plausible rents from PRODUCT_CONTEXT, verified geo seeds).
 - **Staging**: same shape as production, smaller; Razorpay test keys; seeded data; preview deployments for web PRs. Give staging its own subdomains (e.g. `staging.<domain>` and `api.staging.<domain>`) so session cookies stay same-site; previews on `*.vercel.app` can't share them.
 - **Production**: Razorpay live keys; manual approval for deploys; feature flags for risky features.
 - **CI** (GitHub Actions): lint, typecheck, unit and integration tests (PostGIS service), web build, client staleness, OpenAPI diff, security scans; E2E on staging nightly and before releases.
