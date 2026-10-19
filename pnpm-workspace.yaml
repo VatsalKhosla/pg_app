@@ -36,5 +36,13 @@ overrides:
 peerDependencyRules:
   allowedVersions:
     openapi-typescript>typescript: "6"
+# Advisories reviewed and accepted because no fix exists and our code can't reach the flaw
+# (`make audit` fails on anything else). Review again whenever a fix ships.
+auditConfig:
+  ignoreGhsas:
+    # braces <= 3.0.3: stack exhaustion from deeply nested glob patterns. Reached only through
+    # ESLint's tooling (eslint-config-next > fast-glob > micromatch), with our own config's
+    # patterns. Reviewed 2026-10-19.
+    - GHSA-vfj7-8cjw-p6xm
 # Exact versions in package.json; the lockfile pins everything else.
 savePrefix: ""
