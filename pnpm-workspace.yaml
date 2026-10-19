@@ -30,5 +30,11 @@ allowBuilds:
 # 2026-10-19; drop the override once chromium-bidi releases carry provenance again.
 overrides:
   puppeteer-core: 25.12.0
+# openapi-typescript 7.13 declares typescript ^5 but only uses the compiler API to print the
+# generated file, which TypeScript 6 does identically (make check-client compares the output).
+# Reviewed 2026-10-19; drop this once openapi-typescript allows TypeScript 6.
+peerDependencyRules:
+  allowedVersions:
+    openapi-typescript>typescript: "6"
 # Exact versions in package.json; the lockfile pins everything else.
 savePrefix: ""

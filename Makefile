@@ -73,10 +73,20 @@ migration: ## Generate a migration from model changes: make migration m="add boo
 	@[ -n "$(m)" ] || { echo 'usage: make migration m="what changed"' >&2; exit 2; }
 	$(API) alembic revision --autogenerate -m "$(m)"
 
+##@ API client
+
+.PHONY: gen-client
+gen-client: ## Export the API's OpenAPI schema and regenerate packages/api-client from it
+	@scripts/gen-client.sh
+
+.PHONY: check-client
+check-client: ## Fail if packages/api-client is out of date with the API
+	@scripts/gen-client.sh --check
+
 ##@ Quality
 
 .PHONY: check
-check: lint typecheck test-api test-web ## Lint, typecheck and test everything (run before finishing any step)
+check: lint typecheck test-api test-web check-client ## Lint, typecheck, test everything and check the API client is current (run before finishing any step)
 
 .PHONY: lint
 lint: ## Lint and check formatting and the layer rules (ruff, import-linter, eslint, prettier)

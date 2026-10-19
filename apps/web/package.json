@@ -14,6 +14,7 @@
     "lighthouse": "node scripts/lighthouse.mjs"
   },
   "dependencies": {
+    "@pg-platform/api-client": "workspace:*",
     "@sentry/nextjs": "11.6.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
@@ -23,6 +24,7 @@
     "radix-ui": "1.7.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "server-only": "0.0.1",
     "tailwind-merge": "3.7.0"
   },
   "devDependencies": {

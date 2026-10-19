@@ -9,4 +9,5 @@ apps/api/
 
 # Generated files.
 pnpm-lock.yaml
+packages/api-client/openapi.json
 packages/api-client/src/generated/
