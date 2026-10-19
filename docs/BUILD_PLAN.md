@@ -113,8 +113,11 @@ Start the slow ones in week 1.
 
   20 integration tests cover the done criterion and the edges: tampered, stale, replayed and other-browser sign-ins; replaced Google accounts; codes reused or over the limit; constant queries per page; and the operator commands. Google itself waits for the founders' OAuth client (docs/runbooks/staff-access.md, ADR 0016).
 
-- [ ] **1.4 Policies and the authorization matrix.** `policies.py` pattern; FastAPI dependencies for the current actor; a matrix test that enumerates every route × role and asserts the expected status (404 for other users' objects).
+- [x] **1.4 Policies and the authorization matrix.** `policies.py` pattern; FastAPI dependencies for the current actor; a matrix test that enumerates every route × role and asserts the expected status (404 for other users' objects).
   *Done when* the matrix runs in CI and fails if a new route lacks an entry.
+  *Note (2026-10-19):* `CurrentActor` and `OptionalActor` now come from `app.core.current_actor`. The identity module supplies the session check through `app.state.authenticate`, so other modules never import identity. Policy functions are pure `can_…` functions; a missing role answers 403 `FORBIDDEN`, and another user's record 404.
+
+  The matrix (`apps/api/tests/authorization.py`) is written by hand and covers 14 routes against 8 callers: anonymous, student, parent, owner, an admin signed in by phone, and field agent, ops and admin staff sessions. A unit test fails when a route has no entry (checked with a stand-in route), and an integration test makes all 112 calls (ADR 0017).
 
 - [ ] **1.5 Consent and data requests (DPDP).** Versioned privacy notice acceptance at signup, `consents` table, data export and deletion request endpoints with an ops queue, retention job skeleton.
   *Done when* signup can't complete without consent, and an export request produces a downloadable file for that user only.
