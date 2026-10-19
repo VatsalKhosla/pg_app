@@ -174,7 +174,7 @@ All tables have `id bigint generated always as identity`, `created_at`, `updated
 - `sessions` (public_id, user_id, token_hash, kind, started_at, last_seen_at, expires_at, absolute_expires_at, rotated_at, ended_at, end_reason, ip_address, user_agent).
 - `user_identities` (user_id, provider `google`, subject, email citext, last_used_at; unique (provider, subject) and (user_id, provider)): a staff member's linked Google account.
 - `totp_credentials` (user_id unique, salt, confirmed_at, last_used_step): a staff member's authenticator app. The secret itself is derived from `SECRET_KEY` and the salt, never stored.
-- `consents` (user_id, purpose, notice_version, granted_at, withdrawn_at).
+- `consents` (user_id, purpose `account | marketing`, notice_version, granted_at, withdrawn_at; one active consent per purpose and version): every grant kept, withdrawal sets `withdrawn_at`.
 
 **Geo**
 - `cities`, `localities` (city_id, slug, name, center geography(Point), boundary geography(Polygon) null), `campuses` (slug, name, location geography(Point)), `metro_stations` (name, line, location). Coordinates come from verified sources (OpenStreetMap with attribution); never invented.
@@ -229,7 +229,7 @@ This constraint is the double-booking guarantee. Never work around it.
 - `owner_invoices` (owner_id, booking_id, invoice_number unique per financial year, fee_paise, gst_paise, total_paise, token_applied_paise, balance_due_paise, status: `draft | issued | paid | void`, issued_at, pdf_key).
 
 **Platform**
-- `outbox_jobs`, `idempotency_keys`, `audit_logs` (append-only; the app's DB role has no UPDATE/DELETE on it), `feature_flags`, `notifications`, `grievances` (ticket number, acknowledged_at, resolved_at), `data_requests` (export/delete under DPDP).
+- `outbox_jobs`, `idempotency_keys`, `audit_logs` (append-only; the app's DB role has no UPDATE/DELETE on it), `feature_flags`, `notifications`, `grievances` (ticket number, acknowledged_at, resolved_at), `data_requests` (public_id, user_id, kind `export | deletion`, status `received | ready | expired | completed | rejected`, requested_at, resolved_at, expires_at, resolved_by, note; one open request per kind and person), `data_exports` (data_request_id, content: the export's JSON until it expires).
 
 **Indexes to create from day one**: GiST on `properties.location` and `display_location`; GiST exclusion index above; trigram GIN on `properties.name` and `localities.name`; btree on every FK; partial index on `bookings (status, hold_expires_at) WHERE status = 'HELD'`; `outbox_jobs (status, run_at)`; BRIN on `booking_events.created_at` and `audit_logs.created_at`.
 
@@ -297,7 +297,7 @@ Required test: 50 concurrent hold requests for the last free bed → exactly one
 | no_shows | daily 10:00 IST | CONFIRMED past move_in + N days → NO_SHOW |
 | reconcile_payments | 15 min | Fetch status of payments stuck in created/authorized |
 | recompute_price_summaries | on event + nightly | Refresh `property_price_summaries` |
-| retention | daily | Delete or anonymise data past its retention period |
+| retention | daily 03:30 IST | `compliance.retention`: apply the retention schedule (`RETENTION_RULES` in `app/jobs.py`) and record what each rule removed (ADR 0018) |
 
 All jobs are idempotent and emit metrics (processed, failed, lag).
 
@@ -489,7 +489,11 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
   - Services apply object-level policies: an owner only sees their properties and their bookings; a student only their visits and bookings. Another user's record answers 404, as if it didn't exist.
   - The authorization matrix (`apps/api/tests/authorization.py`) lists every route against eight kinds of caller, with the expected status. A unit test fails CI when a route has no entry, and an integration test calls every route as every caller.
 - **Parents**: a signed, expiring, read-only share link for a PG and a booking; a parent can pay the token from the link without an account (Phase 9).
-- **Consent (DPDP)**: versioned privacy notice accepted at signup and stored in `consents`; endpoints for data export and deletion requests; retention schedule enforced by a job.
+- **Consent (DPDP)** (ADR 0018):
+  - Consent is per purpose (`account` required, `marketing` optional, never pre-ticked) and per privacy notice version (`PRIVACY_NOTICE_VERSION`; production refuses a draft).
+  - A first sign-in creates no account without it (`CONSENT_REQUIRED`, with the code still usable). `/v1/me` says `consentRequired` when the notice changes.
+  - Data requests: exports are built by a job from every module's part and downloadable by their owner only, for 7 days. Deletions wait in the ops queue; the erasure policy is the founders' to decide.
+  - The retention schedule is one daily job running every module's rules.
 
 ## 13. Media
 
@@ -507,7 +511,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 ## 15. API conventions
 
 - REST over JSON at `/v1`; plural nouns; JSON fields in camelCase (Pydantic alias generator), Python in snake_case.
-- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `RATE_LIMITED` (429, with `Retry-After`), `PRICING_CONFIG_ERROR`. Sign-in: `OTP_INVALID`, `OTP_EXPIRED` and `OTP_LOCKED` (400), `OTP_RESEND_TOO_SOON` (429, with `Retry-After`), `HUMAN_CHECK_FAILED` (400), `ACCOUNT_SUSPENDED` (403). Staff sign-in: `STAFF_ACCOUNT_NOT_ALLOWED` (403, one code for every reason), `STAFF_SIGN_IN_EXPIRED` and `STAFF_SIGN_IN_CANCELLED` (400; Google sign-in sends these to the web app's `/staff/sign-in?error=`), `TOTP_INVALID` (400). Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED` (401: no live session), `CSRF_TOKEN_INVALID` (403), `FORBIDDEN` (403: signed in, but the session lacks the role; another user's record answers `NOT_FOUND`), `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status. Idempotency: `IDEMPOTENCY_KEY_REQUIRED` and `IDEMPOTENCY_KEY_INVALID` (400), `IDEMPOTENCY_KEY_REUSED` (422), `IDEMPOTENCY_KEY_CONFLICT` (409).
+- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `RATE_LIMITED` (429, with `Retry-After`), `PRICING_CONFIG_ERROR`. Sign-in: `OTP_INVALID`, `OTP_EXPIRED` and `OTP_LOCKED` (400), `OTP_RESEND_TOO_SOON` (429, with `Retry-After`), `HUMAN_CHECK_FAILED` (400), `ACCOUNT_SUSPENDED` (403). Staff sign-in: `STAFF_ACCOUNT_NOT_ALLOWED` (403, one code for every reason), `STAFF_SIGN_IN_EXPIRED` and `STAFF_SIGN_IN_CANCELLED` (400; Google sign-in sends these to the web app's `/staff/sign-in?error=`), `TOTP_INVALID` (400). Consent: `CONSENT_REQUIRED` (400), `PRIVACY_NOTICE_CHANGED` (409), `CONSENT_NEEDED_FOR_ACCOUNT` (409). `INVALID_TRANSITION` (409) answers any state machine's refusal. Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED` (401: no live session), `CSRF_TOKEN_INVALID` (403), `FORBIDDEN` (403: signed in, but the session lacks the role; another user's record answers `NOT_FOUND`), `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status. Idempotency: `IDEMPOTENCY_KEY_REQUIRED` and `IDEMPOTENCY_KEY_INVALID` (400), `IDEMPOTENCY_KEY_REUSED` (422), `IDEMPOTENCY_KEY_CONFLICT` (409).
 - Probes: `GET /healthz` (liveness) and `GET /readyz` (database and Redis reachable, 503 otherwise) sit outside `/v1`, need no authentication, and are left out of tracing and info-level access logs.
 - Money: integer paise with names ending in `Paise`; the client formats with `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`.
 - Dates: `YYYY-MM-DD` for move-in; timestamps in ISO 8601 UTC; display in IST.
@@ -526,6 +530,7 @@ Auth     POST /v1/auth/otp/request     POST /v1/auth/otp/verify   GET /v1/auth/c
          POST /v1/auth/logout   POST /v1/auth/logout-everywhere
          GET /v1/me   GET /v1/me/sessions   DELETE /v1/me/sessions/{session_id}
          GET /v1/auth/staff/google   GET /v1/auth/staff/google/callback   POST /v1/auth/staff/totp
+         GET /v1/privacy-notice   GET/POST /v1/me/consents   DELETE /v1/me/consents/{purpose}
 Student  POST/GET /v1/visits           POST /v1/visits/{id}/cancel
          POST /v1/bookings             GET /v1/bookings   GET /v1/bookings/{code}
          POST /v1/bookings/{code}/cancel | /check-in | /disputes
@@ -536,7 +541,8 @@ Owner    /v1/owner/properties… /v1/owner/beds/{id}/blocks /v1/owner/pricing/ru
 Ops      /v1/ops/properties… /v1/ops/verification… /v1/ops/visits… /v1/ops/bookings…
          /v1/ops/disputes… /v1/ops/refunds… /v1/ops/reconciliation
 Admin    /v1/admin/staff /v1/admin/rent-bands /v1/admin/policies /v1/admin/flags /v1/admin/audit-logs
-Compliance POST /v1/grievances  POST /v1/data-requests
+Compliance POST /v1/grievances   POST/GET /v1/me/data-requests   GET /v1/me/data-requests/{id}/file
+         GET /v1/ops/data-requests   POST /v1/ops/data-requests/{id}/resolve
 ```
 
 ## 16. Frontend architecture

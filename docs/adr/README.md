@@ -21,5 +21,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0015](0015-phone-sign-in.md) | Phone sign-in: HMAC-stored one-time codes, layered abuse limits, Turnstile bound to the form and site, SMS behind a port | Accepted |
 | [0016](0016-staff-sign-in.md) | Staff sign-in: Google OIDC with PKCE and fully checked ID tokens, or a phone code plus an authenticator app; staff made only by operators; cursor pagination | Accepted |
 | [0017](0017-authorization.md) | Authorization: the actor from core, policy functions, 401/403/404, and a hand-written matrix of every route and caller enforced in CI | Accepted |
+| [0018](0018-consent-and-data-requests.md) | DPDP: consent per purpose and notice version, no account without it, exports and deletions with an ops queue, one retention schedule | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

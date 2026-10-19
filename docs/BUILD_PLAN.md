@@ -119,8 +119,16 @@ Start the slow ones in week 1.
 
   The matrix (`apps/api/tests/authorization.py`) is written by hand and covers 14 routes against 8 callers: anonymous, student, parent, owner, an admin signed in by phone, and field agent, ops and admin staff sessions. A unit test fails when a route has no entry (checked with a stand-in route), and an integration test makes all 112 calls (ADR 0017).
 
-- [ ] **1.5 Consent and data requests (DPDP).** Versioned privacy notice acceptance at signup, `consents` table, data export and deletion request endpoints with an ops queue, retention job skeleton.
+- [x] **1.5 Consent and data requests (DPDP).** Versioned privacy notice acceptance at signup, `consents` table, data export and deletion request endpoints with an ops queue, retention job skeleton.
   *Done when* signup can't complete without consent, and an export request produces a downloadable file for that user only.
+  *Note (2026-10-19):*
+  - Consent is recorded per purpose (`account` required, `marketing` optional) and per `PRIVACY_NOTICE_VERSION`. A first sign-in without it answers `CONSENT_REQUIRED`, and the code stays usable. `/v1/me` says `consentRequired` when the notice changes.
+  - Exports are built by an outbox job from every module's part (listed in `app/jobs.py`). They download as JSON for 7 days, for their owner only: 404 for anyone else, staff included.
+  - Deletions wait in an audited ops queue. One daily retention job runs every module's rules.
+
+  Tests cover signing up with and without consent, a changed notice, withdrawal, the export through the real worker, the queue, and retention. The matrix now has 23 routes.
+
+  Waiting for the founders (ADR 0018): the notice's text (step 3.8, with a lawyer), what a deletion erases versus keeps, and the remaining retention periods.
 
 - [ ] **1.6 Web auth flows.** Phone → OTP → profile (name, college or workplace, gender for PG eligibility, with consent); session-aware header; protected route handling; staff login page.
   *Done when* Playwright covers login, logout and protected-route redirects on mobile viewport.
