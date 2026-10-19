@@ -34,6 +34,8 @@ next-env.d.ts
 coverage/
 playwright-report/
 test-results/
+# The browser tests' API log (scripts/e2e-api.sh).
+.e2e-api.log
 *.log
 
 # Local runtime state (worker heartbeat and friends)

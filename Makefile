@@ -13,6 +13,9 @@ API_DIR := apps/api
 API := uv run --directory $(API_DIR) --locked
 WEB := pnpm --filter @pg-platform/web
 COMPOSE := docker compose -f infra/docker-compose.yml
+# The browser tests' web and API ports (scripts/e2e-api.sh), apart from `make dev`'s.
+E2E_PORT ?= 3100
+E2E_API_PORT ?= 8100
 API_IMAGE ?= pg-platform/api:local
 # Git ref that `make api-breaking` compares the API schema against.
 BASE ?= origin/main
@@ -159,8 +162,10 @@ test-web: ## Run the web unit and component tests (Vitest)
 	$(WEB) run test
 
 .PHONY: e2e
-e2e: web-build ## Run the browser tests against a production build (Playwright)
-	$(WEB) run e2e
+e2e: ## Run the browser tests against a production build and the real API (Playwright; needs Docker)
+	NEXT_PUBLIC_SITE_URL=http://127.0.0.1:$(E2E_PORT) NEXT_PUBLIC_API_URL=http://127.0.0.1:$(E2E_API_PORT) \
+		NEXT_PUBLIC_TURNSTILE_SITE_KEY= $(MAKE) web-build
+	E2E_PORT=$(E2E_PORT) E2E_API_PORT=$(E2E_API_PORT) $(WEB) run e2e
 
 .PHONY: lighthouse
 lighthouse: web-build ## Audit the home page with Lighthouse (mobile); fails below 90
