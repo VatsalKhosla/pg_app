@@ -221,4 +221,4 @@ forbidden_modules = [
 name = "Config and core never depend on business modules or the entrypoints"
 type = "forbidden"
 source_modules = ["app.config", "app.core"]
-forbidden_modules = ["app.modules", "app.jobs", "app.main", "app.models", "app.worker"]
+forbidden_modules = ["app.modules", "app.jobs", "app.main", "app.models", "app.openapi", "app.worker"]

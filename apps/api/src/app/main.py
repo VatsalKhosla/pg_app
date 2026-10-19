@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
 import structlog
-from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.config import BRAND_NAME, Settings, get_settings
@@ -13,6 +12,7 @@ from app.core.db import create_engine, create_sessionmaker
 from app.core.errors import install_error_handlers
 from app.core.flags import FeatureFlags
 from app.core.logging import configure_logging
+from app.core.openapi import PROBLEM_RESPONSES, Api, operation_id
 from app.core.ratelimit import RateLimiter
 from app.core.redis import create_redis
 from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
@@ -23,6 +23,7 @@ from app.modules.system.router import router as system_router
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
+    from fastapi import FastAPI
     from starlette.types import Scope
 
 # Headers the web app may send on cross-origin requests (CSRF arrives in step 1.1, idempotency
@@ -69,12 +70,14 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
             logger.info("api stopped")
 
     interactive_docs = settings.app_env != "production"
-    app = FastAPI(
+    app = Api(
         title=f"{BRAND_NAME} API",
         version=SERVICE_VERSION,
         lifespan=lifespan,
         docs_url="/docs" if interactive_docs else None,
         redoc_url="/redoc" if interactive_docs else None,
+        responses=PROBLEM_RESPONSES,
+        generate_unique_id_function=operation_id,
         telemetry={"exclude": _is_probe},
     )
     install_error_handlers(app)
