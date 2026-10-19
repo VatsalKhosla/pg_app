@@ -37,6 +37,7 @@ Start the slow ones in week 1.
 - [ ] Razorpay account and KYC. Activation needs the site's About, Contact, Pricing, Terms, Privacy and Refund pages (step 3.8). Later, ask Razorpay to enable UPI one-time mandates and Route.
 - [ ] Google Maps Platform project, API keys restricted by HTTP referrer and API, billing budget alerts.
 - [ ] Accounts: GitHub, Vercel, AWS (Mumbai), Cloudflare, Sentry, PostHog, an email sender (SES or Resend). Google Workspace for staff sign-in.
+- [ ] GitHub repository settings (docs/ci.md): the branch ruleset for `main` with the required checks, secret scanning with push protection, Dependabot alerts, and the free Renovate GitHub App for dependency updates.
 - [ ] Lawyer: Terms, Privacy notice (DPDP), Refund & Cancellation policy, owner agreement (30% fee, 90-day introduction clause, token set-off), E-Commerce Rules seller-disclosure question (hiding owner contacts), grievance officer.
 - [ ] CA: GST registration, invoice format, whether the 30% includes GST, accounting for tokens and set-off.
 - [ ] Field work for Gate 1: map every PG within 2 km of the first micro-market, sign owners, collect photos and verification data.

@@ -31,6 +31,7 @@ make          # list every command
 | `docs/ARCHITECTURE.md` | System design, data model, booking state machine, pricing engine, payments and ledger, map, security, scaling, testing |
 | `docs/BUILD_PLAN.md` | Phases 0–9 with numbered steps and "done when" checks, plus the founders' own tasks |
 | `docs/adr/` | Decision records |
+| `docs/ci.md` | What CI and the security scans check, branch protection, and what to do when a check fails |
 | `.claude/` | Claude Code settings, the rules that load for matching files, and the `/next-step` and `/phase-review` commands |
 
 Claude Code builds one step at a time with `/next-step` and reviews a finished phase with `/phase-review <n>`. The founders' tasks Claude Code can't do (company, SMS DLT registration, Razorpay KYC, lawyer, CA) are at the top of `docs/BUILD_PLAN.md`; start the slow ones first.

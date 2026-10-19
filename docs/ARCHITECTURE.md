@@ -91,7 +91,7 @@ Use current stable versions and pin them. Verify third-party APIs against offici
 ├── CLAUDE.md
 ├── Makefile                       # one entry point for every command
 ├── .claude/                       # Claude Code settings, rules, skills
-├── .github/workflows/             # ci.yml, security.yml, e2e.yml, deploy-*.yml
+├── .github/                      # workflows/ (ci.yml, security.yml, deploy-*.yml later), renovate.json5
 ├── docs/                          # product context, architecture, build plan, adr/, runbooks/
 ├── infra/
 │   ├── docker-compose.yml         # postgres+postgis, valkey (redis), seaweedfs (s3), mailpit
@@ -544,7 +544,7 @@ Target OWASP ASVS level 2 for auth, booking, payments and personal data.
 - **Secrets**: environment variables loaded from AWS Secrets Manager / Vercel env; separate test and live keys; rotation documented; gitleaks in pre-commit and CI; nothing secret in `NEXT_PUBLIC_*`; Claude Code is denied read access to `.env` files.
 - **Data protection**: managed encryption at rest; application-level envelope encryption for KYC fields and documents; minimal PII; mask phone numbers in logs (show the last 4 digits); no Aadhaar numbers; retention schedule; breach response runbook (DPDP).
 - **Files**: see section 13 (presigned uploads, EXIF stripping, private buckets, no SVG).
-- **Supply chain**: lockfiles; Renovate or Dependabot; pip-audit and pnpm audit; CodeQL; Trivy on images; GitHub Actions pinned by commit SHA; least-privilege tokens; OIDC from CI to AWS (no long-lived keys).
+- **Supply chain**: lockfiles with a 7-day release cooldown; Renovate (Dependabot lacks pnpm 12 and uv 0.13 support); pip-audit and pnpm audit with reviewed exceptions only; CodeQL (including the workflows); Trivy on images; GitHub Actions pinned by commit SHA and linted with actionlint and zizmor; scanners as digest-pinned containers; read-only workflow tokens; OIDC from CI to AWS (no long-lived keys). See docs/ci.md and ADR 0013.
 - **Infrastructure**: no public database endpoint; least-privilege security groups and IAM; separate AWS accounts or projects for staging and production; automated backups with point-in-time recovery and a tested restore.
 - **Audit**: append-only audit log for staff, owner and money actions; the app's DB role can't modify it.
 - **Testing**: OWASP ZAP baseline on staging, Schemathesis fuzzing from the OpenAPI schema, a STRIDE threat model per phase that touches auth or money, and an external penetration test before scaling beyond the first micro-market.
@@ -589,7 +589,7 @@ Coverage gates: ≥ 90% branches in `pricing`, `booking`, `payments` and `ledger
 - **Local**: `make dev` runs docker-compose (PostGIS, Valkey for Redis, SeaweedFS for S3, Mailpit), the API with reload, the worker, and Next.js; `make health` checks them all. `make seed` loads realistic sample data (fictional PGs with plausible rents from PRODUCT_CONTEXT, verified geo seeds).
 - **Staging**: same shape as production, smaller; Razorpay test keys; seeded data; preview deployments for web PRs. Give staging its own subdomains (e.g. `staging.<domain>` and `api.staging.<domain>`) so session cookies stay same-site; previews on `*.vercel.app` can't share them.
 - **Production**: Razorpay live keys; manual approval for deploys; feature flags for risky features.
-- **CI** (GitHub Actions): lint, typecheck, unit and integration tests (PostGIS service), web build, client staleness, OpenAPI diff, security scans; E2E on staging nightly and before releases.
+- **CI** (GitHub Actions, docs/ci.md): lint, typecheck, unit and integration tests (PostGIS and Valkey containers), web build, Playwright E2E on the build, client staleness, OpenAPI diff, workflow linting, security scans (also weekly); E2E against staging nightly and before releases once staging exists.
 - **Migrations** run as a separate step before the new API version starts; expand → migrate data → contract; never edit applied migrations; every migration tested up and down in CI.
 - **Infra as code** with Terraform from Phase 8; until then document manual setup in `docs/runbooks/`.
 - Keep costs low early: smallest instance sizes, no NAT gateway (public subnets with strict security groups) until needed, budget alerts on AWS, Vercel and the map provider.
