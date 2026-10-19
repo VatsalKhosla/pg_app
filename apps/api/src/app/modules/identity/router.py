@@ -12,11 +12,12 @@ from app.core.actor import STAFF_ROLES, Role
 from app.core.clock import Clock, ClockDep
 from app.core.cookies import CSRF_COOKIE, SESSION_COOKIE, STAFF_LOGIN_COOKIE, CookiePolicy
 from app.core.csrf import CSRF_COOKIE_MAX_AGE, issue_csrf_token
+from app.core.current_actor import CurrentActor
 from app.core.db import DbSession
 from app.core.errors import AppError, ForbiddenError, NotFoundError, UnauthenticatedError
 from app.core.pagination import PageParams
 from app.core.ratelimit import RateLimit, client_ip, rate_limited
-from app.modules.identity.auth import CookiesDep, CurrentActor, OtpServiceDep, StaffSignInDep
+from app.modules.identity.auth import CookiesDep, OtpServiceDep, StaffSignInDep
 from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.policies import can_list_staff
 from app.modules.identity.schemas import (

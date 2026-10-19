@@ -105,6 +105,7 @@ ignore = [
 "src/app/modules/*/router.py" = ["TC001", "TC002", "TC003"]
 "src/app/modules/*/auth.py" = ["TC001", "TC002", "TC003"]
 "src/app/core/pagination.py" = ["TC003"]
+"src/app/core/current_actor.py" = ["TC001", "TC002", "TC003"]
 "tests/**/*.py" = [
     "S101",    # assert is how pytest works
     "S105",    # throwaway credentials for test containers

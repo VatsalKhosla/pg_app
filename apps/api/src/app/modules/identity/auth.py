@@ -1,19 +1,15 @@
-"""Who is calling: the session cookie turned into an ``Actor``, for routes of any module.
-
-``CurrentActor`` answers 401 without a live session. When activity slides the session's expiry,
-the cookie goes out again with the new lifetime, so the browser keeps it as long as the server
-does.
-"""
+"""The identity module's request dependencies, and the session check behind every module's
+``CurrentActor`` (app/core/current_actor.py)."""
 
 from typing import Annotated
 
 from fastapi import Depends, Request, Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.actor import Actor
-from app.core.clock import ClockDep
+from app.core.clock import Clock, ClockDep
 from app.core.cookies import SESSION_COOKIE, CookiePolicy
 from app.core.db import DbSession
-from app.core.errors import UnauthenticatedError
 from app.modules.identity.service import OtpService, SessionService, StaffSignInService
 
 
@@ -25,16 +21,20 @@ def get_cookie_policy(request: Request) -> CookiePolicy:
 CookiesDep = Annotated[CookiePolicy, Depends(get_cookie_policy)]
 
 
-async def get_actor(
-    request: Request, response: Response, db: DbSession, clock: ClockDep, cookies: CookiesDep
-) -> Actor:
+async def authenticate_session(
+    request: Request, response: Response, *, db: AsyncSession, clock: Clock
+) -> Actor | None:
+    """``app.state.authenticate``: the actor behind the session cookie, or None. When activity
+    slides the session's expiry, the cookie goes out again with the new lifetime, so the browser
+    keeps it as long as the server does."""
     token = request.cookies.get(SESSION_COOKIE)
     if not token:
-        raise UnauthenticatedError
+        return None
     authentication = await SessionService(db, clock).authenticate(token)
     if authentication is None:
-        raise UnauthenticatedError
+        return None
     if authentication.refreshed:
+        cookies: CookiePolicy = request.app.state.cookies
         remaining = authentication.expires_at - clock.now()
         cookies.set(
             response,
@@ -44,9 +44,6 @@ async def get_actor(
             http_only=True,
         )
     return authentication.actor
-
-
-CurrentActor = Annotated[Actor, Depends(get_actor)]
 
 
 def get_otp_service(request: Request, db: DbSession, clock: ClockDep) -> OtpService:

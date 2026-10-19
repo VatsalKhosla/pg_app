@@ -26,6 +26,7 @@ from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_trac
 from app.modules.identity.adapters.console_otp import ConsoleOtpSender
 from app.modules.identity.adapters.google_oidc import GoogleOidc
 from app.modules.identity.adapters.unavailable_otp import UnavailableOtpSender
+from app.modules.identity.auth import authenticate_session
 from app.modules.identity.router import GOOGLE_CALLBACK_PATH
 from app.modules.identity.router import router as identity_router
 from app.modules.system.router import router as system_router
@@ -123,6 +124,8 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
     )
     app.state.cookies = CookiePolicy(domain=settings.session_cookie_domain)
     app.state.secret_key = settings.secret_key.get_secret_value().encode()
+    # Who a request's session belongs to, for every module's CurrentActor.
+    app.state.authenticate = authenticate_session
     app.state.site_url = settings.site_url
     app.state.staff_google_domains = settings.staff_google_domains
     app.state.staff_google_emails = settings.staff_google_emails
