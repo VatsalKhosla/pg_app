@@ -14,7 +14,7 @@ from app.core.clock import ClockDep
 from app.core.cookies import SESSION_COOKIE, CookiePolicy
 from app.core.db import DbSession
 from app.core.errors import UnauthenticatedError
-from app.modules.identity.service import SessionService
+from app.modules.identity.service import OtpService, SessionService
 
 
 def get_cookie_policy(request: Request) -> CookiePolicy:
@@ -47,3 +47,18 @@ async def get_actor(
 
 
 CurrentActor = Annotated[Actor, Depends(get_actor)]
+
+
+def get_otp_service(request: Request, db: DbSession, clock: ClockDep) -> OtpService:
+    state = request.app.state
+    return OtpService(
+        db,
+        clock,
+        secret=state.secret_key,
+        sender=state.otp_sender,
+        human_check=state.human_check,
+        limiter=state.rate_limiter,
+    )
+
+
+OtpServiceDep = Annotated[OtpService, Depends(get_otp_service)]

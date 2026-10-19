@@ -8,6 +8,7 @@ tokens and caps is data in the database, never configuration (ARCHITECTURE §22)
 import re
 from functools import lru_cache
 from typing import Annotated, Final, Literal, Self
+from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -17,6 +18,15 @@ BRAND_NAME: Final = "YourBrand"
 
 Environment = Literal["local", "test", "staging", "production"]
 DEPLOYED_ENVIRONMENTS: Final = frozenset({"staging", "production"})
+# Cloudflare's published Turnstile test secrets (always pass, always fail, always "duplicate"):
+# fine for staging smoke tests, never for production.
+TURNSTILE_TEST_SECRETS: Final = frozenset(
+    {
+        "1x0000000000000000000000000000000AA",
+        "2x0000000000000000000000000000000AA",
+        "3x0000000000000000000000000000000AA",
+    }
+)
 
 
 class LoggingSettings(BaseSettings):
@@ -46,7 +56,7 @@ class DatabaseSettings(LoggingSettings):
 
 
 class Settings(DatabaseSettings):
-    # Keys HMACs that pseudonymise personal data (rate-limit keys now, OTP codes from step 1.2).
+    # Keys the HMACs that protect sign-in codes, CSRF tokens and rate-limit keys.
     secret_key: SecretStr = Field(min_length=32)
     redis_url: SecretStr
     cors_allowed_origins: Annotated[tuple[str, ...], NoDecode] = ()
@@ -58,6 +68,12 @@ class Settings(DatabaseSettings):
     sentry_traces_sample_rate: float = Field(default=0.0, ge=0.0, le=1.0)
     otel_exporter_otlp_endpoint: str | None = None
     otel_service_name: str = "pg-platform-api"
+    # How sign-in codes reach phones. "console" writes them to the log, for local development and
+    # tests only. "unavailable" turns phone sign-in off (503), for a deployed environment until the
+    # founders choose the SMS provider (DLT-registered), whose adapter then joins this list.
+    otp_sender: Literal["console", "unavailable"] = "console"
+    # Cloudflare Turnstile's secret key. Unset, every human check passes (local and tests only).
+    turnstile_secret_key: SecretStr | None = None
 
     # Worker: concurrent outbox consumers, jobs per claim, idle poll interval, job lease.
     worker_concurrency: int = Field(default=2, ge=1)
@@ -82,7 +98,11 @@ class Settings(DatabaseSettings):
         return value
 
     @field_validator(
-        "sentry_dsn", "otel_exporter_otlp_endpoint", "session_cookie_domain", mode="before"
+        "sentry_dsn",
+        "otel_exporter_otlp_endpoint",
+        "session_cookie_domain",
+        "turnstile_secret_key",
+        mode="before",
     )
     @classmethod
     def _empty_means_unset(cls, value: object) -> object:
@@ -105,9 +125,38 @@ class Settings(DatabaseSettings):
                 raise ValueError(msg)
         return self
 
+    @model_validator(mode="after")
+    def _real_sign_in_checks_when_deployed(self) -> Self:
+        if self.app_env not in DEPLOYED_ENVIRONMENTS:
+            return self
+        if self.turnstile_secret_key is None:
+            msg = f"TURNSTILE_SECRET_KEY is required in {self.app_env}"
+            raise ValueError(msg)
+        if (
+            self.app_env == "production"
+            and self.turnstile_secret_key.get_secret_value() in TURNSTILE_TEST_SECRETS
+        ):
+            msg = "TURNSTILE_SECRET_KEY is a Cloudflare test secret; not allowed in production"
+            raise ValueError(msg)
+        if not self.cors_allowed_origins:
+            # The browser calls the API from these origins, and solves Turnstile on them.
+            msg = f"CORS_ALLOWED_ORIGINS (the web app's origins) is required in {self.app_env}"
+            raise ValueError(msg)
+        if self.otp_sender == "console":
+            msg = f"OTP_SENDER=console logs sign-in codes; not allowed in {self.app_env}"
+            raise ValueError(msg)
+        return self
+
     @property
     def is_deployed(self) -> bool:
         return self.app_env in DEPLOYED_ENVIRONMENTS
+
+    @property
+    def web_hostnames(self) -> frozenset[str]:
+        """The web app's hostnames, from its CORS origins: where Turnstile may be solved."""
+        return frozenset(
+            host for origin in self.cors_allowed_origins if (host := urlsplit(origin).hostname)
+        )
 
 
 @lru_cache(maxsize=1)

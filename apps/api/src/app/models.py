@@ -6,13 +6,14 @@ from app.core.db import Base
 from app.core.flags import FeatureFlag
 from app.core.idempotency import IdempotencyRecord
 from app.core.outbox import OutboxJob
-from app.modules.identity.models import User, UserRole, UserSession
+from app.modules.identity.models import OtpChallenge, User, UserRole, UserSession
 
 __all__ = [
     "AuditLog",
     "Base",
     "FeatureFlag",
     "IdempotencyRecord",
+    "OtpChallenge",
     "OutboxJob",
     "User",
     "UserRole",

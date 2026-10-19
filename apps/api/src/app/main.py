@@ -3,6 +3,7 @@
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
+import httpx
 import structlog
 from fastapi import Depends
 from starlette.middleware.cors import CORSMiddleware
@@ -14,6 +15,7 @@ from app.core.csrf import require_csrf_token
 from app.core.db import create_engine, create_sessionmaker
 from app.core.errors import install_error_handlers
 from app.core.flags import FeatureFlags
+from app.core.human_check import DisabledHumanCheck, TurnstileCheck
 from app.core.logging import configure_logging
 from app.core.openapi import PROBLEM_RESPONSES, Api, operation_id
 from app.core.ratelimit import RateLimiter
@@ -21,6 +23,8 @@ from app.core.redis import create_redis
 from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
+from app.modules.identity.adapters.console_otp import ConsoleOtpSender
+from app.modules.identity.adapters.unavailable_otp import UnavailableOtpSender
 from app.modules.identity.router import router as identity_router
 from app.modules.system.router import router as system_router
 
@@ -54,6 +58,9 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
         engine = create_engine(settings, application_name=settings.otel_service_name)
         sessionmaker = create_sessionmaker(engine)
         redis = create_redis(settings)
+        # One HTTP client per outside provider, so a slow one can't use up another's connections,
+        # with the backend rule's timeouts.
+        turnstile_http = httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=3.0))
         tracer_provider = configure_tracing(settings, engine=engine)
         app.state.clock = clock
         app.state.engine = engine
@@ -63,10 +70,21 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
             redis, clock, secret=settings.secret_key.get_secret_value().encode()
         )
         app.state.flags = FeatureFlags(sessionmaker, clock)
+        app.state.human_check = (
+            DisabledHumanCheck()
+            if settings.turnstile_secret_key is None
+            else TurnstileCheck(
+                turnstile_http, settings.turnstile_secret_key, hostnames=settings.web_hostnames
+            )
+        )
+        app.state.otp_sender = (
+            ConsoleOtpSender() if settings.otp_sender == "console" else UnavailableOtpSender()
+        )
         logger.info("api started", environment=settings.app_env, version=SERVICE_VERSION)
         try:
             yield
         finally:
+            await turnstile_http.aclose()
             await redis.aclose()
             await engine.dispose()
             if tracer_provider is not None:
@@ -87,7 +105,7 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
         telemetry={"exclude": _is_probe},
     )
     app.state.cookies = CookiePolicy(domain=settings.session_cookie_domain)
-    app.state.csrf_secret = settings.secret_key.get_secret_value().encode()
+    app.state.secret_key = settings.secret_key.get_secret_value().encode()
     install_error_handlers(app)
     # Added innermost first, so a request passes RequestContext, SecurityHeaders, CORS and then
     # BodySizeLimit before reaching a route.

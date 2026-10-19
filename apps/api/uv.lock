@@ -1203,6 +1203,7 @@ dependencies = [
     { name = "alembic" },
     { name = "asyncpg" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-instrumentation-redis" },
     { name = "opentelemetry-instrumentation-sqlalchemy" },
@@ -1218,7 +1219,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "hypothesis" },
     { name = "import-linter" },
     { name = "mypy" },
@@ -1234,6 +1234,7 @@ requires-dist = [
     { name = "alembic", specifier = "==1.20.0" },
     { name = "asyncpg", specifier = "==0.32.0" },
     { name = "fastapi", specifier = "==0.143.0" },
+    { name = "httpx", specifier = "==0.28.1" },
     { name = "opentelemetry-exporter-otlp-proto-http", specifier = "==1.45.1" },
     { name = "opentelemetry-instrumentation-redis", specifier = "==0.66b1" },
     { name = "opentelemetry-instrumentation-sqlalchemy", specifier = "==0.66b1" },
@@ -1249,7 +1250,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "httpx", specifier = "==0.28.1" },
     { name = "hypothesis", specifier = "==6.169.0" },
     { name = "import-linter", specifier = "==2.15" },
     { name = "mypy", specifier = "==2.4.0" },

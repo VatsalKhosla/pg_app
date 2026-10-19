@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Final
 
-from app.core.actor import Actor, Role
+from app.core.actor import STAFF_ROLES, Actor, Role
 from app.modules.identity.domain.sessions import (
     POLICIES,
     EndReason,
@@ -135,6 +135,10 @@ class SessionService:
                     policy, now=now, absolute_expires_at=session.absolute_expires_at
                 )
             roles = await self._users.roles(user.id)
+            if session.kind == SessionKind.USER:
+                # Staff authority comes only from staff sign-in (Google, 12-hour sessions); a
+                # phone-OTP session never carries it, even for a staff member's account.
+                roles -= STAFF_ROLES
             actor = Actor(
                 user_id=user.id,
                 user_public_id=user.public_id,
@@ -204,9 +208,9 @@ class UserService:
         self._db = db
         self._users = UserRepository(db)
 
-    async def profile(self, actor: Actor) -> Profile | None:
+    async def profile(self, user_id: int) -> Profile | None:
         async with self._db.begin():
-            user = await self._users.get(actor.user_id)
+            user = await self._users.get(user_id)
             if user is None:
                 return None
             return Profile(

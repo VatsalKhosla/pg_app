@@ -64,7 +64,7 @@ def require_csrf_token(request: Request) -> None:
     """Refuse an unsafe request whose X-CSRF-Token header doesn't match a valid CSRF cookie."""
     if request.method not in UNSAFE_METHODS or request.url.path.startswith(EXEMPT_PREFIXES):
         return
-    secret: bytes = request.app.state.csrf_secret
+    secret: bytes = request.app.state.secret_key
     sent = request.headers.get(CSRF_HEADER, "")
     stored = request.cookies.get(CSRF_COOKIE, "")
     if not (

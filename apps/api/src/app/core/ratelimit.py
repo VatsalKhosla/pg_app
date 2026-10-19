@@ -113,6 +113,21 @@ def client_ip(request: Request) -> str:
     return request.client.host if request.client is not None else "unknown"
 
 
+async def enforce(limiter: RateLimiter, rule: RateLimit, subject: str) -> None:
+    """Count a hit for ``subject``; raise RateLimitedError (429) once over the limit. If Redis is
+    down, let the request through or refuse it with 503, as the rule says."""
+    try:
+        result = await limiter.hit(rule, subject)
+    except RedisError, OSError, TimeoutError:
+        logger.exception("rate limiter unavailable", limit=rule.name, fail_open=rule.fail_open)
+        if rule.fail_open:
+            return
+        raise ServiceUnavailableError("Please try again in a moment.") from None
+    if not result.allowed:
+        logger.info("rate limit exceeded", limit=rule.name)
+        raise RateLimitedError(result.retry_after)
+
+
 def rate_limited(
     rule: RateLimit, *, subject: Callable[[Request], str] = client_ip
 ) -> Callable[[Request], Awaitable[None]]:
@@ -120,15 +135,6 @@ def rate_limited(
 
     async def check(request: Request) -> None:
         limiter: RateLimiter = request.app.state.rate_limiter
-        try:
-            result = await limiter.hit(rule, subject(request))
-        except RedisError, OSError, TimeoutError:
-            logger.exception("rate limiter unavailable", limit=rule.name, fail_open=rule.fail_open)
-            if rule.fail_open:
-                return
-            raise ServiceUnavailableError("Please try again in a moment.") from None
-        if not result.allowed:
-            logger.info("rate limit exceeded", limit=rule.name)
-            raise RateLimitedError(result.retry_after)
+        await enforce(limiter, rule, subject(request))
 
     return check

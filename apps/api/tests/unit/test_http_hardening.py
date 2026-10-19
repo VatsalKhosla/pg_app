@@ -33,7 +33,14 @@ def test_json_responses_carry_the_security_headers(
 def test_deployed_environments_add_hsts_and_hide_the_interactive_docs(
     make_settings: SettingsFactory, request_app: Requester
 ) -> None:
-    app = create_app(make_settings(app_env="production", cors_allowed_origins=()))
+    app = create_app(
+        make_settings(
+            app_env="production",
+            cors_allowed_origins=("https://www.example.in",),
+            otp_sender="unavailable",
+            turnstile_secret_key="test-turnstile-secret",
+        )
+    )
 
     assert request_app(app, "GET", "/healthz").headers["strict-transport-security"] == HSTS
     assert request_app(app, "GET", "/docs").status_code == 404
