@@ -10,7 +10,7 @@ Two GitHub Actions workflows guard `main`. Every job runs `make` targets, so any
 |---|---|---|
 | API | ruff, import-linter, mypy, then all API tests. Integration tests run on PostGIS and Valkey containers, and property tests run 10,000 cases each. | `make lint-api typecheck-api test-api` |
 | Web | eslint, prettier, tsc, Vitest, then a production build | `make lint-web typecheck-web test-web web-build` |
-| Browser tests | Playwright on a production build, on phone and desktop. Any console error or CSP violation fails a test. | `make e2e` |
+| Browser tests | Playwright on a production build and the real API (on its own database, from `scripts/e2e-api.sh`), on phone and desktop. Any console error or CSP violation fails a test. | `make e2e` (needs Docker) |
 | API client | The committed `packages/api-client` matches the API | `make check-client` |
 | API contract | No breaking schema change since the target branch, or since the previous commit on `main` (oasdiff) | `make api-breaking BASE=origin/main` |
 | Workflows | actionlint, and zizmor's security audits of the workflows | `make lint-workflows` |
@@ -65,4 +65,4 @@ Renovate's configuration is `.github/renovate.json5`. It does nothing until a fo
   - If no fix exists and our code can't reach the flaw, record the advisory with the reason and date: `auditConfig.ignoreGhsas` in `pnpm-workspace.yaml` for JavaScript, an `--ignore-vuln` flag in `scripts/audit.sh` for Python. Review it again when a fix ships.
 - **API image:** usually a base-image fix; update the pinned digest in `apps/api/Dockerfile` (Renovate does this weekly).
 - **Secrets:** treat the secret as leaked. Rotate it first, then remove it from history with the founders.
-- **Browser tests:** the run keeps its Playwright report and traces as a `playwright-report` artifact for 14 days.
+- **Browser tests:** the run keeps its Playwright report, traces and the test API's log (`.e2e-api.log`) as a `playwright-report` artifact for 14 days.

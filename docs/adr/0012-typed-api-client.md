@@ -1,6 +1,6 @@
 # ADR 0012: Typed API client
 
-- Status: accepted
+- Status: accepted; the readonly response types (`--immutable`) are superseded by [ADR 0019](0019-web-sign-in.md)
 - Date: 2026-10-19
 - Build step: 0.6 (typed API client pipeline)
 

@@ -15,12 +15,13 @@ One file per real decision: the context, what was decided and what follows from 
 | [0009](0009-api-foundations.md) | API foundations: settings, logging, problem details, security headers, probes | Accepted |
 | [0010](0010-core-building-blocks.md) | Core building blocks: money, clock, ids, outbox, idempotency, audit, flags, limits | Accepted |
 | [0011](0011-web-foundations.md) | Web foundations: nonce CSP, server-side translations, the JavaScript budget, tests | Accepted |
-| [0012](0012-typed-api-client.md) | The typed API client: generated types, problem+json errors, the staleness check | Accepted |
+| [0012](0012-typed-api-client.md) | The typed API client: generated types, problem+json errors, the staleness check | Accepted; readonly types superseded by 0019 |
 | [0013](0013-ci-and-supply-chain.md) | CI and supply-chain security: GitHub Actions, scanners, Renovate | Accepted |
 | [0014](0014-sessions-and-csrf.md) | Sessions and CSRF: hashed opaque tokens, `__Secure-` cookies, sliding expiry, signed double-submit tokens | Accepted |
 | [0015](0015-phone-sign-in.md) | Phone sign-in: HMAC-stored one-time codes, layered abuse limits, Turnstile bound to the form and site, SMS behind a port | Accepted |
 | [0016](0016-staff-sign-in.md) | Staff sign-in: Google OIDC with PKCE and fully checked ID tokens, or a phone code plus an authenticator app; staff made only by operators; cursor pagination | Accepted |
 | [0017](0017-authorization.md) | Authorization: the actor from core, policy functions, 401/403/404, and a hand-written matrix of every route and caller enforced in CI | Accepted |
 | [0018](0018-consent-and-data-requests.md) | DPDP: consent per purpose and notice version, no account without it, exports and deletions with an ops queue, one retention schedule | Accepted |
+| [0019](0019-web-sign-in.md) | Web sign-in: the browser talks to the API, one site for both, sessions checked once per page, safe `next`, browser tests against the real API | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

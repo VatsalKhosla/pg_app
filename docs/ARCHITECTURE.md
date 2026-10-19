@@ -169,7 +169,7 @@ Built in step 0.4; ADR 0010 records the design choices.
 All tables have `id bigint generated always as identity`, `created_at`, `updated_at`; user-visible rows also have `public_id uuid unique`. Money columns end in `_paise` (`bigint`, `CHECK (>= 0)` unless noted). Rates are basis points (`_bps`). Times are `timestamptz` (UTC). Move-in/out are `date` (Asia/Kolkata).
 
 **Identity**
-- `users` (phone_e164 unique, email citext unique null, name, status), `user_roles` (user_id, role: `student | parent | owner | field_agent | ops | admin`).
+- `users` (phone_e164 unique, email citext unique null, name, college_or_workplace, gender `female | male | other` null: only to show PGs someone can stay in, status), `user_roles` (user_id, role: `student | parent | owner | field_agent | ops | admin`).
 - `otp_challenges` (public_id, phone_e164, purpose, code_hash, attempts, requested_at, expires_at, consumed_at, superseded_at, ip_address, user_agent).
 - `sessions` (public_id, user_id, token_hash, kind, started_at, last_seen_at, expires_at, absolute_expires_at, rotated_at, ended_at, end_reason, ip_address, user_agent).
 - `user_identities` (user_id, provider `google`, subject, email citext, last_used_at; unique (provider, subject) and (user_id, provider)): a staff member's linked Google account.
@@ -528,7 +528,7 @@ Public   GET  /v1/cities /v1/localities /v1/campuses
          POST /v1/quotes               GET /v1/quotes/{id}
 Auth     POST /v1/auth/otp/request     POST /v1/auth/otp/verify   GET /v1/auth/csrf
          POST /v1/auth/logout   POST /v1/auth/logout-everywhere
-         GET /v1/me   GET /v1/me/sessions   DELETE /v1/me/sessions/{session_id}
+         GET/PATCH /v1/me   GET /v1/me/sessions   DELETE /v1/me/sessions/{session_id}
          GET /v1/auth/staff/google   GET /v1/auth/staff/google/callback   POST /v1/auth/staff/totp
          GET /v1/privacy-notice   GET/POST /v1/me/consents   DELETE /v1/me/consents/{purpose}
 Student  POST/GET /v1/visits           POST /v1/visits/{id}/cancel
@@ -549,6 +549,11 @@ Compliance POST /v1/grievances   POST/GET /v1/me/data-requests   GET /v1/me/data
 
 - Route groups: `(marketing)` home, about, pricing, contact, legal pages; `(discover)` `/search`, `/pg/[slug]`, `/pg-near/[campus]`, `/pg-in/[locality]`; `(account)` login, profile; `(student)` `/visits`, `/bookings/[code]`; `/owner/*` dashboard; `/ops/*` console. Owner, ops and account routes are `noindex` and protected in `src/proxy.ts` (Next.js 16's name for middleware) **and** on the server.
 - Server Components by default; Client Components for the map, filters, booking flow and editors.
+- Signing in (ADR 0019):
+  - The browser calls the API itself for every session change, so the API sets its own cookies (the site and the API must be one site). The web server only forwards them.
+  - `getSession()` asks `/v1/me` once per page request, and not at all without a session cookie. The header shows Sign in, Your account or Staff tools.
+  - `/account` and `/staff` redirect to their sign-in page with a `next` that can only be a path on this site.
+  - The sign-in flow runs phone, code, consent (only when the API asks; nothing pre-ticked), then the profile, or the authenticator for staff. It ends with a full page load, so the layout's header picks up the new session.
 - Data: server-side calls through the typed client with cookies forwarded; client-side through TanStack Query with conventional query keys; no ad-hoc `fetch`. `src/lib/api` wraps the generated client (openapi-fetch): `getServerApi()` forwards only the API's own cookies and the page's request id and gives up after 3 s; `browserApi` sends credentials; `unwrap()` turns error responses and failed requests into a typed `ApiError` (ADR 0012).
 - The URL is the source of truth for search state (nuqs). Minimal global state.
 - `MapProvider` interface: `<MapView pins onBoundsChange onPinSelect selectedId overlays bounds />` with `GoogleMapView` and `MapLibreMapView` adapters.
@@ -606,7 +611,7 @@ Target OWASP ASVS level 2 for auth, booking, payments and personal data.
 | Integration | pytest + testcontainers (PostGIS image) | Repositories, exclusion constraint, hold concurrency, outbox, webhooks with signed fixtures, ledger balance |
 | Contract | schemathesis, oasdiff | API matches the schema; no breaking changes |
 | Web unit | Vitest, Testing Library, MSW | Components, hooks, formatting |
-| E2E | Playwright (+ FakeGateway or Razorpay test mode on staging) | Search → map → PG page → visit; quote → hold → token → confirm → check-in → active; dispute → refund; owner pricing edit → calendar |
+| E2E | Playwright against a production build and the real API on its own database (`scripts/e2e-api.sh`, ADR 0019) (+ FakeGateway or Razorpay test mode on staging) | Search → map → PG page → visit; quote → hold → token → confirm → check-in → active; dispute → refund; owner pricing edit → calendar |
 | Accessibility / performance | axe, Lighthouse CI | Key pages within budget |
 | Load | k6 | Search, map pins, hold race |
 | Security | authorization matrix, ZAP baseline, gitleaks, CodeQL | No regressions |

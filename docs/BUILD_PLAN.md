@@ -130,8 +130,16 @@ Start the slow ones in week 1.
 
   Waiting for the founders (ADR 0018): the notice's text (step 3.8, with a lawyer), what a deletion erases versus keeps, and the remaining retention periods.
 
-- [ ] **1.6 Web auth flows.** Phone → OTP → profile (name, college or workplace, gender for PG eligibility, with consent); session-aware header; protected route handling; staff login page.
+- [x] **1.6 Web auth flows.** Phone → OTP → profile (name, college or workplace, gender for PG eligibility, with consent); session-aware header; protected route handling; staff login page.
   *Done when* Playwright covers login, logout and protected-route redirects on mobile viewport.
+  *Note (2026-10-19):*
+  - `/sign-in` runs phone, code, consent (only when the API asks; nothing pre-ticked), then profile. `/account` has the profile, the offers toggle, data requests and sign-out. `/staff/sign-in` offers Google, or phone plus authenticator.
+  - The header knows the session. The proxy and the pages both guard `/account` and `/staff`, and `next` can't leave the site.
+  - The API gained `PATCH /v1/me` (college or workplace, and gender, optional and used only for PG eligibility).
+
+  The browser tests now run against the real API on its own database (`scripts/e2e-api.sh`), on phone and desktop. They cover sign-up, sign-out, the resend wait, a returning sign-in and the redirects, and they caught Zod's eval probe breaking the CSP (now jitless).
+
+  The generated client is no longer readonly: openapi-fetch's `Readable` breaks readonly arrays (ADR 0019).
 
 ## Phase 2 — Catalog and ops console
 
