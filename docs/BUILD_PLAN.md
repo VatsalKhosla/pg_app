@@ -80,8 +80,17 @@ Start the slow ones in week 1.
 
 ## Phase 1 — Identity and access
 
-- [ ] **1.1 Users, roles, sessions.** Tables from ARCHITECTURE §6; opaque session tokens (hash stored), cookie flags, rotation, logout, log out everywhere, session list, CSRF double-submit protection.
+- [x] **1.1 Users, roles, sessions.** Tables from ARCHITECTURE §6; opaque session tokens (hash stored), cookie flags, rotation, logout, log out everywhere, session list, CSRF double-submit protection.
   *Done when* tests check cookie flags, rotation, revocation and CSRF rejection.
+  *Note (2026-10-19):* Built as the `identity` module, with `users`, `user_roles` and `sessions` tables. 16 integration tests cover:
+  - cookie flags and the parent domain;
+  - sliding 30-day and absolute 12-hour expiry;
+  - rotation, and the replaced session ending at sign-in;
+  - logout, log out everywhere, ending one device, and 404 for another user's session;
+  - suspension, and retention;
+  - CSRF rejection, including a token bound to another session.
+
+  CSRF is a signed double-submit token, bound to the session and enforced app-wide. A test sweeps every unsafe route; FastAPI 0.143 nests included routers, so the sweep walks `iter_route_contexts` (ADR 0014). Sign-in itself arrives with OTP in 1.2.
 
 - [ ] **1.2 Phone OTP login.** Request and verify endpoints; HMAC-stored codes; expiry, attempt limits, resend cooldown, per-phone and per-IP limits; Turnstile check; `OtpSender` port with a console adapter (dev) and an adapter for the founders' chosen DLT provider (ask before picking).
   *Done when* login works end to end in dev, and abuse tests pass (sixth attempt locked, rate limit returns 429, expired code rejected).

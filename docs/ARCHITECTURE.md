@@ -465,8 +465,8 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 
 - **Students, parents, owners**: phone OTP. Six digits, stored as an HMAC with a server pepper, five-minute expiry, five attempts, 30-second resend cooldown, at most five sends per phone per hour and per IP limits, Cloudflare Turnstile before sending. Phone numbers normalised to E.164 (+91). SMS through a DLT-registered template behind an `OtpSender` port (console adapter in dev).
 - **Staff (ops, admin, field agents)**: Google Workspace sign-in (OIDC) restricted to the company domain with 2-step verification enforced, or OTP + TOTP until the domain exists. Shorter sessions (12 h).
-- **Sessions**: opaque 256-bit tokens; only a hash stored server-side; `HttpOnly; Secure; SameSite=Lax` cookie on the parent domain; 30-day sliding expiry for users; rotate on login and role change; logout and "log out everywhere"; session list in the profile.
-- **CSRF**: SameSite=Lax plus a double-submit CSRF token header on every state-changing request. CORS allowlist of exact origins.
+- **Sessions**: opaque 256-bit tokens; only their SHA-256 stored server-side; the `__Secure-session` cookie (`HttpOnly; Secure; SameSite=Lax`) on the parent domain (`SESSION_COOKIE_DOMAIN`); 30-day sliding expiry for users (moved at most every 10 minutes, with the cookie re-sent), 12 hours from sign-in for staff; signing in ends the browser's previous session, and `rotate()` renews the token on role changes; logout and "log out everywhere"; session list in the profile; ended sessions deleted after 30 days (ADR 0014).
+- **CSRF**: SameSite=Lax plus a signed double-submit token: `GET /v1/auth/csrf` sets `__Secure-csrf`, and every POST, PUT, PATCH and DELETE must echo it in `X-CSRF-Token`. Tokens are HMAC-signed with `SECRET_KEY` and bound to the session cookie. An app-wide dependency enforces this (deny by default; provider webhooks exempt), and a test sweeps every route. CORS allowlist of exact origins.
 - **Authorization**: deny by default; role checks plus object-level policies (an owner only sees their properties and their bookings; a student only their visits and bookings). Return 404 for another user's resources. Maintain an authorization matrix test that covers every endpoint × role.
 - **Parents**: a signed, expiring, read-only share link for a PG and a booking; a parent can pay the token from the link without an account (Phase 9).
 - **Consent (DPDP)**: versioned privacy notice accepted at signup and stored in `consents`; endpoints for data export and deletion requests; retention schedule enforced by a job.
@@ -487,7 +487,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 ## 15. API conventions
 
 - REST over JSON at `/v1`; plural nouns; JSON fields in camelCase (Pydantic alias generator), Python in snake_case.
-- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `OTP_INVALID`, `OTP_LOCKED`, `RATE_LIMITED`, `PRICING_CONFIG_ERROR`. Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status. Idempotency: `IDEMPOTENCY_KEY_REQUIRED` and `IDEMPOTENCY_KEY_INVALID` (400), `IDEMPOTENCY_KEY_REUSED` (422), `IDEMPOTENCY_KEY_CONFLICT` (409).
+- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `OTP_INVALID`, `OTP_LOCKED`, `RATE_LIMITED`, `PRICING_CONFIG_ERROR`. Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED` (401: no live session), `CSRF_TOKEN_INVALID` (403), `FORBIDDEN`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status. Idempotency: `IDEMPOTENCY_KEY_REQUIRED` and `IDEMPOTENCY_KEY_INVALID` (400), `IDEMPOTENCY_KEY_REUSED` (422), `IDEMPOTENCY_KEY_CONFLICT` (409).
 - Probes: `GET /healthz` (liveness) and `GET /readyz` (database and Redis reachable, 503 otherwise) sit outside `/v1`, need no authentication, and are left out of tracing and info-level access logs.
 - Money: integer paise with names ending in `Paise`; the client formats with `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`.
 - Dates: `YYYY-MM-DD` for move-in; timestamps in ISO 8601 UTC; display in IST.
@@ -502,7 +502,9 @@ Public   GET  /v1/cities /v1/localities /v1/campuses
          GET  /v1/search/properties    GET /v1/map/pins
          GET  /v1/properties/{slug}    GET /v1/properties/{id}/price-calendar
          POST /v1/quotes               GET /v1/quotes/{id}
-Auth     POST /v1/auth/otp/request     POST /v1/auth/otp/verify   POST /v1/auth/logout   GET /v1/me
+Auth     POST /v1/auth/otp/request     POST /v1/auth/otp/verify   GET /v1/auth/csrf
+         POST /v1/auth/logout   POST /v1/auth/logout-everywhere
+         GET /v1/me   GET /v1/me/sessions   DELETE /v1/me/sessions/{session_id}
 Student  POST/GET /v1/visits           POST /v1/visits/{id}/cancel
          POST /v1/bookings             GET /v1/bookings   GET /v1/bookings/{code}
          POST /v1/bookings/{code}/cancel | /check-in | /disputes

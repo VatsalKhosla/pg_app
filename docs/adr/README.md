@@ -17,5 +17,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0011](0011-web-foundations.md) | Web foundations: nonce CSP, server-side translations, the JavaScript budget, tests | Accepted |
 | [0012](0012-typed-api-client.md) | The typed API client: generated types, problem+json errors, the staleness check | Accepted |
 | [0013](0013-ci-and-supply-chain.md) | CI and supply-chain security: GitHub Actions, scanners, Renovate | Accepted |
+| [0014](0014-sessions-and-csrf.md) | Sessions and CSRF: hashed opaque tokens, `__Secure-` cookies, sliding expiry, signed double-submit tokens | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.
