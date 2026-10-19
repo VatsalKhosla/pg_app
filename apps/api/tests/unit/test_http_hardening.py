@@ -39,6 +39,7 @@ def test_deployed_environments_add_hsts_and_hide_the_interactive_docs(
             cors_allowed_origins=("https://www.example.in",),
             site_url="https://www.example.in",
             api_url="https://api.example.in",
+            privacy_notice_version="2027-01",
             otp_sender="unavailable",
             turnstile_secret_key="test-turnstile-secret",
         )

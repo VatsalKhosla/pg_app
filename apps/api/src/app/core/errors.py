@@ -87,6 +87,15 @@ class NotFoundError(AppError):
     title = "Not found"
 
 
+class InvalidTransitionError(AppError):
+    """A record can't move from its current state to the one asked for (a state machine said
+    no): already resolved, say, or not of a kind that can."""
+
+    status = 409
+    code = "INVALID_TRANSITION"
+    title = "That can't be done in the record's current state"
+
+
 class PayloadTooLargeError(AppError):
     status = 413
     code = "PAYLOAD_TOO_LARGE"

@@ -10,7 +10,12 @@ from app.core.actor import Actor
 from app.core.clock import Clock, ClockDep
 from app.core.cookies import SESSION_COOKIE, CookiePolicy
 from app.core.db import DbSession
-from app.modules.identity.service import OtpService, SessionService, StaffSignInService
+from app.modules.identity.service import (
+    ConsentService,
+    OtpService,
+    SessionService,
+    StaffSignInService,
+)
 
 
 def get_cookie_policy(request: Request) -> CookiePolicy:
@@ -46,7 +51,18 @@ async def authenticate_session(
     return authentication.actor
 
 
-def get_otp_service(request: Request, db: DbSession, clock: ClockDep) -> OtpService:
+def get_notice_version(request: Request) -> str:
+    """The current privacy notice's version (PRIVACY_NOTICE_VERSION)."""
+    version: str = request.app.state.privacy_notice_version
+    return version
+
+
+NoticeVersion = Annotated[str, Depends(get_notice_version)]
+
+
+def get_otp_service(
+    request: Request, db: DbSession, clock: ClockDep, notice_version: NoticeVersion
+) -> OtpService:
     state = request.app.state
     return OtpService(
         db,
@@ -55,10 +71,20 @@ def get_otp_service(request: Request, db: DbSession, clock: ClockDep) -> OtpServ
         sender=state.otp_sender,
         human_check=state.human_check,
         limiter=state.rate_limiter,
+        notice_version=notice_version,
     )
 
 
 OtpServiceDep = Annotated[OtpService, Depends(get_otp_service)]
+
+
+def get_consent_service(
+    db: DbSession, clock: ClockDep, notice_version: NoticeVersion
+) -> ConsentService:
+    return ConsentService(db, clock, notice_version=notice_version)
+
+
+ConsentServiceDep = Annotated[ConsentService, Depends(get_consent_service)]
 
 
 def get_staff_sign_in_service(

@@ -9,6 +9,10 @@ Abuse controls, in the order a request meets them:
 
 Responses never say whether a phone number has an account. Codes are HMACs under SECRET_KEY,
 bound to their challenge, and never stored or logged in plain text outside development.
+
+A first sign-in creates the account only with consent to the current privacy notice. Without it
+the answer is CONSENT_REQUIRED, given only once the code has proved to be right (so it says nothing
+to anyone without the phone), and the challenge stays usable for a second try with the consent.
 """
 
 import hmac
@@ -39,13 +43,15 @@ from app.modules.identity.domain.otp import (
 )
 from app.modules.identity.errors import (
     AccountSuspendedError,
+    ConsentRequiredError,
     OtpExpiredError,
     OtpInvalidError,
     OtpLockedError,
     OtpResendTooSoonError,
 )
 from app.modules.identity.models import OtpChallenge
-from app.modules.identity.repository import OtpRepository, UserRepository
+from app.modules.identity.repository import ConsentRepository, OtpRepository, UserRepository
+from app.modules.identity.service.consent import check_consent
 
 if TYPE_CHECKING:
     import uuid
@@ -58,6 +64,7 @@ if TYPE_CHECKING:
     from app.core.ratelimit import RateLimiter
     from app.modules.identity.models import User
     from app.modules.identity.ports import OtpSender
+    from app.modules.identity.service.consent import ConsentGiven
 
 # At most five codes per phone per hour; refuse while Redis is down, since each code costs an SMS.
 OTP_SENDS_PER_PHONE: Final = RateLimit(
@@ -104,6 +111,7 @@ class OtpService:
         sender: OtpSender,
         human_check: HumanCheck,
         limiter: RateLimiter,
+        notice_version: str,
     ) -> None:
         self._db = db
         self._clock = clock
@@ -111,8 +119,10 @@ class OtpService:
         self._sender = sender
         self._human_check = human_check
         self._limiter = limiter
+        self._notice_version = notice_version
         self._challenges = OtpRepository(db)
         self._users = UserRepository(db)
+        self._consents = ConsentRepository(db)
 
     def _code_hash(self, challenge: uuid.UUID, code: str) -> str:
         return keyed_digest(self._secret, purpose="otp", value=f"{challenge}:{code}")
@@ -179,12 +189,15 @@ class OtpService:
             resend_after=now + RESEND_COOLDOWN,
         )
 
-    async def verify(self, challenge_id: uuid.UUID, code: str) -> SignedIn:
-        """Check ``code`` against the challenge and sign the phone's owner in."""
+    async def verify(
+        self, challenge_id: uuid.UUID, code: str, *, consent: ConsentGiven | None = None
+    ) -> SignedIn:
+        """Check ``code`` against the challenge and sign the phone's owner in, recording
+        ``consent`` if given; a new account needs it."""
         now = self._clock.now()
         async with self._db.begin():
             challenge = await self._challenges.by_public_id_for_update(challenge_id)
-            outcome = await self._use(challenge, code, now)
+            outcome = await self._use(challenge, code, now, consent)
         # Committed by now: a wrong code counts as an attempt even though it is refused.
         if isinstance(outcome, OtpInvalidError):
             raise _refused("wrong_code", outcome)
@@ -196,7 +209,11 @@ class OtpService:
         return SignedIn(user_id=user.id, new_user=created)
 
     async def _use(
-        self, challenge: OtpChallenge | None, code: str, now: datetime
+        self,
+        challenge: OtpChallenge | None,
+        code: str,
+        now: datetime,
+        consent: ConsentGiven | None,
     ) -> tuple[User, bool] | OtpInvalidError:
         """Within the verify transaction: refuse an unusable challenge (nothing changes), count a
         wrong code, or consume a right one and find or create the account."""
@@ -217,8 +234,19 @@ class OtpService:
             left = attempts_left(challenge.attempts)
             detail = f"{left} attempts left." if left else "No attempts left; ask for a new code."
             return OtpInvalidError(detail)
+        existing = await self._users.by_phone(challenge.phone_e164)
+        if consent is not None:
+            check_consent(consent, notice_version=self._notice_version, signing_up=existing is None)
+        elif existing is None:
+            # Nothing has changed yet, so the challenge stays open for a try with the consent.
+            raise _refused("consent_required", ConsentRequiredError())
         challenge.consumed_at = now
-        return await self._users.get_or_create_by_phone(challenge.phone_e164)
+        user, created = await self._users.get_or_create_by_phone(challenge.phone_e164)
+        if consent is not None:
+            await self._consents.grant(
+                user.id, consent.purposes, notice_version=consent.notice_version, now=now
+            )
+        return user, created
 
 
 # What an unusable challenge answers. A used or replaced code is "invalid", like a wrong one.

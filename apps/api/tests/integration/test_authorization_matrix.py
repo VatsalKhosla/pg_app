@@ -20,6 +20,8 @@ from app.core.clock import FrozenClock
 from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
 from app.core.csrf import issue_csrf_token
 from app.main import create_app
+from app.modules.compliance.domain.requests import EXPORT_TTL, DataRequestKind, DataRequestStatus
+from app.modules.compliance.repository import DataExportRepository, DataRequestRepository
 from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.repository import UserRepository
 from app.modules.identity.service import SessionService
@@ -64,6 +66,36 @@ async def _start_session(app: FastAPI, user_id: int, kind: SessionKind) -> tuple
     return issued.token, str(issued.public_id)
 
 
+async def _someone_elses_request(app: FastAPI, kind: DataRequestKind) -> str:
+    """A data request of someone else's: an export ready to download, or an open deletion."""
+    user_id = await _add_user(app, Role.STUDENT)
+    now = app.state.clock.now()
+    async with app.state.sessionmaker() as db, db.begin():
+        request = await DataRequestRepository(db).insert_open(user_id, kind, now=now)
+        assert request is not None
+        if kind is DataRequestKind.EXPORT:
+            await DataExportRepository(db).put(request.id, b"{}")
+            request.status = DataRequestStatus.READY
+            request.expires_at = now + EXPORT_TTL
+        return str(request.public_id)
+
+
+async def _path_value(app: FastAPI, kind: str) -> str:
+    match kind:
+        case "someone_elses_session":
+            user_id = await _add_user(app, Role.STUDENT)
+            return (await _start_session(app, user_id, SessionKind.USER))[1]
+        case "someone_elses_export":
+            return await _someone_elses_request(app, DataRequestKind.EXPORT)
+        case "someone_elses_deletion_request":
+            return await _someone_elses_request(app, DataRequestKind.DELETION)
+        case "an_optional_purpose":
+            return "marketing"
+        case _:
+            msg = f"no way to make {kind!r}"
+            raise LookupError(msg)
+
+
 def _headers(token: str | None, *, unsafe: bool) -> dict[str, str]:
     cookies = [] if token is None else [f"{SESSION_COOKIE}={token}"]
     headers: dict[str, str] = {}
@@ -92,18 +124,17 @@ def test_every_caller_gets_what_the_authorization_matrix_says(
                 caller: (await _add_user(app, role), kind)
                 for caller, (role, kind) in SIGNED_IN.items()
             }
-            _, someone_elses_session = await _start_session(
-                app, await _add_user(app, Role.STUDENT), SessionKind.USER
-            )
-            records = {"session_id": someone_elses_session}
             transport = httpx.ASGITransport(app=app, client=(address, 50_000))
             wrong: list[str] = []
             async with httpx.AsyncClient(
                 transport=transport, base_url="https://api.test"
             ) as client:
                 for (method, path), rule in MATRIX.items():
-                    url = path.format(**records)
                     for caller in CALLERS:
+                        values = {
+                            name: await _path_value(app, kind) for name, kind in rule.path.items()
+                        }
+                        url = path.format(**values)
                         token = None
                         if caller in accounts:
                             token, _ = await _start_session(app, *accounts[caller])

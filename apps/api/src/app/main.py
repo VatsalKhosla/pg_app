@@ -23,6 +23,7 @@ from app.core.redis import create_redis
 from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
+from app.modules.compliance.router import router as compliance_router
 from app.modules.identity.adapters.console_otp import ConsoleOtpSender
 from app.modules.identity.adapters.google_oidc import GoogleOidc
 from app.modules.identity.adapters.unavailable_otp import UnavailableOtpSender
@@ -127,6 +128,7 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
     # Who a request's session belongs to, for every module's CurrentActor.
     app.state.authenticate = authenticate_session
     app.state.site_url = settings.site_url
+    app.state.privacy_notice_version = settings.privacy_notice_version
     app.state.staff_google_domains = settings.staff_google_domains
     app.state.staff_google_emails = settings.staff_google_emails
     install_error_handlers(app)
@@ -146,4 +148,5 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
     app.add_middleware(RequestContextMiddleware)
     app.include_router(system_router)
     app.include_router(identity_router)
+    app.include_router(compliance_router)
     return app

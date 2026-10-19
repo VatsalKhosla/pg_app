@@ -9,7 +9,7 @@ import secrets
 import uuid
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Final
 
 import httpx
 import pytest
@@ -26,7 +26,7 @@ from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.models import OtpChallenge, User
 from app.modules.identity.repository import UserRepository
 from app.modules.identity.service import SessionService, delete_old_challenges
-from tests.conftest import TEST_SECRET_KEY
+from tests.conftest import NOTICE_VERSION, TEST_SECRET_KEY
 
 pytestmark = pytest.mark.integration
 
@@ -131,6 +131,11 @@ async def _request_code(
     )
 
 
+# What the web app sends with a code: consent to the current privacy notice's account purpose,
+# which a first sign-in needs (tests/integration/test_consent.py covers going without).
+CONSENT: Final = {"noticeVersion": NOTICE_VERSION, "purposes": ["account"]}
+
+
 async def _verify(
     client: httpx.AsyncClient,
     challenge_id: str,
@@ -140,7 +145,7 @@ async def _verify(
 ) -> httpx.Response:
     return await client.post(
         "/v1/auth/otp/verify",
-        json={"challengeId": challenge_id, "code": code},
+        json={"challengeId": challenge_id, "code": code, "consent": CONSENT},
         headers=headers or _browser(),
     )
 
@@ -363,7 +368,10 @@ def test_a_number_that_isnt_an_indian_mobile_is_a_field_error(run: Callable[...,
         assert response.status_code == 422
         error = response.json()["errors"][0]
         assert (error["pointer"], error["code"]) == ("/phone", "phone_invalid")
-        assert "415" not in response.text
+        # The rejected number isn't echoed back. (Not just "415": the response's random request
+        # and trace ids may contain that.)
+        assert "415 555 0123" not in response.text
+        assert "4155550123" not in response.text
 
     run(scenario)
 

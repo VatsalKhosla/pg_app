@@ -121,7 +121,7 @@ def test_a_session_cookie_identifies_the_user(run: Callable[..., Any]) -> None:
         body = response.json()
         assert body["phone"].startswith("+91")
         assert body["roles"] == ["parent", "student"]
-        assert set(body) == {"id", "phone", "email", "name", "roles"}
+        assert set(body) == {"id", "phone", "email", "name", "roles", "consentRequired"}
 
     run(scenario)
 

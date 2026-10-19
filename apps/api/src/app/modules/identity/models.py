@@ -14,6 +14,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    text,
 )
 from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.orm import Mapped, mapped_column
@@ -21,12 +22,15 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.actor import Role
 from app.core.db import Model
 from app.core.ids import new_public_id
+from app.modules.identity.domain.consent import ConsentPurpose
 from app.modules.identity.domain.otp import OtpPurpose
 from app.modules.identity.domain.sessions import EndReason, SessionKind
 from app.modules.identity.domain.staff import IdentityProvider
 from app.modules.identity.domain.totp import SALT_BYTES
 
-type _Choices = type[Role | SessionKind | EndReason | OtpPurpose | IdentityProvider]
+type _Choices = type[
+    Role | SessionKind | EndReason | OtpPurpose | IdentityProvider | ConsentPurpose
+]
 
 
 def _one_of(column: str, values: _Choices) -> str:
@@ -155,3 +159,31 @@ class TotpCredential(Model):
     last_used_step: Mapped[int | None] = mapped_column(BigInteger)
 
     __table_args__ = (CheckConstraint(f"octet_length(salt) = {SALT_BYTES}", name="salt"),)
+
+
+class Consent(Model):
+    """One purpose a user agreed to, under one version of the privacy notice (DPDP). Rows are never
+    deleted while the account exists: withdrawing sets ``withdrawn_at``, so the history shows what
+    was agreed and when (the proof the DPDP Act asks the platform to keep)."""
+
+    __tablename__ = "consents"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"))
+    purpose: Mapped[str] = mapped_column(Text)
+    notice_version: Mapped[str] = mapped_column(Text)
+    granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        CheckConstraint(_one_of("purpose", ConsentPurpose), name="purpose"),
+        Index("ix_consents_user_id", "user_id"),
+        # One active consent per purpose and notice version.
+        Index(
+            "uq_consents_active",
+            "user_id",
+            "purpose",
+            "notice_version",
+            unique=True,
+            postgresql_where=text("withdrawn_at IS NULL"),
+        ),
+    )

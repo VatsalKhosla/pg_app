@@ -33,6 +33,7 @@ def environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.Monke
         "GOOGLE_CLIENT_SECRET",
         "STAFF_GOOGLE_DOMAINS",
         "STAFF_GOOGLE_EMAILS",
+        "PRIVACY_NOTICE_VERSION",
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("DATABASE_URL", DATABASE_URL)
@@ -50,6 +51,7 @@ def _deployed(environment: pytest.MonkeyPatch, app_env: str = "production") -> p
         "API_URL": "https://api.example.in",
         "TURNSTILE_SECRET_KEY": "a-turnstile-secret",
         "OTP_SENDER": "unavailable",
+        "PRIVACY_NOTICE_VERSION": "2027-01",
     }.items():
         environment.setenv(name, value)
     return environment
@@ -316,4 +318,27 @@ def test_the_session_cookie_domain_must_be_a_bare_domain(
     environment.setenv("SESSION_COOKIE_DOMAIN", domain)
 
     with pytest.raises(ValidationError, match="session_cookie_domain"):
+        Settings()
+
+
+def test_production_needs_a_reviewed_privacy_notice(environment: pytest.MonkeyPatch) -> None:
+    _deployed(environment).setenv("PRIVACY_NOTICE_VERSION", "draft-2")
+
+    with pytest.raises(ValidationError, match="PRIVACY_NOTICE_VERSION is a draft"):
+        Settings()
+
+
+def test_staging_may_run_with_a_draft_privacy_notice(environment: pytest.MonkeyPatch) -> None:
+    _deployed(environment, "staging").setenv("PRIVACY_NOTICE_VERSION", "draft-2")
+
+    assert Settings().privacy_notice_version == "draft-2"
+
+
+@pytest.mark.parametrize("version", ["", "Draft 1", "v1/2", "x" * 65])
+def test_a_privacy_notice_version_is_a_short_lowercase_label(
+    environment: pytest.MonkeyPatch, version: str
+) -> None:
+    environment.setenv("PRIVACY_NOTICE_VERSION", version)
+
+    with pytest.raises(ValidationError, match="privacy_notice_version"):
         Settings()

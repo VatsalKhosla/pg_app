@@ -25,6 +25,8 @@ hypothesis_settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "dev"))
 UNREACHABLE_DATABASE_URL = "postgresql+asyncpg://test:test@127.0.0.1:9/test"
 UNREACHABLE_REDIS_URL = "redis://:test@127.0.0.1:9/0"
 TEST_SECRET_KEY = "test-only-secret-key-0123456789abcdef"
+# The privacy notice version tests run with: the settings' default.
+NOTICE_VERSION = Settings.model_fields["privacy_notice_version"].default
 
 
 class IsolatedSettings(Settings):

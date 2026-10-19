@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Final
 
 from app.core.actor import STAFF_ROLES, Actor, Role
+from app.modules.identity.domain.consent import is_current
 from app.modules.identity.domain.sessions import (
     POLICIES,
     EndReason,
@@ -24,10 +25,15 @@ from app.modules.identity.domain.sessions import (
 )
 from app.modules.identity.models import UserSession
 from app.modules.identity.policies import can_end_session
-from app.modules.identity.repository import SessionRepository, UserRepository
+from app.modules.identity.repository import (
+    ConsentRepository,
+    SessionRepository,
+    UserRepository,
+)
 
 if TYPE_CHECKING:
     import uuid
+    from collections.abc import Iterable
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -204,25 +210,48 @@ class Profile:
     email: str | None
     name: str | None
     roles: frozenset[Role]
+    # The account's consent isn't for the current privacy notice: ask for it again.
+    consent_required: bool
+
+
+@dataclass(frozen=True)
+class Person:
+    """Whose record something is, for other modules' staff tools."""
+
+    public_id: uuid.UUID
+    phone_e164: str
+    name: str | None
 
 
 class UserService:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
         self._users = UserRepository(db)
+        self._consents = ConsentRepository(db)
 
-    async def profile(self, user_id: int) -> Profile | None:
+    async def profile(self, user_id: int, *, notice_version: str) -> Profile | None:
         async with self._db.begin():
             user = await self._users.get(user_id)
             if user is None:
                 return None
+            active = await self._consents.active(user.id)
             return Profile(
                 public_id=user.public_id,
                 phone_e164=user.phone_e164,
                 email=user.email,
                 name=user.name,
                 roles=await self._users.roles(user.id),
+                consent_required=not is_current(active, notice_version=notice_version),
             )
+
+    async def people(self, user_ids: Iterable[int]) -> dict[int, Person]:
+        """The people behind internal user ids (unknown ids are left out)."""
+        async with self._db.begin():
+            users = await self._users.many(user_ids)
+        return {
+            user.id: Person(public_id=user.public_id, phone_e164=user.phone_e164, name=user.name)
+            for user in users
+        }
 
 
 async def delete_finished_sessions(db: AsyncSession, clock: Clock) -> int:

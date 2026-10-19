@@ -74,3 +74,26 @@ class TotpInvalidError(AppError):
     status = 400
     code = "TOTP_INVALID"
     title = "That authenticator code isn't right"
+
+
+class ConsentRequiredError(AppError):
+    """A first sign-in creates the account only with consent to the privacy notice's required
+    purposes. The code stays usable: send it again with the consent."""
+
+    status = 400
+    code = "CONSENT_REQUIRED"
+    title = "Agree to the privacy notice to create your account"
+
+
+class PrivacyNoticeChangedError(AppError):
+    """The consent names a privacy notice version that isn't the current one."""
+
+    status = 409
+    code = "PRIVACY_NOTICE_CHANGED"
+    title = "The privacy notice has changed; please read the new one"
+
+
+class ConsentNeededForAccountError(AppError):
+    status = 409
+    code = "CONSENT_NEEDED_FOR_ACCOUNT"
+    title = "The account can't run without this consent; ask for the account's deletion instead"

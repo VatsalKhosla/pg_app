@@ -6,16 +6,30 @@ from app.core.db import Base
 from app.core.flags import FeatureFlag
 from app.core.idempotency import IdempotencyRecord
 from app.core.outbox import OutboxJob
-from app.modules.identity.models import OtpChallenge, User, UserRole, UserSession
+from app.modules.compliance.models import DataExport, DataRequest
+from app.modules.identity.models import (
+    Consent,
+    OtpChallenge,
+    TotpCredential,
+    User,
+    UserIdentity,
+    UserRole,
+    UserSession,
+)
 
 __all__ = [
     "AuditLog",
     "Base",
+    "Consent",
+    "DataExport",
+    "DataRequest",
     "FeatureFlag",
     "IdempotencyRecord",
     "OtpChallenge",
     "OutboxJob",
+    "TotpCredential",
     "User",
+    "UserIdentity",
     "UserRole",
     "UserSession",
 ]

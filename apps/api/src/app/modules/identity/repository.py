@@ -8,8 +8,10 @@ from sqlalchemy.dialects.postgresql import insert
 
 from app.core.actor import STAFF_ROLES, Role
 from app.core.ids import new_public_id
+from app.modules.identity.domain.consent import ConsentPurpose
 from app.modules.identity.domain.staff import IdentityProvider
 from app.modules.identity.models import (
+    Consent,
     OtpChallenge,
     TotpCredential,
     User,
@@ -42,6 +44,12 @@ class UserRepository:
 
     async def get(self, user_id: int) -> User | None:
         return await self._db.get(User, user_id)
+
+    async def many(self, user_ids: Iterable[int]) -> list[User]:
+        ids = sorted(set(user_ids))
+        if not ids:
+            return []
+        return list(await self._db.scalars(select(User).where(User.id.in_(ids))))
 
     async def get_or_create_by_phone(self, phone_e164: str) -> tuple[User, bool]:
         """The account for ``phone_e164``, created (without roles) if there is none yet. Safe when
@@ -165,6 +173,15 @@ class SessionRepository:
     async def by_public_id(self, public_id: uuid.UUID) -> UserSession | None:
         return await self._db.scalar(select(UserSession).where(UserSession.public_id == public_id))
 
+    async def all_for_user(self, user_id: int) -> list[UserSession]:
+        """Every session the user still has a record of, live or ended (for their data export)."""
+        rows = await self._db.scalars(
+            select(UserSession)
+            .where(UserSession.user_id == user_id)
+            .order_by(UserSession.started_at)
+        )
+        return list(rows)
+
     async def end_by_token(self, token_hash: bytes, *, reason: EndReason, now: datetime) -> int:
         ended = await self._db.scalars(
             update(UserSession)
@@ -234,6 +251,14 @@ class OtpRepository:
     async def delete(self, challenge_id: int) -> None:
         await self._db.execute(delete(OtpChallenge).where(OtpChallenge.id == challenge_id))
 
+    async def for_phone(self, phone_e164: str) -> list[OtpChallenge]:
+        rows = await self._db.scalars(
+            select(OtpChallenge)
+            .where(OtpChallenge.phone_e164 == phone_e164)
+            .order_by(OtpChallenge.requested_at)
+        )
+        return list(rows)
+
     async def delete_requested_before(self, before: datetime) -> int:
         deleted = await self._db.scalars(
             delete(OtpChallenge)
@@ -296,3 +321,64 @@ class TotpRepository:
             .returning(TotpCredential.id)
         )
         return bool(deleted.all())
+
+
+class ConsentRepository:
+    def __init__(self, db: AsyncSession) -> None:
+        self._db = db
+
+    async def grant(
+        self,
+        user_id: int,
+        purposes: Iterable[ConsentPurpose],
+        *,
+        notice_version: str,
+        now: datetime,
+    ) -> None:
+        """Record consent to ``purposes`` under ``notice_version``; ones already active stay."""
+        values = [
+            {
+                "user_id": user_id,
+                "purpose": purpose,
+                "notice_version": notice_version,
+                "granted_at": now,
+            }
+            for purpose in purposes
+        ]
+        if values:
+            await self._db.execute(
+                insert(Consent)
+                .values(values)
+                .on_conflict_do_nothing(
+                    index_elements=[Consent.user_id, Consent.purpose, Consent.notice_version],
+                    index_where=Consent.withdrawn_at.is_(None),
+                )
+            )
+
+    async def active(self, user_id: int) -> frozenset[tuple[ConsentPurpose, str]]:
+        rows = await self._db.execute(
+            select(Consent.purpose, Consent.notice_version).where(
+                Consent.user_id == user_id, Consent.withdrawn_at.is_(None)
+            )
+        )
+        return frozenset((ConsentPurpose(purpose), version) for purpose, version in rows)
+
+    async def history(self, user_id: int) -> list[Consent]:
+        rows = await self._db.scalars(
+            select(Consent).where(Consent.user_id == user_id).order_by(Consent.id)
+        )
+        return list(rows)
+
+    async def withdraw(self, user_id: int, purpose: ConsentPurpose, *, now: datetime) -> int:
+        """End every active consent to ``purpose``, whatever notice it was given under."""
+        ended = await self._db.scalars(
+            update(Consent)
+            .where(
+                Consent.user_id == user_id,
+                Consent.purpose == purpose,
+                Consent.withdrawn_at.is_(None),
+            )
+            .values(withdrawn_at=now)
+            .returning(Consent.id)
+        )
+        return len(ended.all())

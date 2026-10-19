@@ -10,6 +10,7 @@ from pydantic_core import PydanticCustomError
 from app.core.actor import Role
 from app.core.human_check import MAX_TOKEN_LENGTH
 from app.core.schemas import ApiModel
+from app.modules.identity.domain.consent import ConsentPurpose
 from app.modules.identity.domain.otp import CODE_DIGITS, HUMAN_CHECK_ACTION
 from app.modules.identity.domain.phones import normalize_indian_mobile
 from app.modules.identity.domain.totp import DIGITS as TOTP_DIGITS
@@ -39,6 +40,9 @@ class Me(ApiModel):
     email: str | None
     name: str | None
     roles: list[Role]
+    # The privacy notice changed since the account's consent: show the new one and ask again
+    # (POST /v1/me/consents).
+    consent_required: bool
 
 
 class SessionInfo(ApiModel):
@@ -81,9 +85,20 @@ class OtpChallengeIssued(ApiModel):
     resend_after: datetime
 
 
+class ConsentInput(ApiModel):
+    """What the person agreed to: the privacy notice version they were shown (GET
+    /v1/privacy-notice), and the purposes they chose themselves (never pre-ticked)."""
+
+    notice_version: str = Field(min_length=1, max_length=64)
+    purposes: list[ConsentPurpose] = Field(max_length=len(ConsentPurpose))
+
+
 class OtpVerify(ApiModel):
     challenge_id: uuid.UUID
     code: str = Field(pattern=rf"^[0-9]{{{CODE_DIGITS}}}$")
+    # Needed to create an account (a first sign-in answers CONSENT_REQUIRED without it, and the
+    # code stays usable); optional for an account that already exists.
+    consent: ConsentInput | None = None
 
 
 class SignInResult(ApiModel):
@@ -125,3 +140,30 @@ class StaffPage(ApiModel):
     items: list[StaffMember]
     # Pass as ``cursor`` for the next page; null on the last one.
     next_cursor: uuid.UUID | None
+
+
+class NoticePurpose(ApiModel):
+    purpose: ConsentPurpose
+    # The account needs it; the others are the person's choice, and off unless they choose them.
+    required: bool
+
+
+class PrivacyNoticeInfo(ApiModel):
+    """The current privacy notice: its version, which consent must name, and its purposes. The
+    notice's text is the web app's."""
+
+    version: str
+    purposes: list[NoticePurpose]
+
+
+class ConsentRecord(ApiModel):
+    purpose: ConsentPurpose
+    notice_version: str
+    granted_at: datetime
+    withdrawn_at: datetime | None
+
+
+class ConsentList(ApiModel):
+    """Every consent the account has given, oldest first, withdrawn ones included."""
+
+    consents: list[ConsentRecord]

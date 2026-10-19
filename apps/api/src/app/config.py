@@ -95,6 +95,10 @@ class Settings(DatabaseSettings):
     # the account must also have been made staff (python -m app.manage staff add).
     staff_google_domains: Annotated[frozenset[str], NoDecode] = frozenset()
     staff_google_emails: Annotated[frozenset[str], NoDecode] = frozenset()
+    # The version of the privacy notice the web app shows, which every consent records (DPDP).
+    # Changing it asks everyone to agree again. A "draft" one (not yet reviewed by a lawyer)
+    # can't go to production.
+    privacy_notice_version: str = Field(default="draft-1", pattern=r"^[a-z0-9][a-z0-9.-]{0,63}$")
 
     # Worker: concurrent outbox consumers, jobs per claim, idle poll interval, job lease.
     worker_concurrency: int = Field(default=2, ge=1)
@@ -225,6 +229,15 @@ class Settings(DatabaseSettings):
             raise ValueError(msg)
         if self.otp_sender == "console":
             msg = f"OTP_SENDER=console logs sign-in codes; not allowed in {self.app_env}"
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def _reviewed_privacy_notice_in_production(self) -> Self:
+        if self.app_env == "production" and self.privacy_notice_version.startswith("draft"):
+            msg = (
+                "PRIVACY_NOTICE_VERSION is a draft; production needs the reviewed notice's version"
+            )
             raise ValueError(msg)
         return self
 

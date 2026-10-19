@@ -1,7 +1,7 @@
 import re
 
 from app.main import create_app
-from tests.authorization import CALLERS, MATRIX, OTHERS_RECORDS, api_routes
+from tests.authorization import CALLERS, MATRIX, PATH_VALUES, api_routes
 from tests.conftest import build_settings
 
 ROUTES = api_routes(create_app(build_settings()))
@@ -23,7 +23,12 @@ def test_every_entry_says_what_each_caller_gets() -> None:
     assert incomplete == []
 
 
-def test_every_path_parameter_names_a_kind_of_record_the_matrix_can_make() -> None:
-    parameters = {name for _, path in MATRIX for name in re.findall(r"\{([^}]+)\}", path)}
+def test_every_path_parameter_says_what_fills_it() -> None:
+    unfilled = [
+        (method, path)
+        for (method, path), rule in MATRIX.items()
+        if set(re.findall(r"\{([^}]+)\}", path)) != set(rule.path)
+        or not set(rule.path.values()) <= PATH_VALUES
+    ]
 
-    assert parameters <= OTHERS_RECORDS
+    assert unfilled == []

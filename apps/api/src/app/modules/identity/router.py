@@ -17,15 +17,28 @@ from app.core.db import DbSession
 from app.core.errors import AppError, ForbiddenError, NotFoundError, UnauthenticatedError
 from app.core.pagination import PageParams
 from app.core.ratelimit import RateLimit, client_ip, rate_limited
-from app.modules.identity.auth import CookiesDep, OtpServiceDep, StaffSignInDep
+from app.modules.identity.auth import (
+    ConsentServiceDep,
+    CookiesDep,
+    NoticeVersion,
+    OtpServiceDep,
+    StaffSignInDep,
+)
+from app.modules.identity.domain.consent import ConsentPurpose
 from app.modules.identity.domain.sessions import SessionKind
+from app.modules.identity.models import Consent
 from app.modules.identity.policies import can_list_staff
 from app.modules.identity.schemas import (
+    ConsentInput,
+    ConsentList,
+    ConsentRecord,
     CsrfToken,
     Me,
+    NoticePurpose,
     OtpChallengeIssued,
     OtpRequest,
     OtpVerify,
+    PrivacyNoticeInfo,
     SessionInfo,
     SessionList,
     SignInResult,
@@ -35,10 +48,12 @@ from app.modules.identity.schemas import (
     StaffTotpSignIn,
 )
 from app.modules.identity.service import (
+    ConsentGiven,
     Profile,
     SessionService,
     StaffDirectory,
     UserService,
+    privacy_notice,
 )
 from app.modules.identity.service.staff import LOGIN_TTL
 
@@ -76,6 +91,25 @@ def _me(profile: Profile, roles: frozenset[Role]) -> Me:
         email=profile.email,
         name=profile.name,
         roles=sorted(roles),
+        consent_required=profile.consent_required,
+    )
+
+
+def _consent(given: ConsentInput) -> ConsentGiven:
+    return ConsentGiven(notice_version=given.notice_version, purposes=frozenset(given.purposes))
+
+
+def _consent_list(consents: list[Consent]) -> ConsentList:
+    return ConsentList(
+        consents=[
+            ConsentRecord(
+                purpose=ConsentPurpose(consent.purpose),
+                notice_version=consent.notice_version,
+                granted_at=consent.granted_at,
+                withdrawn_at=consent.withdrawn_at,
+            )
+            for consent in consents
+        ]
     )
 
 
@@ -110,8 +144,8 @@ async def _start_session(
     return csrf
 
 
-async def _profile(db: DbSession, user_id: int) -> Profile:
-    profile = await UserService(db).profile(user_id)
+async def _profile(db: DbSession, user_id: int, notice_version: str) -> Profile:
+    profile = await UserService(db).profile(user_id, notice_version=notice_version)
     if profile is None:  # pragma: no cover - the user was just found or created
         raise UnauthenticatedError
     return profile
@@ -163,10 +197,16 @@ async def verify_otp(
     clock: ClockDep,
     cookies: CookiesDep,
     otp: OtpServiceDep,
+    notice_version: NoticeVersion,
 ) -> SignInResult:
-    """Checks the code and signs the phone's owner in, creating the account on first sign-in.
-    Sets the session and CSRF cookies; any earlier session in this browser ends."""
-    signed_in = await otp.verify(body.challenge_id, body.code)
+    """Checks the code and signs the phone's owner in, creating the account on first sign-in,
+    which needs consent to the privacy notice. Sets the session and CSRF cookies; any earlier
+    session in this browser ends."""
+    signed_in = await otp.verify(
+        body.challenge_id,
+        body.code,
+        consent=None if body.consent is None else _consent(body.consent),
+    )
     csrf = await _start_session(
         request,
         response,
@@ -176,7 +216,7 @@ async def verify_otp(
         clock=clock,
         cookies=cookies,
     )
-    profile = await _profile(db, signed_in.user_id)
+    profile = await _profile(db, signed_in.user_id, notice_version)
     return SignInResult(
         user=_me(profile, profile.roles - STAFF_ROLES),
         csrf_token=csrf,
@@ -288,6 +328,7 @@ async def staff_totp_sign_in(
     clock: ClockDep,
     cookies: CookiesDep,
     staff: StaffSignInDep,
+    notice_version: NoticeVersion,
 ) -> StaffSignInResult:
     """For staff without Google sign-in: after signing in by phone, a code from the authenticator
     app set up for them gives a staff session (12 hours), which replaces the phone session."""
@@ -301,7 +342,7 @@ async def staff_totp_sign_in(
         clock=clock,
         cookies=cookies,
     )
-    profile = await _profile(db, user_id)
+    profile = await _profile(db, user_id, notice_version)
     return StaffSignInResult(user=_me(profile, profile.roles), csrf_token=csrf)
 
 
@@ -329,13 +370,53 @@ async def logout_everywhere(
 
 
 @router.get("/me", summary="The signed-in user")
-async def me(actor: CurrentActor, db: DbSession) -> Me:
+async def me(actor: CurrentActor, db: DbSession, notice_version: NoticeVersion) -> Me:
     """The account, with the roles this session carries (a phone sign-in never carries staff
-    roles)."""
-    profile = await UserService(db).profile(actor.user_id)
+    roles), and whether its consent must be asked for again."""
+    profile = await UserService(db).profile(actor.user_id, notice_version=notice_version)
     if profile is None:
         raise UnauthenticatedError
     return _me(profile, actor.roles)
+
+
+@router.get("/privacy-notice", summary="The current privacy notice's version and purposes")
+async def current_privacy_notice(notice_version: NoticeVersion) -> PrivacyNoticeInfo:
+    """What consent must name. The notice's text is the web app's, under the same version."""
+    notice = privacy_notice(notice_version)
+    return PrivacyNoticeInfo(
+        version=notice.version,
+        purposes=[
+            NoticePurpose(purpose=purpose, required=required)
+            for purpose, required in notice.purposes
+        ],
+    )
+
+
+@router.get("/me/consents", summary="What the account has agreed to")
+async def my_consents(actor: CurrentActor, consents: ConsentServiceDep) -> ConsentList:
+    return _consent_list(await consents.history(actor.user_id))
+
+
+@router.post("/me/consents", summary="Agree to the current notice, or to an optional purpose")
+async def give_consent(
+    body: ConsentInput, actor: CurrentActor, consents: ConsentServiceDep
+) -> ConsentList:
+    """Records consent to the purposes given, under the current notice (409
+    PRIVACY_NOTICE_CHANGED for any other version). Purposes already agreed to stay as they are."""
+    return _consent_list(await consents.grant(actor.user_id, _consent(body)))
+
+
+@router.delete(
+    "/me/consents/{purpose}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Withdraw consent to an optional purpose",
+)
+async def withdraw_consent(
+    purpose: ConsentPurpose, actor: CurrentActor, consents: ConsentServiceDep
+) -> None:
+    """Safe to repeat. The account's own purposes can't be withdrawn while it exists (409
+    CONSENT_NEEDED_FOR_ACCOUNT): ask for its deletion instead."""
+    await consents.withdraw(actor.user_id, purpose)
 
 
 @router.get("/me/sessions", summary="Where this account is signed in")

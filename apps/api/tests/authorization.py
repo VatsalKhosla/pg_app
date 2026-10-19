@@ -6,18 +6,21 @@ means changing this table in the same review. tests/unit/test_authorization_cove
 a route has no entry here, or an entry has no route; tests/integration/test_authorization_matrix.py
 calls every route as every caller and compares.
 
-Path parameters are filled with someone else's records, so a route about one record must answer
-404 to anyone but its owner, rather than reveal that it exists.
+Each entry says what fills its path parameters, from PATH_VALUES, made afresh for every call.
+Records are someone else's, so a route about one record must answer 404 to anyone but its owner,
+rather than reveal that it exists.
 """
 
 import secrets
 import uuid
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Final
 
 from fastapi import FastAPI
 from fastapi.routing import APIRoute, iter_route_contexts
+
+from tests.conftest import NOTICE_VERSION
 
 # Who calls: nobody signed in; people signed in by phone (an admin's phone session carries no staff
 # roles); staff in staff sessions.
@@ -31,8 +34,15 @@ CALLERS: Final = (
     "ops",
     "admin",
 )
-# The kinds of record path parameters name; the integration test makes one of each for someone else.
-OTHERS_RECORDS: Final = frozenset({"session_id"})
+# What the integration test can fill a path parameter with.
+PATH_VALUES: Final = frozenset(
+    {
+        "someone_elses_session",
+        "someone_elses_export",
+        "someone_elses_deletion_request",
+        "an_optional_purpose",
+    }
+)
 
 
 def everyone(status: int) -> dict[str, int]:
@@ -57,6 +67,8 @@ class Rule:
     expected: dict[str, int]
     # The request's body or query, made afresh for every call.
     request: Callable[[], dict[str, Any]] = _nothing
+    # What fills each path parameter (one of PATH_VALUES).
+    path: dict[str, str] = field(default_factory=dict)
 
 
 MATRIX: Final[dict[tuple[str, str], Rule]] = {
@@ -84,7 +96,31 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     # The signed-in account.
     ("GET", "/v1/me"): Rule(signed_in(200)),
     ("GET", "/v1/me/sessions"): Rule(signed_in(200)),
-    ("DELETE", "/v1/me/sessions/{session_id}"): Rule(signed_in(404)),
+    ("DELETE", "/v1/me/sessions/{session_id}"): Rule(
+        signed_in(404), path={"session_id": "someone_elses_session"}
+    ),
+    # Consent.
+    ("GET", "/v1/privacy-notice"): Rule(everyone(200)),
+    ("GET", "/v1/me/consents"): Rule(signed_in(200)),
+    ("POST", "/v1/me/consents"): Rule(
+        signed_in(200),
+        lambda: {"json": {"noticeVersion": NOTICE_VERSION, "purposes": ["marketing"]}},
+    ),
+    ("DELETE", "/v1/me/consents/{purpose}"): Rule(
+        signed_in(204), path={"purpose": "an_optional_purpose"}
+    ),
+    # Data requests: people's own, and the ops queue.
+    ("POST", "/v1/me/data-requests"): Rule(signed_in(202), lambda: {"json": {"kind": "export"}}),
+    ("GET", "/v1/me/data-requests"): Rule(signed_in(200)),
+    ("GET", "/v1/me/data-requests/{request_id}/file"): Rule(
+        signed_in(404), path={"request_id": "someone_elses_export"}
+    ),
+    ("GET", "/v1/ops/data-requests"): Rule(signed_in(403, ops=200, admin=200)),
+    ("POST", "/v1/ops/data-requests/{request_id}/resolve"): Rule(
+        signed_in(403, ops=200, admin=200),
+        lambda: {"json": {"outcome": "rejected", "note": "Checking who may resolve requests."}},
+        path={"request_id": "someone_elses_deletion_request"},
+    ),
     # Admins, in a staff session.
     ("GET", "/v1/admin/staff"): Rule(signed_in(403, admin=200)),
 }
