@@ -74,8 +74,9 @@ Start the slow ones in week 1.
   *Done when* a pull request shows every check green.
   *Note (2026-10-19):* All 13 checks passed on their first run, on the push of 7f64411 ([CI](https://github.com/VatsalKhosla/pg_app/actions/runs/39217998691), [Security](https://github.com/VatsalKhosla/pg_app/actions/runs/39217998658)). Pull requests run the same two workflows; the only difference is that oasdiff compares against the target branch. No pull request was opened, because `gh` isn't signed in here, so the first one will confirm the pull request view. Beyond the plan: Playwright E2E, workflow linting (actionlint, zizmor) and the API image (`apps/api/Dockerfile`, non-root, pip removed). Renovate was chosen over Dependabot, which lacks pnpm 12 and uv 0.13 support (ADR 0013). Branch protection is documented in docs/ci.md, and setting it up is a founders' task.
 
-- [ ] **0.8 ADRs and runbook stubs.** `docs/adr/0001` modular monolith, `0002` FastAPI + Next.js, `0003` PostgreSQL + PostGIS + exclusion constraints, `0004` money in paise and the ledger, `0005` outbox jobs instead of a broker, `0006` map provider behind an interface. Runbook stubs for webhook failures, dead jobs and restoring from a backup.
+- [x] **0.8 ADRs and runbook stubs.** `docs/adr/0001` modular monolith, `0002` FastAPI + Next.js, `0003` PostgreSQL + PostGIS + exclusion constraints, `0004` money in paise and the ledger, `0005` outbox jobs instead of a broker, `0006` map provider behind an interface. Runbook stubs for webhook failures, dead jobs and restoring from a backup.
   *Done when* the files exist and match ARCHITECTURE.md.
+  *Note (2026-10-19):* ADRs 0001–0006 record the planning decisions, each checked against ARCHITECTURE.md and linked to the code that now enforces it. An index (docs/adr/README.md) lists all 13 ADRs. The runbooks are in docs/runbooks/. The dead-jobs one is already usable (queries and a safe requeue against the real `outbox_jobs` columns). The webhook and restore ones mark what steps 6.x and 8.x must fill in.
 
 ## Phase 1 — Identity and access
 
