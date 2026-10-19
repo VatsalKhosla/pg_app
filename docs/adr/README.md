@@ -19,5 +19,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0013](0013-ci-and-supply-chain.md) | CI and supply-chain security: GitHub Actions, scanners, Renovate | Accepted |
 | [0014](0014-sessions-and-csrf.md) | Sessions and CSRF: hashed opaque tokens, `__Secure-` cookies, sliding expiry, signed double-submit tokens | Accepted |
 | [0015](0015-phone-sign-in.md) | Phone sign-in: HMAC-stored one-time codes, layered abuse limits, Turnstile bound to the form and site, SMS behind a port | Accepted |
+| [0016](0016-staff-sign-in.md) | Staff sign-in: Google OIDC with PKCE and fully checked ID tokens, or a phone code plus an authenticator app; staff made only by operators; cursor pagination | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

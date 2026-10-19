@@ -7,6 +7,7 @@ What to do when something goes wrong in production. Each runbook says how to rec
 | [Payment webhook failures](webhook-failures.md) | Payments stuck as pending, bookings not moving after payment, webhook errors or alerts |
 | [Dead jobs](dead-jobs.md) | Outbox jobs marked `dead`: a notification, posting or scheduled task stopped retrying |
 | [Restoring from a backup](restore-from-backup.md) | Data loss or corruption; also the quarterly restore drill |
+| [Staff access](staff-access.md) | Giving or taking away staff access, setting up Google sign-in, failed staff sign-ins |
 
 Ground rules for every runbook:
 - **Don't make it worse.** Read before you write, and take a snapshot before any manual data change.

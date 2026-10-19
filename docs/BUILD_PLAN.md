@@ -104,8 +104,14 @@ Start the slow ones in week 1.
 
   A real sign-in against the local API worked, with the code read from the console sender's log. Deployed environments run `OTP_SENDER=unavailable` (503) until the founders choose the DLT SMS provider, which is a paid vendor (ADR 0015).
 
-- [ ] **1.3 Staff sign-in.** Google OIDC restricted to an allowed domain or email list (OTP + TOTP fallback); staff roles; 12-hour sessions.
+- [x] **1.3 Staff sign-in.** Google OIDC restricted to an allowed domain or email list (OTP + TOTP fallback); staff roles; 12-hour sessions.
   *Done when* a non-allowed Google account is refused and staff routes reject non-staff.
+  *Note (2026-10-19):* Only an operator makes someone staff (`python -m app.manage staff …`, audited); a staff session lasts 12 hours and works only while its user is staff.
+  - Google sign-in is OIDC with PKCE. The sign-in keeps no server state (a `__Host-` cookie holds a login id the state, nonce and verifier are derived from). The ID token's RS256 signature and claims are checked. Accounts are allowed by Workspace domain (the `hd` claim) or by exact address, and linked by Google's `sub`.
+  - The fallback is a phone code, then a TOTP code from an authenticator app enrolled from the command line. The secrets are derived from `SECRET_KEY`, never stored.
+  - `GET /v1/admin/staff` (admins only, cursor-paginated) is the first staff route: 401 without a session, 403 for phone sessions and non-admin staff.
+
+  20 integration tests cover the done criterion and the edges: tampered, stale, replayed and other-browser sign-ins; replaced Google accounts; codes reused or over the limit; constant queries per page; and the operator commands. Google itself waits for the founders' OAuth client (docs/runbooks/staff-access.md, ADR 0016).
 
 - [ ] **1.4 Policies and the authorization matrix.** `policies.py` pattern; FastAPI dependencies for the current actor; a matrix test that enumerates every route × role and asserts the expected status (404 for other users' objects).
   *Done when* the matrix runs in CI and fails if a new route lacks an entry.

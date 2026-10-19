@@ -172,6 +172,8 @@ All tables have `id bigint generated always as identity`, `created_at`, `updated
 - `users` (phone_e164 unique, email citext unique null, name, status), `user_roles` (user_id, role: `student | parent | owner | field_agent | ops | admin`).
 - `otp_challenges` (public_id, phone_e164, purpose, code_hash, attempts, requested_at, expires_at, consumed_at, superseded_at, ip_address, user_agent).
 - `sessions` (public_id, user_id, token_hash, kind, started_at, last_seen_at, expires_at, absolute_expires_at, rotated_at, ended_at, end_reason, ip_address, user_agent).
+- `user_identities` (user_id, provider `google`, subject, email citext, last_used_at; unique (provider, subject) and (user_id, provider)): a staff member's linked Google account.
+- `totp_credentials` (user_id unique, salt, confirmed_at, last_used_step): a staff member's authenticator app. The secret itself is derived from `SECRET_KEY` and the salt, never stored.
 - `consents` (user_id, purpose, notice_version, granted_at, withdrawn_at).
 
 **Geo**
@@ -471,7 +473,14 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
   - Accounts: created at the first correct code. Responses never reveal whether a number has an account.
   - Sending: codes go out straight away, never through the outbox (which would store them), as SMS from a DLT-registered template behind an `OtpSender` port. `OTP_SENDER=console` logs them (local only); `unavailable` turns phone sign-in off (503) until the founders choose the provider.
   - Retention: challenges are deleted after 7 days.
-- **Staff (ops, admin, field agents)**: Google Workspace sign-in (OIDC) restricted to the company domain with 2-step verification enforced, or OTP + TOTP until the domain exists. Shorter sessions (12 h). Staff roles come only with a staff session: a phone sign-in drops them, so a SIM swap can't reach the back office.
+- **Staff (ops, admin, field agents)** (ADR 0016):
+  - Becoming staff: only an operator can make someone staff (`python -m app.manage staff add`, audited). Signing in with Google never grants a role.
+  - Sessions: staff sessions last 12 hours from sign-in, and stop working once the user has no staff role. Staff roles come only with a staff session: a phone sign-in drops them, so a SIM swap can't reach the back office.
+  - Google sign-in: OIDC (authorization code with PKCE, state and nonce; scope `openid email`) restricted to allowed Workspace domains (`STAFF_GOOGLE_DOMAINS`, checked against the `hd` claim) or exact addresses (`STAFF_GOOGLE_EMAILS`). 2-step verification is enforced by the Workspace.
+    - The ID token's RS256 signature (Google's keys, cached), issuer, audience, expiry and nonce are all checked.
+    - The sign-in keeps no server state: a 10-minute `__Host-staff-login` cookie holds a login id, and the state, nonce and PKCE verifier are HMACs of it.
+    - The Google account is linked by its `sub` at the first sign-in.
+  - Until the domain exists: a phone sign-in, then a TOTP code (RFC 6238; each code works once; five tries per 15 minutes) from an authenticator app enrolled only from the command line.
 - **Sessions**: opaque 256-bit tokens; only their SHA-256 stored server-side; the `__Secure-session` cookie (`HttpOnly; Secure; SameSite=Lax`) on the parent domain (`SESSION_COOKIE_DOMAIN`); 30-day sliding expiry for users (moved at most every 10 minutes, with the cookie re-sent), 12 hours from sign-in for staff; signing in ends the browser's previous session, and `rotate()` renews the token on role changes; logout and "log out everywhere"; session list in the profile; ended sessions deleted after 30 days (ADR 0014).
 - **CSRF**: SameSite=Lax plus a signed double-submit token: `GET /v1/auth/csrf` sets `__Secure-csrf`, and every POST, PUT, PATCH and DELETE must echo it in `X-CSRF-Token`. Tokens are HMAC-signed with `SECRET_KEY` and bound to the session cookie. An app-wide dependency enforces this (deny by default; provider webhooks exempt), and a test sweeps every route. CORS allowlist of exact origins.
 - **Authorization**: deny by default; role checks plus object-level policies (an owner only sees their properties and their bookings; a student only their visits and bookings). Return 404 for another user's resources. Maintain an authorization matrix test that covers every endpoint × role.
@@ -494,12 +503,12 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 ## 15. API conventions
 
 - REST over JSON at `/v1`; plural nouns; JSON fields in camelCase (Pydantic alias generator), Python in snake_case.
-- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `RATE_LIMITED` (429, with `Retry-After`), `PRICING_CONFIG_ERROR`. Sign-in: `OTP_INVALID`, `OTP_EXPIRED` and `OTP_LOCKED` (400), `OTP_RESEND_TOO_SOON` (429, with `Retry-After`), `HUMAN_CHECK_FAILED` (400), `ACCOUNT_SUSPENDED` (403). Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED` (401: no live session), `CSRF_TOKEN_INVALID` (403), `FORBIDDEN`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status. Idempotency: `IDEMPOTENCY_KEY_REQUIRED` and `IDEMPOTENCY_KEY_INVALID` (400), `IDEMPOTENCY_KEY_REUSED` (422), `IDEMPOTENCY_KEY_CONFLICT` (409).
+- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `RATE_LIMITED` (429, with `Retry-After`), `PRICING_CONFIG_ERROR`. Sign-in: `OTP_INVALID`, `OTP_EXPIRED` and `OTP_LOCKED` (400), `OTP_RESEND_TOO_SOON` (429, with `Retry-After`), `HUMAN_CHECK_FAILED` (400), `ACCOUNT_SUSPENDED` (403). Staff sign-in: `STAFF_ACCOUNT_NOT_ALLOWED` (403, one code for every reason), `STAFF_SIGN_IN_EXPIRED` and `STAFF_SIGN_IN_CANCELLED` (400; Google sign-in sends these to the web app's `/staff/sign-in?error=`), `TOTP_INVALID` (400). Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED` (401: no live session), `CSRF_TOKEN_INVALID` (403), `FORBIDDEN` (403: signed in, but the session lacks the role; another user's record answers `NOT_FOUND`), `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status. Idempotency: `IDEMPOTENCY_KEY_REQUIRED` and `IDEMPOTENCY_KEY_INVALID` (400), `IDEMPOTENCY_KEY_REUSED` (422), `IDEMPOTENCY_KEY_CONFLICT` (409).
 - Probes: `GET /healthz` (liveness) and `GET /readyz` (database and Redis reachable, 503 otherwise) sit outside `/v1`, need no authentication, and are left out of tracing and info-level access logs.
 - Money: integer paise with names ending in `Paise`; the client formats with `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`.
 - Dates: `YYYY-MM-DD` for move-in; timestamps in ISO 8601 UTC; display in IST.
 - Public ids only (UUIDv7, booking codes). Never expose sequential ids.
-- Cursor pagination (`cursor`, `limit` ≤ 50).
+- Cursor pagination (`cursor`, `limit` ≤ 50, default 20; `app/core/pagination.py`). Lists are ordered by public id, which as a UUIDv7 sorts by creation time, so the cursor is the last id of the page; responses are `{items, nextCursor}`, with `nextCursor` null on the last page, and a page costs one query however many rows (ADR 0016).
 - `Idempotency-Key` is required on POSTs that create bookings, payments, refunds or invoices.
 - OpenAPI is the contract: CI regenerates the TS client and fails if it is stale; `oasdiff` fails CI on breaking changes. `make gen-client` exports the schema without starting the API (`python -m app.openapi`) into `packages/api-client/openapi.json` and generates `src/generated/schema.ts` with openapi-typescript; `make check-client` (part of `make check`) fails when either is out of date. Operation ids are the route's tag and function name in camelCase (`systemHealthz`), and every operation declares `4XX`/`5XX` as `application/problem+json` `ProblemDetail`, so the web client's error types are the API's real ones (ADR 0012).
 
@@ -512,6 +521,7 @@ Public   GET  /v1/cities /v1/localities /v1/campuses
 Auth     POST /v1/auth/otp/request     POST /v1/auth/otp/verify   GET /v1/auth/csrf
          POST /v1/auth/logout   POST /v1/auth/logout-everywhere
          GET /v1/me   GET /v1/me/sessions   DELETE /v1/me/sessions/{session_id}
+         GET /v1/auth/staff/google   GET /v1/auth/staff/google/callback   POST /v1/auth/staff/totp
 Student  POST/GET /v1/visits           POST /v1/visits/{id}/cancel
          POST /v1/bookings             GET /v1/bookings   GET /v1/bookings/{code}
          POST /v1/bookings/{code}/cancel | /check-in | /disputes
@@ -521,7 +531,7 @@ Owner    /v1/owner/properties… /v1/owner/beds/{id}/blocks /v1/owner/pricing/ru
          /v1/owner/bookings/{code}/confirm | /reject   /v1/owner/invoices
 Ops      /v1/ops/properties… /v1/ops/verification… /v1/ops/visits… /v1/ops/bookings…
          /v1/ops/disputes… /v1/ops/refunds… /v1/ops/reconciliation
-Admin    /v1/admin/rent-bands /v1/admin/policies /v1/admin/flags /v1/admin/audit-logs
+Admin    /v1/admin/staff /v1/admin/rent-bands /v1/admin/policies /v1/admin/flags /v1/admin/audit-logs
 Compliance POST /v1/grievances  POST /v1/data-requests
 ```
 
