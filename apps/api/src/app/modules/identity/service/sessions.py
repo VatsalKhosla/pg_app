@@ -33,7 +33,7 @@ from app.modules.identity.repository import (
 
 if TYPE_CHECKING:
     import uuid
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -209,9 +209,15 @@ class Profile:
     phone_e164: str
     email: str | None
     name: str | None
+    college_or_workplace: str | None
+    gender: str | None
     roles: frozenset[Role]
     # The account's consent isn't for the current privacy notice: ask for it again.
     consent_required: bool
+
+
+# The profile fields people may change themselves.
+PROFILE_FIELDS: Final = frozenset({"name", "college_or_workplace", "gender"})
 
 
 @dataclass(frozen=True)
@@ -240,9 +246,31 @@ class UserService:
                 phone_e164=user.phone_e164,
                 email=user.email,
                 name=user.name,
+                college_or_workplace=user.college_or_workplace,
+                gender=user.gender,
                 roles=await self._users.roles(user.id),
                 consent_required=not is_current(active, notice_version=notice_version),
             )
+
+    async def update_profile(
+        self, user_id: int, changes: Mapping[str, str | None], *, notice_version: str
+    ) -> Profile | None:
+        """Change the profile fields in ``changes`` (validated already); the rest stay."""
+        unknown = changes.keys() - PROFILE_FIELDS
+        if unknown:
+            msg = f"not profile fields: {sorted(unknown)}"
+            raise ValueError(msg)
+        async with self._db.begin():
+            user = await self._users.get(user_id)
+            if user is None:
+                return None
+            if "name" in changes:
+                user.name = changes["name"]
+            if "college_or_workplace" in changes:
+                user.college_or_workplace = changes["college_or_workplace"]
+            if "gender" in changes:
+                user.gender = changes["gender"]
+        return await self.profile(user_id, notice_version=notice_version)
 
     async def people(self, user_ids: Iterable[int]) -> dict[int, Person]:
         """The people behind internal user ids (unknown ids are left out)."""

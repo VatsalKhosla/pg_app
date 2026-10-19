@@ -2,9 +2,9 @@
 
 import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Self
 
-from pydantic import AfterValidator, Field, StringConstraints
+from pydantic import AfterValidator, Field, StringConstraints, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.core.actor import Role
@@ -13,6 +13,7 @@ from app.core.schemas import ApiModel
 from app.modules.identity.domain.consent import ConsentPurpose
 from app.modules.identity.domain.otp import CODE_DIGITS, HUMAN_CHECK_ACTION
 from app.modules.identity.domain.phones import normalize_indian_mobile
+from app.modules.identity.domain.profile import NAME_MAX_LENGTH, PLACE_MAX_LENGTH, Gender
 from app.modules.identity.domain.totp import DIGITS as TOTP_DIGITS
 
 
@@ -39,10 +40,37 @@ class Me(ApiModel):
     phone: str
     email: str | None
     name: str | None
+    college_or_workplace: str | None
+    gender: Gender | None
     roles: list[Role]
     # The privacy notice changed since the account's consent: show the new one and ask again
     # (POST /v1/me/consents).
     consent_required: bool
+
+
+# Printable text, trimmed: no control characters.
+def _text(max_length: int) -> object:
+    return StringConstraints(
+        strip_whitespace=True, min_length=1, max_length=max_length, pattern=r"^[^\x00-\x1f\x7f]+$"
+    )
+
+
+class MeUpdate(ApiModel):
+    """Change the profile: only the fields sent change. ``null`` clears an optional field; the
+    name can be changed but not removed."""
+
+    name: Annotated[str, _text(NAME_MAX_LENGTH)] | None = None
+    # Where they study or work, as they'd write it.
+    college_or_workplace: Annotated[str, _text(PLACE_MAX_LENGTH)] | None = None
+    # Only if they choose to say: it decides which PGs they're shown (girls', boys' or co-living).
+    gender: Gender | None = None
+
+    @model_validator(mode="after")
+    def _name_stays(self) -> Self:
+        if "name" in self.model_fields_set and self.name is None:
+            msg = "the name can be changed but not removed"
+            raise ValueError(msg)
+        return self
 
 
 class SessionInfo(ApiModel):

@@ -25,6 +25,7 @@ from app.modules.identity.auth import (
     StaffSignInDep,
 )
 from app.modules.identity.domain.consent import ConsentPurpose
+from app.modules.identity.domain.profile import Gender
 from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.models import Consent
 from app.modules.identity.policies import can_list_staff
@@ -34,6 +35,7 @@ from app.modules.identity.schemas import (
     ConsentRecord,
     CsrfToken,
     Me,
+    MeUpdate,
     NoticePurpose,
     OtpChallengeIssued,
     OtpRequest,
@@ -90,6 +92,8 @@ def _me(profile: Profile, roles: frozenset[Role]) -> Me:
         phone=profile.phone_e164,
         email=profile.email,
         name=profile.name,
+        college_or_workplace=profile.college_or_workplace,
+        gender=None if profile.gender is None else Gender(profile.gender),
         roles=sorted(roles),
         consent_required=profile.consent_required,
     )
@@ -374,6 +378,21 @@ async def me(actor: CurrentActor, db: DbSession, notice_version: NoticeVersion) 
     """The account, with the roles this session carries (a phone sign-in never carries staff
     roles), and whether its consent must be asked for again."""
     profile = await UserService(db).profile(actor.user_id, notice_version=notice_version)
+    if profile is None:
+        raise UnauthenticatedError
+    return _me(profile, actor.roles)
+
+
+@router.patch("/me", summary="Change my profile")
+async def update_me(
+    body: MeUpdate, actor: CurrentActor, db: DbSession, notice_version: NoticeVersion
+) -> Me:
+    """Only the fields sent change; ``null`` clears an optional one."""
+    profile = await UserService(db).update_profile(
+        actor.user_id,
+        body.model_dump(include=body.model_fields_set, by_alias=False),
+        notice_version=notice_version,
+    )
     if profile is None:
         raise UnauthenticatedError
     return _me(profile, actor.roles)

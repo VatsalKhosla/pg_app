@@ -24,12 +24,13 @@ from app.core.db import Model
 from app.core.ids import new_public_id
 from app.modules.identity.domain.consent import ConsentPurpose
 from app.modules.identity.domain.otp import OtpPurpose
+from app.modules.identity.domain.profile import Gender
 from app.modules.identity.domain.sessions import EndReason, SessionKind
 from app.modules.identity.domain.staff import IdentityProvider
 from app.modules.identity.domain.totp import SALT_BYTES
 
 type _Choices = type[
-    Role | SessionKind | EndReason | OtpPurpose | IdentityProvider | ConsentPurpose
+    Role | SessionKind | EndReason | OtpPurpose | IdentityProvider | ConsentPurpose | Gender
 ]
 
 
@@ -45,12 +46,17 @@ class User(Model):
     phone_e164: Mapped[str] = mapped_column(Text, unique=True)
     email: Mapped[str | None] = mapped_column(CITEXT, unique=True)
     name: Mapped[str | None] = mapped_column(Text)
+    # Where they study or work, as they write it.
+    college_or_workplace: Mapped[str | None] = mapped_column(Text)
+    # Only if they choose to say: which PGs they can stay in (domain/profile.py).
+    gender: Mapped[str | None] = mapped_column(Text)
     # A suspended user can't sign in, and their sessions stop working.
     status: Mapped[str] = mapped_column(Text, server_default="active")
 
     __table_args__ = (
         CheckConstraint(r"phone_e164 ~ '^\+[1-9][0-9]{6,14}$'", name="phone_e164"),
         CheckConstraint("status IN ('active', 'suspended')", name="status"),
+        CheckConstraint(_one_of("gender", Gender), name="gender"),
     )
 
 

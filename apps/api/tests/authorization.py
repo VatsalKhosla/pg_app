@@ -95,6 +95,9 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("POST", "/v1/auth/logout-everywhere"): Rule(signed_in(204)),
     # The signed-in account.
     ("GET", "/v1/me"): Rule(signed_in(200)),
+    ("PATCH", "/v1/me"): Rule(
+        signed_in(200), lambda: {"json": {"collegeOrWorkplace": "A college"}}
+    ),
     ("GET", "/v1/me/sessions"): Rule(signed_in(200)),
     ("DELETE", "/v1/me/sessions/{session_id}"): Rule(
         signed_in(404), path={"session_id": "someone_elses_session"}

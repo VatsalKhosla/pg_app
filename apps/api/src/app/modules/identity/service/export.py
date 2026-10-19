@@ -39,6 +39,8 @@ async def personal_data(db: AsyncSession, user_id: int) -> dict[str, object]:
             "phone": user.phone_e164,
             "email": user.email,
             "name": user.name,
+            "collegeOrWorkplace": user.college_or_workplace,
+            "gender": user.gender,
             "status": user.status,
             "createdAt": _iso(user.created_at),
             "roles": sorted(await users.roles(user_id)),
