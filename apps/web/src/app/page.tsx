@@ -1,7 +1,9 @@
 import { CalendarCheck, KeyRound, MapPinned, ShieldCheck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 
 import { homeSections } from "@/components/layout/navigation";
+import { ApiStatus, ApiStatusPending } from "@/components/system/api-status";
 
 const steps = [
   { key: "find", Icon: MapPinned },
@@ -87,6 +89,13 @@ export default async function HomePage() {
           </h2>
           <p className="mt-3 text-muted-foreground">{t("owners.body")}</p>
         </section>
+      </div>
+
+      {/* Streams in after the page, so a slow or absent API never holds it up. */}
+      <div className="mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6">
+        <Suspense fallback={<ApiStatusPending />}>
+          <ApiStatus />
+        </Suspense>
       </div>
     </>
   );

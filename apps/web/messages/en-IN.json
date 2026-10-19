@@ -59,5 +59,11 @@
     "body": "This page couldn't load. Please try again.",
     "referenceLabel": "Error reference",
     "retry": "Try again"
+  },
+  "ApiStatus": {
+    "label": "Service status",
+    "checking": "Checking…",
+    "online": "Online",
+    "offline": "Unavailable"
   }
 }

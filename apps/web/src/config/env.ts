@@ -20,7 +20,8 @@ function parseEnvironment(value: string | undefined): AppEnvironment {
   return environment;
 }
 
-function parseUrl(name: string, value: string | undefined, fallback: string): URL {
+/** `value` as an absolute URL, or `fallback` when it's unset. */
+export function parseUrl(name: string, value: string | undefined, fallback: string): URL {
   try {
     return new URL(value === undefined || value === "" ? fallback : value);
   } catch {

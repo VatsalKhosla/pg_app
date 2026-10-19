@@ -40,3 +40,12 @@ test.describe("in dark mode", () => {
     expect(await wcagViolations(page)).toEqual([]);
   });
 });
+
+test("the home page streams in the API's status, asked through the typed client", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  // Browser tests run without the API unless one happens to be up locally.
+  await expect(page.getByText(/^Service status: (Online|Unavailable)$/)).toBeVisible();
+});

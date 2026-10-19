@@ -20,6 +20,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   typedRoutes: true,
+  // The generated API client ships as TypeScript source.
+  transpilePackages: ["@pg-platform/api-client"],
   headers() {
     return Promise.resolve([{ source: "/:path*", headers: securityHeaders }]);
   },
