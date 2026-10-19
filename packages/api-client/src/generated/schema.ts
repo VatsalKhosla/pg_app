@@ -101,6 +101,72 @@ export interface paths {
         readonly patch?: never;
         readonly trace?: never;
     };
+    readonly "/v1/auth/staff/google": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * Sign in to staff tools with Google
+         * @description Open this in the browser (not with fetch): it goes on to Google, which sends the browser
+         *     back to the callback. A failure lands on the web app's staff sign-in page with an error
+         *     code.
+         */
+        readonly get: operations["identityStartGoogleSignIn"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/auth/staff/google/callback": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * Where Google sends staff back to
+         * @description Signs the staff member in (a 12-hour staff session; any earlier session in this browser
+         *     ends) and sends them to the web app's staff tools, or back to its staff sign-in page with an
+         *     error code: STAFF_ACCOUNT_NOT_ALLOWED, STAFF_SIGN_IN_EXPIRED, STAFF_SIGN_IN_CANCELLED or
+         *     SERVICE_UNAVAILABLE.
+         */
+        readonly get: operations["identityFinishGoogleSignIn"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/auth/staff/totp": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Sign in to staff tools with an authenticator code
+         * @description For staff without Google sign-in: after signing in by phone, a code from the authenticator
+         *     app set up for them gives a staff session (12 hours), which replaces the phone session.
+         */
+        readonly post: operations["identityStaffTotpSignIn"];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly "/v1/auth/logout": {
         readonly parameters: {
             readonly query?: never;
@@ -191,6 +257,26 @@ export interface paths {
          * @description Another user's session answers 404, like one that doesn't exist.
          */
         readonly delete: operations["identityEndSession"];
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/admin/staff": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * Staff accounts
+         * @description Admins only (in a staff session): everyone with a staff role, and how each signs in.
+         */
+        readonly get: operations["identityListStaff"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
         readonly options?: never;
         readonly head?: never;
         readonly patch?: never;
@@ -384,6 +470,50 @@ export interface components {
             readonly csrfToken: string;
             /** Newuser */
             readonly newUser: boolean;
+        };
+        /** StaffMember */
+        readonly StaffMember: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id: string;
+            /** Name */
+            readonly name: string | null;
+            /** Phone */
+            readonly phone: string;
+            /** Email */
+            readonly email: string | null;
+            /** Roles */
+            readonly roles: readonly components["schemas"]["Role"][];
+            /** Googleaccount */
+            readonly googleAccount: string | null;
+            /** Authenticator */
+            readonly authenticator: boolean;
+        };
+        /** StaffPage */
+        readonly StaffPage: {
+            /** Items */
+            readonly items: readonly components["schemas"]["StaffMember"][];
+            /** Nextcursor */
+            readonly nextCursor: string | null;
+        };
+        /**
+         * StaffSignInResult
+         * @description Signed in to staff tools: a staff session, ending 12 hours after sign-in.
+         */
+        readonly StaffSignInResult: {
+            readonly user: components["schemas"]["Me"];
+            /** Csrftoken */
+            readonly csrfToken: string;
+        };
+        /**
+         * StaffTotpSignIn
+         * @description A code from the authenticator app, sent after signing in by phone.
+         */
+        readonly StaffTotpSignIn: {
+            /** Code */
+            readonly code: string;
         };
     };
     responses: never;
@@ -601,6 +731,124 @@ export interface operations {
             };
         };
     };
+    readonly identityStartGoogleSignIn: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 303: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityFinishGoogleSignIn: {
+        readonly parameters: {
+            readonly query?: {
+                readonly code?: string | null;
+                readonly state?: string | null;
+                readonly error?: string | null;
+            };
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 303: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityStaffTotpSignIn: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly "application/json": components["schemas"]["StaffTotpSignIn"];
+            };
+        };
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["StaffSignInResult"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     readonly identityLogout: {
         readonly parameters: {
             readonly query?: never;
@@ -766,6 +1014,48 @@ export interface operations {
                     readonly [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityListStaff: {
+        readonly parameters: {
+            readonly query?: {
+                /** @description The previous page's nextCursor; omit it to start. */
+                readonly cursor?: string | null;
+                readonly limit?: number;
+            };
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["StaffPage"];
+                };
             };
             /** @description Client error (RFC 9457 problem details) */
             readonly "4XX": {
