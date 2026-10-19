@@ -100,8 +100,9 @@ ignore = [
 "migrations/**/*.py" = ["TC001", "TC002", "TC003"]
 # The injectable clock is the one place allowed to read the system time.
 "src/app/core/clock.py" = ["TID251"]
-# FastAPI evaluates route signatures at runtime, so their imports must stay real imports.
+# FastAPI evaluates route and dependency signatures at runtime, so their imports must stay real.
 "src/app/modules/*/router.py" = ["TC001", "TC002", "TC003"]
+"src/app/modules/*/auth.py" = ["TC001", "TC002", "TC003"]
 "tests/**/*.py" = [
     "S101",    # assert is how pytest works
     "S105",    # throwaway credentials for test containers

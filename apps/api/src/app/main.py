@@ -4,10 +4,13 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
 import structlog
+from fastapi import Depends
 from starlette.middleware.cors import CORSMiddleware
 
 from app.config import BRAND_NAME, Settings, get_settings
 from app.core.clock import Clock, SystemClock
+from app.core.cookies import CSRF_HEADER, CookiePolicy
+from app.core.csrf import require_csrf_token
 from app.core.db import create_engine, create_sessionmaker
 from app.core.errors import install_error_handlers
 from app.core.flags import FeatureFlags
@@ -18,6 +21,7 @@ from app.core.redis import create_redis
 from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
+from app.modules.identity.router import router as identity_router
 from app.modules.system.router import router as system_router
 
 if TYPE_CHECKING:
@@ -28,7 +32,7 @@ if TYPE_CHECKING:
 
 # Headers the web app may send on cross-origin requests (CSRF arrives in step 1.1, idempotency
 # keys in step 0.4).
-CORS_ALLOWED_HEADERS = ["Content-Type", "X-CSRF-Token", "Idempotency-Key", REQUEST_ID_HEADER]
+CORS_ALLOWED_HEADERS = ["Content-Type", CSRF_HEADER, "Idempotency-Key", REQUEST_ID_HEADER]
 CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
 
 logger = structlog.stdlib.get_logger(__name__)
@@ -78,8 +82,12 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
         redoc_url="/redoc" if interactive_docs else None,
         responses=PROBLEM_RESPONSES,
         generate_unique_id_function=operation_id,
+        # Every route, including ones added later: state-changing requests need a CSRF token.
+        dependencies=[Depends(require_csrf_token)],
         telemetry={"exclude": _is_probe},
     )
+    app.state.cookies = CookiePolicy(domain=settings.session_cookie_domain)
+    app.state.csrf_secret = settings.secret_key.get_secret_value().encode()
     install_error_handlers(app)
     # Added innermost first, so a request passes RequestContext, SecurityHeaders, CORS and then
     # BodySizeLimit before reaching a route.
@@ -96,4 +104,5 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_deployed)
     app.add_middleware(RequestContextMiddleware)
     app.include_router(system_router)
+    app.include_router(identity_router)
     return app

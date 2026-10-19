@@ -5,6 +5,7 @@ now), ``DatabaseSettings`` (migrations) and ``Settings`` (the API). Business pol
 tokens and caps is data in the database, never configuration (ARCHITECTURE §22).
 """
 
+import re
 from functools import lru_cache
 from typing import Annotated, Final, Literal, Self
 
@@ -49,6 +50,9 @@ class Settings(DatabaseSettings):
     secret_key: SecretStr = Field(min_length=32)
     redis_url: SecretStr
     cors_allowed_origins: Annotated[tuple[str, ...], NoDecode] = ()
+    # The parent domain session cookies apply to (".example.com") when the web app and the API
+    # are on sibling subdomains. Unset: host-only cookies, as in local development.
+    session_cookie_domain: str | None = None
     max_request_body_bytes: int = Field(default=1_048_576, gt=0)
     sentry_dsn: SecretStr | None = None
     sentry_traces_sample_rate: float = Field(default=0.0, ge=0.0, le=1.0)
@@ -77,10 +81,20 @@ class Settings(DatabaseSettings):
             return tuple(origin.strip() for origin in value.split(",") if origin.strip())
         return value
 
-    @field_validator("sentry_dsn", "otel_exporter_otlp_endpoint", mode="before")
+    @field_validator(
+        "sentry_dsn", "otel_exporter_otlp_endpoint", "session_cookie_domain", mode="before"
+    )
     @classmethod
     def _empty_means_unset(cls, value: object) -> object:
         return None if value == "" else value
+
+    @field_validator("session_cookie_domain")
+    @classmethod
+    def _bare_domain(cls, value: str | None) -> str | None:
+        if value is not None and not re.fullmatch(r"\.?[a-z0-9-]+(\.[a-z0-9-]+)+", value):
+            msg = "must be a domain such as .example.com, without scheme or path"
+            raise ValueError(msg)
+        return value
 
     @model_validator(mode="after")
     def _https_origins_when_deployed(self) -> Self:

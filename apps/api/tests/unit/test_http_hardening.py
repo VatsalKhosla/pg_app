@@ -95,8 +95,10 @@ def echo_app(make_settings: SettingsFactory) -> FastAPI:
     return app
 
 
-def test_bodies_within_the_limit_are_accepted(echo_app: FastAPI, request_app: Requester) -> None:
-    response = request_app(echo_app, "POST", "/test/echo", content=b"x" * 16)
+def test_bodies_within_the_limit_are_accepted(
+    echo_app: FastAPI, request_app: Requester, csrf_headers: dict[str, str]
+) -> None:
+    response = request_app(echo_app, "POST", "/test/echo", headers=csrf_headers, content=b"x" * 16)
 
     assert response.json() == {"bytes": 16}
 
@@ -111,13 +113,13 @@ def test_a_declared_oversize_body_is_refused_before_routing(
 
 
 def test_a_streamed_oversize_body_is_refused_while_reading(
-    echo_app: FastAPI, request_app: Requester
+    echo_app: FastAPI, request_app: Requester, csrf_headers: dict[str, str]
 ) -> None:
     async def chunks() -> AsyncIterator[bytes]:
         for _ in range(4):
             yield b"x" * 8  # 32 bytes in all, sent without a Content-Length
 
-    response = request_app(echo_app, "POST", "/test/echo", content=chunks())
+    response = request_app(echo_app, "POST", "/test/echo", headers=csrf_headers, content=chunks())
 
     assert response.status_code == 413
     assert response.json()["code"] == "PAYLOAD_TOO_LARGE"

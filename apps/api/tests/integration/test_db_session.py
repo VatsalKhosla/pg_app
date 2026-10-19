@@ -69,7 +69,11 @@ def probe_table(postgres_url: str) -> Iterator[str]:
 
 
 def test_work_a_request_leaves_uncommitted_is_rolled_back(
-    make_settings: SettingsFactory, request_app: Requester, postgres_url: str, probe_table: str
+    make_settings: SettingsFactory,
+    request_app: Requester,
+    postgres_url: str,
+    probe_table: str,
+    csrf_headers: dict[str, str],
 ) -> None:
     # Services commit explicitly; anything they don't commit must never reach the database.
     app = create_app(make_settings(database_url=postgres_url))
@@ -79,5 +83,7 @@ def test_work_a_request_leaves_uncommitted_is_rolled_back(
         await session.execute(text(f"INSERT INTO {probe_table} (id) VALUES (1)"))  # noqa: S608
         return {"inserted": True}
 
-    assert request_app(app, "POST", "/test/insert-without-commit").json() == {"inserted": True}
+    response = request_app(app, "POST", "/test/insert-without-commit", headers=csrf_headers)
+
+    assert response.json() == {"inserted": True}
     assert asyncio.run(_scalar(postgres_url, f"SELECT count(*) FROM {probe_table}")) == 0  # noqa: S608

@@ -1,0 +1,49 @@
+"""Who is calling: the session cookie turned into an ``Actor``, for routes of any module.
+
+``CurrentActor`` answers 401 without a live session. When activity slides the session's expiry,
+the cookie goes out again with the new lifetime, so the browser keeps it as long as the server
+does.
+"""
+
+from typing import Annotated
+
+from fastapi import Depends, Request, Response
+
+from app.core.actor import Actor
+from app.core.clock import ClockDep
+from app.core.cookies import SESSION_COOKIE, CookiePolicy
+from app.core.db import DbSession
+from app.core.errors import UnauthenticatedError
+from app.modules.identity.service import SessionService
+
+
+def get_cookie_policy(request: Request) -> CookiePolicy:
+    policy: CookiePolicy = request.app.state.cookies
+    return policy
+
+
+CookiesDep = Annotated[CookiePolicy, Depends(get_cookie_policy)]
+
+
+async def get_actor(
+    request: Request, response: Response, db: DbSession, clock: ClockDep, cookies: CookiesDep
+) -> Actor:
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token:
+        raise UnauthenticatedError
+    authentication = await SessionService(db, clock).authenticate(token)
+    if authentication is None:
+        raise UnauthenticatedError
+    if authentication.refreshed:
+        remaining = authentication.expires_at - clock.now()
+        cookies.set(
+            response,
+            SESSION_COOKIE,
+            token,
+            max_age=int(remaining.total_seconds()),
+            http_only=True,
+        )
+    return authentication.actor
+
+
+CurrentActor = Annotated[Actor, Depends(get_actor)]

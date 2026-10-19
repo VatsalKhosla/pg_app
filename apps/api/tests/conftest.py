@@ -12,6 +12,8 @@ from hypothesis import settings as hypothesis_settings
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 
 from app.config import Settings
+from app.core.cookies import CSRF_COOKIE, CSRF_HEADER
+from app.core.csrf import issue_csrf_token
 
 # Property tests: 200 cases per property locally, 10,000 in CI (HYPOTHESIS_PROFILE=ci), as the
 # build plan asks for the money and pricing invariants.
@@ -22,6 +24,7 @@ hypothesis_settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "dev"))
 # Nothing listens on port 9 (discard): unit tests never reach a real database or Redis.
 UNREACHABLE_DATABASE_URL = "postgresql+asyncpg://test:test@127.0.0.1:9/test"
 UNREACHABLE_REDIS_URL = "redis://:test@127.0.0.1:9/0"
+TEST_SECRET_KEY = "test-only-secret-key-0123456789abcdef"
 
 
 class IsolatedSettings(Settings):
@@ -46,7 +49,7 @@ def build_settings(**overrides: object) -> Settings:
         "log_format": "json",
         "database_url": UNREACHABLE_DATABASE_URL,
         "redis_url": UNREACHABLE_REDIS_URL,
-        "secret_key": "test-only-secret-key-0123456789abcdef",
+        "secret_key": TEST_SECRET_KEY,
         "cors_allowed_origins": ("http://localhost:3000",),
     }
     values.update(overrides)
@@ -56,6 +59,14 @@ def build_settings(**overrides: object) -> Settings:
 @pytest.fixture
 def make_settings() -> Callable[..., Settings]:
     return build_settings
+
+
+@pytest.fixture
+def csrf_headers() -> dict[str, str]:
+    """What a browser without a session sends to pass the CSRF check: the token in the
+    X-CSRF-Token header and in its cookie (app/core/csrf.py)."""
+    token = issue_csrf_token(TEST_SECRET_KEY.encode(), None)
+    return {CSRF_HEADER: token, "Cookie": f"{CSRF_COOKIE}={token}"}
 
 
 async def _with_client[T](app: FastAPI, interact: Callable[[httpx.AsyncClient], Awaitable[T]]) -> T:

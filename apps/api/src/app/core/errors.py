@@ -66,6 +66,12 @@ class AppError(Exception):
         self.headers = dict(headers or {})
 
 
+class UnauthenticatedError(AppError):
+    status = 401
+    code = "UNAUTHENTICATED"
+    title = "Sign in required"
+
+
 class NotFoundError(AppError):
     status = 404
     code = "NOT_FOUND"

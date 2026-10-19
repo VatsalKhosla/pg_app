@@ -144,7 +144,10 @@ def test_keys_expire_after_24_hours_and_belong_to_their_sender(run_db: RunDb) ->
 
 
 def test_an_idempotent_route_replays_over_http(
-    make_settings: SettingsFactory, request_app: Requester, database_url: str
+    make_settings: SettingsFactory,
+    request_app: Requester,
+    database_url: str,
+    csrf_headers: dict[str, str],
 ) -> None:
     app = create_app(make_settings(database_url=database_url))
 
@@ -159,7 +162,7 @@ def test_an_idempotent_route_replays_over_http(
             await complete(session, idempotent, created)
         return JSONResponse(created.body, status_code=created.status_code)
 
-    headers = {"Idempotency-Key": f"order-{uuid.uuid4().hex}"}
+    headers = {**csrf_headers, "Idempotency-Key": f"order-{uuid.uuid4().hex}"}
     first = request_app(app, "POST", "/test/orders", headers=headers, json={"item": 1})
     retry = request_app(app, "POST", "/test/orders", headers=headers, json={"item": 1})
     changed = request_app(app, "POST", "/test/orders", headers=headers, json={"item": 2})

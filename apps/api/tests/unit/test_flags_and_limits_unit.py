@@ -58,7 +58,11 @@ def test_fingerprints_change_with_method_route_and_body() -> None:
     [({}, "IDEMPOTENCY_KEY_REQUIRED"), ({"Idempotency-Key": "short"}, "IDEMPOTENCY_KEY_INVALID")],
 )
 def test_idempotent_routes_need_a_well_formed_key(
-    make_settings: SettingsFactory, request_app: Requester, headers: dict[str, str], code: str
+    make_settings: SettingsFactory,
+    request_app: Requester,
+    csrf_headers: dict[str, str],
+    headers: dict[str, str],
+    code: str,
 ) -> None:
     app = create_app(make_settings())
 
@@ -66,7 +70,7 @@ def test_idempotent_routes_need_a_well_formed_key(
     async def create(key: Annotated[str, Depends(idempotency_key)]) -> dict[str, str]:
         return {"key": key}
 
-    response = request_app(app, "POST", "/test/create", headers=headers)
+    response = request_app(app, "POST", "/test/create", headers={**csrf_headers, **headers})
 
     assert response.status_code == 400
     assert response.json()["code"] == code

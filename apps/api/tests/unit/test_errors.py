@@ -86,12 +86,13 @@ def test_app_errors_carry_their_status_code_and_detail(
 
 
 def test_validation_errors_point_at_each_field_without_echoing_input(
-    app: FastAPI, request_app: Requester
+    app: FastAPI, request_app: Requester, csrf_headers: dict[str, str]
 ) -> None:
     response = request_app(
         app,
         "POST",
         "/test/reservations",
+        headers=csrf_headers,
         params={"limit": 500},
         json={"moveIn": "not-a-date-9876543210", "stayMonths": 0},
     )
@@ -108,20 +109,29 @@ def test_validation_errors_point_at_each_field_without_echoing_input(
     assert "not-a-date" not in response.text
 
 
-def test_valid_camel_case_input_is_accepted(app: FastAPI, request_app: Requester) -> None:
+def test_valid_camel_case_input_is_accepted(
+    app: FastAPI, request_app: Requester, csrf_headers: dict[str, str]
+) -> None:
     response = request_app(
-        app, "POST", "/test/reservations", json={"moveIn": "2027-07-01", "stayMonths": 11}
+        app,
+        "POST",
+        "/test/reservations",
+        headers=csrf_headers,
+        json={"moveIn": "2027-07-01", "stayMonths": 11},
     )
 
     assert response.status_code == 200
     assert response.json() == {"stayMonths": 11, "limit": 10}
 
 
-def test_unknown_fields_are_rejected(app: FastAPI, request_app: Requester) -> None:
+def test_unknown_fields_are_rejected(
+    app: FastAPI, request_app: Requester, csrf_headers: dict[str, str]
+) -> None:
     response = request_app(
         app,
         "POST",
         "/test/reservations",
+        headers=csrf_headers,
         json={"moveIn": "2027-07-01", "stayMonths": 11, "priceRupees": 1},
     )
 
