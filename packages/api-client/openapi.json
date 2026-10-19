@@ -527,6 +527,56 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Change my profile",
+        "description": "Only the fields sent change; ``null`` clears an optional one.",
+        "operationId": "identityUpdateMe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/privacy-notice": {
@@ -1533,6 +1583,15 @@
         "title": "FieldError",
         "description": "One invalid input. ``pointer`` locates a body field (JSON Pointer, e.g. ``/moveIn``);\n``parameter`` names a query, path, header or cookie parameter."
       },
+      "Gender": {
+        "type": "string",
+        "enum": [
+          "female",
+          "male",
+          "other"
+        ],
+        "title": "Gender"
+      },
       "Health": {
         "properties": {
           "status": {
@@ -1582,6 +1641,27 @@
             ],
             "title": "Name"
           },
+          "collegeOrWorkplace": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collegeorworkplace"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Gender"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "roles": {
             "items": {
               "$ref": "#/components/schemas/Role"
@@ -1601,11 +1681,59 @@
           "phone",
           "email",
           "name",
+          "collegeOrWorkplace",
+          "gender",
           "roles",
           "consentRequired"
         ],
         "title": "Me",
         "description": "The signed-in user."
+      },
+      "MeUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "collegeOrWorkplace": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collegeorworkplace"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Gender"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MeUpdate",
+        "description": "Change the profile: only the fields sent change. ``null`` clears an optional field; the\nname can be changed but not removed."
       },
       "NoticePurpose": {
         "properties": {

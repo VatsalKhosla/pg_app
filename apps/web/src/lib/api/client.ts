@@ -52,9 +52,16 @@ async function fetchWithTimeout(
   }
 }
 
-type Result<Data, Failure> =
-  | { data: Data; error?: never; response: Response }
-  | { data?: never; error: Failure; response: Response };
+/** What openapi-fetch resolves to: data on success, an error otherwise, and the response. */
+interface Result {
+  data?: unknown;
+  error?: unknown;
+  response: Response;
+}
+
+/** The data of a call's success. Taken from the result type as it is, not inferred from both
+ * branches of the union, which would add the error branch's `undefined` (and lose arrays). */
+type SuccessData<R extends Result> = Exclude<R["data"], undefined>;
 
 function isCancellation(cause: unknown): boolean {
   return cause instanceof DOMException && cause.name === "AbortError";
@@ -64,8 +71,8 @@ function isCancellation(cause: unknown): boolean {
  * The data of a successful call. Error responses and failed requests become an ApiError; a call
  * the caller cancelled rejects with its AbortError unchanged.
  */
-export async function unwrap<Data, Failure>(call: Promise<Result<Data, Failure>>): Promise<Data> {
-  let result: Result<Data, Failure>;
+export async function unwrap<R extends Result>(call: Promise<R>): Promise<SuccessData<R>> {
+  let result: R;
   try {
     result = await call;
   } catch (cause) {
@@ -75,8 +82,8 @@ export async function unwrap<Data, Failure>(call: Promise<Result<Data, Failure>>
   // An error response with an empty body has no `error`, so check the status as well.
   if (result.response.ok && result.error === undefined) {
     // openapi-fetch sets `data` exactly when the response succeeded (undefined for a 204), but a
-    // generic error type keeps TypeScript from narrowing the union on `error`.
-    return result.data as Data;
+    // generic result type keeps TypeScript from narrowing the union on `error`.
+    return result.data as SuccessData<R>;
   }
   throw ApiError.fromResponse(result.response, result.error);
 }

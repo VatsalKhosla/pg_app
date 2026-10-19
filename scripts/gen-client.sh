@@ -22,8 +22,10 @@ mkdir -p "$out/src/generated"
 
 uv run --directory apps/api --locked python -m app.openapi "$out/openapi.json"
 # --immutable: responses come back as readonly types.
+# Not --immutable: openapi-fetch's Readable<T> (which drops writeOnly fields from responses) turns
+# readonly arrays into plain objects, breaking every array in a response type (ADR 0019).
 pnpm --filter @pg-platform/api-client exec openapi-typescript "$out/openapi.json" \
-  --immutable --output "$out/src/generated/schema.ts"
+  --output "$out/src/generated/schema.ts"
 
 if [[ "$out" != "$client" ]]; then
   stale=0
