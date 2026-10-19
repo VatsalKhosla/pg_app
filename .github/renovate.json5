@@ -1,0 +1,62 @@
+// Renovate keeps every pinned version current: npm and pnpm, uv, GitHub Actions, container
+// images, pre-commit hooks and the scanner images in the Makefile (docs/ci.md). It does nothing
+// until the Renovate GitHub App is installed on the repository (a founders' task).
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  // best-practices also pins GitHub Actions and container images to digests.
+  extends: ["config:best-practices", ":semanticCommits"],
+  timezone: "Asia/Kolkata",
+  schedule: ["before 9am on monday"],
+  // The repository's own release cooldown (ADR 0007): nothing younger than a week.
+  minimumReleaseAge: "7 days",
+  internalChecksFilter: "strict",
+  prConcurrentLimit: 5,
+  labels: ["dependencies"],
+  // Security fixes skip the schedule and the cooldown.
+  vulnerabilityAlerts: {
+    labels: ["dependencies", "security"],
+    schedule: ["at any time"],
+    minimumReleaseAge: null,
+  },
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ["before 9am on the first day of the month"],
+  },
+  "pre-commit": {
+    enabled: true,
+  },
+  packageRules: [
+    {
+      description: "GitHub Actions in one pull request",
+      matchManagers: ["github-actions"],
+      groupName: "GitHub Actions",
+    },
+    {
+      description: "Container images in one pull request",
+      matchManagers: ["dockerfile", "docker-compose", "custom.regex"],
+      groupName: "container images",
+    },
+    {
+      description: "Minor and patch JavaScript updates together",
+      matchManagers: ["npm"],
+      matchUpdateTypes: ["minor", "patch"],
+      groupName: "JavaScript non-major",
+    },
+    {
+      description: "Minor and patch Python updates together",
+      matchManagers: ["pep621"],
+      matchUpdateTypes: ["minor", "patch"],
+      groupName: "Python non-major",
+    },
+  ],
+  customManagers: [
+    {
+      customType: "regex",
+      description: "Scanner images pinned in the Makefile",
+      managerFilePatterns: ["/(^|/)Makefile$/"],
+      matchStrings: [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n[A-Z_]+ := \\S+?:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})",
+      ],
+    },
+  ],
+}

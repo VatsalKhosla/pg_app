@@ -1,0 +1,182 @@
+# Every check that guards main (docs/ci.md). Each job runs the same make targets as a developer's
+# machine, so a green pull request means `make check` (and more) passes on a clean runner.
+#
+# Actions are pinned by commit SHA (the tag is in the comment), the token is read-only, and
+# checkouts don't keep credentials around.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  FORCE_COLOR: "1"
+  NEXT_TELEMETRY_DISABLED: "1"
+  # The uv version developers use (ADR 0007).
+  UV_VERSION: "0.13.1"
+
+jobs:
+  api:
+    name: API
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # Property tests run 10,000 cases per property here, 200 locally (ADR 0010).
+      HYPOTHESIS_PROFILE: ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - run: uv sync --directory apps/api --locked
+      - name: Lint (ruff, import-linter)
+        run: make lint-api
+      - name: Type-check (mypy --strict)
+        run: make typecheck-api
+      - name: Test, unit and integration (PostGIS and Valkey in containers)
+        run: make test-api
+
+  web:
+    name: Web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # pnpm 12 is a native binary and fetches the Node.js version package.json pins.
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          cache: true
+      - run: pnpm install --frozen-lockfile
+      - name: Lint (eslint, prettier)
+        run: make lint-web
+      - name: Type-check (tsc --strict)
+        run: make typecheck-web
+      - name: Test (Vitest)
+        run: make test-web
+      - name: Build
+        run: make web-build
+
+  e2e:
+    name: Browser tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          cache: true
+      - run: pnpm install --frozen-lockfile
+      - name: Install Chromium and its system libraries
+        run: pnpm --filter @pg-platform/web exec playwright install --with-deps chromium
+      - name: Test in a browser (Playwright, against a production build)
+        run: make e2e
+      - name: Keep the report of a failed run
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  client:
+    name: API client
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          cache: true
+      - run: uv sync --directory apps/api --locked
+      - run: pnpm install --frozen-lockfile
+      - name: Fail if packages/api-client is out of date with the API
+        run: make check-client
+
+  contract:
+    name: API contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Fail on breaking changes to the API schema (oasdiff)
+        env:
+          # The pull request's target branch, or the commit main was at before this push.
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+          OASDIFF_FORMAT: githubactions
+        run: |
+          if [[ -z "$BASE" || "$BASE" =~ ^0+$ ]]; then
+            echo "Nothing to compare against (a new branch or a manual run)."
+            exit 0
+          fi
+          make api-breaking BASE="$BASE"
+
+  workflows:
+    name: Workflows
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lint the workflows (actionlint, zizmor with its online audits)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make lint-workflows
+
+  hooks:
+    name: Pre-commit hooks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - run: uv sync --directory apps/api --locked
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: File hygiene (whitespace, line endings, YAML/TOML, merge markers, large files)
+        env:
+          # Their checks run as the jobs above and in the Security workflow.
+          SKIP: ruff-check,ruff-format,mypy,eslint,prettier,gitleaks
+        run: uv run --project apps/api --locked pre-commit run --all-files --show-diff-on-failure
