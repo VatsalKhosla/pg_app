@@ -494,7 +494,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 - Public ids only (UUIDv7, booking codes). Never expose sequential ids.
 - Cursor pagination (`cursor`, `limit` ≤ 50).
 - `Idempotency-Key` is required on POSTs that create bookings, payments, refunds or invoices.
-- OpenAPI is the contract: CI regenerates the TS client and fails if it is stale; `oasdiff` fails CI on breaking changes.
+- OpenAPI is the contract: CI regenerates the TS client and fails if it is stale; `oasdiff` fails CI on breaking changes. `make gen-client` exports the schema without starting the API (`python -m app.openapi`) into `packages/api-client/openapi.json` and generates `src/generated/schema.ts` with openapi-typescript; `make check-client` (part of `make check`) fails when either is out of date. Operation ids are the route's tag and function name in camelCase (`systemHealthz`), and every operation declares `4XX`/`5XX` as `application/problem+json` `ProblemDetail`, so the web client's error types are the API's real ones (ADR 0012).
 
 Main endpoints (v1):
 ```
@@ -520,7 +520,7 @@ Compliance POST /v1/grievances  POST /v1/data-requests
 
 - Route groups: `(marketing)` home, about, pricing, contact, legal pages; `(discover)` `/search`, `/pg/[slug]`, `/pg-near/[campus]`, `/pg-in/[locality]`; `(account)` login, profile; `(student)` `/visits`, `/bookings/[code]`; `/owner/*` dashboard; `/ops/*` console. Owner, ops and account routes are `noindex` and protected in `src/proxy.ts` (Next.js 16's name for middleware) **and** on the server.
 - Server Components by default; Client Components for the map, filters, booking flow and editors.
-- Data: server-side calls through the typed client with cookies forwarded; client-side through TanStack Query with conventional query keys; no ad-hoc `fetch`.
+- Data: server-side calls through the typed client with cookies forwarded; client-side through TanStack Query with conventional query keys; no ad-hoc `fetch`. `src/lib/api` wraps the generated client (openapi-fetch): `getServerApi()` forwards only the API's own cookies and the page's request id and gives up after 3 s; `browserApi` sends credentials; `unwrap()` turns error responses and failed requests into a typed `ApiError` (ADR 0012).
 - The URL is the source of truth for search state (nuqs). Minimal global state.
 - `MapProvider` interface: `<MapView pins onBoundsChange onPinSelect selectedId overlays bounds />` with `GoogleMapView` and `MapLibreMapView` adapters.
 - Feature folders own their components, hooks and tests; enforce boundaries with ESLint rules.
