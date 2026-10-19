@@ -92,8 +92,17 @@ Start the slow ones in week 1.
 
   CSRF is a signed double-submit token, bound to the session and enforced app-wide. A test sweeps every unsafe route; FastAPI 0.143 nests included routers, so the sweep walks `iter_route_contexts` (ADR 0014). Sign-in itself arrives with OTP in 1.2.
 
-- [ ] **1.2 Phone OTP login.** Request and verify endpoints; HMAC-stored codes; expiry, attempt limits, resend cooldown, per-phone and per-IP limits; Turnstile check; `OtpSender` port with a console adapter (dev) and an adapter for the founders' chosen DLT provider (ask before picking).
+- [x] **1.2 Phone OTP login.** Request and verify endpoints; HMAC-stored codes; expiry, attempt limits, resend cooldown, per-phone and per-IP limits; Turnstile check; `OtpSender` port with a console adapter (dev) and an adapter for the founders' chosen DLT provider (ask before picking).
   *Done when* login works end to end in dev, and abuse tests pass (sixth attempt locked, rate limit returns 429, expired code rejected).
+  *Note (2026-10-19):* Codes are HMACs bound to their challenge. Abuse controls run in order: per-IP limits, then Turnstile (bound to the form's action and the web app's hostnames), then a per-phone cooldown under an advisory lock, then 5 codes per phone per hour, then 5 tries per code. 17 integration tests cover:
+  - sign-in end to end, and the same account on the next sign-in;
+  - the sixth attempt locked, and expired and replaced codes;
+  - the cooldown's and the hourly limit's 429s;
+  - an immediate retry after a failed SMS;
+  - suspended accounts, and staff roles dropped from phone sessions;
+  - hashed storage, and 7-day retention.
+
+  A real sign-in against the local API worked, with the code read from the console sender's log. Deployed environments run `OTP_SENDER=unavailable` (503) until the founders choose the DLT SMS provider, which is a paid vendor (ADR 0015).
 
 - [ ] **1.3 Staff sign-in.** Google OIDC restricted to an allowed domain or email list (OTP + TOTP fallback); staff roles; 12-hour sessions.
   *Done when* a non-allowed Google account is refused and staff routes reject non-staff.

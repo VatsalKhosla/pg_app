@@ -170,8 +170,8 @@ All tables have `id bigint generated always as identity`, `created_at`, `updated
 
 **Identity**
 - `users` (phone_e164 unique, email citext unique null, name, status), `user_roles` (user_id, role: `student | parent | owner | field_agent | ops | admin`).
-- `otp_challenges` (phone_e164, code_hash, purpose, attempts, expires_at, consumed_at, ip, user_agent).
-- `sessions` (user_id, token_hash, expires_at, last_seen_at, revoked_at, ip, user_agent).
+- `otp_challenges` (public_id, phone_e164, purpose, code_hash, attempts, requested_at, expires_at, consumed_at, superseded_at, ip_address, user_agent).
+- `sessions` (public_id, user_id, token_hash, kind, started_at, last_seen_at, expires_at, absolute_expires_at, rotated_at, ended_at, end_reason, ip_address, user_agent).
 - `consents` (user_id, purpose, notice_version, granted_at, withdrawn_at).
 
 **Geo**
@@ -463,8 +463,15 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 
 ## 12. Identity and access
 
-- **Students, parents, owners**: phone OTP. Six digits, stored as an HMAC with a server pepper, five-minute expiry, five attempts, 30-second resend cooldown, at most five sends per phone per hour and per IP limits, Cloudflare Turnstile before sending. Phone numbers normalised to E.164 (+91). SMS through a DLT-registered template behind an `OtpSender` port (console adapter in dev).
-- **Staff (ops, admin, field agents)**: Google Workspace sign-in (OIDC) restricted to the company domain with 2-step verification enforced, or OTP + TOTP until the domain exists. Shorter sessions (12 h).
+- **Students, parents, owners**: phone OTP (ADR 0015).
+  - Codes: six digits, stored as an HMAC under `SECRET_KEY` bound to their challenge. A code expires after five minutes and allows five attempts (the sixth answers `OTP_LOCKED`). A new code replaces the old one, at most every 30 seconds.
+  - Limits: at most five sends per phone per hour, plus per-IP limits (60 requests an hour, 120 checks per 15 minutes).
+  - Turnstile: Cloudflare Turnstile runs before any send. A token counts only for the sign-in form's action (`otp_request`) and the web app's hostnames.
+  - Phone numbers: Indian mobiles only, normalised to E.164 (+91).
+  - Accounts: created at the first correct code. Responses never reveal whether a number has an account.
+  - Sending: codes go out straight away, never through the outbox (which would store them), as SMS from a DLT-registered template behind an `OtpSender` port. `OTP_SENDER=console` logs them (local only); `unavailable` turns phone sign-in off (503) until the founders choose the provider.
+  - Retention: challenges are deleted after 7 days.
+- **Staff (ops, admin, field agents)**: Google Workspace sign-in (OIDC) restricted to the company domain with 2-step verification enforced, or OTP + TOTP until the domain exists. Shorter sessions (12 h). Staff roles come only with a staff session: a phone sign-in drops them, so a SIM swap can't reach the back office.
 - **Sessions**: opaque 256-bit tokens; only their SHA-256 stored server-side; the `__Secure-session` cookie (`HttpOnly; Secure; SameSite=Lax`) on the parent domain (`SESSION_COOKIE_DOMAIN`); 30-day sliding expiry for users (moved at most every 10 minutes, with the cookie re-sent), 12 hours from sign-in for staff; signing in ends the browser's previous session, and `rotate()` renews the token on role changes; logout and "log out everywhere"; session list in the profile; ended sessions deleted after 30 days (ADR 0014).
 - **CSRF**: SameSite=Lax plus a signed double-submit token: `GET /v1/auth/csrf` sets `__Secure-csrf`, and every POST, PUT, PATCH and DELETE must echo it in `X-CSRF-Token`. Tokens are HMAC-signed with `SECRET_KEY` and bound to the session cookie. An app-wide dependency enforces this (deny by default; provider webhooks exempt), and a test sweeps every route. CORS allowlist of exact origins.
 - **Authorization**: deny by default; role checks plus object-level policies (an owner only sees their properties and their bookings; a student only their visits and bookings). Return 404 for another user's resources. Maintain an authorization matrix test that covers every endpoint × role.
@@ -487,7 +494,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 ## 15. API conventions
 
 - REST over JSON at `/v1`; plural nouns; JSON fields in camelCase (Pydantic alias generator), Python in snake_case.
-- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `OTP_INVALID`, `OTP_LOCKED`, `RATE_LIMITED`, `PRICING_CONFIG_ERROR`. Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED` (401: no live session), `CSRF_TOKEN_INVALID` (403), `FORBIDDEN`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status. Idempotency: `IDEMPOTENCY_KEY_REQUIRED` and `IDEMPOTENCY_KEY_INVALID` (400), `IDEMPOTENCY_KEY_REUSED` (422), `IDEMPOTENCY_KEY_CONFLICT` (409).
+- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `RATE_LIMITED` (429, with `Retry-After`), `PRICING_CONFIG_ERROR`. Sign-in: `OTP_INVALID`, `OTP_EXPIRED` and `OTP_LOCKED` (400), `OTP_RESEND_TOO_SOON` (429, with `Retry-After`), `HUMAN_CHECK_FAILED` (400), `ACCOUNT_SUSPENDED` (403). Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED` (401: no live session), `CSRF_TOKEN_INVALID` (403), `FORBIDDEN`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status. Idempotency: `IDEMPOTENCY_KEY_REQUIRED` and `IDEMPOTENCY_KEY_INVALID` (400), `IDEMPOTENCY_KEY_REUSED` (422), `IDEMPOTENCY_KEY_CONFLICT` (409).
 - Probes: `GET /healthz` (liveness) and `GET /readyz` (database and Redis reachable, 503 otherwise) sit outside `/v1`, need no authentication, and are left out of tracing and info-level access logs.
 - Money: integer paise with names ending in `Paise`; the client formats with `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`.
 - Dates: `YYYY-MM-DD` for move-in; timestamps in ISO 8601 UTC; display in IST.
