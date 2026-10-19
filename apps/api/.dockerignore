@@ -1,0 +1,9 @@
+# The image build sees only what is listed here: everything else, including any .env file, local
+# virtual environments, caches and tests, stays out.
+*
+!pyproject.toml
+!uv.lock
+!src/
+!alembic.ini
+!migrations/
+**/__pycache__
