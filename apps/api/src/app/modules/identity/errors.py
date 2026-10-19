@@ -44,3 +44,33 @@ class AccountSuspendedError(AppError):
     status = 403
     code = "ACCOUNT_SUSPENDED"
     title = "This account is suspended"
+
+
+class StaffSignInExpiredError(AppError):
+    """The Google sign-in can't be finished: it took too long, was started in another tab, or its
+    code was already used. Starting again fixes it."""
+
+    status = 400
+    code = "STAFF_SIGN_IN_EXPIRED"
+    title = "Sign-in expired; please start again"
+
+
+class StaffSignInCancelledError(AppError):
+    status = 400
+    code = "STAFF_SIGN_IN_CANCELLED"
+    title = "Sign-in was cancelled"
+
+
+class StaffAccountNotAllowedError(AppError):
+    """Deliberately one error for every reason (not an allowed Google account, not staff, no
+    authenticator, suspended), so nobody can probe who is staff."""
+
+    status = 403
+    code = "STAFF_ACCOUNT_NOT_ALLOWED"
+    title = "This account can't sign in to staff tools"
+
+
+class TotpInvalidError(AppError):
+    status = 400
+    code = "TOTP_INVALID"
+    title = "That authenticator code isn't right"

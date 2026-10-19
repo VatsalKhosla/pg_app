@@ -27,12 +27,32 @@ def environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.Monke
         "OTP_SENDER",
         "TURNSTILE_SECRET_KEY",
         "SESSION_COOKIE_DOMAIN",
+        "SITE_URL",
+        "API_URL",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "STAFF_GOOGLE_DOMAINS",
+        "STAFF_GOOGLE_EMAILS",
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("DATABASE_URL", DATABASE_URL)
     monkeypatch.setenv("REDIS_URL", REDIS_URL)
     monkeypatch.setenv("SECRET_KEY", "test-only-secret-key-0123456789abcdef")
     return monkeypatch
+
+
+def _deployed(environment: pytest.MonkeyPatch, app_env: str = "production") -> pytest.MonkeyPatch:
+    """Everything a deployed environment requires; each test then takes one thing away."""
+    for name, value in {
+        "APP_ENV": app_env,
+        "CORS_ALLOWED_ORIGINS": "https://www.example.in",
+        "SITE_URL": "https://www.example.in",
+        "API_URL": "https://api.example.in",
+        "TURNSTILE_SECRET_KEY": "a-turnstile-secret",
+        "OTP_SENDER": "unavailable",
+    }.items():
+        environment.setenv(name, value)
+    return environment
 
 
 def test_reads_the_environment_and_keeps_secrets_out_of_repr(
@@ -127,8 +147,7 @@ def test_the_brand_name_is_still_a_placeholder() -> None:
 def test_deployed_environments_need_a_turnstile_secret(
     environment: pytest.MonkeyPatch, app_env: str
 ) -> None:
-    environment.setenv("APP_ENV", app_env)
-    environment.setenv("OTP_SENDER", "unavailable")
+    _deployed(environment, app_env).delenv("TURNSTILE_SECRET_KEY")
 
     with pytest.raises(ValidationError, match="TURNSTILE_SECRET_KEY is required"):
         Settings()
@@ -138,10 +157,7 @@ def test_deployed_environments_need_a_turnstile_secret(
 def test_production_refuses_cloudflares_turnstile_test_secrets(
     environment: pytest.MonkeyPatch, secret: str
 ) -> None:
-    environment.setenv("APP_ENV", "production")
-    environment.setenv("TURNSTILE_SECRET_KEY", secret)
-    environment.setenv("CORS_ALLOWED_ORIGINS", "https://www.example.in")
-    environment.setenv("OTP_SENDER", "unavailable")
+    _deployed(environment).setenv("TURNSTILE_SECRET_KEY", secret)
 
     with pytest.raises(ValidationError, match="Cloudflare test secret"):
         Settings()
@@ -150,10 +166,9 @@ def test_production_refuses_cloudflares_turnstile_test_secrets(
 def test_staging_may_use_the_always_pass_test_secret_for_smoke_tests(
     environment: pytest.MonkeyPatch,
 ) -> None:
-    environment.setenv("APP_ENV", "staging")
-    environment.setenv("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA")
-    environment.setenv("CORS_ALLOWED_ORIGINS", "https://staging.example.in")
-    environment.setenv("OTP_SENDER", "unavailable")
+    _deployed(environment, "staging").setenv(
+        "TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA"
+    )
 
     assert Settings().turnstile_secret_key is not None
 
@@ -162,9 +177,7 @@ def test_staging_may_use_the_always_pass_test_secret_for_smoke_tests(
 def test_deployed_environments_need_the_web_apps_origins(
     environment: pytest.MonkeyPatch, app_env: str
 ) -> None:
-    environment.setenv("APP_ENV", app_env)
-    environment.setenv("TURNSTILE_SECRET_KEY", "a-turnstile-secret")
-    environment.setenv("OTP_SENDER", "unavailable")
+    _deployed(environment, app_env).delenv("CORS_ALLOWED_ORIGINS")
 
     with pytest.raises(ValidationError, match="CORS_ALLOWED_ORIGINS"):
         Settings()
@@ -174,10 +187,7 @@ def test_deployed_environments_need_the_web_apps_origins(
 def test_deployed_environments_never_log_sign_in_codes(
     environment: pytest.MonkeyPatch, app_env: str
 ) -> None:
-    environment.setenv("APP_ENV", app_env)
-    environment.setenv("TURNSTILE_SECRET_KEY", "a-turnstile-secret")
-    environment.setenv("CORS_ALLOWED_ORIGINS", "https://www.example.in")
-    environment.setenv("OTP_SENDER", "console")
+    _deployed(environment, app_env).setenv("OTP_SENDER", "console")
 
     with pytest.raises(ValidationError, match="OTP_SENDER=console"):
         Settings()
@@ -186,12 +196,7 @@ def test_deployed_environments_never_log_sign_in_codes(
 def test_a_deployed_environment_without_sms_runs_with_phone_sign_in_off(
     environment: pytest.MonkeyPatch,
 ) -> None:
-    environment.setenv("APP_ENV", "production")
-    environment.setenv("TURNSTILE_SECRET_KEY", "a-turnstile-secret")
-    environment.setenv("CORS_ALLOWED_ORIGINS", "https://www.example.in")
-    environment.setenv("OTP_SENDER", "unavailable")
-
-    settings = Settings()
+    settings = (_deployed(environment), Settings())[1]
 
     assert settings.otp_sender == "unavailable"
     assert settings.turnstile_secret_key is not None
@@ -203,6 +208,105 @@ def test_turnstile_is_solved_on_the_web_apps_hostnames(environment: pytest.Monke
     )
 
     assert Settings().web_hostnames == {"www.example.in", "staging.example.in"}
+
+
+@pytest.mark.parametrize("name", ["SITE_URL", "API_URL"])
+def test_deployed_environments_need_https_for_the_site_and_the_api(
+    environment: pytest.MonkeyPatch, name: str
+) -> None:
+    _deployed(environment).setenv(name, "http://www.example.in")
+
+    with pytest.raises(ValidationError, match="must use https"):
+        Settings()
+
+
+@pytest.mark.parametrize(
+    "address",
+    ["www.example.in", "https://www.example.in/app", "https://www.example.in?a=1", "ftp://a.in"],
+    ids=["no-scheme", "path", "query", "ftp"],
+)
+def test_the_site_and_api_addresses_are_origins_without_a_path(
+    environment: pytest.MonkeyPatch, address: str
+) -> None:
+    environment.setenv("SITE_URL", address)
+
+    with pytest.raises(ValidationError, match="site_url"):
+        Settings()
+
+
+def test_a_trailing_slash_is_dropped_from_the_site_and_api_addresses(
+    environment: pytest.MonkeyPatch,
+) -> None:
+    environment.setenv("API_URL", "https://api.example.in/")
+
+    assert Settings().api_url == "https://api.example.in"
+
+
+def test_google_sign_in_needs_the_client_id_and_secret_together(
+    environment: pytest.MonkeyPatch,
+) -> None:
+    environment.setenv("GOOGLE_CLIENT_ID", "1234-test.apps.googleusercontent.com")
+    environment.setenv("STAFF_GOOGLE_DOMAINS", "example.in")
+
+    with pytest.raises(ValidationError, match="GOOGLE_CLIENT_SECRET together"):
+        Settings()
+
+
+def test_google_sign_in_needs_someone_allowed_to_use_it(environment: pytest.MonkeyPatch) -> None:
+    environment.setenv("GOOGLE_CLIENT_ID", "1234-test.apps.googleusercontent.com")
+    environment.setenv("GOOGLE_CLIENT_SECRET", "client-secret")
+
+    with pytest.raises(ValidationError, match="STAFF_GOOGLE_DOMAINS or STAFF_GOOGLE_EMAILS"):
+        Settings()
+
+
+def test_allowed_google_domains_and_addresses_are_read_in_lowercase(
+    environment: pytest.MonkeyPatch,
+) -> None:
+    environment.setenv("STAFF_GOOGLE_DOMAINS", "Example.in, example.com")
+    environment.setenv("STAFF_GOOGLE_EMAILS", "Founder@Gmail.com")
+
+    settings = Settings()
+
+    assert settings.staff_google_domains == {"example.in", "example.com"}
+    assert settings.staff_google_emails == {"founder@gmail.com"}
+    # With single addresses allowed too, Google's account chooser stays open.
+    assert settings.google_hosted_domain_hint is None
+
+
+def test_a_single_allowed_domain_narrows_googles_account_chooser(
+    environment: pytest.MonkeyPatch,
+) -> None:
+    environment.setenv("STAFF_GOOGLE_DOMAINS", "example.in")
+
+    assert Settings().google_hosted_domain_hint == "example.in"
+
+
+@pytest.mark.parametrize("domain", ["https://example.in", "example"])
+def test_allowed_domains_must_be_bare_domains(environment: pytest.MonkeyPatch, domain: str) -> None:
+    environment.setenv("STAFF_GOOGLE_DOMAINS", domain)
+
+    with pytest.raises(ValidationError, match="staff_google_domains"):
+        Settings()
+
+
+def test_allowed_addresses_must_be_addresses_and_stay_out_of_the_error(
+    environment: pytest.MonkeyPatch,
+) -> None:
+    environment.setenv("STAFF_GOOGLE_EMAILS", "founder.at.gmail.com")
+
+    with pytest.raises(ValidationError, match="staff_google_emails") as error:
+        Settings()
+    # Someone's address must not reach the error, and so the logs.
+    assert "founder" not in str(error.value)
+
+
+def test_a_rejected_secret_never_appears_in_the_error(environment: pytest.MonkeyPatch) -> None:
+    environment.setenv("DATABASE_URL", "postgresql://app:db-secret-password@db.internal/app")
+
+    with pytest.raises(ValidationError) as error:
+        Settings()
+    assert "db-secret-password" not in str(error.value)
 
 
 @pytest.mark.parametrize("domain", ["https://example.com", "example", ".example.com/path"])

@@ -24,7 +24,9 @@ from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestCont
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
 from app.modules.identity.adapters.console_otp import ConsoleOtpSender
+from app.modules.identity.adapters.google_oidc import GoogleOidc
 from app.modules.identity.adapters.unavailable_otp import UnavailableOtpSender
+from app.modules.identity.router import GOOGLE_CALLBACK_PATH
 from app.modules.identity.router import router as identity_router
 from app.modules.system.router import router as system_router
 
@@ -38,6 +40,8 @@ if TYPE_CHECKING:
 # keys in step 0.4).
 CORS_ALLOWED_HEADERS = ["Content-Type", CSRF_HEADER, "Idempotency-Key", REQUEST_ID_HEADER]
 CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+# Outside providers: connect within 3 s, answer within 10 s (the backend rules).
+PROVIDER_TIMEOUT = httpx.Timeout(10.0, connect=3.0)
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -58,9 +62,9 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
         engine = create_engine(settings, application_name=settings.otel_service_name)
         sessionmaker = create_sessionmaker(engine)
         redis = create_redis(settings)
-        # One HTTP client per outside provider, so a slow one can't use up another's connections,
-        # with the backend rule's timeouts.
-        turnstile_http = httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=3.0))
+        # One HTTP client per outside provider, so a slow one can't use up another's connections.
+        turnstile_http = httpx.AsyncClient(timeout=PROVIDER_TIMEOUT)
+        google_http = httpx.AsyncClient(timeout=PROVIDER_TIMEOUT)
         tracer_provider = configure_tracing(settings, engine=engine)
         app.state.clock = clock
         app.state.engine = engine
@@ -80,11 +84,24 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
         app.state.otp_sender = (
             ConsoleOtpSender() if settings.otp_sender == "console" else UnavailableOtpSender()
         )
+        app.state.google_sign_in = (
+            None
+            if settings.google_client_id is None or settings.google_client_secret is None
+            else GoogleOidc(
+                google_http,
+                client_id=settings.google_client_id,
+                client_secret=settings.google_client_secret,
+                redirect_uri=f"{settings.api_url}{GOOGLE_CALLBACK_PATH}",
+                clock=clock,
+                hosted_domain=settings.google_hosted_domain_hint,
+            )
+        )
         logger.info("api started", environment=settings.app_env, version=SERVICE_VERSION)
         try:
             yield
         finally:
             await turnstile_http.aclose()
+            await google_http.aclose()
             await redis.aclose()
             await engine.dispose()
             if tracer_provider is not None:
@@ -106,6 +123,9 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
     )
     app.state.cookies = CookiePolicy(domain=settings.session_cookie_domain)
     app.state.secret_key = settings.secret_key.get_secret_value().encode()
+    app.state.site_url = settings.site_url
+    app.state.staff_google_domains = settings.staff_google_domains
+    app.state.staff_google_emails = settings.staff_google_emails
     install_error_handlers(app)
     # Added innermost first, so a request passes RequestContext, SecurityHeaders, CORS and then
     # BodySizeLimit before reaching a route.

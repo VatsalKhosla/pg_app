@@ -1,4 +1,4 @@
-"""Identity tables (ARCHITECTURE §6): users, their roles and their sessions."""
+"""Identity tables (ARCHITECTURE §6): users, their roles, sessions and sign-in methods."""
 
 import uuid
 from datetime import datetime
@@ -23,9 +23,13 @@ from app.core.db import Model
 from app.core.ids import new_public_id
 from app.modules.identity.domain.otp import OtpPurpose
 from app.modules.identity.domain.sessions import EndReason, SessionKind
+from app.modules.identity.domain.staff import IdentityProvider
+from app.modules.identity.domain.totp import SALT_BYTES
+
+type _Choices = type[Role | SessionKind | EndReason | OtpPurpose | IdentityProvider]
 
 
-def _one_of(column: str, values: type[Role | SessionKind | EndReason | OtpPurpose]) -> str:
+def _one_of(column: str, values: _Choices) -> str:
     return f"{column} IN ({', '.join(f"'{value}'" for value in values)})"
 
 
@@ -113,3 +117,41 @@ class OtpChallenge(Model):
         CheckConstraint("attempts >= 0", name="attempts"),
         Index("ix_otp_challenges_phone_e164_requested_at", "phone_e164", "requested_at"),
     )
+
+
+class UserIdentity(Model):
+    """An outside account a user signs in with: a staff member's Google account (step 1.3)."""
+
+    __tablename__ = "user_identities"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"))
+    provider: Mapped[str] = mapped_column(Text)
+    # The provider's id for the account (Google's sub): unique and never reused, unlike addresses.
+    subject: Mapped[str] = mapped_column(Text)
+    # The account's address when it was linked, for the staff list.
+    email: Mapped[str] = mapped_column(CITEXT)
+    last_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        CheckConstraint(_one_of("provider", IdentityProvider), name="provider"),
+        UniqueConstraint("provider", "subject"),
+        UniqueConstraint("user_id", "provider"),
+    )
+
+
+class TotpCredential(Model):
+    """A staff member's authenticator app, for the fallback sign-in (step 1.3). The secret itself
+    isn't stored: it is derived from SECRET_KEY and ``salt`` whenever a code is checked."""
+
+    __tablename__ = "totp_credentials"
+
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), unique=True
+    )
+    salt: Mapped[bytes] = mapped_column(LargeBinary(SALT_BYTES))
+    # Set once the first code from the app has been entered; until then the app can't sign in.
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The 30-second step of the last code used, so each code works once.
+    last_used_step: Mapped[int | None] = mapped_column(BigInteger)
+
+    __table_args__ = (CheckConstraint(f"octet_length(salt) = {SALT_BYTES}", name="salt"),)

@@ -1,13 +1,22 @@
 """Queries on the identity module's tables. Repositories never commit; services own transactions."""
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 
-from app.core.actor import Role
+from app.core.actor import STAFF_ROLES, Role
 from app.core.ids import new_public_id
-from app.modules.identity.models import OtpChallenge, User, UserRole, UserSession
+from app.modules.identity.domain.staff import IdentityProvider
+from app.modules.identity.models import (
+    OtpChallenge,
+    TotpCredential,
+    User,
+    UserIdentity,
+    UserRole,
+    UserSession,
+)
 
 if TYPE_CHECKING:
     import uuid
@@ -51,6 +60,75 @@ class UserRepository:
     async def roles(self, user_id: int) -> frozenset[Role]:
         rows = await self._db.scalars(select(UserRole.role).where(UserRole.user_id == user_id))
         return frozenset(Role(role) for role in rows)
+
+    async def by_phone(self, phone_e164: str) -> User | None:
+        return await self._db.scalar(select(User).where(User.phone_e164 == phone_e164))
+
+    async def by_email(self, email: str) -> User | None:
+        """The user with this address, compared without regard to case (citext)."""
+        return await self._db.scalar(select(User).where(User.email == email))
+
+    async def add_roles(self, user_id: int, roles: Iterable[Role]) -> None:
+        values = [{"user_id": user_id, "role": role} for role in roles]
+        if values:
+            await self._db.execute(
+                insert(UserRole)
+                .values(values)
+                .on_conflict_do_nothing(index_elements=[UserRole.user_id, UserRole.role])
+            )
+
+    async def remove_roles(self, user_id: int, roles: Iterable[Role]) -> None:
+        await self._db.execute(
+            delete(UserRole).where(UserRole.user_id == user_id, UserRole.role.in_(list(roles)))
+        )
+
+    async def staff_page(self, *, after: uuid.UUID | None, limit: int) -> list[StaffRecord]:
+        """Users with a staff role, in public-id order, after ``after``: ``limit + 1`` rows at
+        most, so the caller can tell whether another page follows. One query, however many."""
+        google_email = (
+            select(UserIdentity.email)
+            .where(
+                UserIdentity.user_id == User.id, UserIdentity.provider == IdentityProvider.GOOGLE
+            )
+            .scalar_subquery()
+        )
+        authenticator = (
+            select(TotpCredential.id)
+            .where(TotpCredential.user_id == User.id, TotpCredential.confirmed_at.is_not(None))
+            .exists()
+        )
+        query = (
+            select(User, func.array_agg(UserRole.role), google_email, authenticator)
+            .join(UserRole, UserRole.user_id == User.id)
+            .where(UserRole.role.in_(sorted(STAFF_ROLES)))
+            .group_by(User.id)
+            .order_by(User.public_id)
+            .limit(limit + 1)
+        )
+        if after is not None:
+            query = query.where(User.public_id > after)
+        rows = await self._db.execute(query)
+        return [
+            StaffRecord(
+                user=user,
+                roles=frozenset(Role(role) for role in roles),
+                google_email=email,
+                authenticator=enrolled,
+            )
+            for user, roles, email, enrolled in rows
+        ]
+
+
+@dataclass(frozen=True)
+class StaffRecord:
+    """A staff member for the staff list: their staff roles and how they can sign in."""
+
+    user: User
+    roles: frozenset[Role]
+    # The linked Google account's address, if any.
+    google_email: str | None
+    # Whether a confirmed authenticator app is set up.
+    authenticator: bool
 
 
 class SessionRepository:
@@ -163,3 +241,58 @@ class OtpRepository:
             .returning(OtpChallenge.id)
         )
         return len(deleted.all())
+
+
+class IdentityRepository:
+    def __init__(self, db: AsyncSession) -> None:
+        self._db = db
+
+    def add(self, identity: UserIdentity) -> None:
+        self._db.add(identity)
+
+    async def find(self, provider: IdentityProvider, subject: str) -> UserIdentity | None:
+        return await self._db.scalar(
+            select(UserIdentity).where(
+                UserIdentity.provider == provider, UserIdentity.subject == subject
+            )
+        )
+
+    async def for_user(self, user_id: int, provider: IdentityProvider) -> UserIdentity | None:
+        return await self._db.scalar(
+            select(UserIdentity).where(
+                UserIdentity.user_id == user_id, UserIdentity.provider == provider
+            )
+        )
+
+    async def delete_for_user(self, user_id: int, provider: IdentityProvider) -> bool:
+        deleted = await self._db.scalars(
+            delete(UserIdentity)
+            .where(UserIdentity.user_id == user_id, UserIdentity.provider == provider)
+            .returning(UserIdentity.id)
+        )
+        return bool(deleted.all())
+
+
+class TotpRepository:
+    def __init__(self, db: AsyncSession) -> None:
+        self._db = db
+
+    async def for_user(self, user_id: int, *, for_update: bool = False) -> TotpCredential | None:
+        query = select(TotpCredential).where(TotpCredential.user_id == user_id)
+        return await self._db.scalar(query.with_for_update() if for_update else query)
+
+    async def replace(self, user_id: int, *, salt: bytes) -> TotpCredential:
+        """A new, unconfirmed credential for ``user_id``, in place of any earlier one."""
+        await self.delete_for_user(user_id)
+        credential = TotpCredential(user_id=user_id, salt=salt)
+        self._db.add(credential)
+        await self._db.flush()
+        return credential
+
+    async def delete_for_user(self, user_id: int) -> bool:
+        deleted = await self._db.scalars(
+            delete(TotpCredential)
+            .where(TotpCredential.user_id == user_id)
+            .returning(TotpCredential.id)
+        )
+        return bool(deleted.all())

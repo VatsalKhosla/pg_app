@@ -27,11 +27,19 @@ TURNSTILE_TEST_SECRETS: Final = frozenset(
         "3x0000000000000000000000000000000AA",
     }
 )
+_DOMAIN: Final = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)+")
+_EMAIL: Final = re.compile(r"[^@\s,]+@[a-z0-9-]+(\.[a-z0-9-]+)+")
 
 
 class LoggingSettings(BaseSettings):
+    # A rejected value stays out of the error, which ends up in logs: it may be a password in a
+    # URL, a secret or someone's address.
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore", frozen=True
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        frozen=True,
+        hide_input_in_errors=True,
     )
 
     app_env: Environment = "local"
@@ -74,6 +82,19 @@ class Settings(DatabaseSettings):
     otp_sender: Literal["console", "unavailable"] = "console"
     # Cloudflare Turnstile's secret key. Unset, every human check passes (local and tests only).
     turnstile_secret_key: SecretStr | None = None
+    # The web app's public address, where staff land after signing in with Google, and the API's
+    # own, which Google's redirect URI starts with.
+    site_url: str = "http://localhost:3000"
+    api_url: str = "http://localhost:8000"
+    # Staff sign-in with Google: the OAuth client of the founders' Google Cloud project. Unset, it
+    # answers 503, and staff sign in with a phone code and an authenticator app instead.
+    google_client_id: str | None = None
+    google_client_secret: SecretStr | None = None
+    # The Google accounts allowed to sign in to staff tools, comma-separated: Google Workspace
+    # domains (matched against the ID token's hd claim) and single addresses. Allowed isn't enough:
+    # the account must also have been made staff (python -m app.manage staff add).
+    staff_google_domains: Annotated[frozenset[str], NoDecode] = frozenset()
+    staff_google_emails: Annotated[frozenset[str], NoDecode] = frozenset()
 
     # Worker: concurrent outbox consumers, jobs per claim, idle poll interval, job lease.
     worker_concurrency: int = Field(default=2, ge=1)
@@ -97,11 +118,21 @@ class Settings(DatabaseSettings):
             return tuple(origin.strip() for origin in value.split(",") if origin.strip())
         return value
 
+    @field_validator("staff_google_domains", "staff_google_emails", mode="before")
+    @classmethod
+    def _split_lowercase(cls, value: object) -> object:
+        # STAFF_GOOGLE_DOMAINS=example.com,example.in
+        if isinstance(value, str):
+            return frozenset(item.strip().lower() for item in value.split(",") if item.strip())
+        return value
+
     @field_validator(
         "sentry_dsn",
         "otel_exporter_otlp_endpoint",
         "session_cookie_domain",
         "turnstile_secret_key",
+        "google_client_id",
+        "google_client_secret",
         mode="before",
     )
     @classmethod
@@ -116,13 +147,63 @@ class Settings(DatabaseSettings):
             raise ValueError(msg)
         return value
 
+    @field_validator("site_url", "api_url")
+    @classmethod
+    def _base_url(cls, value: str) -> str:
+        parts = urlsplit(value)
+        if (
+            parts.scheme not in {"http", "https"}
+            or not parts.hostname
+            or parts.path not in {"", "/"}
+            or parts.query
+            or parts.fragment
+        ):
+            msg = "must be an http(s) address without a path, such as https://www.example.com"
+            raise ValueError(msg)
+        return value.rstrip("/")
+
+    @field_validator("staff_google_domains")
+    @classmethod
+    def _bare_domains(cls, value: frozenset[str]) -> frozenset[str]:
+        invalid = sorted(domain for domain in value if not _DOMAIN.fullmatch(domain))
+        if invalid:
+            msg = f"must be domains such as example.com: {', '.join(invalid)}"
+            raise ValueError(msg)
+        return value
+
+    @field_validator("staff_google_emails")
+    @classmethod
+    def _addresses(cls, value: frozenset[str]) -> frozenset[str]:
+        # The addresses themselves stay out of the message: it ends up in logs.
+        invalid = sum(1 for address in value if not _EMAIL.fullmatch(address))
+        if invalid:
+            msg = f"{invalid} of the addresses aren't email addresses"
+            raise ValueError(msg)
+        return value
+
     @model_validator(mode="after")
-    def _https_origins_when_deployed(self) -> Self:
+    def _https_when_deployed(self) -> Self:
         if self.app_env in DEPLOYED_ENVIRONMENTS:
-            insecure = [o for o in self.cors_allowed_origins if not o.startswith("https://")]
+            addresses = (*self.cors_allowed_origins, self.site_url, self.api_url)
+            insecure = [address for address in addresses if not address.startswith("https://")]
             if insecure:
-                msg = f"CORS origins must use https in {self.app_env}: {', '.join(insecure)}"
+                msg = (
+                    "CORS origins, SITE_URL and API_URL must use https in "
+                    f"{self.app_env}: {', '.join(insecure)}"
+                )
                 raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def _google_sign_in_complete(self) -> Self:
+        if (self.google_client_id is None) != (self.google_client_secret is None):
+            msg = "set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET together, or neither"
+            raise ValueError(msg)
+        if self.google_client_id is not None and not (
+            self.staff_google_domains or self.staff_google_emails
+        ):
+            msg = "Google sign-in needs STAFF_GOOGLE_DOMAINS or STAFF_GOOGLE_EMAILS"
+            raise ValueError(msg)
         return self
 
     @model_validator(mode="after")
@@ -157,6 +238,14 @@ class Settings(DatabaseSettings):
         return frozenset(
             host for origin in self.cors_allowed_origins if (host := urlsplit(origin).hostname)
         )
+
+    @property
+    def google_hosted_domain_hint(self) -> str | None:
+        """The one Workspace domain Google's account chooser may be narrowed to, when staff can
+        only come from one domain (a convenience; the hd claim is what's checked)."""
+        if len(self.staff_google_domains) == 1 and not self.staff_google_emails:
+            return next(iter(self.staff_google_domains))
+        return None
 
 
 @lru_cache(maxsize=1)

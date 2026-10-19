@@ -6,6 +6,7 @@ requires-python = ">=3.14"
 dependencies = [
     "alembic==1.20.0",
     "asyncpg==0.32.0",
+    "cryptography==50.0.2",
     "fastapi==0.143.0",
     "httpx==0.28.1",
     "opentelemetry-exporter-otlp-proto-http==1.45.1",
@@ -103,6 +104,7 @@ ignore = [
 # FastAPI evaluates route and dependency signatures at runtime, so their imports must stay real.
 "src/app/modules/*/router.py" = ["TC001", "TC002", "TC003"]
 "src/app/modules/*/auth.py" = ["TC001", "TC002", "TC003"]
+"src/app/core/pagination.py" = ["TC003"]
 "tests/**/*.py" = [
     "S101",    # assert is how pytest works
     "S105",    # throwaway credentials for test containers
@@ -223,4 +225,12 @@ forbidden_modules = [
 name = "Config and core never depend on business modules or the entrypoints"
 type = "forbidden"
 source_modules = ["app.config", "app.core"]
-forbidden_modules = ["app.modules", "app.jobs", "app.main", "app.models", "app.openapi", "app.worker"]
+forbidden_modules = [
+    "app.modules",
+    "app.jobs",
+    "app.main",
+    "app.manage",
+    "app.models",
+    "app.openapi",
+    "app.worker",
+]

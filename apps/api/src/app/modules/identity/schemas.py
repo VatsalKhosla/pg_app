@@ -12,6 +12,7 @@ from app.core.human_check import MAX_TOKEN_LENGTH
 from app.core.schemas import ApiModel
 from app.modules.identity.domain.otp import CODE_DIGITS, HUMAN_CHECK_ACTION
 from app.modules.identity.domain.phones import normalize_indian_mobile
+from app.modules.identity.domain.totp import DIGITS as TOTP_DIGITS
 
 
 def _indian_mobile(value: str) -> str:
@@ -92,3 +93,35 @@ class SignInResult(ApiModel):
     csrf_token: str
     # The account was created by this sign-in.
     new_user: bool
+
+
+class StaffTotpSignIn(ApiModel):
+    """A code from the authenticator app, sent after signing in by phone."""
+
+    code: str = Field(pattern=rf"^[0-9]{{{TOTP_DIGITS}}}$")
+
+
+class StaffSignInResult(ApiModel):
+    """Signed in to staff tools: a staff session, ending 12 hours after sign-in."""
+
+    user: Me
+    # Also set as the CSRF cookie; bound to the new session.
+    csrf_token: str
+
+
+class StaffMember(ApiModel):
+    id: uuid.UUID
+    name: str | None
+    phone: str
+    email: str | None
+    roles: list[Role]
+    # The address of the Google account linked at their first Google sign-in, if any.
+    google_account: str | None
+    # Whether they can sign in with a phone code and an authenticator app.
+    authenticator: bool
+
+
+class StaffPage(ApiModel):
+    items: list[StaffMember]
+    # Pass as ``cursor`` for the next page; null on the last one.
+    next_cursor: uuid.UUID | None

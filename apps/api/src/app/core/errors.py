@@ -72,6 +72,15 @@ class UnauthenticatedError(AppError):
     title = "Sign in required"
 
 
+class ForbiddenError(AppError):
+    """Signed in, but without the role a route needs. Someone else's record answers NotFoundError
+    instead, so nobody learns that it exists."""
+
+    status = 403
+    code = "FORBIDDEN"
+    title = "Not allowed"
+
+
 class NotFoundError(AppError):
     status = 404
     code = "NOT_FOUND"

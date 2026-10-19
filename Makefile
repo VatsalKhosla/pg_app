@@ -89,6 +89,10 @@ migration: ## Generate a migration from model changes: make migration m="add boo
 	@[ -n "$(m)" ] || { echo 'usage: make migration m="what changed"' >&2; exit 2; }
 	$(API) alembic revision --autogenerate -m "$(m)"
 
+.PHONY: manage
+manage: env ## Run an operator command on this environment's database: make manage args="staff list" (args="--help" lists them)
+	$(API) python -m app.manage $(args)
+
 ##@ API client
 
 .PHONY: gen-client

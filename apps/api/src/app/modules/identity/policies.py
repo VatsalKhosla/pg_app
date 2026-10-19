@@ -6,6 +6,8 @@ exists.
 
 from typing import TYPE_CHECKING
 
+from app.core.actor import Role
+
 if TYPE_CHECKING:
     from app.core.actor import Actor
 
@@ -13,3 +15,8 @@ if TYPE_CHECKING:
 def can_end_session(actor: Actor, *, session_user_id: int) -> bool:
     """Users end their own sessions only. Staff tools for other users' sessions come later."""
     return actor.user_id == session_user_id
+
+
+def can_list_staff(actor: Actor) -> bool:
+    """Who is staff, and how they sign in, is for admins (in a staff session)."""
+    return actor.has_role(Role.ADMIN)

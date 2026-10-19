@@ -14,7 +14,7 @@ from app.core.clock import ClockDep
 from app.core.cookies import SESSION_COOKIE, CookiePolicy
 from app.core.db import DbSession
 from app.core.errors import UnauthenticatedError
-from app.modules.identity.service import OtpService, SessionService
+from app.modules.identity.service import OtpService, SessionService, StaffSignInService
 
 
 def get_cookie_policy(request: Request) -> CookiePolicy:
@@ -62,3 +62,21 @@ def get_otp_service(request: Request, db: DbSession, clock: ClockDep) -> OtpServ
 
 
 OtpServiceDep = Annotated[OtpService, Depends(get_otp_service)]
+
+
+def get_staff_sign_in_service(
+    request: Request, db: DbSession, clock: ClockDep
+) -> StaffSignInService:
+    state = request.app.state
+    return StaffSignInService(
+        db,
+        clock,
+        secret=state.secret_key,
+        google=state.google_sign_in,
+        google_domains=state.staff_google_domains,
+        google_emails=state.staff_google_emails,
+        limiter=state.rate_limiter,
+    )
+
+
+StaffSignInDep = Annotated[StaffSignInService, Depends(get_staff_sign_in_service)]

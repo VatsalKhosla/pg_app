@@ -136,9 +136,12 @@ class SessionService:
                 )
             roles = await self._users.roles(user.id)
             if session.kind == SessionKind.USER:
-                # Staff authority comes only from staff sign-in (Google, 12-hour sessions); a
-                # phone-OTP session never carries it, even for a staff member's account.
+                # Staff authority comes only from staff sign-in (12-hour sessions); a phone-OTP
+                # session never carries it, even for a staff member's account.
                 roles -= STAFF_ROLES
+            elif roles.isdisjoint(STAFF_ROLES):
+                # A staff session works only while its user is staff.
+                return None
             actor = Actor(
                 user_id=user.id,
                 user_public_id=user.public_id,
