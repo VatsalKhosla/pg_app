@@ -21,6 +21,18 @@ export default defineConfig([
       "@typescript-eslint/switch-exhaustiveness-check": "error",
     },
   },
+  {
+    // Zod only through src/lib/forms/zod.ts, which keeps it from probing for eval: the
+    // Content Security Policy forbids eval and reports even the probe as a violation.
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/lib/forms/zod.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { paths: [{ name: "zod", message: 'Import { z } from "@/lib/forms/zod" instead.' }] },
+      ],
+    },
+  },
   // Last: turn off stylistic rules that Prettier owns.
   prettier,
   globalIgnores([

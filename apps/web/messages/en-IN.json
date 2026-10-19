@@ -65,5 +65,158 @@
     "checking": "Checking…",
     "online": "Online",
     "offline": "Unavailable"
+  },
+  "Header": {
+    "signIn": "Sign in",
+    "account": "Your account",
+    "staffTools": "Staff tools"
+  },
+  "SignIn": {
+    "metaTitle": "Sign in",
+    "title": "Sign in or create an account",
+    "phone": {
+      "title": "Your mobile number",
+      "intro": "We'll send a six-digit code to it by SMS.",
+      "label": "Mobile number",
+      "hint": "An Indian mobile number, such as 98765 43210.",
+      "invalid": "Enter a 10-digit Indian mobile number.",
+      "humanCheck": "First, a quick check that you're not a bot.",
+      "submit": "Send code",
+      "sending": "Sending…"
+    },
+    "code": {
+      "title": "Enter the code",
+      "intro": "We sent a six-digit code to {phone}. It works for 5 minutes.",
+      "label": "Six-digit code",
+      "invalid": "The code is six digits.",
+      "submit": "Continue",
+      "checking": "Checking…",
+      "resend": "Send a new code",
+      "resendLater": "Didn't get it? You can ask for a new one shortly.",
+      "otherNumber": "Use a different number"
+    },
+    "consent": {
+      "title": "Before we create your account",
+      "intro": "We need your agreement to keep an account for you. The privacy notice says what we keep, why, and for how long.",
+      "notice": "Read the privacy notice (opens in a new tab)",
+      "account": "I agree to {brand} keeping my account and the details I give, to arrange visits, bookings and payments for me, as the privacy notice describes.",
+      "accountRequired": "You need to agree to this to create an account.",
+      "marketing": "Send me offers and news by SMS, WhatsApp or email. This is optional, and you can stop them at any time.",
+      "submit": "Agree and continue"
+    },
+    "profile": {
+      "title": "About you",
+      "intro": "So we know what to call you, and which PGs suit you."
+    },
+    "authenticator": {
+      "title": "Your authenticator code",
+      "intro": "Enter the six-digit code your authenticator app shows for {brand} staff.",
+      "label": "Authenticator code",
+      "invalid": "The code is six digits.",
+      "submit": "Sign in to staff tools",
+      "checking": "Checking…"
+    }
+  },
+  "Profile": {
+    "name": "Your name",
+    "nameHint": "What you'd like us to call you.",
+    "nameRequired": "Enter your name.",
+    "nameTooLong": "Keep it under 80 characters.",
+    "place": "College or workplace (optional)",
+    "placeHint": "Helps us show you PGs near it.",
+    "placeTooLong": "Keep it under 120 characters.",
+    "gender": "Gender (optional)",
+    "genderHint": "Used only to show the PGs you can stay in: girls', boys' or co-living.",
+    "genderFemale": "Female",
+    "genderMale": "Male",
+    "genderOther": "Other",
+    "genderUnsaid": "I'd rather not say",
+    "submit": "Save",
+    "saving": "Saving…",
+    "saved": "Saved."
+  },
+  "AuthErrors": {
+    "generic": "Something went wrong. Please try again.",
+    "OTP_INVALID": "That code isn't right.",
+    "OTP_EXPIRED": "That code has expired. Ask for a new one.",
+    "OTP_LOCKED": "Too many wrong codes. Ask for a new one.",
+    "OTP_RESEND_TOO_SOON": "Please wait a few seconds before asking for another code.",
+    "RATE_LIMITED": "Too many tries. Please wait a while, then try again.",
+    "HUMAN_CHECK_FAILED": "The check that you're not a bot didn't pass. Please try again.",
+    "ACCOUNT_SUSPENDED": "This account is suspended. Please contact us.",
+    "PRIVACY_NOTICE_CHANGED": "The privacy notice has just changed. Please read it again.",
+    "SERVICE_UNAVAILABLE": "Signing in isn't available right now. Please try again later.",
+    "API_UNREACHABLE": "We couldn't reach our servers. Check your connection and try again.",
+    "API_TIMEOUT": "That took too long. Please try again.",
+    "TOTP_INVALID": "That code isn't right, or was used already. Wait for the next one.",
+    "STAFF_ACCOUNT_NOT_ALLOWED": "This account can't sign in to staff tools.",
+    "CSRF_TOKEN_INVALID": "Your session changed in another tab. Please try again.",
+    "VALIDATION_ERROR": "Some details aren't right. Please check them."
+  },
+  "Account": {
+    "metaTitle": "Your account",
+    "title": "Your account",
+    "phone": "Mobile number",
+    "details": "Your details",
+    "signOut": "Sign out",
+    "signingOut": "Signing out…",
+    "signOutFailed": "Couldn't sign out. Please try again.",
+    "staffTools": "Go to staff tools",
+    "dataTitle": "Your data",
+    "dataIntro": "Get a copy of everything we keep about you, or ask for your account's deletion.",
+    "exportButton": "Get a copy of my data",
+    "deletionButton": "Ask for my account's deletion",
+    "deletionConfirm": "Ask our team to delete your account? They'll call you to confirm, and tell you what the law makes us keep.",
+    "status": {
+      "exportReceived": "Your copy is being prepared. Refresh this page in a minute.",
+      "exportReady": "Your copy is ready to download until {date}.",
+      "exportExpired": "That copy has expired. Ask for a new one any time.",
+      "deletionReceived": "We've received your deletion request. Our team will call you.",
+      "deletionCompleted": "Your deletion request has been carried out.",
+      "deletionRejected": "Your deletion request couldn't be carried out: {note}"
+    },
+    "download": "Download",
+    "consentBody": "Our privacy notice has changed since you agreed to it. Please read the new one and agree again to keep using your account.",
+    "consentRead": "Read the privacy notice",
+    "consentAgree": "I agree",
+    "consentFailed": "That didn't work. Please try again.",
+    "messagesTitle": "Messages from us",
+    "marketing": "Send me offers and news by SMS, WhatsApp or email.",
+    "marketingSaved": "Saved.",
+    "marketingFailed": "That didn't save. Please try again."
+  },
+  "Staff": {
+    "signInMetaTitle": "Staff sign-in",
+    "signInTitle": "Staff sign-in",
+    "signInIntro": "For the {brand} team.",
+    "google": "Sign in with Google",
+    "googleHint": "With your work Google account.",
+    "withoutGoogle": "Or, without Google: your phone, then your authenticator app.",
+    "errors": {
+      "STAFF_ACCOUNT_NOT_ALLOWED": "That Google account can't sign in to staff tools. Use your work account, or ask an admin.",
+      "STAFF_SIGN_IN_EXPIRED": "That sign-in took too long or was interrupted. Please start again.",
+      "STAFF_SIGN_IN_CANCELLED": "Sign-in was cancelled.",
+      "SERVICE_UNAVAILABLE": "Signing in with Google isn't available right now."
+    },
+    "homeMetaTitle": "Staff tools",
+    "homeTitle": "Staff tools",
+    "signedInAs": "Signed in as {name}. A staff session ends 12 hours after signing in.",
+    "roles": "Your roles",
+    "role": {
+      "field_agent": "Field agent",
+      "ops": "Ops",
+      "admin": "Admin"
+    },
+    "comingSoon": "The tools for listings, visits and bookings arrive with the ops console."
+  },
+  "Privacy": {
+    "metaTitle": "Privacy notice",
+    "title": "Privacy notice",
+    "draft": "Draft: this notice is still being written, and a lawyer will review it before launch.",
+    "version": "Version {version}",
+    "purposes": "What you agree to when you create an account",
+    "account": "Your account (needed): your mobile number and the details you give, to sign you in and to arrange visits, bookings and payments for you.",
+    "marketing": "Offers and news (optional): messages about PGs and offers, by SMS, WhatsApp or email, only if you choose them.",
+    "rights": "You can download a copy of your data, withdraw optional consent, or ask for your account's deletion from your account page."
   }
 }

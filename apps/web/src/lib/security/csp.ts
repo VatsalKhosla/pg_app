@@ -19,6 +19,8 @@ export interface CspOptions {
   upgradeInsecureRequests: boolean;
   /** Origins the browser may call besides its own: the API, error reporting. */
   connectOrigins: readonly string[];
+  /** Origins pages may frame (Cloudflare Turnstile's challenge); none unless given. */
+  frameOrigins?: readonly string[];
   /** Where browsers report violations (Sentry's security endpoint), if anywhere. */
   reportUrl?: string | undefined;
 }
@@ -37,7 +39,7 @@ export function buildContentSecurityPolicy(options: CspOptions): string {
     ["img-src", "'self'", "data:", "blob:"],
     ["font-src", "'self'"],
     ["connect-src", "'self'", ...options.connectOrigins],
-    ["frame-src", "'none'"],
+    ["frame-src", ...(options.frameOrigins?.length ? options.frameOrigins : ["'none'"])],
     ["worker-src", "'self'", "blob:"],
     ["manifest-src", "'self'"],
     ["object-src", "'none'"],

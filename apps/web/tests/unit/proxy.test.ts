@@ -55,6 +55,43 @@ describe("proxy", () => {
     expect(response.headers.get("reporting-endpoints")).toBe(`csp-endpoint="${reportUrl}"`);
   });
 
+  it("sends people without a session from protected pages to sign in, and back after", async () => {
+    const { proxy } = await loadProxy();
+
+    function redirectOf(url: string, cookie?: string): string | null {
+      const request = new NextRequest(url, {
+        headers: cookie === undefined ? {} : { cookie },
+      });
+      const response = proxy(request);
+      return response.status === 307 ? response.headers.get("location") : null;
+    }
+
+    expect(redirectOf("http://localhost:3000/account")).toBe(
+      "http://localhost:3000/sign-in?next=%2Faccount",
+    );
+    expect(redirectOf("http://localhost:3000/account/sessions?tab=all")).toBe(
+      "http://localhost:3000/sign-in?next=%2Faccount%2Fsessions%3Ftab%3Dall",
+    );
+    expect(redirectOf("http://localhost:3000/staff")).toBe(
+      "http://localhost:3000/staff/sign-in?next=%2Fstaff",
+    );
+    // Sign-in pages, other pages, and anyone with a session cookie go through.
+    expect(redirectOf("http://localhost:3000/staff/sign-in")).toBeNull();
+    expect(redirectOf("http://localhost:3000/accounting")).toBeNull();
+    expect(redirectOf("http://localhost:3000/account", "__Secure-session=token")).toBeNull();
+  });
+
+  it("lets Turnstile's challenge frame in only when a site key is set", async () => {
+    const without = (await loadProxy()).proxy(new NextRequest("http://localhost:3000/"));
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "1x00000000000000000000AA");
+    const withKey = (await loadProxy()).proxy(new NextRequest("http://localhost:3000/"));
+
+    expect(without.headers.get("content-security-policy")).toContain("frame-src 'none';");
+    expect(withKey.headers.get("content-security-policy")).toContain(
+      "frame-src https://challenges.cloudflare.com;",
+    );
+  });
+
   it("runs for pages but not for static files, icons, the manifest or prefetches", async () => {
     const { config } = await loadProxy();
 

@@ -41,7 +41,17 @@ export const publicEnv = {
     process.env.NEXT_PUBLIC_SITE_URL,
     "http://localhost:3000",
   ),
-  apiUrl: parseUrl("NEXT_PUBLIC_API_URL", process.env.NEXT_PUBLIC_API_URL, "http://127.0.0.1:8000"),
+  /**
+   * The API, as the browser reaches it. It must be on the same site as siteUrl (localhost with
+   * localhost, or sibling subdomains when deployed), or the browser keeps the API's session cookie
+   * from the web server.
+   */
+  apiUrl: parseUrl("NEXT_PUBLIC_API_URL", process.env.NEXT_PUBLIC_API_URL, "http://localhost:8000"),
   /** Browser error reporting; Sentry stays off while this is empty. */
   sentryDsn: optional(process.env.NEXT_PUBLIC_SENTRY_DSN),
+  /**
+   * Cloudflare Turnstile's site key for the sign-in form. Without it there is no widget (local
+   * development and tests, where the API checks nothing either).
+   */
+  turnstileSiteKey: optional(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY),
 } as const;

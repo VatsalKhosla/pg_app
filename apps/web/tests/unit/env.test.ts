@@ -22,7 +22,7 @@ describe("publicEnv", () => {
 
     expect(env.appEnv).toBe("local");
     expect(env.siteUrl.href).toBe("http://localhost:3000/");
-    expect(env.apiUrl.origin).toBe("http://127.0.0.1:8000");
+    expect(env.apiUrl.origin).toBe("http://localhost:8000");
     expect(env.sentryDsn).toBeUndefined();
   });
 

@@ -1,0 +1,60 @@
+import "server-only";
+
+import type { Schemas } from "@pg-platform/api-client";
+import type { Route } from "next";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { cache } from "react";
+
+import { unwrap } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/errors";
+import { getServerApi } from "@/lib/api/server";
+
+import { SESSION_COOKIE, SIGN_IN_PATH, STAFF_SIGN_IN_PATH, signInUrl } from "./routes";
+
+export type Me = Schemas["Me"];
+
+const STAFF_ROLES: readonly string[] = ["field_agent", "ops", "admin"];
+
+/**
+ * The signed-in person, or null. One call to the API per page request, shared by everything that
+ * asks (React's cache), and none at all without a session cookie. Throws when the API fails.
+ */
+export const getSession = cache(async (): Promise<Me | null> => {
+  if (!(await cookies()).has(SESSION_COOKIE)) return null;
+  const api = await getServerApi();
+  try {
+    return await unwrap(api.GET("/v1/me"));
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null;
+    throw error;
+  }
+});
+
+/** For the header: the session if the API answers, else signed out (the page reports trouble). */
+export async function getSessionForHeader(): Promise<Me | null> {
+  try {
+    return await getSession();
+  } catch {
+    return null;
+  }
+}
+
+/** Staff roles come only with a staff session (the API drops them from phone sign-ins). */
+export function isStaff(me: Me): boolean {
+  return me.roles.some((role) => STAFF_ROLES.includes(role));
+}
+
+/** The signed-in person, or a redirect to sign in and come back to `here`. */
+export async function requireSession(here: Route): Promise<Me> {
+  const me = await getSession();
+  if (me === null) redirect(signInUrl(SIGN_IN_PATH, here));
+  return me;
+}
+
+/** A staff member in a staff session, or a redirect to the staff sign-in page. */
+export async function requireStaff(here: Route): Promise<Me> {
+  const me = await getSession();
+  if (me === null || !isStaff(me)) redirect(signInUrl(STAFF_SIGN_IN_PATH, here));
+  return me;
+}

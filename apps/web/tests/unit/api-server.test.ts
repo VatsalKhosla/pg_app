@@ -44,7 +44,7 @@ describe("getServerApi", () => {
     await api.GET("/healthz");
 
     expect(API_COOKIES).toEqual(["__Secure-session", "__Secure-csrf"]);
-    expect(requests[0]?.url).toBe("http://127.0.0.1:8000/healthz");
+    expect(requests[0]?.url).toBe("http://localhost:8000/healthz");
     expect(requests[0]?.headers.get("x-request-id")).toBe("0192f6d4-page");
     expect(requests[0]?.headers.get("cookie")).toBe(
       "__Secure-session=abc%3D%3D; __Secure-csrf=t0k3n",
