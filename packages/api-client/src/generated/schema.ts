@@ -59,6 +59,48 @@ export interface paths {
         readonly patch?: never;
         readonly trace?: never;
     };
+    readonly "/v1/auth/otp/request": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Send a sign-in code by SMS
+         * @description Sends a six-digit code to the phone, replacing any earlier code. The answer is the same
+         *     whether or not the number has an account.
+         */
+        readonly post: operations["identityRequestOtp"];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/auth/otp/verify": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Sign in with the code
+         * @description Checks the code and signs the phone's owner in, creating the account on first sign-in.
+         *     Sets the session and CSRF cookies; any earlier session in this browser ends.
+         */
+        readonly post: operations["identityVerifyOtp"];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly "/v1/auth/logout": {
         readonly parameters: {
             readonly query?: never;
@@ -103,7 +145,11 @@ export interface paths {
             readonly path?: never;
             readonly cookie?: never;
         };
-        /** The signed-in user */
+        /**
+         * The signed-in user
+         * @description The account, with the roles this session carries (a phone sign-in never carries staff
+         *     roles).
+         */
         readonly get: operations["identityMe"];
         readonly put?: never;
         readonly post?: never;
@@ -207,6 +253,50 @@ export interface components {
             /** Roles */
             readonly roles: readonly components["schemas"]["Role"][];
         };
+        /**
+         * OtpChallengeIssued
+         * @description A code is on its way. Send it back with ``challengeId`` to sign in.
+         */
+        readonly OtpChallengeIssued: {
+            /**
+             * Challengeid
+             * Format: uuid
+             */
+            readonly challengeId: string;
+            /**
+             * Expiresat
+             * Format: date-time
+             */
+            readonly expiresAt: string;
+            /**
+             * Resendafter
+             * Format: date-time
+             */
+            readonly resendAfter: string;
+        };
+        /**
+         * OtpRequest
+         * @description Ask for a sign-in code by SMS.
+         */
+        readonly OtpRequest: {
+            /** Phone */
+            readonly phone: string;
+            /**
+             * Humanchecktoken
+             * @description The token of the sign-in form's Cloudflare Turnstile widget, whose action is `otp_request`.
+             */
+            readonly humanCheckToken: string;
+        };
+        /** OtpVerify */
+        readonly OtpVerify: {
+            /**
+             * Challengeid
+             * Format: uuid
+             */
+            readonly challengeId: string;
+            /** Code */
+            readonly code: string;
+        };
         /** ProblemDetail */
         readonly ProblemDetail: {
             /**
@@ -283,6 +373,17 @@ export interface components {
         readonly SessionList: {
             /** Sessions */
             readonly sessions: readonly components["schemas"]["SessionInfo"][];
+        };
+        /**
+         * SignInResult
+         * @description Signed in, with the session cookie set. Use ``csrfToken`` (also a cookie) from now on.
+         */
+        readonly SignInResult: {
+            readonly user: components["schemas"]["Me"];
+            /** Csrftoken */
+            readonly csrfToken: string;
+            /** Newuser */
+            readonly newUser: boolean;
         };
     };
     responses: never;
@@ -394,6 +495,90 @@ export interface operations {
                 };
                 content: {
                     readonly "application/json": components["schemas"]["CsrfToken"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityRequestOtp: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly "application/json": components["schemas"]["OtpRequest"];
+            };
+        };
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 202: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["OtpChallengeIssued"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityVerifyOtp: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly "application/json": components["schemas"]["OtpVerify"];
+            };
+        };
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["SignInResult"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

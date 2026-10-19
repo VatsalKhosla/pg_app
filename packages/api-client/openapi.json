@@ -139,6 +139,110 @@
         }
       }
     },
+    "/v1/auth/otp/request": {
+      "post": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Send a sign-in code by SMS",
+        "description": "Sends a six-digit code to the phone, replacing any earlier code. The answer is the same\nwhether or not the number has an account.",
+        "operationId": "identityRequestOtp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpChallengeIssued"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/otp/verify": {
+      "post": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Sign in with the code",
+        "description": "Checks the code and signs the phone's owner in, creating the account on first sign-in.\nSets the session and CSRF cookies; any earlier session in this browser ends.",
+        "operationId": "identityVerifyOtp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInResult"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/auth/logout": {
       "post": {
         "tags": [
@@ -214,6 +318,7 @@
           "identity"
         ],
         "summary": "The signed-in user",
+        "description": "The account, with the roles this session carries (a phone sign-in never carries staff\nroles).",
         "operationId": "identityMe",
         "responses": {
           "200": {
@@ -466,6 +571,79 @@
         "title": "Me",
         "description": "The signed-in user."
       },
+      "OtpChallengeIssued": {
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Challengeid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expiresat"
+          },
+          "resendAfter": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Resendafter"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "challengeId",
+          "expiresAt",
+          "resendAfter"
+        ],
+        "title": "OtpChallengeIssued",
+        "description": "A code is on its way. Send it back with ``challengeId`` to sign in."
+      },
+      "OtpRequest": {
+        "properties": {
+          "phone": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Phone"
+          },
+          "humanCheckToken": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Humanchecktoken",
+            "description": "The token of the sign-in form's Cloudflare Turnstile widget, whose action is `otp_request`."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "phone",
+          "humanCheckToken"
+        ],
+        "title": "OtpRequest",
+        "description": "Ask for a sign-in code by SMS."
+      },
+      "OtpVerify": {
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Challengeid"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$",
+            "title": "Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "challengeId",
+          "code"
+        ],
+        "title": "OtpVerify"
+      },
       "ProblemDetail": {
         "properties": {
           "type": {
@@ -652,6 +830,30 @@
           "sessions"
         ],
         "title": "SessionList"
+      },
+      "SignInResult": {
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/Me"
+          },
+          "csrfToken": {
+            "type": "string",
+            "title": "Csrftoken"
+          },
+          "newUser": {
+            "type": "boolean",
+            "title": "Newuser"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "user",
+          "csrfToken",
+          "newUser"
+        ],
+        "title": "SignInResult",
+        "description": "Signed in, with the session cookie set. Use ``csrfToken`` (also a cookie) from now on."
       }
     }
   }
