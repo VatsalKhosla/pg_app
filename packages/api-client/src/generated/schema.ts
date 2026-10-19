@@ -91,8 +91,9 @@ export interface paths {
         readonly put?: never;
         /**
          * Sign in with the code
-         * @description Checks the code and signs the phone's owner in, creating the account on first sign-in.
-         *     Sets the session and CSRF cookies; any earlier session in this browser ends.
+         * @description Checks the code and signs the phone's owner in, creating the account on first sign-in,
+         *     which needs consent to the privacy notice. Sets the session and CSRF cookies; any earlier
+         *     session in this browser ends.
          */
         readonly post: operations["identityVerifyOtp"];
         readonly delete?: never;
@@ -214,12 +215,75 @@ export interface paths {
         /**
          * The signed-in user
          * @description The account, with the roles this session carries (a phone sign-in never carries staff
-         *     roles).
+         *     roles), and whether its consent must be asked for again.
          */
         readonly get: operations["identityMe"];
         readonly put?: never;
         readonly post?: never;
         readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/privacy-notice": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * The current privacy notice's version and purposes
+         * @description What consent must name. The notice's text is the web app's, under the same version.
+         */
+        readonly get: operations["identityCurrentPrivacyNotice"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/me/consents": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /** What the account has agreed to */
+        readonly get: operations["identityMyConsents"];
+        readonly put?: never;
+        /**
+         * Agree to the current notice, or to an optional purpose
+         * @description Records consent to the purposes given, under the current notice (409
+         *     PRIVACY_NOTICE_CHANGED for any other version). Purposes already agreed to stay as they are.
+         */
+        readonly post: operations["identityGiveConsent"];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/me/consents/{purpose}": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        readonly post?: never;
+        /**
+         * Withdraw consent to an optional purpose
+         * @description Safe to repeat. The account's own purposes can't be withdrawn while it exists (409
+         *     CONSENT_NEEDED_FOR_ACCOUNT): ask for its deletion instead.
+         */
+        readonly delete: operations["identityWithdrawConsent"];
         readonly options?: never;
         readonly head?: never;
         readonly patch?: never;
@@ -282,10 +346,132 @@ export interface paths {
         readonly patch?: never;
         readonly trace?: never;
     };
+    readonly "/v1/me/data-requests": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /** My data requests */
+        readonly get: operations["complianceMyRequests"];
+        readonly put?: never;
+        /**
+         * Ask for a copy of my data, or for my account's deletion
+         * @description An export is ready within minutes, then downloadable for 7 days; a deletion goes to the
+         *     team. Asking again while one is open answers that one.
+         */
+        readonly post: operations["complianceAsk"];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/me/data-requests/{request_id}/file": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * Download my data
+         * @description The export's file, while it is ready; only for the person who asked (404 for anyone
+         *     else, staff included). Never cached.
+         */
+        readonly get: operations["complianceDownload"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/ops/data-requests": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * The data request queue
+         * @description Ops and admins, in a staff session: every request, oldest first, optionally only those in
+         *     one status (``status=received`` for the ones waiting).
+         */
+        readonly get: operations["complianceQueue"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/ops/data-requests/{request_id}/resolve": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Complete or reject a deletion request
+         * @description Ops and admins: record what was done about a deletion request, or why it was refused (the
+         *     person sees the note). Audited. 409 INVALID_TRANSITION for an export or a resolved one.
+         */
+        readonly post: operations["complianceResolve"];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * ConsentInput
+         * @description What the person agreed to: the privacy notice version they were shown (GET
+         *     /v1/privacy-notice), and the purposes they chose themselves (never pre-ticked).
+         */
+        readonly ConsentInput: {
+            /** Noticeversion */
+            readonly noticeVersion: string;
+            /** Purposes */
+            readonly purposes: readonly components["schemas"]["ConsentPurpose"][];
+        };
+        /**
+         * ConsentList
+         * @description Every consent the account has given, oldest first, withdrawn ones included.
+         */
+        readonly ConsentList: {
+            /** Consents */
+            readonly consents: readonly components["schemas"]["ConsentRecord"][];
+        };
+        /**
+         * ConsentPurpose
+         * @enum {string}
+         */
+        readonly ConsentPurpose: "account" | "marketing";
+        /** ConsentRecord */
+        readonly ConsentRecord: {
+            readonly purpose: components["schemas"]["ConsentPurpose"];
+            /** Noticeversion */
+            readonly noticeVersion: string;
+            /**
+             * Grantedat
+             * Format: date-time
+             */
+            readonly grantedAt: string;
+            /** Withdrawnat */
+            readonly withdrawnAt: string | null;
+        };
         /**
          * CsrfToken
          * @description Send this value in the X-CSRF-Token header of every POST, PUT, PATCH and DELETE.
@@ -294,6 +480,68 @@ export interface components {
             /** Csrftoken */
             readonly csrfToken: string;
         };
+        /** DataRequestCreate */
+        readonly DataRequestCreate: {
+            readonly kind: components["schemas"]["DataRequestKind"];
+        };
+        /** DataRequestInfo */
+        readonly DataRequestInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id: string;
+            readonly kind: components["schemas"]["DataRequestKind"];
+            readonly status: components["schemas"]["DataRequestStatus"];
+            /**
+             * Requestedat
+             * Format: date-time
+             */
+            readonly requestedAt: string;
+            /** Resolvedat */
+            readonly resolvedAt: string | null;
+            /** Expiresat */
+            readonly expiresAt: string | null;
+            /** Note */
+            readonly note: string | null;
+        };
+        /**
+         * DataRequestKind
+         * @enum {string}
+         */
+        readonly DataRequestKind: "export" | "deletion";
+        /** DataRequestPage */
+        readonly DataRequestPage: {
+            /** Items */
+            readonly items: readonly components["schemas"]["DataRequestInfo"][];
+            /** Nextcursor */
+            readonly nextCursor: string | null;
+        };
+        /** DataRequestQueue */
+        readonly DataRequestQueue: {
+            /** Items */
+            readonly items: readonly components["schemas"]["QueuedDataRequest"][];
+            /** Nextcursor */
+            readonly nextCursor: string | null;
+        };
+        /**
+         * DataRequestResolution
+         * @description Staff resolve a deletion request, saying what was done or why it was refused.
+         */
+        readonly DataRequestResolution: {
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            readonly outcome: "completed" | "rejected";
+            /** Note */
+            readonly note: string;
+        };
+        /**
+         * DataRequestStatus
+         * @enum {string}
+         */
+        readonly DataRequestStatus: "received" | "ready" | "expired" | "completed" | "rejected";
         /**
          * FieldError
          * @description One invalid input. ``pointer`` locates a body field (JSON Pointer, e.g. ``/moveIn``);
@@ -338,6 +586,14 @@ export interface components {
             readonly name: string | null;
             /** Roles */
             readonly roles: readonly components["schemas"]["Role"][];
+            /** Consentrequired */
+            readonly consentRequired: boolean;
+        };
+        /** NoticePurpose */
+        readonly NoticePurpose: {
+            readonly purpose: components["schemas"]["ConsentPurpose"];
+            /** Required */
+            readonly required: boolean;
         };
         /**
          * OtpChallengeIssued
@@ -382,6 +638,18 @@ export interface components {
             readonly challengeId: string;
             /** Code */
             readonly code: string;
+            readonly consent?: components["schemas"]["ConsentInput"] | null;
+        };
+        /**
+         * PrivacyNoticeInfo
+         * @description The current privacy notice: its version, which consent must name, and its purposes. The
+         *     notice's text is the web app's.
+         */
+        readonly PrivacyNoticeInfo: {
+            /** Version */
+            readonly version: string;
+            /** Purposes */
+            readonly purposes: readonly components["schemas"]["NoticePurpose"][];
         };
         /** ProblemDetail */
         readonly ProblemDetail: {
@@ -405,6 +673,28 @@ export interface components {
             /** Traceid */
             readonly traceId?: string | null;
         };
+        /** QueuedDataRequest */
+        readonly QueuedDataRequest: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id: string;
+            readonly kind: components["schemas"]["DataRequestKind"];
+            readonly status: components["schemas"]["DataRequestStatus"];
+            /**
+             * Requestedat
+             * Format: date-time
+             */
+            readonly requestedAt: string;
+            /** Resolvedat */
+            readonly resolvedAt: string | null;
+            /** Expiresat */
+            readonly expiresAt: string | null;
+            /** Note */
+            readonly note: string | null;
+            readonly requester: components["schemas"]["Requester"] | null;
+        };
         /**
          * Readiness
          * @description Readiness: whether this instance can serve traffic, with the state of each dependency.
@@ -419,6 +709,18 @@ export interface components {
             readonly checks: {
                 readonly [key: string]: "ok" | "unavailable";
             };
+        };
+        /** Requester */
+        readonly Requester: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id: string;
+            /** Phone */
+            readonly phone: string;
+            /** Name */
+            readonly name: string | null;
         };
         /**
          * Role
@@ -959,6 +1261,162 @@ export interface operations {
             };
         };
     };
+    readonly identityCurrentPrivacyNotice: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["PrivacyNoticeInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityMyConsents: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["ConsentList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityGiveConsent: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly "application/json": components["schemas"]["ConsentInput"];
+            };
+        };
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["ConsentList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityWithdrawConsent: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path: {
+                readonly purpose: components["schemas"]["ConsentPurpose"];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 204: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     readonly identityMySessions: {
         readonly parameters: {
             readonly query?: never;
@@ -1055,6 +1513,217 @@ export interface operations {
                 };
                 content: {
                     readonly "application/json": components["schemas"]["StaffPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly complianceMyRequests: {
+        readonly parameters: {
+            readonly query?: {
+                /** @description The previous page's nextCursor; omit it to start. */
+                readonly cursor?: string | null;
+                readonly limit?: number;
+            };
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["DataRequestPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly complianceAsk: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly "application/json": components["schemas"]["DataRequestCreate"];
+            };
+        };
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 202: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["DataRequestInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly complianceDownload: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path: {
+                readonly request_id: string;
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The export */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": unknown;
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly complianceQueue: {
+        readonly parameters: {
+            readonly query?: {
+                readonly status?: components["schemas"]["DataRequestStatus"] | null;
+                /** @description The previous page's nextCursor; omit it to start. */
+                readonly cursor?: string | null;
+                readonly limit?: number;
+            };
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["DataRequestQueue"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly complianceResolve: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path: {
+                readonly request_id: string;
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly "application/json": components["schemas"]["DataRequestResolution"];
+            };
+        };
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["QueuedDataRequest"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

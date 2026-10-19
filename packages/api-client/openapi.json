@@ -197,7 +197,7 @@
           "identity"
         ],
         "summary": "Sign in with the code",
-        "description": "Checks the code and signs the phone's owner in, creating the account on first sign-in.\nSets the session and CSRF cookies; any earlier session in this browser ends.",
+        "description": "Checks the code and signs the phone's owner in, creating the account on first sign-in,\nwhich needs consent to the privacy notice. Sets the session and CSRF cookies; any earlier\nsession in this browser ends.",
         "operationId": "identityVerifyOtp",
         "requestBody": {
           "content": {
@@ -493,7 +493,7 @@
           "identity"
         ],
         "summary": "The signed-in user",
-        "description": "The account, with the roles this session carries (a phone sign-in never carries staff\nroles).",
+        "description": "The account, with the roles this session carries (a phone sign-in never carries staff\nroles), and whether its consent must be asked for again.",
         "operationId": "identityMe",
         "responses": {
           "200": {
@@ -505,6 +505,184 @@
                 }
               }
             }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/privacy-notice": {
+      "get": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "The current privacy notice's version and purposes",
+        "description": "What consent must name. The notice's text is the web app's, under the same version.",
+        "operationId": "identityCurrentPrivacyNotice",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacyNoticeInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/consents": {
+      "get": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "What the account has agreed to",
+        "operationId": "identityMyConsents",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Agree to the current notice, or to an optional purpose",
+        "description": "Records consent to the purposes given, under the current notice (409\nPRIVACY_NOTICE_CHANGED for any other version). Purposes already agreed to stay as they are.",
+        "operationId": "identityGiveConsent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/consents/{purpose}": {
+      "delete": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Withdraw consent to an optional purpose",
+        "description": "Safe to repeat. The account's own purposes can't be withdrawn while it exists (409\nCONSENT_NEEDED_FOR_ACCOUNT): ask for its deletion instead.",
+        "operationId": "identityWithdrawConsent",
+        "parameters": [
+          {
+            "name": "purpose",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ConsentPurpose"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "4XX": {
             "description": "Client error (RFC 9457 problem details)",
@@ -691,10 +869,428 @@
           }
         }
       }
+    },
+    "/v1/me/data-requests": {
+      "post": {
+        "tags": [
+          "compliance"
+        ],
+        "summary": "Ask for a copy of my data, or for my account's deletion",
+        "description": "An export is ready within minutes, then downloadable for 7 days; a deletion goes to the\nteam. Asking again while one is open answers that one.",
+        "operationId": "complianceAsk",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DataRequestCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataRequestInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "compliance"
+        ],
+        "summary": "My data requests",
+        "operationId": "complianceMyRequests",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataRequestPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/data-requests/{request_id}/file": {
+      "get": {
+        "tags": [
+          "compliance"
+        ],
+        "summary": "Download my data",
+        "description": "The export's file, while it is ready; only for the person who asked (404 for anyone\nelse, staff included). Never cached.",
+        "operationId": "complianceDownload",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The export",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/data-requests": {
+      "get": {
+        "tags": [
+          "compliance"
+        ],
+        "summary": "The data request queue",
+        "description": "Ops and admins, in a staff session: every request, oldest first, optionally only those in\none status (``status=received`` for the ones waiting).",
+        "operationId": "complianceQueue",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DataRequestStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataRequestQueue"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/data-requests/{request_id}/resolve": {
+      "post": {
+        "tags": [
+          "compliance"
+        ],
+        "summary": "Complete or reject a deletion request",
+        "description": "Ops and admins: record what was done about a deletion request, or why it was refused (the\nperson sees the note). Audited. 409 INVALID_TRANSITION for an export or a resolved one.",
+        "operationId": "complianceResolve",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DataRequestResolution"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueuedDataRequest"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "ConsentInput": {
+        "properties": {
+          "noticeVersion": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Noticeversion"
+          },
+          "purposes": {
+            "items": {
+              "$ref": "#/components/schemas/ConsentPurpose"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "Purposes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "noticeVersion",
+          "purposes"
+        ],
+        "title": "ConsentInput",
+        "description": "What the person agreed to: the privacy notice version they were shown (GET\n/v1/privacy-notice), and the purposes they chose themselves (never pre-ticked)."
+      },
+      "ConsentList": {
+        "properties": {
+          "consents": {
+            "items": {
+              "$ref": "#/components/schemas/ConsentRecord"
+            },
+            "type": "array",
+            "title": "Consents"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "consents"
+        ],
+        "title": "ConsentList",
+        "description": "Every consent the account has given, oldest first, withdrawn ones included."
+      },
+      "ConsentPurpose": {
+        "type": "string",
+        "enum": [
+          "account",
+          "marketing"
+        ],
+        "title": "ConsentPurpose"
+      },
+      "ConsentRecord": {
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/ConsentPurpose"
+          },
+          "noticeVersion": {
+            "type": "string",
+            "title": "Noticeversion"
+          },
+          "grantedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Grantedat"
+          },
+          "withdrawnAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withdrawnat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "purpose",
+          "noticeVersion",
+          "grantedAt",
+          "withdrawnAt"
+        ],
+        "title": "ConsentRecord"
+      },
       "CsrfToken": {
         "properties": {
           "csrfToken": {
@@ -709,6 +1305,191 @@
         ],
         "title": "CsrfToken",
         "description": "Send this value in the X-CSRF-Token header of every POST, PUT, PATCH and DELETE."
+      },
+      "DataRequestCreate": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/DataRequestKind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "DataRequestCreate"
+      },
+      "DataRequestInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DataRequestKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DataRequestStatus"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Requestedat"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedat"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "requestedAt",
+          "resolvedAt",
+          "expiresAt",
+          "note"
+        ],
+        "title": "DataRequestInfo"
+      },
+      "DataRequestKind": {
+        "type": "string",
+        "enum": [
+          "export",
+          "deletion"
+        ],
+        "title": "DataRequestKind"
+      },
+      "DataRequestPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DataRequestInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "DataRequestPage"
+      },
+      "DataRequestQueue": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/QueuedDataRequest"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "DataRequestQueue"
+      },
+      "DataRequestResolution": {
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "rejected"
+            ],
+            "title": "Outcome"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outcome",
+          "note"
+        ],
+        "title": "DataRequestResolution",
+        "description": "Staff resolve a deletion request, saying what was done or why it was refused."
+      },
+      "DataRequestStatus": {
+        "type": "string",
+        "enum": [
+          "received",
+          "ready",
+          "expired",
+          "completed",
+          "rejected"
+        ],
+        "title": "DataRequestStatus"
       },
       "FieldError": {
         "properties": {
@@ -807,6 +1588,10 @@
             },
             "type": "array",
             "title": "Roles"
+          },
+          "consentRequired": {
+            "type": "boolean",
+            "title": "Consentrequired"
           }
         },
         "additionalProperties": false,
@@ -816,10 +1601,29 @@
           "phone",
           "email",
           "name",
-          "roles"
+          "roles",
+          "consentRequired"
         ],
         "title": "Me",
         "description": "The signed-in user."
+      },
+      "NoticePurpose": {
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/ConsentPurpose"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "purpose",
+          "required"
+        ],
+        "title": "NoticePurpose"
       },
       "OtpChallengeIssued": {
         "properties": {
@@ -884,6 +1688,16 @@
             "type": "string",
             "pattern": "^[0-9]{6}$",
             "title": "Code"
+          },
+          "consent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConsentInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -893,6 +1707,29 @@
           "code"
         ],
         "title": "OtpVerify"
+      },
+      "PrivacyNoticeInfo": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "purposes": {
+            "items": {
+              "$ref": "#/components/schemas/NoticePurpose"
+            },
+            "type": "array",
+            "title": "Purposes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "purposes"
+        ],
+        "title": "PrivacyNoticeInfo",
+        "description": "The current privacy notice: its version, which consent must name, and its purposes. The\nnotice's text is the web app's."
       },
       "ProblemDetail": {
         "properties": {
@@ -970,6 +1807,84 @@
         ],
         "title": "ProblemDetail"
       },
+      "QueuedDataRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DataRequestKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DataRequestStatus"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Requestedat"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedat"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "requester": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Requester"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "requestedAt",
+          "resolvedAt",
+          "expiresAt",
+          "note",
+          "requester"
+        ],
+        "title": "QueuedDataRequest"
+      },
       "Readiness": {
         "properties": {
           "status": {
@@ -1000,6 +1915,38 @@
         ],
         "title": "Readiness",
         "description": "Readiness: whether this instance can serve traffic, with the state of each dependency."
+      },
+      "Requester": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "phone",
+          "name"
+        ],
+        "title": "Requester"
       },
       "Role": {
         "type": "string",
