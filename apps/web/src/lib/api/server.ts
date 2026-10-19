@@ -8,11 +8,10 @@ import { serverEnv } from "@/config/server-env";
 import { createWebApiClient } from "./client";
 
 /**
- * Cookies the API owns, forwarded from the visitor's request when the server calls the API on
- * their behalf. Every other cookie stays on the web server. The session and CSRF cookies join this
- * list in step 1.1.
+ * Cookies the API owns (apps/api/src/app/core/cookies.py), forwarded from the visitor's request when
+ * the server calls the API on their behalf. Every other cookie stays on the web server.
  */
-export const API_COOKIES: readonly string[] = [];
+export const API_COOKIES: readonly string[] = ["__Secure-session", "__Secure-csrf"];
 
 /** Server rendering waits at most this long for the API. */
 export const SERVER_TIMEOUT_MS = 3_000;

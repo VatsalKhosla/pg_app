@@ -38,10 +38,130 @@ export interface paths {
         readonly patch?: never;
         readonly trace?: never;
     };
+    readonly "/v1/auth/csrf": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * A CSRF token for this browser
+         * @description Sets the CSRF cookie and returns the same value, bound to the browser's session cookie if
+         *     it has one. Fetch a new one after signing in or out.
+         */
+        readonly get: operations["identityCsrfToken"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/auth/logout": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Sign out here
+         * @description Ends this browser's session, if it has one, and clears the cookies. Safe to repeat.
+         */
+        readonly post: operations["identityLogout"];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/auth/logout-everywhere": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /** Sign out on every device */
+        readonly post: operations["identityLogoutEverywhere"];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/me": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /** The signed-in user */
+        readonly get: operations["identityMe"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/me/sessions": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /** Where this account is signed in */
+        readonly get: operations["identityMySessions"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/me/sessions/{session_id}": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        readonly post?: never;
+        /**
+         * Sign out one device
+         * @description Another user's session answers 404, like one that doesn't exist.
+         */
+        readonly delete: operations["identityEndSession"];
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * CsrfToken
+         * @description Send this value in the X-CSRF-Token header of every POST, PUT, PATCH and DELETE.
+         */
+        readonly CsrfToken: {
+            /** Csrftoken */
+            readonly csrfToken: string;
+        };
         /**
          * FieldError
          * @description One invalid input. ``pointer`` locates a body field (JSON Pointer, e.g. ``/moveIn``);
@@ -67,6 +187,25 @@ export interface components {
              * @constant
              */
             readonly status: "ok";
+        };
+        /**
+         * Me
+         * @description The signed-in user.
+         */
+        readonly Me: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id: string;
+            /** Phone */
+            readonly phone: string;
+            /** Email */
+            readonly email: string | null;
+            /** Name */
+            readonly name: string | null;
+            /** Roles */
+            readonly roles: readonly components["schemas"]["Role"][];
         };
         /** ProblemDetail */
         readonly ProblemDetail: {
@@ -104,6 +243,46 @@ export interface components {
             readonly checks: {
                 readonly [key: string]: "ok" | "unavailable";
             };
+        };
+        /**
+         * Role
+         * @enum {string}
+         */
+        readonly Role: "student" | "parent" | "owner" | "field_agent" | "ops" | "admin";
+        /**
+         * SessionInfo
+         * @description One browser or device where the account is signed in.
+         */
+        readonly SessionInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id: string;
+            /** Current */
+            readonly current: boolean;
+            /**
+             * Startedat
+             * Format: date-time
+             */
+            readonly startedAt: string;
+            /**
+             * Lastseenat
+             * Format: date-time
+             */
+            readonly lastSeenAt: string;
+            /**
+             * Expiresat
+             * Format: date-time
+             */
+            readonly expiresAt: string;
+            /** Useragent */
+            readonly userAgent: string | null;
+        };
+        /** SessionList */
+        readonly SessionList: {
+            /** Sessions */
+            readonly sessions: readonly components["schemas"]["SessionInfo"][];
         };
     };
     responses: never;
@@ -178,6 +357,230 @@ export interface operations {
                 content: {
                     readonly "application/json": components["schemas"]["Readiness"];
                 };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityCsrfToken: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["CsrfToken"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityLogout: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 204: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityLogoutEverywhere: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 204: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityMe: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityMySessions: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["SessionList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            readonly "4XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            readonly "5XX": {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    readonly identityEndSession: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path: {
+                readonly session_id: string;
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 204: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Client error (RFC 9457 problem details) */
             readonly "4XX": {

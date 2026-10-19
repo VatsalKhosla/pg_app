@@ -96,10 +96,265 @@
           }
         }
       }
+    },
+    "/v1/auth/csrf": {
+      "get": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "A CSRF token for this browser",
+        "description": "Sets the CSRF cookie and returns the same value, bound to the browser's session cookie if\nit has one. Fetch a new one after signing in or out.",
+        "operationId": "identityCsrfToken",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfToken"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Sign out here",
+        "description": "Ends this browser's session, if it has one, and clears the cookies. Safe to repeat.",
+        "operationId": "identityLogout",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/logout-everywhere": {
+      "post": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Sign out on every device",
+        "operationId": "identityLogoutEverywhere",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "The signed-in user",
+        "operationId": "identityMe",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/sessions": {
+      "get": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Where this account is signed in",
+        "operationId": "identityMySessions",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/sessions/{session_id}": {
+      "delete": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Sign out one device",
+        "description": "Another user's session answers 404, like one that doesn't exist.",
+        "operationId": "identityEndSession",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "CsrfToken": {
+        "properties": {
+          "csrfToken": {
+            "type": "string",
+            "title": "Csrftoken"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "csrfToken"
+        ],
+        "title": "CsrfToken",
+        "description": "Send this value in the X-CSRF-Token header of every POST, PUT, PATCH and DELETE."
+      },
       "FieldError": {
         "properties": {
           "detail": {
@@ -157,6 +412,59 @@
         ],
         "title": "Health",
         "description": "Liveness: the process is up and serving requests."
+      },
+      "Me": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            },
+            "type": "array",
+            "title": "Roles"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "phone",
+          "email",
+          "name",
+          "roles"
+        ],
+        "title": "Me",
+        "description": "The signed-in user."
       },
       "ProblemDetail": {
         "properties": {
@@ -264,6 +572,86 @@
         ],
         "title": "Readiness",
         "description": "Readiness: whether this instance can serve traffic, with the state of each dependency."
+      },
+      "Role": {
+        "type": "string",
+        "enum": [
+          "student",
+          "parent",
+          "owner",
+          "field_agent",
+          "ops",
+          "admin"
+        ],
+        "title": "Role"
+      },
+      "SessionInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "current": {
+            "type": "boolean",
+            "title": "Current"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Startedat"
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Lastseenat"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expiresat"
+          },
+          "userAgent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Useragent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "current",
+          "startedAt",
+          "lastSeenAt",
+          "expiresAt",
+          "userAgent"
+        ],
+        "title": "SessionInfo",
+        "description": "One browser or device where the account is signed in."
+      },
+      "SessionList": {
+        "properties": {
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/SessionInfo"
+            },
+            "type": "array",
+            "title": "Sessions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sessions"
+        ],
+        "title": "SessionList"
       }
     }
   }

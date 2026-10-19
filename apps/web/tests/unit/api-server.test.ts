@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fakeFetch, jsonResponse } from "./api-fakes";
 
 const requestHeaders = new Headers({
-  cookie: "session=abc%3D%3D; theme=dark; csrf=t0k3n; =odd; broken",
+  cookie: "__Secure-session=abc%3D%3D; theme=dark; __Secure-csrf=t0k3n; =odd; broken",
   "x-request-id": "0192f6d4-page",
 });
 
@@ -15,8 +15,8 @@ const { API_COOKIES, forwardedHeaders, getServerApi, pickCookies } =
 
 describe("pickCookies", () => {
   it("keeps only the named cookies, exactly as the browser sent them", () => {
-    expect(pickCookies(requestHeaders.get("cookie"), ["session", "csrf"])).toBe(
-      "session=abc%3D%3D; csrf=t0k3n",
+    expect(pickCookies(requestHeaders.get("cookie"), ["__Secure-session", "__Secure-csrf"])).toBe(
+      "__Secure-session=abc%3D%3D; __Secure-csrf=t0k3n",
     );
   });
 
@@ -28,24 +28,26 @@ describe("pickCookies", () => {
 
 describe("forwardedHeaders", () => {
   it("passes on the API's cookies and the page's request id", () => {
-    expect(forwardedHeaders(requestHeaders, ["session"])).toEqual({
-      cookie: "session=abc%3D%3D",
+    expect(forwardedHeaders(requestHeaders, ["__Secure-session"])).toEqual({
+      cookie: "__Secure-session=abc%3D%3D",
       "x-request-id": "0192f6d4-page",
     });
   });
 });
 
 describe("getServerApi", () => {
-  it("calls the API with the request id and none of the visitor's other cookies", async () => {
+  it("calls the API with the request id and the API's cookies only", async () => {
     const { fetch, requests } = fakeFetch(() => jsonResponse({ status: "ok" }));
     vi.stubGlobal("fetch", fetch);
 
     const api = await getServerApi();
     await api.GET("/healthz");
 
-    expect(API_COOKIES).toEqual([]);
+    expect(API_COOKIES).toEqual(["__Secure-session", "__Secure-csrf"]);
     expect(requests[0]?.url).toBe("http://127.0.0.1:8000/healthz");
     expect(requests[0]?.headers.get("x-request-id")).toBe("0192f6d4-page");
-    expect(requests[0]?.headers.get("cookie")).toBeNull();
+    expect(requests[0]?.headers.get("cookie")).toBe(
+      "__Secure-session=abc%3D%3D; __Secure-csrf=t0k3n",
+    );
   });
 });
