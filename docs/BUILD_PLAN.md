@@ -156,8 +156,16 @@ Start the slow ones in week 1.
   - **API:** public `GET /v1/cities`, `/v1/localities`, `/v1/campuses`, `/v1/campuses/{slug}` and `/v1/metro-stations`.
   - **Distances:** every campus's nearest metro station is 245 m to 1.5 km away, and the tests check each one against an independent haversine distance.
 
-- [ ] **2.2 Catalog schema.** Owners, properties (exact and display location, gender policy, meals, verification and licence status, society permission, status), room categories (the pricing unit, with base rent, owner min/max, deposit, mandatory charges), rooms, beds, amenities. Constraints and indexes from ARCHITECTURE §6.
+- [x] **2.2 Catalog schema.** Owners, properties (exact and display location, gender policy, meals, verification and licence status, society permission, status), room categories (the pricing unit, with base rent, owner min/max, deposit, mandatory charges), rooms, beds, amenities. Constraints and indexes from ARCHITECTURE §6.
   *Done when* migrations apply cleanly and repository tests cover create, update, publish and geo queries.
+  *Note (2026-10-21):*
+  - **The catalog module:** owners, properties, room categories, rooms, beds and amenities (seeded by a separate data migration).
+  - **Money:** integer paise, checked by the domain and again by named database CHECKs (base > 0, owner min ≤ base ≤ owner max, deposit ≥ 0). Mandatory charges are typed: monthly, metered with a monthly estimate, or one-time.
+  - **A listing's life:** draft → published ⇄ paused, any → delisted, delisted → draft. Publishing needs an active category with an active bed; step 2.5 adds the verification gate.
+  - **Rooms** take no more beds than their occupancy, under a row lock.
+  - **Display points** are made from a CSPRNG and moved only when the exact point moves. Public geo queries measure from them, to prevent trilateration (ADR 0021).
+  - **Shared geometry** moved to `app.core.geometry` and `app.core.postgis`.
+  - **No routes yet:** the ops console (2.4) adds them.
 
 - [ ] **2.3 Media pipeline.** Presigned uploads, worker processing (magic bytes, EXIF/GPS stripping, WebP/AVIF variants, video poster), moderation status, `verified_capture` flag, CDN and signed URLs.
   *Done when* an uploaded phone photo comes out with no GPS EXIF in all variants, and a private document needs a signed URL.
