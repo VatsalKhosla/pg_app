@@ -176,8 +176,10 @@ All tables have `id bigint generated always as identity`, `created_at`, `updated
 - `totp_credentials` (user_id unique, salt, confirmed_at, last_used_step): a staff member's authenticator app. The secret itself is derived from `SECRET_KEY` and the salt, never stored.
 - `consents` (user_id, purpose `account | marketing`, notice_version, granted_at, withdrawn_at; one active consent per purpose and version): every grant kept, withdrawal sets `withdrawn_at`.
 
-**Geo**
-- `cities`, `localities` (city_id, slug, name, center geography(Point), boundary geography(Polygon) null), `campuses` (slug, name, location geography(Point)), `metro_stations` (name, line, location). Coordinates come from verified sources (OpenStreetMap with attribution); never invented.
+**Geo** (reference data, ADR 0020)
+- `cities` (slug, name, center geography(Point)), `localities` (city_id, slug, name, center geography(Point), boundary geography(MultiPolygon) null), `campuses` (city_id, slug, name, location geography(Point)), `metro_lines` (slug, name, colour, wikidata_id), `metro_stations` (slug, name, location geography(Point), wikidata_id), `metro_station_lines` (station_id, line_id): an interchange is on several lines.
+- Every row keeps the OpenStreetMap element its coordinates came from (`osm_type`, `osm_id`). Slugs are the public keys.
+- Coordinates come from OpenStreetMap through `make geo-refresh` and are never typed in; each station's lines come from Wikidata. The rows are loaded from `apps/api/src/app/modules/geo/data/places.json` by `python -m app.manage geo load`, never edited through the API.
 
 **Catalog**
 - `owners` (user_id, legal_name, business_name, gstin null, kyc_status, payout_account_ref null, agreement_version, status).
@@ -435,7 +437,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 - Desktop split view (list + map); mobile shows the list first with a map toggle and a draggable bottom sheet.
 - "Search as I move the map": debounce 300 ms, cancel stale requests, keep results in the URL so searches are shareable.
 - Hovering a card highlights its pin and vice versa; selecting a pin opens a preview card.
-- Overlays: campuses with 1 km and 2 km rings, metro stations, the selected locality's outline.
+- Overlays: campuses with 1 km and 2 km rings, metro stations, the selected locality's outline. They come from OpenStreetMap, so the map credits "© OpenStreetMap contributors" with a link to openstreetmap.org/copyright, next to the map provider's own attribution (ADR 0020).
 - The map is locked to Delhi NCR bounds and zoom levels.
 - Keyboard and screen reader users get the same results through the list; pins are focusable.
 - Load the map SDK lazily, only when the map view is opened.
@@ -516,13 +518,13 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 - Money: integer paise with names ending in `Paise`; the client formats with `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`.
 - Dates: `YYYY-MM-DD` for move-in; timestamps in ISO 8601 UTC; display in IST.
 - Public ids only (UUIDv7, booking codes). Never expose sequential ids.
-- Cursor pagination (`cursor`, `limit` ≤ 50, default 20; `app/core/pagination.py`). Lists are ordered by public id, which as a UUIDv7 sorts by creation time, so the cursor is the last id of the page; responses are `{items, nextCursor}`, with `nextCursor` null on the last page, and a page costs one query however many rows (ADR 0016).
+- Cursor pagination (`cursor`, `limit` ≤ 50, default 20; `app/core/pagination.py`). Lists are ordered by public id, which as a UUIDv7 sorts by creation time, so the cursor is the last id of the page; responses are `{items, nextCursor}`, with `nextCursor` null on the last page, and a page costs one query however many rows (ADR 0016). Reference data (the geo lists) comes whole instead, ordered by name the same way in every environment (ADR 0020).
 - `Idempotency-Key` is required on POSTs that create bookings, payments, refunds or invoices.
 - OpenAPI is the contract: CI regenerates the TS client and fails if it is stale; `oasdiff` fails CI on breaking changes. `make gen-client` exports the schema without starting the API (`python -m app.openapi`) into `packages/api-client/openapi.json` and generates `src/generated/schema.ts` with openapi-typescript; `make check-client` (part of `make check`) fails when either is out of date. Operation ids are the route's tag and function name in camelCase (`systemHealthz`), and every operation declares `4XX`/`5XX` as `application/problem+json` `ProblemDetail`, so the web client's error types are the API's real ones (ADR 0012).
 
 Main endpoints (v1):
 ```
-Public   GET  /v1/cities /v1/localities /v1/campuses
+Public   GET  /v1/cities /v1/localities /v1/campuses /v1/campuses/{slug} /v1/metro-stations
          GET  /v1/search/properties    GET /v1/map/pins
          GET  /v1/properties/{slug}    GET /v1/properties/{id}/price-calendar
          POST /v1/quotes               GET /v1/quotes/{id}
@@ -620,11 +622,12 @@ Coverage gates: ≥ 90% branches in `pricing`, `booking`, `payments` and `ledger
 
 ## 21. Environments, CI/CD and deployment
 
-- **Local**: `make dev` runs docker-compose (PostGIS, Valkey for Redis, SeaweedFS for S3, Mailpit), the API with reload, the worker, and Next.js; `make health` checks them all. `make seed` loads realistic sample data (fictional PGs with plausible rents from PRODUCT_CONTEXT, verified geo seeds).
+- **Local**: `make dev` runs docker-compose (PostGIS, Valkey for Redis, SeaweedFS for S3, Mailpit), the API with reload, the worker, and Next.js; `make health` checks them all. `make seed` loads the geo reference data now (from OpenStreetMap, ADR 0020) and, with the catalog, realistic sample data (fictional PGs with plausible rents from PRODUCT_CONTEXT).
 - **Staging**: same shape as production, smaller; Razorpay test keys; seeded data; preview deployments for web PRs. Give staging its own subdomains (e.g. `staging.<domain>` and `api.staging.<domain>`) so session cookies stay same-site; previews on `*.vercel.app` can't share them.
 - **Production**: Razorpay live keys; manual approval for deploys; feature flags for risky features.
 - **CI** (GitHub Actions, docs/ci.md): lint, typecheck, unit and integration tests (PostGIS and Valkey containers), web build, Playwright E2E on the build, client staleness, OpenAPI diff, workflow linting, security scans (also weekly); E2E against staging nightly and before releases once staging exists.
 - **Migrations** run as a separate step before the new API version starts; expand → migrate data → contract; never edit applied migrations; every migration tested up and down in CI.
+- **Reference data**: after migrations, `python -m app.manage geo load` whenever `places.json` changed. It writes only what differs (runbook: geo data).
 - **Infra as code** with Terraform from Phase 8; until then document manual setup in `docs/runbooks/`.
 - Keep costs low early: smallest instance sizes, no NAT gateway (public subnets with strict security groups) until needed, budget alerts on AWS, Vercel and the map provider.
 

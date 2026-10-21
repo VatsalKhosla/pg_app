@@ -23,5 +23,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0017](0017-authorization.md) | Authorization: the actor from core, policy functions, 401/403/404, and a hand-written matrix of every route and caller enforced in CI | Accepted |
 | [0018](0018-consent-and-data-requests.md) | DPDP: consent per purpose and notice version, no account without it, exports and deletions with an ops queue, one retention schedule | Accepted |
 | [0019](0019-web-sign-in.md) | Web sign-in: the browser talks to the API, one site for both, sessions checked once per page, safe `next`, browser tests against the real API | Accepted |
+| [0020](0020-geo-reference-data.md) | Geo reference data: places chosen by hand, coordinates generated from OpenStreetMap and lines from Wikidata under their usage policies, loaded idempotently, served publicly | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

@@ -143,8 +143,18 @@ Start the slow ones in week 1.
 
 ## Phase 2 — Catalog and ops console
 
-- [ ] **2.1 Geo seed.** Cities, localities (start with North Campus, Satya Niketan and Old Rajinder Nagar areas; then Gurugram and Noida hubs), campuses and metro stations. Source coordinates from OpenStreetMap (with attribution) or official sources; **never invent coordinates** — if unsure, leave the row out and list it in the step note. Idempotent seed command.
+- [x] **2.1 Geo seed.** Cities, localities (start with North Campus, Satya Niketan and Old Rajinder Nagar areas; then Gurugram and Noida hubs), campuses and metro stations. Source coordinates from OpenStreetMap (with attribution) or official sources; **never invent coordinates** — if unsure, leave the row out and list it in the step note. Idempotent seed command.
   *Done when* `make seed` loads geo data and a distance query from a campus returns sensible results.
+  *Note (2026-10-21):*
+  - **Seeded:** 3 cities (Delhi, Gurugram, Noida); 13 localities around North Campus and Satya Niketan, 10 with boundaries; 19 campuses (North Campus as a whole, 11 North Campus colleges and departments, 7 South Campus colleges); 14 metro stations on 6 lines.
+  - **Sources:** a hand-written manifest names each place's OpenStreetMap element, and `make geo-refresh` fetches the coordinates through Nominatim and the metro lines from Wikidata, under both services' usage policies. No coordinate was typed in (ADR 0020).
+  - **Left out, for want of a source:**
+    - Old Rajinder Nagar: OpenStreetMap has no place, boundary or address by that name. Its stations, Rajendra Place and Karol Bagh, are in.
+    - The Gurugram and Noida hubs: not named yet.
+    - South Campus as a whole: no single feature covers it, so its colleges stand for it.
+  - **Loading:** `make seed` loads the data idempotently. It writes only rows that changed, and audits a load that changes something.
+  - **API:** public `GET /v1/cities`, `/v1/localities`, `/v1/campuses`, `/v1/campuses/{slug}` and `/v1/metro-stations`.
+  - **Distances:** every campus's nearest metro station is 245 m to 1.5 km away, and the tests check each one against an independent haversine distance.
 
 - [ ] **2.2 Catalog schema.** Owners, properties (exact and display location, gender policy, meals, verification and licence status, society permission, status), room categories (the pricing unit, with base rent, owner min/max, deposit, mandatory charges), rooms, beds, amenities. Constraints and indexes from ARCHITECTURE §6.
   *Done when* migrations apply cleanly and repository tests cover create, update, publish and geo queries.
