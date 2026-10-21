@@ -14,8 +14,9 @@ from sqlalchemy import event, func, select, text
 from app.config import Settings
 from app.core.audit import AuditLog
 from app.core.clock import FrozenClock
+from app.core.geometry import Point, distance_m
 from app.main import create_app
-from app.modules.geo.domain.places import NEARBY_RADIUS_M, NEAREST_STATIONS, Point, distance_m
+from app.modules.geo.domain.places import NEARBY_RADIUS_M, NEAREST_STATIONS
 from app.modules.geo.reference import ReferenceData, read_reference_data
 from app.modules.geo.service import GeoReferenceLoader, LoadReport
 

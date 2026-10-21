@@ -38,7 +38,8 @@ import httpx
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from app.core.clock import SystemClock, today_in_india
-from app.modules.geo.domain.places import WIKIDATA_ID_PATTERN, Point, distance_m
+from app.core.geometry import Point, distance_m
+from app.modules.geo.domain.places import WIKIDATA_ID_PATTERN
 from app.modules.geo.reference import (
     COORDINATE_DECIMALS,
     DATA_PATH,

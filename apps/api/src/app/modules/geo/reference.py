@@ -21,15 +21,14 @@ from typing import TYPE_CHECKING, Annotated, Final, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
+from app.core.geometry import NCR_BOUNDS, Point
 from app.modules.geo.domain.places import (
     HEX_COLOUR_PATTERN,
     NAME_MAX_LENGTH,
-    NCR_BOUNDS,
     SLUG_MAX_LENGTH,
     SLUG_PATTERN,
     WIKIDATA_ID_PATTERN,
     OsmRef,
-    Point,
 )
 
 if TYPE_CHECKING:

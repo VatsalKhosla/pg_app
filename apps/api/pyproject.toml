@@ -178,6 +178,7 @@ warn_required_dynamic_aliases = true
 [[tool.mypy.overrides]]
 module = [
     "app.core.calendar",
+    "app.core.geometry",
     "app.core.ids",
     "app.core.money",
     "app.modules.*.domain",
@@ -213,7 +214,13 @@ layers = ["(router)", "(service)", "(schemas) | (policies) | (repository)", "(mo
 [[tool.importlinter.contracts]]
 name = "Domain code is pure: no web framework, database, cache, HTTP client, settings or logging"
 type = "forbidden"
-source_modules = ["app.core.calendar", "app.core.ids", "app.core.money", "app.modules.*.domain"]
+source_modules = [
+    "app.core.calendar",
+    "app.core.geometry",
+    "app.core.ids",
+    "app.core.money",
+    "app.modules.*.domain",
+]
 forbidden_modules = [
     "fastapi",
     "starlette",

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from app.core import audit
 from app.core.errors import NotFoundError
+from app.core.postgis import multipolygon_wkt, point_wkt
 from app.modules.geo.models import Campus, City, Locality, MetroLine, MetroStation
 from app.modules.geo.reference import dump_reference_data
 from app.modules.geo.repository import (
@@ -21,8 +22,6 @@ from app.modules.geo.repository import (
     GeoRepository,
     LocalityRecord,
     StationRecord,
-    multipolygon_wkt,
-    point_wkt,
 )
 
 if TYPE_CHECKING:
@@ -62,6 +61,26 @@ class GeoDirectory:
     async def metro_stations(self) -> list[StationRecord]:
         async with self._db.begin():
             return await self._geo.stations()
+
+
+@dataclass(frozen=True, slots=True)
+class LocalityRef:
+    """A locality, as another module refers to it."""
+
+    id: int
+    slug: str
+    name: str
+
+
+class GeoLookup:
+    """Geo reads for other modules, inside the caller's transaction (it starts none)."""
+
+    def __init__(self, db: AsyncSession) -> None:
+        self._geo = GeoRepository(db)
+
+    async def locality(self, slug: str) -> LocalityRef | None:
+        found = await self._geo.locality(slug)
+        return None if found is None else LocalityRef(id=found[0], slug=slug, name=found[1])
 
 
 @dataclass(frozen=True, slots=True)

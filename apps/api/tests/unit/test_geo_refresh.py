@@ -10,7 +10,7 @@ from typing import Any
 import httpx
 import pytest
 
-from app.modules.geo.domain.places import Point
+from app.core.geometry import Point
 from app.modules.geo.reference import (
     Locality,
     Manifest,

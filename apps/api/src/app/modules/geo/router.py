@@ -9,7 +9,8 @@ from typing import Annotated, Final
 from fastapi import APIRouter, Path, Query, Response
 
 from app.core.db import DbSession
-from app.modules.geo.domain.places import SLUG_MAX_LENGTH, SLUG_PATTERN, Point
+from app.core.geometry import Point
+from app.modules.geo.domain.places import SLUG_MAX_LENGTH, SLUG_PATTERN
 from app.modules.geo.repository import (
     CampusRecord,
     LocalityRecord,

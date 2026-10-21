@@ -6,14 +6,8 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from app.modules.geo.domain.places import (
-    EARTH_RADIUS_M,
-    NCR_BOUNDS,
-    OsmRef,
-    OsmType,
-    Point,
-    distance_m,
-)
+from app.core.geometry import EARTH_RADIUS_M, NCR_BOUNDS, Point, distance_m
+from app.modules.geo.domain.places import OsmRef, OsmType
 
 # Points anywhere in the sanity box.
 ncr_points = st.builds(

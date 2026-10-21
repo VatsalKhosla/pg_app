@@ -3,16 +3,12 @@ serves. Distances are PostGIS's, in metres on the ellipsoid; nearest-first order
 indexes (``<->``)."""
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
-from geoalchemy2 import Geometry, WKTElement
 from sqlalchemy import (
     Boolean,
     ColumnElement,
-    Float,
-    SQLColumnExpression,
     and_,
-    cast,
     delete,
     func,
     literal_column,
@@ -23,7 +19,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import insert
 
-from app.modules.geo.domain.places import NEARBY_RADIUS_M, NEAREST_STATIONS, Point
+from app.core import postgis
+from app.core.geometry import Point
+from app.modules.geo.domain.places import NEARBY_RADIUS_M, NEAREST_STATIONS
 from app.modules.geo.models import (
     Campus,
     City,
@@ -35,48 +33,15 @@ from app.modules.geo.models import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Mapping, Sequence
+    from collections.abc import Collection, Mapping, Sequence
 
     from sqlalchemy.ext.asyncio import AsyncSession
-
-# ST_X and ST_Y read geometry, not geography.
-_GEOMETRY: Final = Geometry(geometry_type=None)
-
-
-def point_wkt(point: Point) -> WKTElement:
-    return WKTElement(f"POINT({point.lng!r} {point.lat!r})", srid=4326)
-
-
-def multipolygon_wkt(polygons: Iterable[Iterable[Iterable[tuple[float, float]]]]) -> WKTElement:
-    def ring(positions: Iterable[tuple[float, float]]) -> str:
-        return "(" + ", ".join(f"{lng!r} {lat!r}" for lng, lat in positions) + ")"
-
-    def polygon(rings: Iterable[Iterable[tuple[float, float]]]) -> str:
-        return "(" + ", ".join(ring(each) for each in rings) + ")"
-
-    return WKTElement(
-        "MULTIPOLYGON(" + ", ".join(polygon(each) for each in polygons) + ")", srid=4326
-    )
-
-
-def _lat(column: SQLColumnExpression[object]) -> ColumnElement[float]:
-    return func.ST_Y(cast(column, _GEOMETRY), type_=Float)
-
-
-def _lng(column: SQLColumnExpression[object]) -> ColumnElement[float]:
-    return func.ST_X(cast(column, _GEOMETRY), type_=Float)
 
 
 def _by_name(model: type[ReferenceRow]) -> tuple[ColumnElement[str], ColumnElement[str]]:
     """Name order that is the same in every environment, whatever the database's locale: by
     lower-cased name, byte by byte, then slug."""
     return func.lower(model.name).collate("C"), model.slug.collate("C")
-
-
-def _distance(
-    a: SQLColumnExpression[object], b: SQLColumnExpression[object]
-) -> ColumnElement[float]:
-    return func.ST_Distance(a, b, type_=Float)
 
 
 @dataclass(frozen=True, slots=True)
@@ -228,11 +193,18 @@ class GeoRepository:
 
     # Reading.
 
+    async def locality(self, slug: str) -> tuple[int, str] | None:
+        """A locality's internal id and name."""
+        found = (
+            await self._db.execute(select(Locality.id, Locality.name).where(Locality.slug == slug))
+        ).one_or_none()
+        return None if found is None else (found.id, found.name)
+
     async def cities(self) -> list[CityRecord]:
         rows = await self._db.execute(
-            select(City.slug, City.name, _lat(City.center), _lng(City.center)).order_by(
-                *_by_name(City)
-            )
+            select(
+                City.slug, City.name, postgis.lat(City.center), postgis.lng(City.center)
+            ).order_by(*_by_name(City))
         )
         return [
             CityRecord(slug=slug, name=name, center=Point(lat=lat, lng=lng))
@@ -245,8 +217,8 @@ class GeoRepository:
                 Locality.slug,
                 City.slug,
                 Locality.name,
-                _lat(Locality.center),
-                _lng(Locality.center),
+                postgis.lat(Locality.center),
+                postgis.lng(Locality.center),
             )
             .join(City, City.id == Locality.city_id)
             .order_by(*_by_name(Locality))
@@ -265,8 +237,8 @@ class GeoRepository:
                     MetroStation.id,
                     MetroStation.slug,
                     MetroStation.name,
-                    _lat(MetroStation.location),
-                    _lng(MetroStation.location),
+                    postgis.lat(MetroStation.location),
+                    postgis.lng(MetroStation.location),
                 ).order_by(*_by_name(MetroStation))
             )
         )
@@ -289,9 +261,9 @@ class GeoRepository:
                 MetroStation.id.label("id"),
                 MetroStation.slug.label("slug"),
                 MetroStation.name.label("name"),
-                _lat(MetroStation.location).label("lat"),
-                _lng(MetroStation.location).label("lng"),
-                _distance(MetroStation.location, Campus.location).label("distance"),
+                postgis.lat(MetroStation.location).label("lat"),
+                postgis.lng(MetroStation.location).label("lng"),
+                postgis.distance(MetroStation.location, Campus.location).label("distance"),
             )
             .order_by(MetroStation.location.op("<->")(Campus.location))
             .limit(1)
@@ -302,8 +274,8 @@ class GeoRepository:
                 Campus.slug,
                 City.slug,
                 Campus.name,
-                _lat(Campus.location),
-                _lng(Campus.location),
+                postgis.lat(Campus.location),
+                postgis.lng(Campus.location),
                 nearest.c.id,
                 nearest.c.slug,
                 nearest.c.name,
@@ -323,7 +295,7 @@ class GeoRepository:
         for slug, city_slug, name, lat, lng, station_id, *station in rows:
             nearest_station = None
             if station_id is not None:
-                station_slug, station_name, station_lat, station_lng, distance = station
+                station_slug, station_name, station_lat, station_lng, metres = station
                 nearest_station = NearbyStation(
                     station=StationRecord(
                         slug=station_slug,
@@ -331,7 +303,7 @@ class GeoRepository:
                         location=Point(lat=station_lat, lng=station_lng),
                         lines=lines.get(station_id, ()),
                     ),
-                    distance_m=distance,
+                    distance_m=metres,
                 )
             campuses.append(
                 CampusRecord(
@@ -352,8 +324,8 @@ class GeoRepository:
                     Campus.id,
                     City.slug,
                     Campus.name,
-                    _lat(Campus.location),
-                    _lng(Campus.location),
+                    postgis.lat(Campus.location),
+                    postgis.lng(Campus.location),
                 )
                 .join(City, City.id == Campus.city_id)
                 .where(Campus.slug == slug)
@@ -370,9 +342,9 @@ class GeoRepository:
                     MetroStation.id,
                     MetroStation.slug,
                     MetroStation.name,
-                    _lat(MetroStation.location),
-                    _lng(MetroStation.location),
-                    _distance(MetroStation.location, here),
+                    postgis.lat(MetroStation.location),
+                    postgis.lng(MetroStation.location),
+                    postgis.distance(MetroStation.location, here),
                 )
                 .order_by(MetroStation.location.op("<->")(here))
                 .limit(NEAREST_STATIONS)
@@ -387,9 +359,9 @@ class GeoRepository:
                     location=Point(lat=station_lat, lng=station_lng),
                     lines=lines.get(station_id, ()),
                 ),
-                distance_m=distance,
+                distance_m=metres,
             )
-            for station_id, station_slug, station_name, station_lat, station_lng, distance in (
+            for station_id, station_slug, station_name, station_lat, station_lng, metres in (
                 stations
             )
         ]
@@ -402,7 +374,7 @@ class GeoRepository:
                 func.ST_DWithin(Locality.center, here, NEARBY_RADIUS_M),
             ),
         )
-        distance = _distance(outline, here)
+        to_outline = postgis.distance(outline, here)
         localities = [
             NearbyLocality(
                 locality=LocalityRecord(
@@ -419,13 +391,13 @@ class GeoRepository:
                         Locality.slug,
                         City.slug,
                         Locality.name,
-                        _lat(Locality.center),
-                        _lng(Locality.center),
-                        distance,
+                        postgis.lat(Locality.center),
+                        postgis.lng(Locality.center),
+                        to_outline,
                     )
                     .join(City, City.id == Locality.city_id)
                     .where(within)
-                    .order_by(distance, *_by_name(Locality))
+                    .order_by(to_outline, *_by_name(Locality))
                 )
             )
         ]
