@@ -1,0 +1,342 @@
+# The geo reference data's manifest (ADR 0020): which places there are, and which OpenStreetMap
+# element each one is. Written by hand; `make geo-refresh` reads it and writes places.json, the
+# coordinates, boundaries and metro lines included. Never type a coordinate in here or there.
+#
+# To add a place, find its element on https://www.openstreetmap.org (search, then "Query
+# features" or the element's page), add an entry with the element's type and id, run
+# `make geo-refresh` and review the diff. The refresh prints a note when our name differs from
+# OpenStreetMap's.
+#
+# Left out until there is a source (docs/BUILD_PLAN.md, step 2.1):
+# - Old Rajinder Nagar: OpenStreetMap has no place, boundary or address by that name.
+# - The Gurugram and Noida hubs: the founders haven't named them yet.
+
+# Cities: the centre is OpenStreetMap's for the city's boundary.
+
+[[cities]]
+slug = "delhi"
+name = "Delhi"
+osm = "relation/1942586"
+
+[[cities]]
+slug = "gurugram"
+name = "Gurugram"
+osm = "relation/3577685"
+
+[[cities]]
+slug = "noida"
+name = "Noida"
+osm = "relation/18814682"
+
+# Localities: where PGs are. A locality mapped as an area keeps its boundary.
+
+# Around North Campus.
+
+[[localities]]
+slug = "north-campus"
+city = "delhi"
+name = "North Campus"
+osm = "relation/3859752"
+
+[[localities]]
+slug = "kamla-nagar"
+city = "delhi"
+name = "Kamla Nagar"
+osm = "relation/3694062"
+
+[[localities]]
+slug = "vijay-nagar"
+city = "delhi"
+name = "Vijay Nagar"
+osm = "relation/3677688"
+
+[[localities]]
+slug = "mukherjee-nagar"
+city = "delhi"
+name = "Mukherjee Nagar"
+osm = "relation/3860426"
+
+[[localities]]
+slug = "outram-lines"
+city = "delhi"
+name = "Outram Lines"
+osm = "relation/3859847"
+
+[[localities]]
+slug = "hudson-line"
+city = "delhi"
+name = "Hudson Line"
+osm = "node/2834075840"
+
+[[localities]]
+slug = "shakti-nagar"
+city = "delhi"
+name = "Shakti Nagar"
+osm = "relation/3571632"
+
+[[localities]]
+slug = "roop-nagar"
+city = "delhi"
+name = "Roop Nagar"
+osm = "relation/3571634"
+
+[[localities]]
+slug = "malka-ganj"
+city = "delhi"
+name = "Malka Ganj"
+osm = "relation/3859753"
+
+# Around Satya Niketan and South Campus.
+
+[[localities]]
+slug = "satya-niketan"
+city = "delhi"
+name = "Satya Niketan"
+osm = "relation/3674226"
+
+[[localities]]
+slug = "anand-niketan"
+city = "delhi"
+name = "Anand Niketan"
+osm = "relation/3657108"
+
+[[localities]]
+slug = "moti-bagh"
+city = "delhi"
+name = "Moti Bagh"
+osm = "node/10815144105"
+
+[[localities]]
+slug = "dhaula-kuan"
+city = "delhi"
+name = "Dhaula Kuan"
+osm = "node/10815230046"
+
+# Campuses: the point is OpenStreetMap's centre for the college's grounds. North Campus as a
+# whole uses the North Campus area's centre.
+
+[[campuses]]
+slug = "du-north-campus"
+city = "delhi"
+name = "University of Delhi, North Campus"
+osm = "relation/3859752"
+
+[[campuses]]
+slug = "hindu-college"
+city = "delhi"
+name = "Hindu College"
+osm = "way/1266065702"
+
+[[campuses]]
+slug = "st-stephens-college"
+city = "delhi"
+name = "St. Stephen's College"
+osm = "way/1369005823"
+
+[[campuses]]
+slug = "kirori-mal-college"
+city = "delhi"
+name = "Kirori Mal College"
+osm = "way/971502567"
+
+[[campuses]]
+slug = "shri-ram-college-of-commerce"
+city = "delhi"
+name = "Shri Ram College of Commerce"
+osm = "way/818318820"
+
+[[campuses]]
+slug = "hansraj-college"
+city = "delhi"
+name = "Hansraj College"
+osm = "way/1319809288"
+
+[[campuses]]
+slug = "ramjas-college"
+city = "delhi"
+name = "Ramjas College"
+osm = "way/971287807"
+
+[[campuses]]
+slug = "miranda-house"
+city = "delhi"
+name = "Miranda House"
+osm = "way/402853150"
+
+[[campuses]]
+slug = "daulat-ram-college"
+city = "delhi"
+name = "Daulat Ram College"
+osm = "way/1396793189"
+
+[[campuses]]
+slug = "sgtb-khalsa-college"
+city = "delhi"
+name = "Sri Guru Tegh Bahadur Khalsa College"
+osm = "way/297554492"
+
+[[campuses]]
+slug = "indraprastha-college-for-women"
+city = "delhi"
+name = "Indraprastha College for Women"
+osm = "way/637912140"
+
+[[campuses]]
+slug = "delhi-school-of-economics"
+city = "delhi"
+name = "Delhi School of Economics"
+osm = "relation/19282541"
+
+[[campuses]]
+slug = "sri-venkateswara-college"
+city = "delhi"
+name = "Sri Venkateswara College"
+osm = "way/531671391"
+
+[[campuses]]
+slug = "atma-ram-sanatan-dharma-college"
+city = "delhi"
+name = "Atma Ram Sanatan Dharma College"
+osm = "way/424884415"
+
+[[campuses]]
+slug = "jesus-and-mary-college"
+city = "delhi"
+name = "Jesus and Mary College"
+osm = "way/81352232"
+
+[[campuses]]
+slug = "maitreyi-college"
+city = "delhi"
+name = "Maitreyi College"
+osm = "way/81352240"
+
+[[campuses]]
+slug = "ram-lal-anand-college"
+city = "delhi"
+name = "Ram Lal Anand College"
+osm = "way/265771344"
+
+[[campuses]]
+slug = "moti-lal-nehru-college"
+city = "delhi"
+name = "Moti Lal Nehru College"
+osm = "way/265771338"
+
+[[campuses]]
+slug = "aryabhatta-college"
+city = "delhi"
+name = "Aryabhatta College"
+osm = "node/13093721243"
+
+# Metro lines: the Wikidata item each station's lines are read from (P81, "connecting line");
+# the colour comes from the line's item (P465).
+
+[[metro_lines]]
+slug = "yellow"
+name = "Yellow Line"
+wikidata = "Q795156"
+
+[[metro_lines]]
+slug = "red"
+name = "Red Line"
+wikidata = "Q3278367"
+
+[[metro_lines]]
+slug = "violet"
+name = "Violet Line"
+wikidata = "Q3634451"
+
+[[metro_lines]]
+slug = "blue"
+name = "Blue Line"
+wikidata = "Q1029921"
+
+[[metro_lines]]
+slug = "pink"
+name = "Pink Line"
+wikidata = "Q19891094"
+
+[[metro_lines]]
+slug = "airport-express"
+name = "Airport Express Line"
+wikidata = "Q5253735"
+
+# Metro stations: the station element (railway=station with station=subway), never an entrance
+# or a stop position. Lines come from the station's Wikidata item.
+
+# Yellow Line, by North Campus.
+
+[[metro_stations]]
+slug = "vishwavidyalaya"
+name = "Vishwavidyalaya"
+osm = "node/7018316588"
+
+[[metro_stations]]
+slug = "vidhan-sabha"
+name = "Vidhan Sabha"
+osm = "node/7018316587"
+
+[[metro_stations]]
+slug = "civil-lines"
+name = "Civil Lines"
+osm = "node/7018316586"
+
+[[metro_stations]]
+slug = "gtb-nagar"
+name = "GTB Nagar"
+osm = "node/913485885"
+
+[[metro_stations]]
+slug = "model-town"
+name = "Model Town"
+osm = "node/7018301880"
+
+[[metro_stations]]
+slug = "kashmere-gate"
+name = "Kashmere Gate"
+osm = "node/268381477"
+
+# By Old Rajinder Nagar and Karol Bagh.
+
+[[metro_stations]]
+slug = "rajendra-place"
+name = "Rajendra Place"
+osm = "node/5781445033"
+
+[[metro_stations]]
+slug = "karol-bagh"
+name = "Karol Bagh"
+osm = "node/345234441"
+
+[[metro_stations]]
+slug = "patel-nagar"
+name = "Patel Nagar"
+osm = "node/268217229"
+
+# By Satya Niketan and South Campus.
+
+[[metro_stations]]
+slug = "durgabai-deshmukh-south-campus"
+name = "Durgabai Deshmukh South Campus"
+osm = "way/662484598"
+
+[[metro_stations]]
+slug = "dhaula-kuan"
+name = "Dhaula Kuan"
+osm = "node/927873513"
+
+[[metro_stations]]
+slug = "sir-m-vishweshwaraiah-moti-bagh"
+name = "Sir M. Vishweshwaraiah Moti Bagh"
+osm = "node/6453544485"
+
+[[metro_stations]]
+slug = "bhikaji-cama-place"
+name = "Bhikaji Cama Place"
+osm = "node/6453544486"
+
+[[metro_stations]]
+slug = "sarojini-nagar"
+name = "Sarojini Nagar"
+osm = "node/6458202842"

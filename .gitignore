@@ -40,6 +40,8 @@ test-results/
 
 # Local runtime state (worker heartbeat and friends)
 .run/
+# Answers `make geo-refresh` keeps for a day (apps/api/src/app/modules/geo/refresh.py).
+.cache/
 
 # Infra
 .terraform/
