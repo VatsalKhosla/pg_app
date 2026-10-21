@@ -43,6 +43,12 @@ build-backend = "uv_build"
 required-version = ">=0.13.1"
 # Supply-chain cooldown: resolve only distributions uploaded at least a week ago (ADR 0007).
 exclude-newer = "1 week"
+# Urgent security fix past the cooldown (ADR 0007), reviewed 2026-10-21. certifi 2026.10.19 drops
+# the emSign roots whose intermediate CAs' keys leaked (PYSEC-2026-4320, GHSA-6q48-6c7w-9gw2); it
+# was published from certifi's own repository with a PyPI attestation, and changes only the CA
+# bundle. The cutoff admits that release and nothing newer. Remove after 2026-10-27, when the
+# cooldown allows it anyway.
+exclude-newer-package = { certifi = "2026-10-20T03:00:00Z" }
 
 [tool.uv.build-backend]
 module-name = "app"
