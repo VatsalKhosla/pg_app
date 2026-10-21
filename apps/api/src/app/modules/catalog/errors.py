@@ -1,0 +1,47 @@
+"""Errors of the catalog module, as problem details with stable codes (ARCHITECTURE §15)."""
+
+from typing import TYPE_CHECKING
+
+from app.core.errors import AppError
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+
+class ListingInvalidError(AppError):
+    """Listing details the rules refuse, such as a base rent outside the owner's range. The
+    detail names every problem at once."""
+
+    status = 422
+    code = "LISTING_INVALID"
+    title = "Those listing details don't work"
+
+    def __init__(self, problems: Sequence[str]) -> None:
+        super().__init__("; ".join(problems))
+        self.problems = list(problems)
+
+
+class ListingIncompleteError(AppError):
+    """Publishing a property with nothing to sell yet."""
+
+    status = 409
+    code = "LISTING_INCOMPLETE"
+    title = "The listing isn't ready to publish"
+
+    def __init__(self, problems: Sequence[str]) -> None:
+        super().__init__("; ".join(problems))
+        self.problems = list(problems)
+
+
+class RoomFullError(AppError):
+    status = 409
+    code = "ROOM_FULL"
+    title = "The room already has as many beds as its occupancy"
+
+
+class LabelTakenError(AppError):
+    """A room label already used in its category, or a bed label in its room."""
+
+    status = 409
+    code = "LABEL_TAKEN"
+    title = "That label is already used here"

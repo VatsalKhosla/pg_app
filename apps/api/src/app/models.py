@@ -6,6 +6,15 @@ from app.core.db import Base
 from app.core.flags import FeatureFlag
 from app.core.idempotency import IdempotencyRecord
 from app.core.outbox import OutboxJob
+from app.modules.catalog.models import (
+    Amenity,
+    Bed,
+    Owner,
+    Property,
+    PropertyAmenity,
+    Room,
+    RoomCategory,
+)
 from app.modules.compliance.models import DataExport, DataRequest
 from app.modules.geo.models import (
     Campus,
@@ -26,8 +35,10 @@ from app.modules.identity.models import (
 )
 
 __all__ = [
+    "Amenity",
     "AuditLog",
     "Base",
+    "Bed",
     "Campus",
     "City",
     "Consent",
@@ -41,6 +52,11 @@ __all__ = [
     "MetroStationLine",
     "OtpChallenge",
     "OutboxJob",
+    "Owner",
+    "Property",
+    "PropertyAmenity",
+    "Room",
+    "RoomCategory",
     "TotpCredential",
     "User",
     "UserIdentity",
