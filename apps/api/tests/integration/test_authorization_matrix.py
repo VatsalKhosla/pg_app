@@ -22,6 +22,8 @@ from app.core.csrf import issue_csrf_token
 from app.main import create_app
 from app.modules.compliance.domain.requests import EXPORT_TTL, DataRequestKind, DataRequestStatus
 from app.modules.compliance.repository import DataExportRepository, DataRequestRepository
+from app.modules.geo.reference import read_reference_data
+from app.modules.geo.service import GeoReferenceLoader
 from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.repository import UserRepository
 from app.modules.identity.service import SessionService
@@ -91,6 +93,8 @@ async def _path_value(app: FastAPI, kind: str) -> str:
             return await _someone_elses_request(app, DataRequestKind.DELETION)
         case "an_optional_purpose":
             return "marketing"
+        case "a_campus":
+            return read_reference_data().campuses[0].slug
         case _:
             msg = f"no way to make {kind!r}"
             raise LookupError(msg)
@@ -120,6 +124,8 @@ def test_every_caller_gets_what_the_authorization_matrix_says(
     async def call_everything() -> list[str]:
         async with app.router.lifespan_context(app):
             app.state.otp_sender = _NoSms()
+            async with app.state.sessionmaker() as db:
+                await GeoReferenceLoader(db, app.state.clock).load(read_reference_data())
             accounts = {
                 caller: (await _add_user(app, role), kind)
                 for caller, (role, kind) in SIGNED_IN.items()

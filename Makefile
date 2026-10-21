@@ -96,6 +96,14 @@ migration: ## Generate a migration from model changes: make migration m="add boo
 manage: env ## Run an operator command on this environment's database: make manage args="staff list" (args="--help" lists them)
 	$(API) python -m app.manage $(args)
 
+.PHONY: seed
+seed: migrate ## Load the sample data: the geo reference data from OpenStreetMap (again is fine: only changes are written)
+	$(API) python -m app.manage geo load
+
+.PHONY: geo-refresh
+geo-refresh: ## Rebuild the geo reference data from places.toml via OpenStreetMap and Wikidata (network; review the diff)
+	$(API) python -m app.modules.geo.refresh $(args)
+
 ##@ API client
 
 .PHONY: gen-client

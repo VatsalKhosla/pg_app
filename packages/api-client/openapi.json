@@ -1248,10 +1248,425 @@
           }
         }
       }
+    },
+    "/v1/cities": {
+      "get": {
+        "tags": [
+          "geo"
+        ],
+        "summary": "Cities",
+        "operationId": "geoCities",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/localities": {
+      "get": {
+        "tags": [
+          "geo"
+        ],
+        "summary": "Localities, by name",
+        "description": "Where PGs are, with each one's centre; a city's only, if given.",
+        "operationId": "geoLocalities",
+        "parameters": [
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64,
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this city's (its slug)",
+              "title": "City"
+            },
+            "description": "Only this city's (its slug)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalityList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/campuses": {
+      "get": {
+        "tags": [
+          "geo"
+        ],
+        "summary": "Campuses, by name, with the nearest metro station",
+        "operationId": "geoCampuses",
+        "parameters": [
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64,
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this city's (its slug)",
+              "title": "City"
+            },
+            "description": "Only this city's (its slug)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampusList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/campuses/{slug}": {
+      "get": {
+        "tags": [
+          "geo"
+        ],
+        "summary": "A campus, with the metro stations and localities near it",
+        "description": "The three closest metro stations, and the localities within 2 km, nearest first.",
+        "operationId": "geoCampus",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampusDetail"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/metro-stations": {
+      "get": {
+        "tags": [
+          "geo"
+        ],
+        "summary": "Metro stations, by name, with their lines",
+        "operationId": "geoMetroStations",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetroStationList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "CampusDetail": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "nearestStation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StationDistance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stations": {
+            "items": {
+              "$ref": "#/components/schemas/StationDistance"
+            },
+            "type": "array",
+            "title": "Stations"
+          },
+          "localities": {
+            "items": {
+              "$ref": "#/components/schemas/LocalityDistance"
+            },
+            "type": "array",
+            "title": "Localities"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "city",
+          "name",
+          "location",
+          "nearestStation",
+          "stations",
+          "localities"
+        ],
+        "title": "CampusDetail"
+      },
+      "CampusInfo": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "nearestStation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StationDistance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "city",
+          "name",
+          "location",
+          "nearestStation"
+        ],
+        "title": "CampusInfo"
+      },
+      "CampusList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CampusInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "CampusList"
+      },
+      "CityInfo": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "center": {
+            "$ref": "#/components/schemas/Location"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "center"
+        ],
+        "title": "CityInfo"
+      },
+      "CityList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CityInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "CityList"
+      },
       "ConsentInput": {
         "properties": {
           "noticeVersion": {
@@ -1608,6 +2023,88 @@
         "title": "Health",
         "description": "Liveness: the process is up and serving requests."
       },
+      "LocalityDistance": {
+        "properties": {
+          "locality": {
+            "$ref": "#/components/schemas/LocalityInfo"
+          },
+          "distanceM": {
+            "type": "integer",
+            "title": "Distancem"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "locality",
+          "distanceM"
+        ],
+        "title": "LocalityDistance"
+      },
+      "LocalityInfo": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "center": {
+            "$ref": "#/components/schemas/Location"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "city",
+          "name",
+          "center"
+        ],
+        "title": "LocalityInfo"
+      },
+      "LocalityList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LocalityInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "LocalityList"
+      },
+      "Location": {
+        "properties": {
+          "lat": {
+            "type": "number",
+            "title": "Lat"
+          },
+          "lng": {
+            "type": "number",
+            "title": "Lng"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lat",
+          "lng"
+        ],
+        "title": "Location"
+      },
       "Me": {
         "properties": {
           "id": {
@@ -1734,6 +2231,78 @@
         "type": "object",
         "title": "MeUpdate",
         "description": "Change the profile: only the fields sent change. ``null`` clears an optional field; the\nname can be changed but not removed."
+      },
+      "MetroLineInfo": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "colour": {
+            "type": "string",
+            "title": "Colour"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "colour"
+        ],
+        "title": "MetroLineInfo"
+      },
+      "MetroStationInfo": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/MetroLineInfo"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "location",
+          "lines"
+        ],
+        "title": "MetroStationInfo"
+      },
+      "MetroStationList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MetroStationInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "MetroStationList"
       },
       "NoticePurpose": {
         "properties": {
@@ -2313,6 +2882,24 @@
         ],
         "title": "StaffTotpSignIn",
         "description": "A code from the authenticator app, sent after signing in by phone."
+      },
+      "StationDistance": {
+        "properties": {
+          "station": {
+            "$ref": "#/components/schemas/MetroStationInfo"
+          },
+          "distanceM": {
+            "type": "integer",
+            "title": "Distancem"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "station",
+          "distanceM"
+        ],
+        "title": "StationDistance"
       }
     }
   }

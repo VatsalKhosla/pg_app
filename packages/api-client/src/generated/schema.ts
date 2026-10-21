@@ -435,10 +435,145 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cities */
+        get: operations["geoCities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/localities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Localities, by name
+         * @description Where PGs are, with each one's centre; a city's only, if given.
+         */
+        get: operations["geoLocalities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/campuses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Campuses, by name, with the nearest metro station */
+        get: operations["geoCampuses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/campuses/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A campus, with the metro stations and localities near it
+         * @description The three closest metro stations, and the localities within 2 km, nearest first.
+         */
+        get: operations["geoCampus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/metro-stations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Metro stations, by name, with their lines */
+        get: operations["geoMetroStations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CampusDetail */
+        CampusDetail: {
+            /** Slug */
+            slug: string;
+            /** City */
+            city: string;
+            /** Name */
+            name: string;
+            location: components["schemas"]["Location"];
+            nearestStation: components["schemas"]["StationDistance"] | null;
+            /** Stations */
+            stations: components["schemas"]["StationDistance"][];
+            /** Localities */
+            localities: components["schemas"]["LocalityDistance"][];
+        };
+        /** CampusInfo */
+        CampusInfo: {
+            /** Slug */
+            slug: string;
+            /** City */
+            city: string;
+            /** Name */
+            name: string;
+            location: components["schemas"]["Location"];
+            nearestStation: components["schemas"]["StationDistance"] | null;
+        };
+        /** CampusList */
+        CampusList: {
+            /** Items */
+            items: components["schemas"]["CampusInfo"][];
+        };
+        /** CityInfo */
+        CityInfo: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            center: components["schemas"]["Location"];
+        };
+        /** CityList */
+        CityList: {
+            /** Items */
+            items: components["schemas"]["CityInfo"][];
+        };
         /**
          * ConsentInput
          * @description What the person agreed to: the privacy notice version they were shown (GET
@@ -577,6 +712,34 @@ export interface components {
              */
             status: "ok";
         };
+        /** LocalityDistance */
+        LocalityDistance: {
+            locality: components["schemas"]["LocalityInfo"];
+            /** Distancem */
+            distanceM: number;
+        };
+        /** LocalityInfo */
+        LocalityInfo: {
+            /** Slug */
+            slug: string;
+            /** City */
+            city: string;
+            /** Name */
+            name: string;
+            center: components["schemas"]["Location"];
+        };
+        /** LocalityList */
+        LocalityList: {
+            /** Items */
+            items: components["schemas"]["LocalityInfo"][];
+        };
+        /** Location */
+        Location: {
+            /** Lat */
+            lat: number;
+            /** Lng */
+            lng: number;
+        };
         /**
          * Me
          * @description The signed-in user.
@@ -612,6 +775,30 @@ export interface components {
             /** Collegeorworkplace */
             collegeOrWorkplace?: string | null;
             gender?: components["schemas"]["Gender"] | null;
+        };
+        /** MetroLineInfo */
+        MetroLineInfo: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Colour */
+            colour: string;
+        };
+        /** MetroStationInfo */
+        MetroStationInfo: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            location: components["schemas"]["Location"];
+            /** Lines */
+            lines: components["schemas"]["MetroLineInfo"][];
+        };
+        /** MetroStationList */
+        MetroStationList: {
+            /** Items */
+            items: components["schemas"]["MetroStationInfo"][];
         };
         /** NoticePurpose */
         NoticePurpose: {
@@ -840,6 +1027,12 @@ export interface components {
         StaffTotpSignIn: {
             /** Code */
             code: string;
+        };
+        /** StationDistance */
+        StationDistance: {
+            station: components["schemas"]["MetroStationInfo"];
+            /** Distancem */
+            distanceM: number;
         };
     };
     responses: never;
@@ -1790,6 +1983,204 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueuedDataRequest"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    geoCities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CityList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    geoLocalities: {
+        parameters: {
+            query?: {
+                /** @description Only this city's (its slug) */
+                city?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocalityList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    geoCampuses: {
+        parameters: {
+            query?: {
+                /** @description Only this city's (its slug) */
+                city?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampusList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    geoCampus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampusDetail"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    geoMetroStations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetroStationList"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

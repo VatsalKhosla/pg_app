@@ -7,6 +7,14 @@ from app.core.flags import FeatureFlag
 from app.core.idempotency import IdempotencyRecord
 from app.core.outbox import OutboxJob
 from app.modules.compliance.models import DataExport, DataRequest
+from app.modules.geo.models import (
+    Campus,
+    City,
+    Locality,
+    MetroLine,
+    MetroStation,
+    MetroStationLine,
+)
 from app.modules.identity.models import (
     Consent,
     OtpChallenge,
@@ -20,11 +28,17 @@ from app.modules.identity.models import (
 __all__ = [
     "AuditLog",
     "Base",
+    "Campus",
+    "City",
     "Consent",
     "DataExport",
     "DataRequest",
     "FeatureFlag",
     "IdempotencyRecord",
+    "Locality",
+    "MetroLine",
+    "MetroStation",
+    "MetroStationLine",
     "OtpChallenge",
     "OutboxJob",
     "TotpCredential",

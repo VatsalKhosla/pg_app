@@ -1,7 +1,7 @@
 """HTTP API entrypoint and composition root: ``uvicorn app.main:create_app --factory``."""
 
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 import httpx
 import structlog
@@ -24,6 +24,7 @@ from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestCont
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
 from app.modules.compliance.router import router as compliance_router
+from app.modules.geo.router import router as geo_router
 from app.modules.identity.adapters.console_otp import ConsoleOtpSender
 from app.modules.identity.adapters.google_oidc import GoogleOidc
 from app.modules.identity.adapters.unavailable_otp import UnavailableOtpSender
@@ -50,6 +51,10 @@ logger = structlog.stdlib.get_logger(__name__)
 
 def _is_probe(scope: Scope) -> bool:
     return scope.get("path") in PROBE_PATHS
+
+
+# Every module's routes, in the order the OpenAPI schema lists them.
+ROUTERS: Final = (system_router, identity_router, compliance_router, geo_router)
 
 
 def create_app(settings: Settings | None = None, *, clock: Clock | None = None) -> FastAPI:
@@ -146,7 +151,6 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
     )
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_deployed)
     app.add_middleware(RequestContextMiddleware)
-    app.include_router(system_router)
-    app.include_router(identity_router)
-    app.include_router(compliance_router)
+    for router in ROUTERS:
+        app.include_router(router)
     return app

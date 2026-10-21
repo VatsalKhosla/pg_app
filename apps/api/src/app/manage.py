@@ -10,14 +10,20 @@ change is written to the audit log.
     staff enrol-authenticator PHONE
     staff remove-authenticator PHONE
     staff remove-google PHONE
+    geo load [--file PATH]
 
 Making someone staff is the only way to staff sign-in: Google sign-in also needs their address
 (``--email``), and the fallback needs an authenticator app (``enrol-authenticator``).
+
+``geo load`` loads the geo reference data (cities, localities, campuses, metro lines and stations)
+from app/modules/geo/data/places.json. It changes only what differs, so it is safe to run on every
+deploy, and it is what ``make seed`` runs (ADR 0020).
 """
 
 import argparse
 import asyncio
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Final, TextIO
 
 from app.config import Settings, get_settings
@@ -25,6 +31,8 @@ from app.core.actor import STAFF_ROLES, Role
 from app.core.clock import Clock, SystemClock
 from app.core.db import create_engine, create_sessionmaker
 from app.core.pagination import MAX_PAGE_SIZE, PageRequest
+from app.modules.geo.reference import DATA_PATH, read_reference_data
+from app.modules.geo.service import GeoReferenceLoader
 from app.modules.identity.domain.phones import normalize_indian_mobile
 from app.modules.identity.service import StaffAdmin, StaffAdminError, StaffDirectory
 
@@ -71,6 +79,12 @@ def _parser() -> argparse.ArgumentParser:
         "remove-google", help="unlink a replaced Google account, so the next one links again"
     )
     unlink.add_argument("phone")
+
+    geo = groups.add_parser("geo", help="the geo reference data").add_subparsers(
+        dest="command", required=True
+    )
+    load = geo.add_parser("load", help="load the reference data (only what changed)")
+    load.add_argument("--file", type=Path, default=DATA_PATH, help="default: %(default)s")
     return parser
 
 
@@ -178,6 +192,23 @@ class _Commands:
         return 1
 
 
+async def _load_geo(db: AsyncSession, *, clock: Clock, path: Path, out: TextIO) -> int:
+    report = await GeoReferenceLoader(db, clock).load(read_reference_data(path))
+    for kind in report.kinds:
+        left = f", {kind.not_listed} no longer listed (left alone)" if kind.not_listed else ""
+        out.write(
+            f"{kind.kind.replace('_', ' ')}: {kind.rows} ({kind.inserted} new, "
+            f"{kind.updated} changed{left})\n"
+        )
+    out.write(
+        f"Geo reference data loaded ({report.digest[:12]})."
+        if report.changed
+        else "Geo reference data already up to date."
+    )
+    out.write("\n")
+    return 0
+
+
 async def _main(
     args: argparse.Namespace,
     *,
@@ -189,6 +220,8 @@ async def _main(
     engine = create_engine(settings, application_name=f"{settings.otel_service_name}-manage")
     try:
         async with create_sessionmaker(engine)() as db:
+            if args.group == "geo":
+                return await _load_geo(db, clock=clock, path=args.file, out=out)
             commands = _Commands(
                 db,
                 clock=clock,

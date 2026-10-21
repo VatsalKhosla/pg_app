@@ -41,6 +41,7 @@ PATH_VALUES: Final = frozenset(
         "someone_elses_export",
         "someone_elses_deletion_request",
         "an_optional_purpose",
+        "a_campus",
     }
 )
 
@@ -126,6 +127,12 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ),
     # Admins, in a staff session.
     ("GET", "/v1/admin/staff"): Rule(signed_in(403, admin=200)),
+    # Geo reference data: public.
+    ("GET", "/v1/cities"): Rule(everyone(200)),
+    ("GET", "/v1/localities"): Rule(everyone(200)),
+    ("GET", "/v1/campuses"): Rule(everyone(200)),
+    ("GET", "/v1/campuses/{slug}"): Rule(everyone(200), path={"slug": "a_campus"}),
+    ("GET", "/v1/metro-stations"): Rule(everyone(200)),
 }
 
 
