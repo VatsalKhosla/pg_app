@@ -167,8 +167,16 @@ Start the slow ones in week 1.
   - **Shared geometry** moved to `app.core.geometry` and `app.core.postgis`.
   - **No routes yet:** the ops console (2.4) adds them.
 
-- [ ] **2.3 Media pipeline.** Presigned uploads, worker processing (magic bytes, EXIF/GPS stripping, WebP/AVIF variants, video poster), moderation status, `verified_capture` flag, CDN and signed URLs.
+- [x] **2.3 Media pipeline.** Presigned uploads, worker processing (magic bytes, EXIF/GPS stripping, WebP/AVIF variants, video poster), moderation status, `verified_capture` flag, CDN and signed URLs.
   *Done when* an uploaded phone photo comes out with no GPS EXIF in all variants, and a private document needs a signed URL.
+  *Note (2026-10-21):*
+  - **Uploads:** the browser posts files straight to the private bucket through presigned POSTs, and storage itself enforces the type and the size.
+  - **The worker:** checks the real type, then re-encodes every photo variant (WebP and AVIF at four sizes) without metadata. Videos are remuxed without their location, with a clean poster. The original is deleted afterwards.
+  - **Serving:** listing media from the public bucket (the CDN), private files only through 5-minute signed links.
+  - **Tested end to end against SeaweedFS:** no EXIF, GPS or XMP in any variant; no location in videos; private files 403 without a signature.
+  - **Dependencies:** Pillow, PyAV and boto3, behind an `ObjectStorage` port.
+  - **Not accepted:** HEIC (iPhones send JPEG when it isn't offered).
+  - **Local buckets:** `make seed` creates them (ADR 0022).
 
 - [ ] **2.4 Ops console: listings.** `/ops` screens to create and edit properties, room categories, rooms and beds; pin picker (drag the pin, or use the agent's GPS); amenities and house rules; photo and video upload with ordering; publish and unpause; full audit trail.
   *Done when* ops can create a complete listing from a phone in under 10 minutes.
