@@ -36,10 +36,23 @@ overrides:
 peerDependencyRules:
   allowedVersions:
     openapi-typescript>typescript: "6"
-# Advisories reviewed and accepted because no fix exists and our code can't reach the flaw
-# (`make audit` fails on anything else). Review again whenever a fix ships.
+# Advisories reviewed and accepted because our code can't reach the flaw, and no fix exists or the
+# fix is still inside the cooldown (`make audit` fails on anything else). Review again whenever a
+# fix ships.
 auditConfig:
   ignoreGhsas:
+    # fast-uri < 3.1.9: scheme spoofing, host confusion and path normalisation in URI parsing.
+    # Reached only through ajv, from @hookform/resolvers (we import only its zod resolver, so ajv
+    # never runs) and from Lighthouse (dev only). 3.1.9 clears the cooldown on 2026-10-27: update
+    # it then and drop these four. Reviewed 2026-10-24.
+    - GHSA-w74x-v6f9-j3xg
+    - GHSA-xhq7-xmqj-769h
+    - GHSA-wjr9-j795-jxcr
+    - GHSA-333x-w4r6-6crp
+    # zod < 4.6.6: memory exhaustion validating oversized constrained collections. Our zod is 4.6.7;
+    # the old 3.x copy is Lighthouse's (dev only, via puppeteer-core > chromium-bidi), checking
+    # messages from the local browser, and no 3.x fix exists. Reviewed 2026-10-24.
+    - GHSA-mrhx-c7xc-m3w5
     # braces <= 3.0.3: stack exhaustion from deeply nested glob patterns. Reached only through
     # ESLint's tooling (eslint-config-next > fast-glob > micromatch), with our own config's
     # patterns. Reviewed 2026-10-19.
