@@ -526,10 +526,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start an upload
+         * @description Staff, in a staff session. The answer has a form to post the file to, straight to
+         *     storage, within 15 minutes; then say it's done.
+         */
+        post: operations["mediaStartUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/media/{media_id}/uploaded": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Say an upload is done
+         * @description The uploader only. The file is checked and its variants made in the background: look
+         *     at the media until it is ready or rejected. Saying it again changes nothing.
+         */
+        post: operations["mediaFinishUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/media/{media_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A file and its variants
+         * @description The uploader, or ops and admins in a staff session (404 for anyone else).
+         */
+        get: operations["mediaMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AssetStatus
+         * @enum {string}
+         */
+        AssetStatus: "awaiting_upload" | "processing" | "ready" | "rejected";
         /** CampusDetail */
         CampusDetail: {
             /** Slug */
@@ -776,6 +843,35 @@ export interface components {
             collegeOrWorkplace?: string | null;
             gender?: components["schemas"]["Gender"] | null;
         };
+        /** MediaInfo */
+        MediaInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            purpose: components["schemas"]["Purpose"];
+            status: components["schemas"]["AssetStatus"];
+            moderation: components["schemas"]["Moderation"];
+            /** Contenttype */
+            contentType: string;
+            /** Bytesize */
+            byteSize: number | null;
+            /** Width */
+            width: number | null;
+            /** Height */
+            height: number | null;
+            /** Durationms */
+            durationMs: number | null;
+            /** Verifiedcapture */
+            verifiedCapture: boolean;
+            /** Capturedat */
+            capturedAt: string | null;
+            /** Rejectionreason */
+            rejectionReason: string | null;
+            /** Renditions */
+            renditions: components["schemas"]["RenditionInfo"][];
+        };
         /** MetroLineInfo */
         MetroLineInfo: {
             /** Slug */
@@ -800,6 +896,11 @@ export interface components {
             /** Items */
             items: components["schemas"]["MetroStationInfo"][];
         };
+        /**
+         * Moderation
+         * @enum {string}
+         */
+        Moderation: "pending" | "approved" | "rejected";
         /** NoticePurpose */
         NoticePurpose: {
             purpose: components["schemas"]["ConsentPurpose"];
@@ -884,6 +985,11 @@ export interface components {
             /** Traceid */
             traceId?: string | null;
         };
+        /**
+         * Purpose
+         * @enum {string}
+         */
+        Purpose: "listing_photo" | "listing_video" | "document";
         /** QueuedDataRequest */
         QueuedDataRequest: {
             /**
@@ -920,6 +1026,21 @@ export interface components {
             checks: {
                 [key: string]: "ok" | "unavailable";
             };
+        };
+        /** RenditionInfo */
+        RenditionInfo: {
+            /** Name */
+            name: string;
+            /** Contenttype */
+            contentType: string;
+            /** Url */
+            url: string;
+            /** Width */
+            width: number | null;
+            /** Height */
+            height: number | null;
+            /** Bytes */
+            bytes: number;
         };
         /** Requester */
         Requester: {
@@ -1033,6 +1154,36 @@ export interface components {
             station: components["schemas"]["MetroStationInfo"];
             /** Distancem */
             distanceM: number;
+        };
+        /**
+         * UploadForm
+         * @description Post the file here as multipart/form-data: every field, then the file as ``file``.
+         */
+        UploadForm: {
+            /** Url */
+            url: string;
+            /** Fields */
+            fields: {
+                [key: string]: string;
+            };
+            /**
+             * Expiresat
+             * Format: date-time
+             */
+            expiresAt: string;
+        };
+        /** UploadRequest */
+        UploadRequest: {
+            purpose: components["schemas"]["Purpose"];
+            /** Contenttype */
+            contentType: string;
+            /** Bytesize */
+            byteSize: number;
+        };
+        /** UploadStarted */
+        UploadStarted: {
+            media: components["schemas"]["MediaInfo"];
+            upload: components["schemas"]["UploadForm"];
         };
     };
     responses: never;
@@ -2181,6 +2332,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MetroStationList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    mediaStartUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadStarted"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    mediaFinishUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    mediaMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaInfo"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

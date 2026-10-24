@@ -11,6 +11,7 @@ change is written to the audit log.
     staff remove-authenticator PHONE
     staff remove-google PHONE
     geo load [--file PATH]
+    media buckets
 
 Making someone staff is the only way to staff sign-in: Google sign-in also needs their address
 (``--email``), and the fallback needs an authenticator app (``enrol-authenticator``).
@@ -18,6 +19,9 @@ Making someone staff is the only way to staff sign-in: Google sign-in also needs
 ``geo load`` loads the geo reference data (cities, localities, campuses, metro lines and stations)
 from app/modules/geo/data/places.json. It changes only what differs, so it is safe to run on every
 deploy, and it is what ``make seed`` runs (ADR 0020).
+
+``media buckets`` creates the object-storage buckets for local development (ADR 0022); when
+deployed, Terraform does.
 """
 
 import argparse
@@ -35,6 +39,7 @@ from app.modules.geo.reference import DATA_PATH, read_reference_data
 from app.modules.geo.service import GeoReferenceLoader
 from app.modules.identity.domain.phones import normalize_indian_mobile
 from app.modules.identity.service import StaffAdmin, StaffAdminError, StaffDirectory
+from app.modules.media.adapters.s3 import S3Storage
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -85,6 +90,11 @@ def _parser() -> argparse.ArgumentParser:
     )
     load = geo.add_parser("load", help="load the reference data (only what changed)")
     load.add_argument("--file", type=Path, default=DATA_PATH, help="default: %(default)s")
+
+    media = groups.add_parser("media", help="object storage for uploads").add_subparsers(
+        dest="command", required=True
+    )
+    media.add_parser("buckets", help="create the buckets (local development only)")
     return parser
 
 
@@ -237,6 +247,24 @@ async def _main(
         await engine.dispose()
 
 
+def _media_buckets(settings: Settings, out: TextIO) -> int:
+    if settings.is_deployed:
+        out.write("Not done: deployed environments get their buckets from Terraform.\n")
+        return 1
+    created = S3Storage.from_settings(settings).ensure_local_buckets(
+        private=settings.media_private_bucket,
+        public=settings.media_public_bucket,
+        web_origin=settings.site_url,
+    )
+    out.write(
+        f"Buckets ready ({', '.join(created)} created)."
+        if created
+        else "Buckets ready (both existed)."
+    )
+    out.write("\n")
+    return 0
+
+
 def main(
     argv: Sequence[str] | None = None,
     *,
@@ -246,6 +274,8 @@ def main(
     read_code: Callable[[], str] | None = None,
 ) -> int:
     args = _parser().parse_args(argv)
+    if args.group == "media":
+        return _media_buckets(settings or get_settings(), out)
     return asyncio.run(
         _main(
             args,

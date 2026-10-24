@@ -6,7 +6,7 @@ person's data export holds, and the retention schedule.
 """
 
 from datetime import time, timedelta
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from app.core.idempotency import IDEMPOTENCY_CLEANUP, delete_expired_keys
 from app.core.outbox import OUTBOX_CLEANUP, JobRegistry, delete_finished_jobs
@@ -24,6 +24,16 @@ from app.modules.identity.service import (
     delete_old_challenges,
     personal_data,
 )
+from app.modules.media.jobs import (
+    DISCARD_UPLOAD,
+    PROCESS,
+    discard_upload_handler,
+    process_handler,
+)
+
+if TYPE_CHECKING:
+    from app.modules.media.ports import ObjectStorage
+    from app.modules.media.service import Buckets
 
 # A person's data export (DPDP): one part from every module that holds personal data. A module
 # that starts keeping personal data adds its part here.
@@ -54,10 +64,13 @@ SCHEDULES: Final = (
 )
 
 
-def build_registry() -> JobRegistry:
+def build_registry(*, storage: ObjectStorage, buckets: Buckets) -> JobRegistry:
+    """Every handler, with what it needs from outside: the object storage media jobs use."""
     registry = JobRegistry()
     registry.register(OUTBOX_CLEANUP, delete_finished_jobs)
     registry.register(IDEMPOTENCY_CLEANUP, delete_expired_keys)
     registry.register(BUILD_EXPORT, build_export_handler(EXPORTERS))
     registry.register(RETENTION, retention_handler(RETENTION_RULES))
+    registry.register(PROCESS, process_handler(storage, buckets))
+    registry.register(DISCARD_UPLOAD, discard_upload_handler(storage, buckets))
     return registry

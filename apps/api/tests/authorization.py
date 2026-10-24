@@ -42,6 +42,7 @@ PATH_VALUES: Final = frozenset(
         "someone_elses_deletion_request",
         "an_optional_purpose",
         "a_campus",
+        "someone_elses_media",
     }
 )
 
@@ -133,6 +134,20 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("GET", "/v1/campuses"): Rule(everyone(200)),
     ("GET", "/v1/campuses/{slug}"): Rule(everyone(200), path={"slug": "a_campus"}),
     ("GET", "/v1/metro-stations"): Rule(everyone(200)),
+    # Media uploads: staff in a staff session, for now. Someone else's file is a 404, though ops
+    # and admins may look at any.
+    ("POST", "/v1/media"): Rule(
+        signed_in(403, field_agent=201, ops=201, admin=201),
+        lambda: {
+            "json": {"purpose": "listing_photo", "contentType": "image/jpeg", "byteSize": 1_000}
+        },
+    ),
+    ("POST", "/v1/media/{media_id}/uploaded"): Rule(
+        signed_in(404), path={"media_id": "someone_elses_media"}
+    ),
+    ("GET", "/v1/media/{media_id}"): Rule(
+        signed_in(404, ops=200, admin=200), path={"media_id": "someone_elses_media"}
+    ),
 }
 
 

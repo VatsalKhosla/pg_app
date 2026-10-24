@@ -53,6 +53,10 @@ def build_settings(**overrides: object) -> Settings:
         "redis_url": UNREACHABLE_REDIS_URL,
         "secret_key": TEST_SECRET_KEY,
         "cors_allowed_origins": ("http://localhost:3000",),
+        # Signing needs no network; anything that does reach storage fails fast.
+        "s3_endpoint_url": "http://127.0.0.1:9",
+        "s3_access_key_id": "test",
+        "s3_secret_access_key": "test-secret",
     }
     values.update(overrides)
     return IsolatedSettings.model_validate(values)

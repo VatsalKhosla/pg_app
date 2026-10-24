@@ -1512,10 +1512,180 @@
           }
         }
       }
+    },
+    "/v1/media": {
+      "post": {
+        "tags": [
+          "media"
+        ],
+        "summary": "Start an upload",
+        "description": "Staff, in a staff session. The answer has a form to post the file to, straight to\nstorage, within 15 minutes; then say it's done.",
+        "operationId": "mediaStartUpload",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadStarted"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/media/{media_id}/uploaded": {
+      "post": {
+        "tags": [
+          "media"
+        ],
+        "summary": "Say an upload is done",
+        "description": "The uploader only. The file is checked and its variants made in the background: look\nat the media until it is ready or rejected. Saying it again changes nothing.",
+        "operationId": "mediaFinishUpload",
+        "parameters": [
+          {
+            "name": "media_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Media Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/media/{media_id}": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "A file and its variants",
+        "description": "The uploader, or ops and admins in a staff session (404 for anyone else).",
+        "operationId": "mediaMedia",
+        "parameters": [
+          {
+            "name": "media_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Media Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AssetStatus": {
+        "type": "string",
+        "enum": [
+          "awaiting_upload",
+          "processing",
+          "ready",
+          "rejected"
+        ],
+        "title": "AssetStatus"
+      },
       "CampusDetail": {
         "properties": {
           "slug": {
@@ -2232,6 +2402,124 @@
         "title": "MeUpdate",
         "description": "Change the profile: only the fields sent change. ``null`` clears an optional field; the\nname can be changed but not removed."
       },
+      "MediaInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/Purpose"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssetStatus"
+          },
+          "moderation": {
+            "$ref": "#/components/schemas/Moderation"
+          },
+          "contentType": {
+            "type": "string",
+            "title": "Contenttype"
+          },
+          "byteSize": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytesize"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "durationMs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Durationms"
+          },
+          "verifiedCapture": {
+            "type": "boolean",
+            "title": "Verifiedcapture"
+          },
+          "capturedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capturedat"
+          },
+          "rejectionReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejectionreason"
+          },
+          "renditions": {
+            "items": {
+              "$ref": "#/components/schemas/RenditionInfo"
+            },
+            "type": "array",
+            "title": "Renditions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "purpose",
+          "status",
+          "moderation",
+          "contentType",
+          "byteSize",
+          "width",
+          "height",
+          "durationMs",
+          "verifiedCapture",
+          "capturedAt",
+          "rejectionReason",
+          "renditions"
+        ],
+        "title": "MediaInfo"
+      },
       "MetroLineInfo": {
         "properties": {
           "slug": {
@@ -2303,6 +2591,15 @@
           "items"
         ],
         "title": "MetroStationList"
+      },
+      "Moderation": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "approved",
+          "rejected"
+        ],
+        "title": "Moderation"
       },
       "NoticePurpose": {
         "properties": {
@@ -2504,6 +2801,15 @@
         ],
         "title": "ProblemDetail"
       },
+      "Purpose": {
+        "type": "string",
+        "enum": [
+          "listing_photo",
+          "listing_video",
+          "document"
+        ],
+        "title": "Purpose"
+      },
       "QueuedDataRequest": {
         "properties": {
           "id": {
@@ -2612,6 +2918,59 @@
         ],
         "title": "Readiness",
         "description": "Readiness: whether this instance can serve traffic, with the state of each dependency."
+      },
+      "RenditionInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "contentType": {
+            "type": "string",
+            "title": "Contenttype"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "bytes": {
+            "type": "integer",
+            "title": "Bytes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "contentType",
+          "url",
+          "width",
+          "height",
+          "bytes"
+        ],
+        "title": "RenditionInfo"
       },
       "Requester": {
         "properties": {
@@ -2900,6 +3259,78 @@
           "distanceM"
         ],
         "title": "StationDistance"
+      },
+      "UploadForm": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "fields": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Fields"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expiresat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url",
+          "fields",
+          "expiresAt"
+        ],
+        "title": "UploadForm",
+        "description": "Post the file here as multipart/form-data: every field, then the file as ``file``."
+      },
+      "UploadRequest": {
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/Purpose"
+          },
+          "contentType": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Contenttype"
+          },
+          "byteSize": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Bytesize"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "purpose",
+          "contentType",
+          "byteSize"
+        ],
+        "title": "UploadRequest"
+      },
+      "UploadStarted": {
+        "properties": {
+          "media": {
+            "$ref": "#/components/schemas/MediaInfo"
+          },
+          "upload": {
+            "$ref": "#/components/schemas/UploadForm"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "media",
+          "upload"
+        ],
+        "title": "UploadStarted"
       }
     }
   }

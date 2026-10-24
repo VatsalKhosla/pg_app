@@ -27,6 +27,9 @@ from app.modules.geo.service import GeoReferenceLoader
 from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.repository import UserRepository
 from app.modules.identity.service import SessionService
+from app.modules.media.domain.assets import AssetStatus, Moderation, Purpose, Visibility
+from app.modules.media.models import MediaAsset
+from app.modules.media.repository import MediaRepository
 from tests.authorization import CALLERS, MATRIX
 from tests.conftest import TEST_SECRET_KEY
 
@@ -82,6 +85,25 @@ async def _someone_elses_request(app: FastAPI, kind: DataRequestKind) -> str:
         return str(request.public_id)
 
 
+async def _someone_elses_media(app: FastAPI) -> str:
+    """An upload someone else started."""
+    user_id = await _add_user(app, Role.FIELD_AGENT)
+    async with app.state.sessionmaker() as db, db.begin():
+        asset = await MediaRepository(db).add(
+            MediaAsset(
+                purpose=Purpose.LISTING_PHOTO,
+                visibility=Visibility.PUBLIC,
+                status=AssetStatus.AWAITING_UPLOAD,
+                moderation=Moderation.APPROVED,
+                content_type="image/jpeg",
+                renditions=[],
+                verified_capture=True,
+                uploaded_by=user_id,
+            )
+        )
+        return str(asset.public_id)
+
+
 async def _path_value(app: FastAPI, kind: str) -> str:
     match kind:
         case "someone_elses_session":
@@ -95,6 +117,8 @@ async def _path_value(app: FastAPI, kind: str) -> str:
             return "marketing"
         case "a_campus":
             return read_reference_data().campuses[0].slug
+        case "someone_elses_media":
+            return await _someone_elses_media(app)
         case _:
             msg = f"no way to make {kind!r}"
             raise LookupError(msg)

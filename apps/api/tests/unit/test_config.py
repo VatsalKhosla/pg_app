@@ -49,6 +49,7 @@ def _deployed(environment: pytest.MonkeyPatch, app_env: str = "production") -> p
         "CORS_ALLOWED_ORIGINS": "https://www.example.in",
         "SITE_URL": "https://www.example.in",
         "API_URL": "https://api.example.in",
+        "MEDIA_PUBLIC_BASE_URL": "https://media.example.in",
         "TURNSTILE_SECRET_KEY": "a-turnstile-secret",
         "OTP_SENDER": "unavailable",
         "PRIVACY_NOTICE_VERSION": "2027-01",
@@ -341,4 +342,35 @@ def test_a_privacy_notice_version_is_a_short_lowercase_label(
     environment.setenv("PRIVACY_NOTICE_VERSION", version)
 
     with pytest.raises(ValidationError, match="privacy_notice_version"):
+        Settings()
+
+
+def test_deployed_environments_serve_public_media_over_https(
+    environment: pytest.MonkeyPatch,
+) -> None:
+    _deployed(environment).setenv("MEDIA_PUBLIC_BASE_URL", "http://media.example.in")
+
+    with pytest.raises(ValidationError, match="MEDIA_PUBLIC_BASE_URL"):
+        Settings()
+
+
+@pytest.mark.parametrize(
+    ("variables", "message"),
+    [
+        ({"S3_ACCESS_KEY_ID": "key"}, "S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY together"),
+        (
+            {"MEDIA_PRIVATE_BUCKET": "one-bucket", "MEDIA_PUBLIC_BUCKET": "one-bucket"},
+            "must differ",
+        ),
+        ({"MEDIA_PUBLIC_BUCKET": "Not_A_Bucket"}, "media_public_bucket"),
+        ({"MEDIA_PUBLIC_BASE_URL": "media.example.in"}, "media_public_base_url"),
+    ],
+)
+def test_storage_settings_are_checked(
+    environment: pytest.MonkeyPatch, variables: dict[str, str], message: str
+) -> None:
+    for name, value in variables.items():
+        environment.setenv(name, value)
+
+    with pytest.raises(ValidationError, match=message):
         Settings()

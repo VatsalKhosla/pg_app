@@ -21,11 +21,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import NullPool
 from testcontainers.community.postgres import PostgresContainer
 from testcontainers.core.container import DockerContainer
-from testcontainers.core.wait_strategies import LogMessageWaitStrategy
+from testcontainers.core.wait_strategies import HttpWaitStrategy, LogMessageWaitStrategy
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 API_ROOT = REPO_ROOT / "apps" / "api"
 COMPOSE_FILE = REPO_ROOT / "infra" / "docker-compose.yml"
+SEAWEEDFS_CONFIG = REPO_ROOT / "infra" / "seaweedfs" / "s3.json"
 VALKEY_PASSWORD = "test"
 
 type Sessionmaker = async_sessionmaker[AsyncSession]
@@ -114,6 +115,29 @@ def valkey() -> Iterator[DockerContainer]:
     )
     with container:
         yield container
+
+
+@pytest.fixture(scope="session")
+def storage() -> Iterator[DockerContainer]:
+    """SeaweedFS, as `make dev` runs it: S3 that wants signed requests, from infra/seaweedfs."""
+    container = (
+        DockerContainer(compose_image("s3"))
+        .with_command(
+            ["mini", "-dir=/data", "-s3.config=/etc/seaweedfs/s3.json", "-admin.ui=false"]
+        )
+        .with_volume_mapping(str(SEAWEEDFS_CONFIG), "/etc/seaweedfs/s3.json", "ro")
+        .with_exposed_ports(8333)
+        .waiting_for(
+            HttpWaitStrategy(8333, "/healthz").for_status_code(200).with_startup_timeout(120)
+        )
+    )
+    with container:
+        yield container
+
+
+@pytest.fixture(scope="session")
+def storage_url(storage: DockerContainer) -> str:
+    return f"http://{storage.get_container_host_ip()}:{storage.get_exposed_port(8333)}"
 
 
 @pytest.fixture(scope="session")

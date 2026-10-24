@@ -29,6 +29,8 @@ TURNSTILE_TEST_SECRETS: Final = frozenset(
 )
 _DOMAIN: Final = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)+")
 _EMAIL: Final = re.compile(r"[^@\s,]+@[a-z0-9-]+(\.[a-z0-9-]+)+")
+# S3's rules for bucket names: 3 to 63 lowercase letters, digits, dots and hyphens.
+_BUCKET: Final = r"^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
 
 
 class LoggingSettings(BaseSettings):
@@ -100,6 +102,18 @@ class Settings(DatabaseSettings):
     # can't go to production.
     privacy_notice_version: str = Field(default="draft-1", pattern=r"^[a-z0-9][a-z0-9.-]{0,63}$")
 
+    # Object storage (S3; SeaweedFS locally). Uploads and private files go to one bucket; listing
+    # media anyone may see go to the other, which the CDN serves when deployed. On AWS the endpoint
+    # and keys stay unset: the task's IAM role signs requests.
+    s3_endpoint_url: str | None = None
+    s3_region: str = "ap-south-1"
+    s3_access_key_id: SecretStr | None = None
+    s3_secret_access_key: SecretStr | None = None
+    media_private_bucket: str = Field(default="pg-platform-private", pattern=_BUCKET)
+    media_public_bucket: str = Field(default="pg-platform-media", pattern=_BUCKET)
+    # Where public media are read from: the CDN when deployed, the public bucket itself locally.
+    media_public_base_url: str = "http://127.0.0.1:8333/pg-platform-media"
+
     # Worker: concurrent outbox consumers, jobs per claim, idle poll interval, job lease.
     worker_concurrency: int = Field(default=2, ge=1)
     worker_batch_size: int = Field(default=10, ge=1)
@@ -166,6 +180,25 @@ class Settings(DatabaseSettings):
             raise ValueError(msg)
         return value.rstrip("/")
 
+    @field_validator("media_public_base_url")
+    @classmethod
+    def _media_base_url(cls, value: str) -> str:
+        parts = urlsplit(value)
+        if parts.scheme not in {"http", "https"} or not parts.hostname or parts.query:
+            msg = "must be an http(s) address, such as https://media.example.com"
+            raise ValueError(msg)
+        return value.rstrip("/")
+
+    @model_validator(mode="after")
+    def _storage_keys_together(self) -> Self:
+        if (self.s3_access_key_id is None) != (self.s3_secret_access_key is None):
+            msg = "set S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY together, or neither"
+            raise ValueError(msg)
+        if self.media_private_bucket == self.media_public_bucket:
+            msg = "MEDIA_PRIVATE_BUCKET and MEDIA_PUBLIC_BUCKET must differ"
+            raise ValueError(msg)
+        return self
+
     @field_validator("staff_google_domains")
     @classmethod
     def _bare_domains(cls, value: frozenset[str]) -> frozenset[str]:
@@ -188,11 +221,16 @@ class Settings(DatabaseSettings):
     @model_validator(mode="after")
     def _https_when_deployed(self) -> Self:
         if self.app_env in DEPLOYED_ENVIRONMENTS:
-            addresses = (*self.cors_allowed_origins, self.site_url, self.api_url)
+            addresses = (
+                *self.cors_allowed_origins,
+                self.site_url,
+                self.api_url,
+                self.media_public_base_url,
+            )
             insecure = [address for address in addresses if not address.startswith("https://")]
             if insecure:
                 msg = (
-                    "CORS origins, SITE_URL and API_URL must use https in "
+                    "CORS origins, SITE_URL, API_URL and MEDIA_PUBLIC_BASE_URL must use https in "
                     f"{self.app_env}: {', '.join(insecure)}"
                 )
                 raise ValueError(msg)

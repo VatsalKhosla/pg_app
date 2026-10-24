@@ -97,8 +97,9 @@ manage: env ## Run an operator command on this environment's database: make mana
 	$(API) python -m app.manage $(args)
 
 .PHONY: seed
-seed: migrate ## Load the sample data: the geo reference data from OpenStreetMap (again is fine: only changes are written)
+seed: migrate ## Load the sample data (the geo reference data from OpenStreetMap) and create the local storage buckets; again is fine
 	$(API) python -m app.manage geo load
+	$(API) python -m app.manage media buckets
 
 .PHONY: geo-refresh
 geo-refresh: ## Rebuild the geo reference data from places.toml via OpenStreetMap and Wikidata (network; review the diff)

@@ -10,6 +10,7 @@ from hypothesis import strategies as st
 from app.core.outbox import FIRST_RETRY_DELAY, MAX_RETRY_DELAY, JobRegistry, retry_delay
 from app.core.scheduler import DailyAt, Every, ScheduledJob, dedupe_key
 from app.jobs import SCHEDULES, build_registry
+from tests.storage import BUCKETS, MemoryStorage
 
 
 @given(st.integers(min_value=1, max_value=10_000), st.integers(min_value=0, max_value=2**32))
@@ -50,7 +51,7 @@ def test_a_job_kind_can_have_only_one_handler() -> None:
 
 
 def test_every_schedule_has_a_registered_handler() -> None:
-    kinds = build_registry().kinds
+    kinds = build_registry(storage=MemoryStorage(), buckets=BUCKETS).kinds
 
     assert {job.kind for job in SCHEDULES} <= kinds
     assert len({job.name for job in SCHEDULES}) == len(SCHEDULES)

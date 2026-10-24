@@ -26,6 +26,8 @@ from app.core.logging import configure_logging
 from app.core.outbox import JobRegistry, OutboxWorker
 from app.core.scheduler import ScheduledJob, Scheduler
 from app.jobs import SCHEDULES, build_registry
+from app.modules.media.adapters.s3 import S3Storage
+from app.modules.media.service import Buckets
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -112,7 +114,9 @@ async def _serve_until_signalled(
         heartbeat_file=heartbeat_file,
         heartbeat_interval=heartbeat_interval,
         clock=SystemClock(),
-        registry=build_registry(),
+        registry=build_registry(
+            storage=S3Storage.from_settings(settings), buckets=Buckets.from_settings(settings)
+        ),
         schedules=SCHEDULES,
     )
 

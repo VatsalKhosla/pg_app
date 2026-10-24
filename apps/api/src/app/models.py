@@ -33,6 +33,7 @@ from app.modules.identity.models import (
     UserRole,
     UserSession,
 )
+from app.modules.media.models import MediaAsset
 
 __all__ = [
     "Amenity",
@@ -47,6 +48,7 @@ __all__ = [
     "FeatureFlag",
     "IdempotencyRecord",
     "Locality",
+    "MediaAsset",
     "MetroLine",
     "MetroStation",
     "MetroStationLine",

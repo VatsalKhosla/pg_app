@@ -32,6 +32,7 @@ from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.repository import ConsentRepository, UserRepository
 from app.modules.identity.service import SessionService
 from tests.conftest import NOTICE_VERSION, TEST_SECRET_KEY
+from tests.storage import BUCKETS, MemoryStorage
 
 pytestmark = pytest.mark.integration
 
@@ -105,7 +106,7 @@ async def _run_worker(app: FastAPI) -> None:
     """Run every due job, as the worker process would."""
     worker = OutboxWorker(
         sessionmaker=app.state.sessionmaker,
-        registry=build_registry(),
+        registry=build_registry(storage=MemoryStorage(), buckets=BUCKETS),
         clock=app.state.clock,
         worker_id="test",
         batch_size=50,

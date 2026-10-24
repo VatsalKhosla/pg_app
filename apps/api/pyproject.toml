@@ -6,6 +6,8 @@ requires-python = ">=3.14"
 dependencies = [
     "alembic==1.20.0",
     "asyncpg==0.32.0",
+    "av==19.0.1",
+    "boto3==1.43.113",
     "cryptography==50.0.2",
     "fastapi==0.143.0",
     "geoalchemy2==0.20.0",
@@ -14,6 +16,7 @@ dependencies = [
     "opentelemetry-instrumentation-redis==0.66b1",
     "opentelemetry-instrumentation-sqlalchemy==0.66b1",
     "opentelemetry-sdk==1.45.1",
+    "pillow==13.0.0",
     "pydantic-settings==2.15.0",
     "redis==8.1.0",
     "sentry-sdk==2.71.0",
@@ -33,6 +36,7 @@ dev = [
     "pytest==9.1.1",
     "ruff==0.17.0",
     "testcontainers==4.15.0",
+    "types-boto3[s3]==1.43.113",
 ]
 
 [build-system]
@@ -48,7 +52,11 @@ exclude-newer = "1 week"
 # was published from certifi's own repository with a PyPI attestation, and changes only the CA
 # bundle. The cutoff admits that release and nothing newer. Remove after 2026-10-27, when the
 # cooldown allows it anyway.
-exclude-newer-package = { certifi = "2026-10-20T03:00:00Z" }
+# Likewise Pillow 13.0.0, reviewed 2026-10-21: it fixes a heap overflow in the JPEG decoder
+# (CVE-2026-112403, critical) and eight more decoder bugs, and the worker decodes untrusted uploads
+# with it. Published by Pillow's own release workflow with a PyPI attestation; none of its breaking
+# changes touch our use. Remove after 2026-10-23.
+exclude-newer-package = { certifi = "2026-10-20T03:00:00Z", pillow = "2026-10-17T00:00:00Z" }
 
 [tool.uv.build-backend]
 module-name = "app"

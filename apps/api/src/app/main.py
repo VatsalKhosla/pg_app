@@ -31,6 +31,9 @@ from app.modules.identity.adapters.unavailable_otp import UnavailableOtpSender
 from app.modules.identity.auth import authenticate_session
 from app.modules.identity.router import GOOGLE_CALLBACK_PATH
 from app.modules.identity.router import router as identity_router
+from app.modules.media.adapters.s3 import S3Storage
+from app.modules.media.router import router as media_router
+from app.modules.media.service import Buckets
 from app.modules.system.router import router as system_router
 
 if TYPE_CHECKING:
@@ -54,7 +57,7 @@ def _is_probe(scope: Scope) -> bool:
 
 
 # Every module's routes, in the order the OpenAPI schema lists them.
-ROUTERS: Final = (system_router, identity_router, compliance_router, geo_router)
+ROUTERS: Final = (system_router, identity_router, compliance_router, geo_router, media_router)
 
 
 def create_app(settings: Settings | None = None, *, clock: Clock | None = None) -> FastAPI:
@@ -81,6 +84,8 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
             redis, clock, secret=settings.secret_key.get_secret_value().encode()
         )
         app.state.flags = FeatureFlags(sessionmaker, clock)
+        app.state.storage = S3Storage.from_settings(settings)
+        app.state.media_buckets = Buckets.from_settings(settings)
         app.state.human_check = (
             DisabledHumanCheck()
             if settings.turnstile_secret_key is None
