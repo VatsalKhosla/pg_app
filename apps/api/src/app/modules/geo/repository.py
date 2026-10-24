@@ -200,6 +200,15 @@ class GeoRepository:
         ).one_or_none()
         return None if found is None else (found.id, found.name)
 
+    async def localities_by_id(self, ids: Collection[int]) -> dict[int, tuple[str, str]]:
+        """Localities' slugs and names, by internal id."""
+        if not ids:
+            return {}
+        rows = await self._db.execute(
+            select(Locality.id, Locality.slug, Locality.name).where(Locality.id.in_(ids))
+        )
+        return {row.id: (row.slug, row.name) for row in rows}
+
     async def cities(self) -> list[CityRecord]:
         rows = await self._db.execute(
             select(

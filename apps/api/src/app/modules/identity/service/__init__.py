@@ -1,5 +1,7 @@
-"""Use cases of the identity module; each method is one transaction."""
+"""Use cases of the identity module; each method is one transaction (Accounts, for other modules,
+works inside theirs)."""
 
+from app.modules.identity.service.accounts import Account, Accounts
 from app.modules.identity.service.consent import (
     ConsentGiven,
     ConsentService,
@@ -37,6 +39,8 @@ from app.modules.identity.service.staff import (
 __all__ = [
     "OTP_RETENTION",
     "SESSION_RETENTION",
+    "Account",
+    "Accounts",
     "Authentication",
     "ConsentGiven",
     "ConsentService",

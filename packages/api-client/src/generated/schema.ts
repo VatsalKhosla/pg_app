@@ -526,6 +526,257 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/amenities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The amenities a listing can have */
+        get: operations["catalogAmenities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/owners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Owners, to choose one for a listing
+         * @description By phone number (exactly) or by name (any part).
+         */
+        get: operations["catalogOwners"];
+        put?: never;
+        /**
+         * Add an owner
+         * @description Makes the owner's account from their phone if they haven't signed in yet.
+         */
+        post: operations["catalogAddOwner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/properties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listings */
+        get: operations["catalogListings"];
+        put?: never;
+        /**
+         * Start a listing (a draft)
+         * @description Answers with any listing whose pin is within 30 m, which may be the same building.
+         */
+        post: operations["catalogCreateListing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/properties/{property_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A listing in full */
+        get: operations["catalogListing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change a listing's details
+         * @description Only the fields sent change. Moving the pin makes a new display point.
+         */
+        patch: operations["catalogUpdateListing"];
+        trace?: never;
+    };
+    "/v1/ops/properties/{property_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish, pause, delist or relist
+         * @description Publishing needs a room category with a bed to sell (409 LISTING_INCOMPLETE).
+         */
+        post: operations["catalogChangeStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/properties/{property_id}/amenities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set a listing's amenities */
+        put: operations["catalogSetAmenities"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/properties/{property_id}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a listing's photos and videos
+         * @description In page order, the first being the cover; uploads come from POST /v1/media.
+         */
+        put: operations["catalogSetMedia"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/properties/{property_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Everything done to a listing
+         * @description From the audit log, newest first: the listing, its rooms and its beds.
+         */
+        get: operations["catalogHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/properties/{property_id}/room-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a room category */
+        post: operations["catalogAddRoomCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/room-categories/{category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change a room category
+         * @description Only the fields sent change; null clears the owner's minimum or maximum.
+         */
+        patch: operations["catalogUpdateRoomCategory"];
+        trace?: never;
+    };
+    "/v1/ops/room-categories/{category_id}/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a room, with its beds */
+        post: operations["catalogAddRoom"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/rooms/{room_id}/beds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a bed
+         * @description 409 ROOM_FULL once the room has as many beds as its occupancy.
+         */
+        post: operations["catalogAddBed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/beds/{bed_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Take a bed out of what can be sold, or back */
+        patch: operations["catalogUpdateBed"];
+        trace?: never;
+    };
     "/v1/media": {
         parameters: {
             query?: never;
@@ -592,11 +843,53 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AmenitiesChange */
+        AmenitiesChange: {
+            /** Amenities */
+            amenities: string[];
+        };
+        /** AmenityInfo */
+        AmenityInfo: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+        };
+        /** AmenityList */
+        AmenityList: {
+            /** Items */
+            items: components["schemas"]["AmenityInfo"][];
+        };
         /**
          * AssetStatus
          * @enum {string}
          */
         AssetStatus: "awaiting_upload" | "processing" | "ready" | "rejected";
+        /** BedCreate */
+        BedCreate: {
+            /** Label */
+            label: string;
+        };
+        /** BedInfo */
+        BedInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
+            status: components["schemas"]["BedStatus"];
+        };
+        /**
+         * BedStatus
+         * @enum {string}
+         */
+        BedStatus: "active" | "inactive";
+        /** BedUpdate */
+        BedUpdate: {
+            status: components["schemas"]["BedStatus"];
+        };
         /** CampusDetail */
         CampusDetail: {
             /** Slug */
@@ -605,7 +898,7 @@ export interface components {
             city: string;
             /** Name */
             name: string;
-            location: components["schemas"]["Location"];
+            location: components["schemas"]["app__modules__geo__schemas__Location"];
             nearestStation: components["schemas"]["StationDistance"] | null;
             /** Stations */
             stations: components["schemas"]["StationDistance"][];
@@ -620,7 +913,7 @@ export interface components {
             city: string;
             /** Name */
             name: string;
-            location: components["schemas"]["Location"];
+            location: components["schemas"]["app__modules__geo__schemas__Location"];
             nearestStation: components["schemas"]["StationDistance"] | null;
         };
         /** CampusList */
@@ -628,13 +921,116 @@ export interface components {
             /** Items */
             items: components["schemas"]["CampusInfo"][];
         };
+        /** CategoryCreate */
+        CategoryCreate: {
+            occupancy: components["schemas"]["Occupancy"];
+            /** Label */
+            label: string;
+            /** Baserentpaise */
+            baseRentPaise: number;
+            /** Securitydepositpaise */
+            securityDepositPaise: number;
+            /**
+             * Ac
+             * @default false
+             */
+            ac: boolean;
+            /**
+             * Attachedbath
+             * @default false
+             */
+            attachedBath: boolean;
+            /**
+             * Balcony
+             * @default false
+             */
+            balcony: boolean;
+            /** Ownerminrentpaise */
+            ownerMinRentPaise?: number | null;
+            /** Ownermaxrentpaise */
+            ownerMaxRentPaise?: number | null;
+            /**
+             * Mandatorycharges
+             * @default []
+             */
+            mandatoryCharges: (components["schemas"]["MonthlyCharge"] | components["schemas"]["MeteredCharge"] | components["schemas"]["OneTimeCharge"])[];
+        };
+        /** CategoryInfo */
+        CategoryInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            occupancy: components["schemas"]["Occupancy"];
+            /** Label */
+            label: string;
+            /** Ac */
+            ac: boolean;
+            /** Attachedbath */
+            attachedBath: boolean;
+            /** Balcony */
+            balcony: boolean;
+            /** Baserentpaise */
+            baseRentPaise: number;
+            /** Ownerminrentpaise */
+            ownerMinRentPaise: number | null;
+            /** Ownermaxrentpaise */
+            ownerMaxRentPaise: number | null;
+            /** Securitydepositpaise */
+            securityDepositPaise: number;
+            /** Mandatorycharges */
+            mandatoryCharges: (components["schemas"]["MonthlyCharge"] | components["schemas"]["MeteredCharge"] | components["schemas"]["OneTimeCharge"])[];
+            /** Monthlychargespaise */
+            monthlyChargesPaise: number;
+            /** Onetimechargespaise */
+            oneTimeChargesPaise: number;
+            status: components["schemas"]["CategoryStatus"];
+            /** Rooms */
+            rooms: components["schemas"]["RoomInfo"][];
+        };
+        /**
+         * CategoryStatus
+         * @enum {string}
+         */
+        CategoryStatus: "active" | "inactive";
+        /**
+         * CategoryUpdate
+         * @description Only the fields sent change; null clears the owner's minimum or maximum.
+         */
+        CategoryUpdate: {
+            /** Label */
+            label?: string | null;
+            /** Baserentpaise */
+            baseRentPaise?: number | null;
+            /** Securitydepositpaise */
+            securityDepositPaise?: number | null;
+            /** Ac */
+            ac?: boolean | null;
+            /** Attachedbath */
+            attachedBath?: boolean | null;
+            /** Balcony */
+            balcony?: boolean | null;
+            /** Ownerminrentpaise */
+            ownerMinRentPaise?: number | null;
+            /** Ownermaxrentpaise */
+            ownerMaxRentPaise?: number | null;
+            /** Mandatorycharges */
+            mandatoryCharges?: (components["schemas"]["MonthlyCharge"] | components["schemas"]["MeteredCharge"] | components["schemas"]["OneTimeCharge"])[] | null;
+            status?: components["schemas"]["CategoryStatus"] | null;
+        };
+        /**
+         * ChargeKind
+         * @enum {string}
+         */
+        ChargeKind: "electricity" | "water" | "maintenance" | "internet" | "laundry" | "food" | "registration" | "other";
         /** CityInfo */
         CityInfo: {
             /** Slug */
             slug: string;
             /** Name */
             name: string;
-            center: components["schemas"]["Location"];
+            center: components["schemas"]["app__modules__geo__schemas__Location"];
         };
         /** CityList */
         CityList: {
@@ -769,6 +1165,11 @@ export interface components {
          */
         Gender: "female" | "male" | "other";
         /**
+         * GenderPolicy
+         * @enum {string}
+         */
+        GenderPolicy: "boys" | "girls" | "coed";
+        /**
          * Health
          * @description Liveness: the process is up and serving requests.
          */
@@ -779,34 +1180,200 @@ export interface components {
              */
             status: "ok";
         };
-        /** LocalityDistance */
-        LocalityDistance: {
-            locality: components["schemas"]["LocalityInfo"];
-            /** Distancem */
-            distanceM: number;
+        /** History */
+        History: {
+            /** Items */
+            items: components["schemas"]["HistoryEntry"][];
         };
-        /** LocalityInfo */
-        LocalityInfo: {
+        /** HistoryEntry */
+        HistoryEntry: {
+            /**
+             * Occurredat
+             * Format: date-time
+             */
+            occurredAt: string;
+            /** Action */
+            action: string;
+            /** Entitytype */
+            entityType: string;
+            /** Entityid */
+            entityId: string;
+            /** Actortype */
+            actorType: string;
+            /** Details */
+            details: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * KycStatus
+         * @enum {string}
+         */
+        KycStatus: "not_started" | "pending" | "verified" | "rejected";
+        /**
+         * LicenceStatus
+         * @enum {string}
+         */
+        LicenceStatus: "unknown" | "applied" | "licensed" | "not_required";
+        /** ListingCreated */
+        ListingCreated: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /** Slug */
             slug: string;
-            /** City */
-            city: string;
             /** Name */
             name: string;
-            center: components["schemas"]["Location"];
+            /** Description */
+            description: string;
+            /** Addressline */
+            addressLine: string;
+            location: components["schemas"]["app__modules__catalog__schemas__Location"];
+            displayLocation: components["schemas"]["app__modules__catalog__schemas__Location"];
+            locationPrecision: components["schemas"]["LocationPrecision"];
+            genderPolicy: components["schemas"]["GenderPolicy"];
+            meals: components["schemas"]["Meals"];
+            /** Houserules */
+            houseRules: string[];
+            verificationStatus: components["schemas"]["VerificationStatus"];
+            licenceStatus: components["schemas"]["LicenceStatus"];
+            /** Licencenumber */
+            licenceNumber: string | null;
+            societyPermission: components["schemas"]["SocietyPermission"];
+            /** Instantconfirm */
+            instantConfirm: boolean;
+            status: components["schemas"]["PropertyStatus"];
+            /** Publishedat */
+            publishedAt: string | null;
+            owner: components["schemas"]["OwnerInfo"];
+            locality: components["schemas"]["app__modules__catalog__schemas__LocalityInfo"];
+            /** Amenities */
+            amenities: string[];
+            /** Categories */
+            categories: components["schemas"]["CategoryInfo"][];
+            /** Media */
+            media: components["schemas"]["ListingMedia"][];
+            /** Problems */
+            problems: string[];
+            /** Possibleduplicates */
+            possibleDuplicates: string[];
+        };
+        /** ListingInfo */
+        ListingInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Addressline */
+            addressLine: string;
+            location: components["schemas"]["app__modules__catalog__schemas__Location"];
+            displayLocation: components["schemas"]["app__modules__catalog__schemas__Location"];
+            locationPrecision: components["schemas"]["LocationPrecision"];
+            genderPolicy: components["schemas"]["GenderPolicy"];
+            meals: components["schemas"]["Meals"];
+            /** Houserules */
+            houseRules: string[];
+            verificationStatus: components["schemas"]["VerificationStatus"];
+            licenceStatus: components["schemas"]["LicenceStatus"];
+            /** Licencenumber */
+            licenceNumber: string | null;
+            societyPermission: components["schemas"]["SocietyPermission"];
+            /** Instantconfirm */
+            instantConfirm: boolean;
+            status: components["schemas"]["PropertyStatus"];
+            /** Publishedat */
+            publishedAt: string | null;
+            owner: components["schemas"]["OwnerInfo"];
+            locality: components["schemas"]["app__modules__catalog__schemas__LocalityInfo"];
+            /** Amenities */
+            amenities: string[];
+            /** Categories */
+            categories: components["schemas"]["CategoryInfo"][];
+            /** Media */
+            media: components["schemas"]["ListingMedia"][];
+            /** Problems */
+            problems: string[];
+        };
+        /** ListingMedia */
+        ListingMedia: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Purpose */
+            purpose: string;
+            /** Status */
+            status: string;
+            /** Contenttype */
+            contentType: string;
+            /** Verifiedcapture */
+            verifiedCapture: boolean;
+            /** Capturedat */
+            capturedAt: string | null;
+            /** Renditions */
+            renditions: components["schemas"]["Rendition"][];
+        };
+        /** ListingPage */
+        ListingPage: {
+            /** Items */
+            items: components["schemas"]["ListingSummary"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** ListingSummary */
+        ListingSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            locality: components["schemas"]["app__modules__catalog__schemas__LocalityInfo"];
+            status: components["schemas"]["PropertyStatus"];
+            verificationStatus: components["schemas"]["VerificationStatus"];
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+            cover: components["schemas"]["ListingMedia"] | null;
+        };
+        /** LocalityDistance */
+        LocalityDistance: {
+            locality: components["schemas"]["app__modules__geo__schemas__LocalityInfo"];
+            /** Distancem */
+            distanceM: number;
         };
         /** LocalityList */
         LocalityList: {
             /** Items */
-            items: components["schemas"]["LocalityInfo"][];
+            items: components["schemas"]["app__modules__geo__schemas__LocalityInfo"][];
         };
         /** Location */
-        Location: {
+        "Location-Input": {
             /** Lat */
             lat: number;
             /** Lng */
             lng: number;
         };
+        /**
+         * LocationPrecision
+         * @enum {string}
+         */
+        LocationPrecision: "exact" | "approximate";
         /**
          * Me
          * @description The signed-in user.
@@ -843,6 +1410,19 @@ export interface components {
             collegeOrWorkplace?: string | null;
             gender?: components["schemas"]["Gender"] | null;
         };
+        /**
+         * Meals
+         * @enum {string}
+         */
+        Meals: "none" | "breakfast" | "two" | "three" | "four";
+        /**
+         * MediaChange
+         * @description The listing's photos and videos, in order: the first is the cover.
+         */
+        MediaChange: {
+            /** Media */
+            media: string[];
+        };
         /** MediaInfo */
         MediaInfo: {
             /**
@@ -872,6 +1452,23 @@ export interface components {
             /** Renditions */
             renditions: components["schemas"]["RenditionInfo"][];
         };
+        /** MeteredCharge */
+        MeteredCharge: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "metered";
+            kind: components["schemas"]["ChargeKind"];
+            /** Label */
+            label: string;
+            /** Ratepaise */
+            ratePaise: number;
+            /** Unit */
+            unit: string;
+            /** Monthlyestimatepaise */
+            monthlyEstimatePaise: number;
+        };
         /** MetroLineInfo */
         MetroLineInfo: {
             /** Slug */
@@ -887,7 +1484,7 @@ export interface components {
             slug: string;
             /** Name */
             name: string;
-            location: components["schemas"]["Location"];
+            location: components["schemas"]["app__modules__geo__schemas__Location"];
             /** Lines */
             lines: components["schemas"]["MetroLineInfo"][];
         };
@@ -901,11 +1498,42 @@ export interface components {
          * @enum {string}
          */
         Moderation: "pending" | "approved" | "rejected";
+        /** MonthlyCharge */
+        MonthlyCharge: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "monthly";
+            kind: components["schemas"]["ChargeKind"];
+            /** Label */
+            label: string;
+            /** Amountpaise */
+            amountPaise: number;
+        };
         /** NoticePurpose */
         NoticePurpose: {
             purpose: components["schemas"]["ConsentPurpose"];
             /** Required */
             required: boolean;
+        };
+        /**
+         * Occupancy
+         * @enum {string}
+         */
+        Occupancy: "single" | "double" | "triple" | "quad";
+        /** OneTimeCharge */
+        OneTimeCharge: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "oneTime";
+            kind: components["schemas"]["ChargeKind"];
+            /** Label */
+            label: string;
+            /** Amountpaise */
+            amountPaise: number;
         };
         /**
          * OtpChallengeIssued
@@ -952,6 +1580,51 @@ export interface components {
             code: string;
             consent?: components["schemas"]["ConsentInput"] | null;
         };
+        /** OwnerCreate */
+        OwnerCreate: {
+            /** Phone */
+            phone: string;
+            /** Legalname */
+            legalName: string;
+            /** Businessname */
+            businessName: string;
+            /** Gstin */
+            gstin?: string | null;
+            /** Name */
+            name?: string | null;
+        };
+        /** OwnerInfo */
+        OwnerInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Legalname */
+            legalName: string;
+            /** Businessname */
+            businessName: string;
+            /** Gstin */
+            gstin: string | null;
+            kycStatus: components["schemas"]["KycStatus"];
+            status: components["schemas"]["OwnerStatus"];
+            /** Phone */
+            phone: string | null;
+            /** Name */
+            name: string | null;
+        };
+        /** OwnerPage */
+        OwnerPage: {
+            /** Items */
+            items: components["schemas"]["OwnerInfo"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /**
+         * OwnerStatus
+         * @enum {string}
+         */
+        OwnerStatus: "active" | "suspended";
         /**
          * PrivacyNoticeInfo
          * @description The current privacy notice: its version, which consent must name, and its purposes. The
@@ -984,6 +1657,74 @@ export interface components {
             requestId?: string | null;
             /** Traceid */
             traceId?: string | null;
+        };
+        /** PropertyCreate */
+        PropertyCreate: {
+            /**
+             * Owner
+             * Format: uuid
+             */
+            owner: string;
+            /** Locality */
+            locality: string;
+            /** Name */
+            name: string;
+            /** Addressline */
+            addressLine: string;
+            location: components["schemas"]["Location-Input"];
+            locationPrecision: components["schemas"]["LocationPrecision"];
+            genderPolicy: components["schemas"]["GenderPolicy"];
+            meals: components["schemas"]["Meals"];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Houserules
+             * @default []
+             */
+            houseRules: string[];
+            /** @default unknown */
+            licenceStatus: components["schemas"]["LicenceStatus"];
+            /** Licencenumber */
+            licenceNumber?: string | null;
+            /** @default n/a */
+            societyPermission: components["schemas"]["SocietyPermission"];
+            /**
+             * Instantconfirm
+             * @default false
+             */
+            instantConfirm: boolean;
+        };
+        /**
+         * PropertyStatus
+         * @enum {string}
+         */
+        PropertyStatus: "draft" | "published" | "paused" | "delisted";
+        /**
+         * PropertyUpdate
+         * @description Only the fields sent change; ``licenceNumber: null`` clears it.
+         */
+        PropertyUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Addressline */
+            addressLine?: string | null;
+            location?: components["schemas"]["Location-Input"] | null;
+            locationPrecision?: components["schemas"]["LocationPrecision"] | null;
+            genderPolicy?: components["schemas"]["GenderPolicy"] | null;
+            meals?: components["schemas"]["Meals"] | null;
+            /** Description */
+            description?: string | null;
+            /** Houserules */
+            houseRules?: string[] | null;
+            licenceStatus?: components["schemas"]["LicenceStatus"] | null;
+            /** Licencenumber */
+            licenceNumber?: string | null;
+            societyPermission?: components["schemas"]["SocietyPermission"] | null;
+            /** Instantconfirm */
+            instantConfirm?: boolean | null;
         };
         /**
          * Purpose
@@ -1027,6 +1768,19 @@ export interface components {
                 [key: string]: "ok" | "unavailable";
             };
         };
+        /** Rendition */
+        Rendition: {
+            /** Name */
+            name: string;
+            /** Contenttype */
+            contentType: string;
+            /** Url */
+            url: string;
+            /** Width */
+            width: number | null;
+            /** Height */
+            height: number | null;
+        };
         /** RenditionInfo */
         RenditionInfo: {
             /** Name */
@@ -1059,6 +1813,32 @@ export interface components {
          * @enum {string}
          */
         Role: "student" | "parent" | "owner" | "field_agent" | "ops" | "admin";
+        /** RoomCreate */
+        RoomCreate: {
+            /** Label */
+            label: string;
+            /** Floor */
+            floor?: number | null;
+            /**
+             * Beds
+             * @default 0
+             */
+            beds: number;
+        };
+        /** RoomInfo */
+        RoomInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
+            /** Floor */
+            floor: number | null;
+            /** Beds */
+            beds: components["schemas"]["BedInfo"][];
+        };
         /**
          * SessionInfo
          * @description One browser or device where the account is signed in.
@@ -1105,6 +1885,11 @@ export interface components {
             /** Newuser */
             newUser: boolean;
         };
+        /**
+         * SocietyPermission
+         * @enum {string}
+         */
+        SocietyPermission: "n/a" | "on_file" | "missing";
         /** StaffMember */
         StaffMember: {
             /**
@@ -1155,6 +1940,10 @@ export interface components {
             /** Distancem */
             distanceM: number;
         };
+        /** StatusChange */
+        StatusChange: {
+            status: components["schemas"]["PropertyStatus"];
+        };
         /**
          * UploadForm
          * @description Post the file here as multipart/form-data: every field, then the file as ``file``.
@@ -1184,6 +1973,42 @@ export interface components {
         UploadStarted: {
             media: components["schemas"]["MediaInfo"];
             upload: components["schemas"]["UploadForm"];
+        };
+        /**
+         * VerificationStatus
+         * @enum {string}
+         */
+        VerificationStatus: "unverified" | "scheduled" | "verified" | "rejected" | "suspended";
+        /** LocalityInfo */
+        app__modules__catalog__schemas__LocalityInfo: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+        };
+        /** Location */
+        app__modules__catalog__schemas__Location: {
+            /** Lat */
+            lat: number;
+            /** Lng */
+            lng: number;
+        };
+        /** LocalityInfo */
+        app__modules__geo__schemas__LocalityInfo: {
+            /** Slug */
+            slug: string;
+            /** City */
+            city: string;
+            /** Name */
+            name: string;
+            center: components["schemas"]["app__modules__geo__schemas__Location"];
+        };
+        /** Location */
+        app__modules__geo__schemas__Location: {
+            /** Lat */
+            lat: number;
+            /** Lng */
+            lng: number;
         };
     };
     responses: never;
@@ -2332,6 +3157,693 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MetroStationList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogAmenities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AmenityList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogOwners: {
+        parameters: {
+            query?: {
+                /** @description Part of a name, or a phone */
+                q?: string | null;
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogAddOwner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnerCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogListings: {
+        parameters: {
+            query?: {
+                /** @description Part of a name, or a phone */
+                q?: string | null;
+                status?: components["schemas"]["PropertyStatus"] | null;
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogCreateListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PropertyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingCreated"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogUpdateListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PropertyUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogChangeStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogSetAmenities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AmenitiesChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogSetMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["History"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogAddRoomCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogUpdateRoomCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogAddRoom: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogAddBed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BedCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogUpdateBed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bed_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BedUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingInfo"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

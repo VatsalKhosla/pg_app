@@ -244,3 +244,22 @@ class PropertyAmenity(Model):
         UniqueConstraint("property_id", "amenity_id"),
         Index("ix_property_amenities_amenity_id", "amenity_id"),
     )
+
+
+class PropertyMedia(Model):
+    """A listing's photos and videos, in the order the page shows them; the first is the cover."""
+
+    __tablename__ = "property_media"
+
+    property_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("properties.id", ondelete="CASCADE")
+    )
+    media_asset_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("media_assets.id"))
+    position: Mapped[int] = mapped_column(SmallInteger)
+
+    __table_args__ = (
+        # Also the index for the property's foreign key.
+        UniqueConstraint("property_id", "media_asset_id"),
+        CheckConstraint("position >= 0", name="position"),
+        Index("ix_property_media_media_asset_id", "media_asset_id"),
+    )

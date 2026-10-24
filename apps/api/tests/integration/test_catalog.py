@@ -48,10 +48,17 @@ from app.modules.catalog.errors import (
 )
 from app.modules.catalog.models import Owner, Property, RoomCategory
 from app.modules.catalog.repository import CatalogRepository, charges_from_json
-from app.modules.catalog.service import CatalogService, CategoryDraft, PropertyDraft
+from app.modules.catalog.service import (
+    CategoryDraft,
+    InventoryService,
+    ListingService,
+    OwnerService,
+    PropertyDraft,
+)
 from app.modules.geo.reference import read_reference_data
 from app.modules.geo.service import GeoReferenceLoader
 from app.modules.identity.repository import UserRepository
+from tests.storage import BUCKETS
 
 pytestmark = pytest.mark.integration
 
@@ -78,8 +85,11 @@ class World:
     staff: Actor
     owner: Owner
 
-    def catalog(self, db: AsyncSession) -> CatalogService:
-        return CatalogService(db, self.clock)
+    def listings(self, db: AsyncSession) -> ListingService:
+        return ListingService(db, self.clock, buckets=BUCKETS)
+
+    def inventory(self, db: AsyncSession) -> InventoryService:
+        return InventoryService(db, self.clock)
 
 
 def _phone() -> str:
@@ -143,7 +153,6 @@ def run(database_url: str) -> Callable[[Callable[[World], Awaitable[Any]]], Any]
                 async with sessions() as db, db.begin():
                     users = UserRepository(db)
                     ops = await users.add(phone_e164=_phone(), roles=[Role.OPS])
-                    landlord = await users.add(phone_e164=_phone(), roles=[Role.OWNER])
                 staff = Actor(
                     user_id=ops.id,
                     user_public_id=ops.public_id,
@@ -152,12 +161,13 @@ def run(database_url: str) -> Callable[[Callable[[World], Awaitable[Any]]], Any]
                     session_public_id=uuid.uuid7(),
                 )
                 async with sessions() as db:
-                    owner = await CatalogService(db, clock).add_owner(
+                    record = await OwnerService(db, clock).add(
                         staff,
-                        user_id=landlord.id,
+                        phone=_phone(),
                         legal_name="Fictional Stays Private Limited",
                         business_name="Fictional Stays",
                     )
+                owner = record.owner
                 return await scenario(World(sessions, clock, staff, owner))
             finally:
                 await engine.dispose()
@@ -169,7 +179,7 @@ def run(database_url: str) -> Callable[[Callable[[World], Awaitable[Any]]], Any]
 
 async def _create(world: World, name: str, at: Point) -> Property:
     async with world.sessions() as db:
-        return await world.catalog(db).create_property(world.staff, _draft(world.owner, name, at))
+        return await world.listings(db).create_property(world.staff, _draft(world.owner, name, at))
 
 
 async def _points(world: World, found: Property) -> tuple[Point, Point]:
@@ -180,17 +190,17 @@ async def _points(world: World, found: Property) -> tuple[Point, Point]:
 async def _sellable(world: World, found: Property) -> Property:
     """Give the property a room category with a room and a bed."""
     async with world.sessions() as db:
-        category = await world.catalog(db).add_room_category(world.staff, found.public_id, DOUBLE)
+        category = await world.inventory(db).add_room_category(world.staff, found.public_id, DOUBLE)
     async with world.sessions() as db:
-        room = await world.catalog(db).add_room(world.staff, category.public_id, label="101")
+        room = await world.inventory(db).add_room(world.staff, category.public_id, label="101")
     async with world.sessions() as db:
-        await world.catalog(db).add_bed(world.staff, room.public_id, label="A")
+        await world.inventory(db).add_bed(world.staff, room.public_id, label="A")
     return found
 
 
 async def _move(world: World, found: Property, target: PropertyStatus) -> Property:
     async with world.sessions() as db:
-        return await world.catalog(db).move(world.staff, found.public_id, target)
+        return await world.listings(db).move(world.staff, found.public_id, target)
 
 
 def test_a_new_listing_is_a_draft_with_a_slug_and_a_display_point_nearby(
@@ -229,14 +239,14 @@ def test_moving_the_pin_moves_the_display_point_and_nothing_else_does(
         found = await _create(world, "Fictional Lodge", _away(600))
         before = await _points(world, found)
         async with world.sessions() as db:
-            renamed = await world.catalog(db).update_property(
+            renamed = await world.listings(db).update_property(
                 world.staff,
                 found.public_id,
                 {"name": "Fictional Lodge Annexe", "location": before[0]},
             )
         same = await _points(world, found)
         async with world.sessions() as db:
-            await world.catalog(db).update_property(
+            await world.listings(db).update_property(
                 world.staff, found.public_id, {"location": _away(700)}
             )
         after = await _points(world, found)
@@ -308,25 +318,25 @@ def test_a_room_takes_no_more_beds_than_its_occupancy_and_labels_are_unique(
     async def scenario(world: World) -> list[str]:
         found = await _create(world, "Fictional Nest", _away(900))
         async with world.sessions() as db:
-            category = await world.catalog(db).add_room_category(
+            category = await world.inventory(db).add_room_category(
                 world.staff, found.public_id, DOUBLE
             )
         async with world.sessions() as db:
-            room = await world.catalog(db).add_room(
+            room = await world.inventory(db).add_room(
                 world.staff, category.public_id, label="201", floor=2
             )
         refused = []
         for label in ("A", "B", "A", "C"):
             try:
                 async with world.sessions() as db:
-                    await world.catalog(db).add_bed(world.staff, room.public_id, label=label)
+                    await world.inventory(db).add_bed(world.staff, room.public_id, label=label)
             except LabelTakenError:
                 refused.append(f"{label}: label taken")
             except RoomFullError:
                 refused.append(f"{label}: room full")
         try:
             async with world.sessions() as db:
-                await world.catalog(db).add_room(world.staff, category.public_id, label="201")
+                await world.inventory(db).add_room(world.staff, category.public_id, label="201")
         except LabelTakenError:
             refused.append("201: label taken")
         return refused
@@ -342,7 +352,7 @@ def test_rents_outside_the_rules_are_refused_by_the_service_and_the_database(
         refused = []
         try:
             async with world.sessions() as db:
-                await world.catalog(db).add_room_category(
+                await world.inventory(db).add_room_category(
                     world.staff,
                     found.public_id,
                     CategoryDraft(
@@ -401,7 +411,7 @@ def test_charges_are_stored_as_they_were_given(run: Callable[..., Any]) -> None:
     async def scenario(world: World) -> RoomCategory | None:
         found = await _create(world, "Fictional Abode", _away(1_000))
         async with world.sessions() as db:
-            category = await world.catalog(db).add_room_category(
+            category = await world.inventory(db).add_room_category(
                 world.staff, found.public_id, DOUBLE
             )
         async with world.sessions() as db:
@@ -422,16 +432,16 @@ def test_amenities_are_replaced_and_unknown_ones_refused(run: Callable[..., Any]
     async def scenario(world: World) -> tuple[list[str], list[str], bool]:
         found = await _create(world, "Fictional Den", _away(1_050))
         async with world.sessions() as db:
-            await world.catalog(db).set_amenities(world.staff, found.public_id, ["wifi", "cctv"])
+            await world.listings(db).set_amenities(world.staff, found.public_id, ["wifi", "cctv"])
         async with world.sessions() as db:
-            kept = await world.catalog(db).set_amenities(
+            kept = await world.listings(db).set_amenities(
                 world.staff, found.public_id, ["power-backup", "wifi"]
             )
         async with world.sessions() as db:
             stored = await CatalogRepository(db).amenities_of(found.id)
         try:
             async with world.sessions() as db:
-                await world.catalog(db).set_amenities(world.staff, found.public_id, ["moat"])
+                await world.listings(db).set_amenities(world.staff, found.public_id, ["moat"])
         except ListingInvalidError:
             return kept, stored, True
         return kept, stored, False
@@ -446,13 +456,13 @@ def test_listing_details_are_checked_before_anything_is_written(run: Callable[..
         for draft in (outside, _draft(world.owner, " ", _away(1_100))):
             try:
                 async with world.sessions() as db:
-                    await world.catalog(db).create_property(world.staff, draft)
+                    await world.listings(db).create_property(world.staff, draft)
             except ListingInvalidError as error:
                 outcomes.append(error.problems[0])
         unknown = replace(_draft(world.owner, "Fictional", _away(1_100)), locality="atlantis")
         try:
             async with world.sessions() as db:
-                await world.catalog(db).create_property(world.staff, unknown)
+                await world.listings(db).create_property(world.staff, unknown)
         except NotFoundError:
             outcomes.append("unknown locality")
         return outcomes

@@ -23,6 +23,7 @@ from app.core.redis import create_redis
 from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
+from app.modules.catalog.router import router as catalog_router
 from app.modules.compliance.router import router as compliance_router
 from app.modules.geo.router import router as geo_router
 from app.modules.identity.adapters.console_otp import ConsoleOtpSender
@@ -57,7 +58,14 @@ def _is_probe(scope: Scope) -> bool:
 
 
 # Every module's routes, in the order the OpenAPI schema lists them.
-ROUTERS: Final = (system_router, identity_router, compliance_router, geo_router, media_router)
+ROUTERS: Final = (
+    system_router,
+    identity_router,
+    compliance_router,
+    geo_router,
+    catalog_router,
+    media_router,
+)
 
 
 def create_app(settings: Settings | None = None, *, clock: Clock | None = None) -> FastAPI:

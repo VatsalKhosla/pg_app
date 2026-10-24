@@ -12,6 +12,7 @@ from app.modules.catalog.models import (
     Owner,
     Property,
     PropertyAmenity,
+    PropertyMedia,
     Room,
     RoomCategory,
 )
@@ -57,6 +58,7 @@ __all__ = [
     "Owner",
     "Property",
     "PropertyAmenity",
+    "PropertyMedia",
     "Room",
     "RoomCategory",
     "TotpCredential",

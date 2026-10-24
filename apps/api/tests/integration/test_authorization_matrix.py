@@ -6,6 +6,7 @@ routes end it), a valid CSRF token, and someone else's records in its path.
 
 import asyncio
 import secrets
+import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Final
@@ -15,11 +16,23 @@ import pytest
 from fastapi import FastAPI
 
 from app.config import Settings
-from app.core.actor import Role
+from app.core.actor import Actor, Role
 from app.core.clock import FrozenClock
 from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
 from app.core.csrf import issue_csrf_token
+from app.core.money import Paise
 from app.main import create_app
+from app.modules.catalog.domain.listing import GenderPolicy, LocationPrecision, Meals
+from app.modules.catalog.domain.location import Offset, moved
+from app.modules.catalog.domain.rooms import Occupancy
+from app.modules.catalog.repository import CatalogRepository
+from app.modules.catalog.service import (
+    CategoryDraft,
+    InventoryService,
+    ListingService,
+    OwnerService,
+    PropertyDraft,
+)
 from app.modules.compliance.domain.requests import EXPORT_TTL, DataRequestKind, DataRequestStatus
 from app.modules.compliance.repository import DataExportRepository, DataRequestRepository
 from app.modules.geo.reference import read_reference_data
@@ -104,21 +117,79 @@ async def _someone_elses_media(app: FastAPI) -> str:
         return str(asset.public_id)
 
 
+async def _part_of_a_listing(app: FastAPI, kind: str) -> str:
+    """A fresh fictional listing, or its room category, an empty room in it, or a bed."""
+    ops_id = await _add_user(app, Role.OPS)
+    staff = Actor(
+        user_id=ops_id,
+        user_public_id=uuid.uuid7(),
+        roles=frozenset({Role.OPS}),
+        session_id=0,
+        session_public_id=uuid.uuid7(),
+    )
+    clock = app.state.clock
+    campus = read_reference_data().campuses[0].location.point
+    async with app.state.sessionmaker() as db:
+        owner = await OwnerService(db, clock).add(
+            staff, phone=_new_phone(), legal_name="Fictional Owner", business_name="Fictional"
+        )
+    async with app.state.sessionmaker() as db:
+        listing = await ListingService(db, clock, buckets=app.state.media_buckets).create_property(
+            staff,
+            PropertyDraft(
+                owner=owner.owner.public_id,
+                locality=read_reference_data().localities[0].slug,
+                name="Fictional Residency",
+                address_line="House 1, a fictional lane",
+                location=moved(campus, Offset(bearing_deg=90.0, distance_m=500.0)),
+                location_precision=LocationPrecision.EXACT,
+                gender_policy=GenderPolicy.COED,
+                meals=Meals.TWO,
+            ),
+        )
+    if kind == "a_listing":
+        return str(listing.public_id)
+    inventory = InventoryService
+    async with app.state.sessionmaker() as db:
+        category = await inventory(db, clock).add_room_category(
+            staff,
+            listing.public_id,
+            CategoryDraft(
+                occupancy=Occupancy.DOUBLE,
+                label="Double sharing",
+                base_rent=Paise(1_200_000),
+                security_deposit=Paise(1_200_000),
+            ),
+        )
+    if kind == "a_room_category":
+        return str(category.public_id)
+    async with app.state.sessionmaker() as db:
+        room = await inventory(db, clock).add_room(
+            staff, category.public_id, label="101", beds=0 if kind == "a_room" else 1
+        )
+    if kind == "a_room":
+        return str(room.public_id)
+    async with app.state.sessionmaker() as db:
+        beds = await CatalogRepository(db).beds_in(room.id)
+    return str(beds[0].public_id)
+
+
 async def _path_value(app: FastAPI, kind: str) -> str:
     match kind:
         case "someone_elses_session":
             user_id = await _add_user(app, Role.STUDENT)
             return (await _start_session(app, user_id, SessionKind.USER))[1]
-        case "someone_elses_export":
-            return await _someone_elses_request(app, DataRequestKind.EXPORT)
-        case "someone_elses_deletion_request":
-            return await _someone_elses_request(app, DataRequestKind.DELETION)
+        case "someone_elses_export" | "someone_elses_deletion_request":
+            wanted = DataRequestKind.EXPORT if kind.endswith("export") else DataRequestKind.DELETION
+            return await _someone_elses_request(app, wanted)
         case "an_optional_purpose":
             return "marketing"
         case "a_campus":
             return read_reference_data().campuses[0].slug
         case "someone_elses_media":
             return await _someone_elses_media(app)
+        case "a_listing" | "a_room_category" | "a_room" | "a_bed":
+            return await _part_of_a_listing(app, kind)
         case _:
             msg = f"no way to make {kind!r}"
             raise LookupError(msg)

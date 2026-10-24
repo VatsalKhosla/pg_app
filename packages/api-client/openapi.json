@@ -1513,6 +1513,1027 @@
         }
       }
     },
+    "/v1/amenities": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "The amenities a listing can have",
+        "operationId": "catalogAmenities",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AmenityList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/owners": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Owners, to choose one for a listing",
+        "description": "By phone number (exactly) or by name (any part).",
+        "operationId": "catalogOwners",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Part of a name, or a phone",
+              "title": "Q"
+            },
+            "description": "Part of a name, or a phone"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Add an owner",
+        "description": "Makes the owner's account from their phone if they haven't signed in yet.",
+        "operationId": "catalogAddOwner",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/properties": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Listings",
+        "operationId": "catalogListings",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Part of a name, or a phone",
+              "title": "Q"
+            },
+            "description": "Part of a name, or a phone"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PropertyStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Start a listing (a draft)",
+        "description": "Answers with any listing whose pin is within 30 m, which may be the same building.",
+        "operationId": "catalogCreateListing",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PropertyCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingCreated"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/properties/{property_id}": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "A listing in full",
+        "operationId": "catalogListing",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Change a listing's details",
+        "description": "Only the fields sent change. Moving the pin makes a new display point.",
+        "operationId": "catalogUpdateListing",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PropertyUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/properties/{property_id}/status": {
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Publish, pause, delist or relist",
+        "description": "Publishing needs a room category with a bed to sell (409 LISTING_INCOMPLETE).",
+        "operationId": "catalogChangeStatus",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/properties/{property_id}/amenities": {
+      "put": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Set a listing's amenities",
+        "operationId": "catalogSetAmenities",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AmenitiesChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/properties/{property_id}/media": {
+      "put": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Set a listing's photos and videos",
+        "description": "In page order, the first being the cover; uploads come from POST /v1/media.",
+        "operationId": "catalogSetMedia",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/properties/{property_id}/history": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Everything done to a listing",
+        "description": "From the audit log, newest first: the listing, its rooms and its beds.",
+        "operationId": "catalogHistory",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/History"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/properties/{property_id}/room-categories": {
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Add a room category",
+        "operationId": "catalogAddRoomCategory",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/room-categories/{category_id}": {
+      "patch": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Change a room category",
+        "description": "Only the fields sent change; null clears the owner's minimum or maximum.",
+        "operationId": "catalogUpdateRoomCategory",
+        "parameters": [
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Category Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/room-categories/{category_id}/rooms": {
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Add a room, with its beds",
+        "operationId": "catalogAddRoom",
+        "parameters": [
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Category Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/rooms/{room_id}/beds": {
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Add a bed",
+        "description": "409 ROOM_FULL once the room has as many beds as its occupancy.",
+        "operationId": "catalogAddBed",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Room Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BedCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/beds/{bed_id}": {
+      "patch": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Take a bed out of what can be sold, or back",
+        "operationId": "catalogUpdateBed",
+        "parameters": [
+          {
+            "name": "bed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Bed Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BedUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/media": {
       "post": {
         "tags": [
@@ -1676,6 +2697,61 @@
   },
   "components": {
     "schemas": {
+      "AmenitiesChange": {
+        "properties": {
+          "amenities": {
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "type": "array",
+            "maxItems": 60,
+            "title": "Amenities"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "amenities"
+        ],
+        "title": "AmenitiesChange"
+      },
+      "AmenityInfo": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "AmenityInfo"
+      },
+      "AmenityList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AmenityInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "AmenityList"
+      },
       "AssetStatus": {
         "type": "string",
         "enum": [
@@ -1685,6 +2761,66 @@
           "rejected"
         ],
         "title": "AssetStatus"
+      },
+      "BedCreate": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "title": "BedCreate"
+      },
+      "BedInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BedStatus"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "status"
+        ],
+        "title": "BedInfo"
+      },
+      "BedStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive"
+        ],
+        "title": "BedStatus"
+      },
+      "BedUpdate": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/BedStatus"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "BedUpdate"
       },
       "CampusDetail": {
         "properties": {
@@ -1701,7 +2837,7 @@
             "title": "Name"
           },
           "location": {
-            "$ref": "#/components/schemas/Location"
+            "$ref": "#/components/schemas/app__modules__geo__schemas__Location"
           },
           "nearestStation": {
             "anyOf": [
@@ -1756,7 +2892,7 @@
             "title": "Name"
           },
           "location": {
-            "$ref": "#/components/schemas/Location"
+            "$ref": "#/components/schemas/app__modules__geo__schemas__Location"
           },
           "nearestStation": {
             "anyOf": [
@@ -1797,6 +2933,390 @@
         ],
         "title": "CampusList"
       },
+      "CategoryCreate": {
+        "properties": {
+          "occupancy": {
+            "$ref": "#/components/schemas/Occupancy"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Label"
+          },
+          "baseRentPaise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Baserentpaise"
+          },
+          "securityDepositPaise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Securitydepositpaise"
+          },
+          "ac": {
+            "type": "boolean",
+            "title": "Ac",
+            "default": false
+          },
+          "attachedBath": {
+            "type": "boolean",
+            "title": "Attachedbath",
+            "default": false
+          },
+          "balcony": {
+            "type": "boolean",
+            "title": "Balcony",
+            "default": false
+          },
+          "ownerMinRentPaise": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ownerminrentpaise"
+          },
+          "ownerMaxRentPaise": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ownermaxrentpaise"
+          },
+          "mandatoryCharges": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/MonthlyCharge"
+                },
+                {
+                  "$ref": "#/components/schemas/MeteredCharge"
+                },
+                {
+                  "$ref": "#/components/schemas/OneTimeCharge"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "metered": "#/components/schemas/MeteredCharge",
+                  "monthly": "#/components/schemas/MonthlyCharge",
+                  "oneTime": "#/components/schemas/OneTimeCharge"
+                }
+              }
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Mandatorycharges",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "occupancy",
+          "label",
+          "baseRentPaise",
+          "securityDepositPaise"
+        ],
+        "title": "CategoryCreate"
+      },
+      "CategoryInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "occupancy": {
+            "$ref": "#/components/schemas/Occupancy"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "ac": {
+            "type": "boolean",
+            "title": "Ac"
+          },
+          "attachedBath": {
+            "type": "boolean",
+            "title": "Attachedbath"
+          },
+          "balcony": {
+            "type": "boolean",
+            "title": "Balcony"
+          },
+          "baseRentPaise": {
+            "type": "integer",
+            "title": "Baserentpaise"
+          },
+          "ownerMinRentPaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ownerminrentpaise"
+          },
+          "ownerMaxRentPaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ownermaxrentpaise"
+          },
+          "securityDepositPaise": {
+            "type": "integer",
+            "title": "Securitydepositpaise"
+          },
+          "mandatoryCharges": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/MonthlyCharge"
+                },
+                {
+                  "$ref": "#/components/schemas/MeteredCharge"
+                },
+                {
+                  "$ref": "#/components/schemas/OneTimeCharge"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "metered": "#/components/schemas/MeteredCharge",
+                  "monthly": "#/components/schemas/MonthlyCharge",
+                  "oneTime": "#/components/schemas/OneTimeCharge"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Mandatorycharges"
+          },
+          "monthlyChargesPaise": {
+            "type": "integer",
+            "title": "Monthlychargespaise"
+          },
+          "oneTimeChargesPaise": {
+            "type": "integer",
+            "title": "Onetimechargespaise"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CategoryStatus"
+          },
+          "rooms": {
+            "items": {
+              "$ref": "#/components/schemas/RoomInfo"
+            },
+            "type": "array",
+            "title": "Rooms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "occupancy",
+          "label",
+          "ac",
+          "attachedBath",
+          "balcony",
+          "baseRentPaise",
+          "ownerMinRentPaise",
+          "ownerMaxRentPaise",
+          "securityDepositPaise",
+          "mandatoryCharges",
+          "monthlyChargesPaise",
+          "oneTimeChargesPaise",
+          "status",
+          "rooms"
+        ],
+        "title": "CategoryInfo"
+      },
+      "CategoryStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive"
+        ],
+        "title": "CategoryStatus"
+      },
+      "CategoryUpdate": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "baseRentPaise": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baserentpaise"
+          },
+          "securityDepositPaise": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Securitydepositpaise"
+          },
+          "ac": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ac"
+          },
+          "attachedBath": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attachedbath"
+          },
+          "balcony": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balcony"
+          },
+          "ownerMinRentPaise": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ownerminrentpaise"
+          },
+          "ownerMaxRentPaise": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ownermaxrentpaise"
+          },
+          "mandatoryCharges": {
+            "anyOf": [
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/MonthlyCharge"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MeteredCharge"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OneTimeCharge"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "metered": "#/components/schemas/MeteredCharge",
+                      "monthly": "#/components/schemas/MonthlyCharge",
+                      "oneTime": "#/components/schemas/OneTimeCharge"
+                    }
+                  }
+                },
+                "type": "array",
+                "maxItems": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandatorycharges"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CategoryStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CategoryUpdate",
+        "description": "Only the fields sent change; null clears the owner's minimum or maximum."
+      },
+      "ChargeKind": {
+        "type": "string",
+        "enum": [
+          "electricity",
+          "water",
+          "maintenance",
+          "internet",
+          "laundry",
+          "food",
+          "registration",
+          "other"
+        ],
+        "title": "ChargeKind"
+      },
       "CityInfo": {
         "properties": {
           "slug": {
@@ -1808,7 +3328,7 @@
             "title": "Name"
           },
           "center": {
-            "$ref": "#/components/schemas/Location"
+            "$ref": "#/components/schemas/app__modules__geo__schemas__Location"
           }
         },
         "additionalProperties": false,
@@ -2177,6 +3697,15 @@
         ],
         "title": "Gender"
       },
+      "GenderPolicy": {
+        "type": "string",
+        "enum": [
+          "boys",
+          "girls",
+          "coed"
+        ],
+        "title": "GenderPolicy"
+      },
       "Health": {
         "properties": {
           "status": {
@@ -2193,10 +3722,535 @@
         "title": "Health",
         "description": "Liveness: the process is up and serving requests."
       },
+      "History": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntry"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "History"
+      },
+      "HistoryEntry": {
+        "properties": {
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurredat"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "entityType": {
+            "type": "string",
+            "title": "Entitytype"
+          },
+          "entityId": {
+            "type": "string",
+            "title": "Entityid"
+          },
+          "actorType": {
+            "type": "string",
+            "title": "Actortype"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "occurredAt",
+          "action",
+          "entityType",
+          "entityId",
+          "actorType",
+          "details"
+        ],
+        "title": "HistoryEntry"
+      },
+      "KycStatus": {
+        "type": "string",
+        "enum": [
+          "not_started",
+          "pending",
+          "verified",
+          "rejected"
+        ],
+        "title": "KycStatus"
+      },
+      "LicenceStatus": {
+        "type": "string",
+        "enum": [
+          "unknown",
+          "applied",
+          "licensed",
+          "not_required"
+        ],
+        "title": "LicenceStatus"
+      },
+      "ListingCreated": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "addressLine": {
+            "type": "string",
+            "title": "Addressline"
+          },
+          "location": {
+            "$ref": "#/components/schemas/app__modules__catalog__schemas__Location"
+          },
+          "displayLocation": {
+            "$ref": "#/components/schemas/app__modules__catalog__schemas__Location"
+          },
+          "locationPrecision": {
+            "$ref": "#/components/schemas/LocationPrecision"
+          },
+          "genderPolicy": {
+            "$ref": "#/components/schemas/GenderPolicy"
+          },
+          "meals": {
+            "$ref": "#/components/schemas/Meals"
+          },
+          "houseRules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Houserules"
+          },
+          "verificationStatus": {
+            "$ref": "#/components/schemas/VerificationStatus"
+          },
+          "licenceStatus": {
+            "$ref": "#/components/schemas/LicenceStatus"
+          },
+          "licenceNumber": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licencenumber"
+          },
+          "societyPermission": {
+            "$ref": "#/components/schemas/SocietyPermission"
+          },
+          "instantConfirm": {
+            "type": "boolean",
+            "title": "Instantconfirm"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PropertyStatus"
+          },
+          "publishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publishedat"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/OwnerInfo"
+          },
+          "locality": {
+            "$ref": "#/components/schemas/app__modules__catalog__schemas__LocalityInfo"
+          },
+          "amenities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Amenities"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryInfo"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/ListingMedia"
+            },
+            "type": "array",
+            "title": "Media"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems"
+          },
+          "possibleDuplicates": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Possibleduplicates"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "addressLine",
+          "location",
+          "displayLocation",
+          "locationPrecision",
+          "genderPolicy",
+          "meals",
+          "houseRules",
+          "verificationStatus",
+          "licenceStatus",
+          "licenceNumber",
+          "societyPermission",
+          "instantConfirm",
+          "status",
+          "publishedAt",
+          "owner",
+          "locality",
+          "amenities",
+          "categories",
+          "media",
+          "problems",
+          "possibleDuplicates"
+        ],
+        "title": "ListingCreated"
+      },
+      "ListingInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "addressLine": {
+            "type": "string",
+            "title": "Addressline"
+          },
+          "location": {
+            "$ref": "#/components/schemas/app__modules__catalog__schemas__Location"
+          },
+          "displayLocation": {
+            "$ref": "#/components/schemas/app__modules__catalog__schemas__Location"
+          },
+          "locationPrecision": {
+            "$ref": "#/components/schemas/LocationPrecision"
+          },
+          "genderPolicy": {
+            "$ref": "#/components/schemas/GenderPolicy"
+          },
+          "meals": {
+            "$ref": "#/components/schemas/Meals"
+          },
+          "houseRules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Houserules"
+          },
+          "verificationStatus": {
+            "$ref": "#/components/schemas/VerificationStatus"
+          },
+          "licenceStatus": {
+            "$ref": "#/components/schemas/LicenceStatus"
+          },
+          "licenceNumber": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licencenumber"
+          },
+          "societyPermission": {
+            "$ref": "#/components/schemas/SocietyPermission"
+          },
+          "instantConfirm": {
+            "type": "boolean",
+            "title": "Instantconfirm"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PropertyStatus"
+          },
+          "publishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publishedat"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/OwnerInfo"
+          },
+          "locality": {
+            "$ref": "#/components/schemas/app__modules__catalog__schemas__LocalityInfo"
+          },
+          "amenities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Amenities"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryInfo"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/ListingMedia"
+            },
+            "type": "array",
+            "title": "Media"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "addressLine",
+          "location",
+          "displayLocation",
+          "locationPrecision",
+          "genderPolicy",
+          "meals",
+          "houseRules",
+          "verificationStatus",
+          "licenceStatus",
+          "licenceNumber",
+          "societyPermission",
+          "instantConfirm",
+          "status",
+          "publishedAt",
+          "owner",
+          "locality",
+          "amenities",
+          "categories",
+          "media",
+          "problems"
+        ],
+        "title": "ListingInfo"
+      },
+      "ListingMedia": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "contentType": {
+            "type": "string",
+            "title": "Contenttype"
+          },
+          "verifiedCapture": {
+            "type": "boolean",
+            "title": "Verifiedcapture"
+          },
+          "capturedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capturedat"
+          },
+          "renditions": {
+            "items": {
+              "$ref": "#/components/schemas/Rendition"
+            },
+            "type": "array",
+            "title": "Renditions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "purpose",
+          "status",
+          "contentType",
+          "verifiedCapture",
+          "capturedAt",
+          "renditions"
+        ],
+        "title": "ListingMedia"
+      },
+      "ListingPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ListingSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "ListingPage"
+      },
+      "ListingSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "locality": {
+            "$ref": "#/components/schemas/app__modules__catalog__schemas__LocalityInfo"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PropertyStatus"
+          },
+          "verificationStatus": {
+            "$ref": "#/components/schemas/VerificationStatus"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ListingMedia"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "locality",
+          "status",
+          "verificationStatus",
+          "updatedAt",
+          "cover"
+        ],
+        "title": "ListingSummary"
+      },
       "LocalityDistance": {
         "properties": {
           "locality": {
-            "$ref": "#/components/schemas/LocalityInfo"
+            "$ref": "#/components/schemas/app__modules__geo__schemas__LocalityInfo"
           },
           "distanceM": {
             "type": "integer",
@@ -2211,39 +4265,11 @@
         ],
         "title": "LocalityDistance"
       },
-      "LocalityInfo": {
-        "properties": {
-          "slug": {
-            "type": "string",
-            "title": "Slug"
-          },
-          "city": {
-            "type": "string",
-            "title": "City"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "center": {
-            "$ref": "#/components/schemas/Location"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "slug",
-          "city",
-          "name",
-          "center"
-        ],
-        "title": "LocalityInfo"
-      },
       "LocalityList": {
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/LocalityInfo"
+              "$ref": "#/components/schemas/app__modules__geo__schemas__LocalityInfo"
             },
             "type": "array",
             "title": "Items"
@@ -2256,14 +4282,18 @@
         ],
         "title": "LocalityList"
       },
-      "Location": {
+      "Location-Input": {
         "properties": {
           "lat": {
             "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
             "title": "Lat"
           },
           "lng": {
             "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
             "title": "Lng"
           }
         },
@@ -2274,6 +4304,14 @@
           "lng"
         ],
         "title": "Location"
+      },
+      "LocationPrecision": {
+        "type": "string",
+        "enum": [
+          "exact",
+          "approximate"
+        ],
+        "title": "LocationPrecision"
       },
       "Me": {
         "properties": {
@@ -2402,6 +4440,37 @@
         "title": "MeUpdate",
         "description": "Change the profile: only the fields sent change. ``null`` clears an optional field; the\nname can be changed but not removed."
       },
+      "Meals": {
+        "type": "string",
+        "enum": [
+          "none",
+          "breakfast",
+          "two",
+          "three",
+          "four"
+        ],
+        "title": "Meals"
+      },
+      "MediaChange": {
+        "properties": {
+          "media": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "title": "Media"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "media"
+        ],
+        "title": "MediaChange",
+        "description": "The listing's photos and videos, in order: the first is the cover."
+      },
       "MediaInfo": {
         "properties": {
           "id": {
@@ -2520,6 +4589,49 @@
         ],
         "title": "MediaInfo"
       },
+      "MeteredCharge": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "metered",
+            "title": "Type"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChargeKind"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 60,
+            "title": "Label"
+          },
+          "ratePaise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Ratepaise"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 16,
+            "title": "Unit"
+          },
+          "monthlyEstimatePaise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Monthlyestimatepaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "kind",
+          "label",
+          "ratePaise",
+          "unit",
+          "monthlyEstimatePaise"
+        ],
+        "title": "MeteredCharge"
+      },
       "MetroLineInfo": {
         "properties": {
           "slug": {
@@ -2555,7 +4667,7 @@
             "title": "Name"
           },
           "location": {
-            "$ref": "#/components/schemas/Location"
+            "$ref": "#/components/schemas/app__modules__geo__schemas__Location"
           },
           "lines": {
             "items": {
@@ -2601,6 +4713,37 @@
         ],
         "title": "Moderation"
       },
+      "MonthlyCharge": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "monthly",
+            "title": "Type"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChargeKind"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 60,
+            "title": "Label"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Amountpaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "kind",
+          "label",
+          "amountPaise"
+        ],
+        "title": "MonthlyCharge"
+      },
       "NoticePurpose": {
         "properties": {
           "purpose": {
@@ -2618,6 +4761,47 @@
           "required"
         ],
         "title": "NoticePurpose"
+      },
+      "Occupancy": {
+        "type": "string",
+        "enum": [
+          "single",
+          "double",
+          "triple",
+          "quad"
+        ],
+        "title": "Occupancy"
+      },
+      "OneTimeCharge": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "oneTime",
+            "title": "Type"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChargeKind"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 60,
+            "title": "Label"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Amountpaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "kind",
+          "label",
+          "amountPaise"
+        ],
+        "title": "OneTimeCharge"
       },
       "OtpChallengeIssued": {
         "properties": {
@@ -2701,6 +4885,164 @@
           "code"
         ],
         "title": "OtpVerify"
+      },
+      "OwnerCreate": {
+        "properties": {
+          "phone": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Phone"
+          },
+          "legalName": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Legalname"
+          },
+          "businessName": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Businessname"
+          },
+          "gstin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gstin"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "phone",
+          "legalName",
+          "businessName"
+        ],
+        "title": "OwnerCreate"
+      },
+      "OwnerInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "legalName": {
+            "type": "string",
+            "title": "Legalname"
+          },
+          "businessName": {
+            "type": "string",
+            "title": "Businessname"
+          },
+          "gstin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gstin"
+          },
+          "kycStatus": {
+            "$ref": "#/components/schemas/KycStatus"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OwnerStatus"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "legalName",
+          "businessName",
+          "gstin",
+          "kycStatus",
+          "status",
+          "phone",
+          "name"
+        ],
+        "title": "OwnerInfo"
+      },
+      "OwnerPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OwnerInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "OwnerPage"
+      },
+      "OwnerStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "suspended"
+        ],
+        "title": "OwnerStatus"
       },
       "PrivacyNoticeInfo": {
         "properties": {
@@ -2800,6 +5142,249 @@
           "code"
         ],
         "title": "ProblemDetail"
+      },
+      "PropertyCreate": {
+        "properties": {
+          "owner": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Owner"
+          },
+          "locality": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Locality"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Name"
+          },
+          "addressLine": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Addressline"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location-Input"
+          },
+          "locationPrecision": {
+            "$ref": "#/components/schemas/LocationPrecision"
+          },
+          "genderPolicy": {
+            "$ref": "#/components/schemas/GenderPolicy"
+          },
+          "meals": {
+            "$ref": "#/components/schemas/Meals"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "Description",
+            "default": ""
+          },
+          "houseRules": {
+            "items": {
+              "type": "string",
+              "maxLength": 300
+            },
+            "type": "array",
+            "maxItems": 40,
+            "title": "Houserules",
+            "default": []
+          },
+          "licenceStatus": {
+            "$ref": "#/components/schemas/LicenceStatus",
+            "default": "unknown"
+          },
+          "licenceNumber": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licencenumber"
+          },
+          "societyPermission": {
+            "$ref": "#/components/schemas/SocietyPermission",
+            "default": "n/a"
+          },
+          "instantConfirm": {
+            "type": "boolean",
+            "title": "Instantconfirm",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "owner",
+          "locality",
+          "name",
+          "addressLine",
+          "location",
+          "locationPrecision",
+          "genderPolicy",
+          "meals"
+        ],
+        "title": "PropertyCreate"
+      },
+      "PropertyStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "published",
+          "paused",
+          "delisted"
+        ],
+        "title": "PropertyStatus"
+      },
+      "PropertyUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "addressLine": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Addressline"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Location-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "locationPrecision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPrecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "genderPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GenderPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Meals"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "houseRules": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "type": "array",
+                "maxItems": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Houserules"
+          },
+          "licenceStatus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenceStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "licenceNumber": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licencenumber"
+          },
+          "societyPermission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SocietyPermission"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "instantConfirm": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instantconfirm"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PropertyUpdate",
+        "description": "Only the fields sent change; ``licenceNumber: null`` clears it."
       },
       "Purpose": {
         "type": "string",
@@ -2919,6 +5504,54 @@
         "title": "Readiness",
         "description": "Readiness: whether this instance can serve traffic, with the state of each dependency."
       },
+      "Rendition": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "contentType": {
+            "type": "string",
+            "title": "Contenttype"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "contentType",
+          "url",
+          "width",
+          "height"
+        ],
+        "title": "Rendition"
+      },
       "RenditionInfo": {
         "properties": {
           "name": {
@@ -3016,6 +5649,81 @@
         ],
         "title": "Role"
       },
+      "RoomCreate": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Label"
+          },
+          "floor": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 200.0,
+                "minimum": -10.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor"
+          },
+          "beds": {
+            "type": "integer",
+            "maximum": 4.0,
+            "minimum": 0.0,
+            "title": "Beds",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "title": "RoomCreate"
+      },
+      "RoomInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "floor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor"
+          },
+          "beds": {
+            "items": {
+              "$ref": "#/components/schemas/BedInfo"
+            },
+            "type": "array",
+            "title": "Beds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "floor",
+          "beds"
+        ],
+        "title": "RoomInfo"
+      },
       "SessionInfo": {
         "properties": {
           "id": {
@@ -3107,6 +5815,15 @@
         ],
         "title": "SignInResult",
         "description": "Signed in, with the session cookie set. Use ``csrfToken`` (also a cookie) from now on."
+      },
+      "SocietyPermission": {
+        "type": "string",
+        "enum": [
+          "n/a",
+          "on_file",
+          "missing"
+        ],
+        "title": "SocietyPermission"
       },
       "StaffMember": {
         "properties": {
@@ -3260,6 +5977,19 @@
         ],
         "title": "StationDistance"
       },
+      "StatusChange": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/PropertyStatus"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "StatusChange"
+      },
       "UploadForm": {
         "properties": {
           "url": {
@@ -3331,6 +6061,106 @@
           "upload"
         ],
         "title": "UploadStarted"
+      },
+      "VerificationStatus": {
+        "type": "string",
+        "enum": [
+          "unverified",
+          "scheduled",
+          "verified",
+          "rejected",
+          "suspended"
+        ],
+        "title": "VerificationStatus"
+      },
+      "app__modules__catalog__schemas__LocalityInfo": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "LocalityInfo"
+      },
+      "app__modules__catalog__schemas__Location": {
+        "properties": {
+          "lat": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Lat"
+          },
+          "lng": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Lng"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lat",
+          "lng"
+        ],
+        "title": "Location"
+      },
+      "app__modules__geo__schemas__LocalityInfo": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "center": {
+            "$ref": "#/components/schemas/app__modules__geo__schemas__Location"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "city",
+          "name",
+          "center"
+        ],
+        "title": "LocalityInfo"
+      },
+      "app__modules__geo__schemas__Location": {
+        "properties": {
+          "lat": {
+            "type": "number",
+            "title": "Lat"
+          },
+          "lng": {
+            "type": "number",
+            "title": "Lng"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lat",
+          "lng"
+        ],
+        "title": "Location"
       }
     }
   }

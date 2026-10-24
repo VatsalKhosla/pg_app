@@ -39,6 +39,14 @@ class RoomFullError(AppError):
     title = "The room already has as many beds as its occupancy"
 
 
+class OwnerExistsError(AppError):
+    """That phone number's account already has an owner record."""
+
+    status = 409
+    code = "OWNER_EXISTS"
+    title = "That person is already an owner"
+
+
 class LabelTakenError(AppError):
     """A room label already used in its category, or a bed label in its room."""
 

@@ -25,6 +25,8 @@ from app.modules.geo.repository import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.core.clock import Clock
@@ -81,6 +83,12 @@ class GeoLookup:
     async def locality(self, slug: str) -> LocalityRef | None:
         found = await self._geo.locality(slug)
         return None if found is None else LocalityRef(id=found[0], slug=slug, name=found[1])
+
+    async def localities(self, ids: Collection[int]) -> dict[int, LocalityRef]:
+        return {
+            locality_id: LocalityRef(id=locality_id, slug=slug, name=name)
+            for locality_id, (slug, name) in (await self._geo.localities_by_id(ids)).items()
+        }
 
 
 @dataclass(frozen=True, slots=True)

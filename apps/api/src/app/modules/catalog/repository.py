@@ -29,13 +29,14 @@ from app.modules.catalog.models import (
     Owner,
     Property,
     PropertyAmenity,
+    PropertyMedia,
     Room,
     RoomCategory,
 )
 
 if TYPE_CHECKING:
     import uuid
-    from collections.abc import Collection, Iterable
+    from collections.abc import Collection, Iterable, Sequence
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -102,6 +103,11 @@ def charges_from_json(stored: Iterable[dict[str, Any]]) -> tuple[MandatoryCharge
                 msg = f"unknown charge type {other!r}"
                 raise ValueError(msg)
     return tuple(charges)
+
+
+def _escape_like(text: str) -> str:
+    """``text`` as a literal inside a LIKE pattern."""
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 @dataclass(frozen=True, slots=True)
@@ -221,6 +227,133 @@ class CatalogRepository:
         )
         return list(found)
 
+    async def rooms_of(self, category_ids: Collection[int]) -> list[Room]:
+        if not category_ids:
+            return []
+        found = await self._db.scalars(
+            select(Room)
+            .where(Room.room_category_id.in_(category_ids))
+            .order_by(Room.room_category_id, Room.label, Room.public_id)
+        )
+        return list(found)
+
+    async def beds_of(self, room_ids: Collection[int]) -> list[Bed]:
+        if not room_ids:
+            return []
+        found = await self._db.scalars(
+            select(Bed).where(Bed.room_id.in_(room_ids)).order_by(Bed.room_id, Bed.label)
+        )
+        return list(found)
+
+    async def category_for_update(self, public_id: uuid.UUID) -> RoomCategory | None:
+        return await self._db.scalar(
+            select(RoomCategory).where(RoomCategory.public_id == public_id).with_for_update()
+        )
+
+    async def bed(self, public_id: uuid.UUID, *, lock: bool = False) -> Bed | None:
+        query = select(Bed).where(Bed.public_id == public_id)
+        return await self._db.scalar(query.with_for_update() if lock else query)
+
+    async def property_of_category(self, category_id: int) -> Property:
+        found = await self._db.scalar(
+            select(Property)
+            .join(RoomCategory, RoomCategory.property_id == Property.id)
+            .where(RoomCategory.id == category_id)
+        )
+        if found is None:  # pragma: no cover - a category always has its property
+            raise LookupError(category_id)
+        return found
+
+    async def property_of_room(self, room_id: int) -> Property:
+        found = await self._db.scalar(
+            select(Property)
+            .join(RoomCategory, RoomCategory.property_id == Property.id)
+            .join(Room, Room.room_category_id == RoomCategory.id)
+            .where(Room.id == room_id)
+        )
+        if found is None:  # pragma: no cover - a room always has its property
+            raise LookupError(room_id)
+        return found
+
+    # Pages, for staff: by public id, ``limit + 1`` rows, so the caller sees whether more follow.
+
+    async def owners_page(
+        self,
+        *,
+        after: uuid.UUID | None,
+        limit: int,
+        text: str | None = None,
+        user_id: int | None = None,
+    ) -> list[Owner]:
+        query = select(Owner).order_by(Owner.public_id).limit(limit + 1)
+        if after is not None:
+            query = query.where(Owner.public_id > after)
+        if user_id is not None:
+            query = query.where(Owner.user_id == user_id)
+        elif text:
+            pattern = f"%{_escape_like(text)}%"
+            query = query.where(
+                or_(
+                    Owner.business_name.ilike(pattern, escape="\\"),
+                    Owner.legal_name.ilike(pattern, escape="\\"),
+                )
+            )
+        return list(await self._db.scalars(query))
+
+    async def properties_page(
+        self,
+        *,
+        after: uuid.UUID | None,
+        limit: int,
+        status: PropertyStatus | None = None,
+        text: str | None = None,
+    ) -> list[Property]:
+        query = select(Property).order_by(Property.public_id).limit(limit + 1)
+        if after is not None:
+            query = query.where(Property.public_id > after)
+        if status is not None:
+            query = query.where(Property.status == status)
+        if text:
+            query = query.where(Property.name.ilike(f"%{_escape_like(text)}%", escape="\\"))
+        return list(await self._db.scalars(query))
+
+    async def owners_by_id(self, ids: Collection[int]) -> dict[int, Owner]:
+        if not ids:
+            return {}
+        return {
+            owner.id: owner
+            for owner in await self._db.scalars(select(Owner).where(Owner.id.in_(ids)))
+        }
+
+    # Media.
+
+    async def media_of(self, property_ids: Collection[int]) -> dict[int, list[int]]:
+        """Each property's media assets (internal ids), in page order."""
+        if not property_ids:
+            return {}
+        rows = await self._db.execute(
+            select(PropertyMedia.property_id, PropertyMedia.media_asset_id)
+            .where(PropertyMedia.property_id.in_(property_ids))
+            .order_by(PropertyMedia.property_id, PropertyMedia.position)
+        )
+        media: dict[int, list[int]] = {}
+        for property_id, asset_id in rows:
+            media.setdefault(property_id, []).append(asset_id)
+        return media
+
+    async def set_media(self, property_id: int, asset_ids: Sequence[int]) -> None:
+        await self._db.execute(
+            delete(PropertyMedia).where(PropertyMedia.property_id == property_id)
+        )
+        if asset_ids:
+            await self._db.execute(
+                insert(PropertyMedia),
+                [
+                    {"property_id": property_id, "media_asset_id": asset_id, "position": position}
+                    for position, asset_id in enumerate(asset_ids)
+                ],
+            )
+
     # Amenities.
 
     async def amenity_ids(self, slugs: Collection[str]) -> dict[str, int]:
@@ -241,6 +374,9 @@ class CatalogRepository:
                     for amenity_id in sorted(amenity_ids)
                 ],
             )
+
+    async def all_amenities(self) -> list[Amenity]:
+        return list(await self._db.scalars(select(Amenity).order_by(Amenity.name)))
 
     async def amenities_of(self, property_id: int) -> list[str]:
         found = await self._db.scalars(

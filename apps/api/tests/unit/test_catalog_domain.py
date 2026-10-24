@@ -24,6 +24,7 @@ from app.modules.catalog.domain.listing import (
     SLUG_MAX_LENGTH,
     PropertyStatus,
     can_move,
+    free_slug,
     numbered,
     publishing_problems,
     slugify,
@@ -221,3 +222,19 @@ def test_moving_north_raises_only_the_latitude() -> None:
 def test_a_gstin_is_stored_in_capitals_or_refused(raw: str, stored: str | None) -> None:
     # Made-up numbers in the GSTIN's shape: the check digit comes in step 2.6.
     assert normalize_gstin(raw) == stored
+
+
+def test_a_taken_slug_gets_the_first_free_number_however_many_are_taken() -> None:
+    base = slugify("Fictional Residency", "Kamla Nagar")
+    taken = {base, *(numbered(base, n) for n in range(2, 500))}
+
+    assert free_slug("free-slug", taken) == "free-slug"
+    assert free_slug(base, {base}) == f"{base}-2"
+    assert free_slug(base, taken) == f"{base}-500"
+
+
+@given(st.text(min_size=1, max_size=300))
+def test_a_numbered_slug_keeps_the_whole_base(name: str) -> None:
+    base = slugify(name)
+
+    assert numbered(base, 99_999).startswith(f"{base}-")

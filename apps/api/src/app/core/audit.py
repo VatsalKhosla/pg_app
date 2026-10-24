@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
-from sqlalchemy import BigInteger, CheckConstraint, DateTime, Index, Text, insert, text
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, Index, Text, insert, select, text
 from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -18,7 +18,7 @@ from app.core.db import AppendOnlyModel
 from app.core.pii import mask_pii
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Collection, Mapping
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -84,3 +84,18 @@ async def record(
             details=cast("dict[str, Any]", mask_pii(dict(details or {}))),
         )
     )
+
+
+async def trail(
+    session: AsyncSession, *, entity_ids: Collection[str], limit: int = 200
+) -> list[AuditLog]:
+    """The latest entries about any of ``entity_ids`` (public ids), newest first."""
+    if not entity_ids:
+        return []
+    rows = await session.scalars(
+        select(AuditLog)
+        .where(AuditLog.entity_id.in_(list(entity_ids)))
+        .order_by(AuditLog.occurred_at.desc(), AuditLog.id.desc())
+        .limit(limit)
+    )
+    return list(rows)

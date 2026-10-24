@@ -7,13 +7,19 @@ can be paused and published again; any property can be delisted, and a delisted 
 draft to be listed again.
 """
 
+import itertools
 import re
 import unicodedata
 from enum import StrEnum
-from typing import Final
+from typing import TYPE_CHECKING, Final
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 NAME_MAX_LENGTH: Final = 120
 SLUG_MAX_LENGTH: Final = 80
+# What slugify keeps, so that "-99999" still fits after it.
+SLUG_BASE_MAX_LENGTH: Final = SLUG_MAX_LENGTH - 6
 HOUSE_RULES_MAX: Final = 30
 HOUSE_RULE_MAX_LENGTH: Final = 200
 
@@ -94,10 +100,24 @@ def slugify(*parts: str) -> str:
     text = unicodedata.normalize("NFKD", " ".join(parts))
     ascii_text = text.encode("ascii", "ignore").decode().casefold().replace("'", "")
     slug = re.sub(r"[^a-z0-9]+", "-", ascii_text).strip("-")
-    return slug[:SLUG_MAX_LENGTH].rstrip("-") or "pg"
+    return slug[:SLUG_BASE_MAX_LENGTH].rstrip("-") or "pg"
 
 
 def numbered(slug: str, number: int) -> str:
     """The slug to try when ``slug`` is taken: ``numbered("x", 2) == "x-2"``."""
     suffix = f"-{number}"
     return slug[: SLUG_MAX_LENGTH - len(suffix)].rstrip("-") + suffix
+
+
+def free_slug(base: str, taken: Collection[str]) -> str:
+    """``base`` if it is free, else the first free numbered one: ``base-2``, ``base-3``, ...
+
+    ``taken`` must hold ``base`` and every slug that starts with ``base-``. A base from
+    ``slugify`` leaves room for any number up to 99999, so a numbered slug always starts with the
+    whole base.
+    """
+    if base not in taken:
+        return base
+    return next(
+        candidate for n in itertools.count(2) if (candidate := numbered(base, n)) not in taken
+    )

@@ -51,6 +51,7 @@ from app.modules.media.repository import MediaRepository
 
 if TYPE_CHECKING:
     import uuid
+    from collections.abc import Collection
     from datetime import datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -308,3 +309,57 @@ async def process_upload(
 async def discard_upload(storage: ObjectStorage, buckets: Buckets, media_id: uuid.UUID) -> None:
     """Delete an original once its asset is processed: it still has its metadata."""
     await storage.delete(buckets.private, upload_key(media_id))
+
+
+@dataclass(frozen=True, slots=True)
+class MediaRef:
+    """A file, as another module shows or attaches it."""
+
+    id: int
+    public_id: uuid.UUID
+    purpose: Purpose
+    status: AssetStatus
+    content_type: str
+    verified_capture: bool
+    captured_at: datetime | None
+    renditions: tuple[RenditionView, ...]
+
+
+class MediaLookup:
+    """Media reads for other modules, inside the caller's transaction (it starts none): what the
+    catalog attaches to a listing. Only public media come with addresses."""
+
+    def __init__(self, db: AsyncSession, buckets: Buckets) -> None:
+        self._media = MediaRepository(db)
+        self._buckets = buckets
+
+    def _ref(self, asset: MediaAsset) -> MediaRef:
+        public = asset.visibility == Visibility.PUBLIC
+        return MediaRef(
+            id=asset.id,
+            public_id=asset.public_id,
+            purpose=Purpose(asset.purpose),
+            status=AssetStatus(asset.status),
+            content_type=asset.content_type,
+            verified_capture=asset.verified_capture,
+            captured_at=asset.captured_at,
+            renditions=tuple(
+                RenditionView(
+                    name=str(stored["name"]),
+                    content_type=str(stored["content_type"]),
+                    url=f"{self._buckets.public_base_url}/{stored['key']}",
+                    width=_maybe_int(stored.get("width")),
+                    height=_maybe_int(stored.get("height")),
+                    bytes=int(str(stored["bytes"])),
+                )
+                for stored in asset.renditions
+            )
+            if public
+            else (),
+        )
+
+    async def by_public_id(self, public_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, MediaRef]:
+        return {asset.public_id: self._ref(asset) for asset in await self._media.many(public_ids)}
+
+    async def by_id(self, ids: Collection[int]) -> dict[int, MediaRef]:
+        return {asset.id: self._ref(asset) for asset in await self._media.by_ids(ids)}

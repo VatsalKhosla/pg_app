@@ -43,6 +43,10 @@ PATH_VALUES: Final = frozenset(
         "an_optional_purpose",
         "a_campus",
         "someone_elses_media",
+        "a_listing",
+        "a_room_category",
+        "a_room",
+        "a_bed",
     }
 )
 
@@ -62,6 +66,37 @@ def _new_mobile() -> str:
 
 def _nothing() -> dict[str, Any]:
     return {}
+
+
+def ops_only(status: int) -> dict[str, int]:
+    """Ops and admins, in a staff session; 403 for anyone else signed in."""
+    return signed_in(403, ops=status, admin=status)
+
+
+def _new_owner() -> dict[str, Any]:
+    return {
+        "json": {
+            "phone": _new_mobile(),
+            "legalName": "Fictional Stays Private Limited",
+            "businessName": "Fictional Stays",
+        }
+    }
+
+
+def _new_listing() -> dict[str, Any]:
+    # The owner doesn't exist, so staff get 404 here; the catalog tests create real listings.
+    return {
+        "json": {
+            "owner": str(uuid.uuid7()),
+            "locality": "kamla-nagar",
+            "name": "Fictional Residency",
+            "addressLine": "House 1, a fictional lane",
+            "location": {"lat": 28.68, "lng": 77.2},
+            "locationPrecision": "exact",
+            "genderPolicy": "girls",
+            "meals": "two",
+        }
+    }
 
 
 @dataclass(frozen=True)
@@ -147,6 +182,58 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ),
     ("GET", "/v1/media/{media_id}"): Rule(
         signed_in(404, ops=200, admin=200), path={"media_id": "someone_elses_media"}
+    ),
+    # The catalog: amenities for everyone; listings for ops and admins.
+    ("GET", "/v1/amenities"): Rule(everyone(200)),
+    ("GET", "/v1/ops/owners"): Rule(ops_only(200)),
+    ("POST", "/v1/ops/owners"): Rule(ops_only(201), _new_owner),
+    ("GET", "/v1/ops/properties"): Rule(ops_only(200)),
+    ("POST", "/v1/ops/properties"): Rule(ops_only(404), _new_listing),
+    ("GET", "/v1/ops/properties/{property_id}"): Rule(
+        ops_only(200), path={"property_id": "a_listing"}
+    ),
+    ("PATCH", "/v1/ops/properties/{property_id}"): Rule(
+        ops_only(200), lambda: {"json": {"name": "Renamed"}}, path={"property_id": "a_listing"}
+    ),
+    ("POST", "/v1/ops/properties/{property_id}/status"): Rule(
+        ops_only(200), lambda: {"json": {"status": "delisted"}}, path={"property_id": "a_listing"}
+    ),
+    ("PUT", "/v1/ops/properties/{property_id}/amenities"): Rule(
+        ops_only(200), lambda: {"json": {"amenities": ["wifi"]}}, path={"property_id": "a_listing"}
+    ),
+    ("PUT", "/v1/ops/properties/{property_id}/media"): Rule(
+        ops_only(200), lambda: {"json": {"media": []}}, path={"property_id": "a_listing"}
+    ),
+    ("GET", "/v1/ops/properties/{property_id}/history"): Rule(
+        ops_only(200), path={"property_id": "a_listing"}
+    ),
+    ("POST", "/v1/ops/properties/{property_id}/room-categories"): Rule(
+        ops_only(201),
+        lambda: {
+            "json": {
+                "occupancy": "double",
+                "label": "Double sharing",
+                "baseRentPaise": 1_200_000,
+                "securityDepositPaise": 1_200_000,
+            }
+        },
+        path={"property_id": "a_listing"},
+    ),
+    ("PATCH", "/v1/ops/room-categories/{category_id}"): Rule(
+        ops_only(200),
+        lambda: {"json": {"label": "Renamed"}},
+        path={"category_id": "a_room_category"},
+    ),
+    ("POST", "/v1/ops/room-categories/{category_id}/rooms"): Rule(
+        ops_only(201),
+        lambda: {"json": {"label": "101", "beds": 2}},
+        path={"category_id": "a_room_category"},
+    ),
+    ("POST", "/v1/ops/rooms/{room_id}/beds"): Rule(
+        ops_only(201), lambda: {"json": {"label": "A"}}, path={"room_id": "a_room"}
+    ),
+    ("PATCH", "/v1/ops/beds/{bed_id}"): Rule(
+        ops_only(200), lambda: {"json": {"status": "inactive"}}, path={"bed_id": "a_bed"}
     ),
 }
 
