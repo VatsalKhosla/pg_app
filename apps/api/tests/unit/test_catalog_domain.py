@@ -25,6 +25,7 @@ from app.modules.catalog.domain.listing import (
     PropertyStatus,
     can_move,
     free_slug,
+    next_statuses,
     numbered,
     publishing_problems,
     slugify,
@@ -69,6 +70,17 @@ def test_a_listing_moves_only_as_the_state_machine_says(
 
 def test_no_status_moves_to_itself() -> None:
     assert not any(can_move(status, status) for status in PropertyStatus)
+
+
+@pytest.mark.parametrize("current", list(PropertyStatus))
+def test_the_next_statuses_are_exactly_those_it_can_move_to(current: PropertyStatus) -> None:
+    assert set(next_statuses(current)) == {
+        target for target in PropertyStatus if can_move(current, target)
+    }
+    assert next_statuses(PropertyStatus.DRAFT) == [
+        PropertyStatus.PUBLISHED,
+        PropertyStatus.DELISTED,
+    ]
 
 
 def test_publishing_needs_something_to_sell() -> None:

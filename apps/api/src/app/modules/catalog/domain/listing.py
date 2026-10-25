@@ -86,6 +86,11 @@ def can_move(current: PropertyStatus, target: PropertyStatus) -> bool:
     return target in _NEXT[current]
 
 
+def next_statuses(current: PropertyStatus) -> list[PropertyStatus]:
+    """Where a property can go from ``current``, in the order the statuses are declared."""
+    return [status for status in PropertyStatus if can_move(current, status)]
+
+
 def publishing_problems(*, sellable_categories: int) -> list[str]:
     """What stops a property going live; empty when it can."""
     if sellable_categories == 0:

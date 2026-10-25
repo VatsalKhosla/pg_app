@@ -2837,7 +2837,7 @@
             "title": "Name"
           },
           "location": {
-            "$ref": "#/components/schemas/app__modules__geo__schemas__Location"
+            "$ref": "#/components/schemas/Location"
           },
           "nearestStation": {
             "anyOf": [
@@ -2892,7 +2892,7 @@
             "title": "Name"
           },
           "location": {
-            "$ref": "#/components/schemas/app__modules__geo__schemas__Location"
+            "$ref": "#/components/schemas/Location"
           },
           "nearestStation": {
             "anyOf": [
@@ -3086,6 +3086,10 @@
             "type": "integer",
             "title": "Securitydepositpaise"
           },
+          "bedsPerRoom": {
+            "type": "integer",
+            "title": "Bedsperroom"
+          },
           "mandatoryCharges": {
             "items": {
               "oneOf": [
@@ -3143,6 +3147,7 @@
           "ownerMinRentPaise",
           "ownerMaxRentPaise",
           "securityDepositPaise",
+          "bedsPerRoom",
           "mandatoryCharges",
           "monthlyChargesPaise",
           "oneTimeChargesPaise",
@@ -3328,7 +3333,7 @@
             "title": "Name"
           },
           "center": {
-            "$ref": "#/components/schemas/app__modules__geo__schemas__Location"
+            "$ref": "#/components/schemas/Location"
           }
         },
         "additionalProperties": false,
@@ -3790,6 +3795,29 @@
         ],
         "title": "KycStatus"
       },
+      "LatLng": {
+        "properties": {
+          "lat": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Lat"
+          },
+          "lng": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Lng"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lat",
+          "lng"
+        ],
+        "title": "LatLng"
+      },
       "LicenceStatus": {
         "type": "string",
         "enum": [
@@ -3824,10 +3852,10 @@
             "title": "Addressline"
           },
           "location": {
-            "$ref": "#/components/schemas/app__modules__catalog__schemas__Location"
+            "$ref": "#/components/schemas/LatLng"
           },
           "displayLocation": {
-            "$ref": "#/components/schemas/app__modules__catalog__schemas__Location"
+            "$ref": "#/components/schemas/LatLng"
           },
           "locationPrecision": {
             "$ref": "#/components/schemas/LocationPrecision"
@@ -3872,6 +3900,13 @@
           "status": {
             "$ref": "#/components/schemas/PropertyStatus"
           },
+          "nextStatuses": {
+            "items": {
+              "$ref": "#/components/schemas/PropertyStatus"
+            },
+            "type": "array",
+            "title": "Nextstatuses"
+          },
           "publishedAt": {
             "anyOf": [
               {
@@ -3888,7 +3923,7 @@
             "$ref": "#/components/schemas/OwnerInfo"
           },
           "locality": {
-            "$ref": "#/components/schemas/app__modules__catalog__schemas__LocalityInfo"
+            "$ref": "#/components/schemas/ListingLocality"
           },
           "amenities": {
             "items": {
@@ -3947,6 +3982,7 @@
           "societyPermission",
           "instantConfirm",
           "status",
+          "nextStatuses",
           "publishedAt",
           "owner",
           "locality",
@@ -3982,10 +4018,10 @@
             "title": "Addressline"
           },
           "location": {
-            "$ref": "#/components/schemas/app__modules__catalog__schemas__Location"
+            "$ref": "#/components/schemas/LatLng"
           },
           "displayLocation": {
-            "$ref": "#/components/schemas/app__modules__catalog__schemas__Location"
+            "$ref": "#/components/schemas/LatLng"
           },
           "locationPrecision": {
             "$ref": "#/components/schemas/LocationPrecision"
@@ -4030,6 +4066,13 @@
           "status": {
             "$ref": "#/components/schemas/PropertyStatus"
           },
+          "nextStatuses": {
+            "items": {
+              "$ref": "#/components/schemas/PropertyStatus"
+            },
+            "type": "array",
+            "title": "Nextstatuses"
+          },
           "publishedAt": {
             "anyOf": [
               {
@@ -4046,7 +4089,7 @@
             "$ref": "#/components/schemas/OwnerInfo"
           },
           "locality": {
-            "$ref": "#/components/schemas/app__modules__catalog__schemas__LocalityInfo"
+            "$ref": "#/components/schemas/ListingLocality"
           },
           "amenities": {
             "items": {
@@ -4097,6 +4140,7 @@
           "societyPermission",
           "instantConfirm",
           "status",
+          "nextStatuses",
           "publishedAt",
           "owner",
           "locality",
@@ -4106,6 +4150,25 @@
           "problems"
         ],
         "title": "ListingInfo"
+      },
+      "ListingLocality": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "ListingLocality"
       },
       "ListingMedia": {
         "properties": {
@@ -4209,7 +4272,7 @@
             "title": "Name"
           },
           "locality": {
-            "$ref": "#/components/schemas/app__modules__catalog__schemas__LocalityInfo"
+            "$ref": "#/components/schemas/ListingLocality"
           },
           "status": {
             "$ref": "#/components/schemas/PropertyStatus"
@@ -4250,7 +4313,7 @@
       "LocalityDistance": {
         "properties": {
           "locality": {
-            "$ref": "#/components/schemas/app__modules__geo__schemas__LocalityInfo"
+            "$ref": "#/components/schemas/LocalityInfo"
           },
           "distanceM": {
             "type": "integer",
@@ -4265,11 +4328,39 @@
         ],
         "title": "LocalityDistance"
       },
+      "LocalityInfo": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "center": {
+            "$ref": "#/components/schemas/Location"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "city",
+          "name",
+          "center"
+        ],
+        "title": "LocalityInfo"
+      },
       "LocalityList": {
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/app__modules__geo__schemas__LocalityInfo"
+              "$ref": "#/components/schemas/LocalityInfo"
             },
             "type": "array",
             "title": "Items"
@@ -4282,18 +4373,14 @@
         ],
         "title": "LocalityList"
       },
-      "Location-Input": {
+      "Location": {
         "properties": {
           "lat": {
             "type": "number",
-            "maximum": 90.0,
-            "minimum": -90.0,
             "title": "Lat"
           },
           "lng": {
             "type": "number",
-            "maximum": 180.0,
-            "minimum": -180.0,
             "title": "Lng"
           }
         },
@@ -4667,7 +4754,7 @@
             "title": "Name"
           },
           "location": {
-            "$ref": "#/components/schemas/app__modules__geo__schemas__Location"
+            "$ref": "#/components/schemas/Location"
           },
           "lines": {
             "items": {
@@ -5166,7 +5253,7 @@
             "title": "Addressline"
           },
           "location": {
-            "$ref": "#/components/schemas/Location-Input"
+            "$ref": "#/components/schemas/LatLng"
           },
           "locationPrecision": {
             "$ref": "#/components/schemas/LocationPrecision"
@@ -5272,7 +5359,7 @@
           "location": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Location-Input"
+                "$ref": "#/components/schemas/LatLng"
               },
               {
                 "type": "null"
@@ -6072,95 +6159,6 @@
           "suspended"
         ],
         "title": "VerificationStatus"
-      },
-      "app__modules__catalog__schemas__LocalityInfo": {
-        "properties": {
-          "slug": {
-            "type": "string",
-            "title": "Slug"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "slug",
-          "name"
-        ],
-        "title": "LocalityInfo"
-      },
-      "app__modules__catalog__schemas__Location": {
-        "properties": {
-          "lat": {
-            "type": "number",
-            "maximum": 90.0,
-            "minimum": -90.0,
-            "title": "Lat"
-          },
-          "lng": {
-            "type": "number",
-            "maximum": 180.0,
-            "minimum": -180.0,
-            "title": "Lng"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "lat",
-          "lng"
-        ],
-        "title": "Location"
-      },
-      "app__modules__geo__schemas__LocalityInfo": {
-        "properties": {
-          "slug": {
-            "type": "string",
-            "title": "Slug"
-          },
-          "city": {
-            "type": "string",
-            "title": "City"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "center": {
-            "$ref": "#/components/schemas/app__modules__geo__schemas__Location"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "slug",
-          "city",
-          "name",
-          "center"
-        ],
-        "title": "LocalityInfo"
-      },
-      "app__modules__geo__schemas__Location": {
-        "properties": {
-          "lat": {
-            "type": "number",
-            "title": "Lat"
-          },
-          "lng": {
-            "type": "number",
-            "title": "Lng"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "lat",
-          "lng"
-        ],
-        "title": "Location"
       }
     }
   }

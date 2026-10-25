@@ -898,7 +898,7 @@ export interface components {
             city: string;
             /** Name */
             name: string;
-            location: components["schemas"]["app__modules__geo__schemas__Location"];
+            location: components["schemas"]["Location"];
             nearestStation: components["schemas"]["StationDistance"] | null;
             /** Stations */
             stations: components["schemas"]["StationDistance"][];
@@ -913,7 +913,7 @@ export interface components {
             city: string;
             /** Name */
             name: string;
-            location: components["schemas"]["app__modules__geo__schemas__Location"];
+            location: components["schemas"]["Location"];
             nearestStation: components["schemas"]["StationDistance"] | null;
         };
         /** CampusList */
@@ -979,6 +979,8 @@ export interface components {
             ownerMaxRentPaise: number | null;
             /** Securitydepositpaise */
             securityDepositPaise: number;
+            /** Bedsperroom */
+            bedsPerRoom: number;
             /** Mandatorycharges */
             mandatoryCharges: (components["schemas"]["MonthlyCharge"] | components["schemas"]["MeteredCharge"] | components["schemas"]["OneTimeCharge"])[];
             /** Monthlychargespaise */
@@ -1030,7 +1032,7 @@ export interface components {
             slug: string;
             /** Name */
             name: string;
-            center: components["schemas"]["app__modules__geo__schemas__Location"];
+            center: components["schemas"]["Location"];
         };
         /** CityList */
         CityList: {
@@ -1210,6 +1212,13 @@ export interface components {
          * @enum {string}
          */
         KycStatus: "not_started" | "pending" | "verified" | "rejected";
+        /** LatLng */
+        LatLng: {
+            /** Lat */
+            lat: number;
+            /** Lng */
+            lng: number;
+        };
         /**
          * LicenceStatus
          * @enum {string}
@@ -1230,8 +1239,8 @@ export interface components {
             description: string;
             /** Addressline */
             addressLine: string;
-            location: components["schemas"]["app__modules__catalog__schemas__Location"];
-            displayLocation: components["schemas"]["app__modules__catalog__schemas__Location"];
+            location: components["schemas"]["LatLng"];
+            displayLocation: components["schemas"]["LatLng"];
             locationPrecision: components["schemas"]["LocationPrecision"];
             genderPolicy: components["schemas"]["GenderPolicy"];
             meals: components["schemas"]["Meals"];
@@ -1245,10 +1254,12 @@ export interface components {
             /** Instantconfirm */
             instantConfirm: boolean;
             status: components["schemas"]["PropertyStatus"];
+            /** Nextstatuses */
+            nextStatuses: components["schemas"]["PropertyStatus"][];
             /** Publishedat */
             publishedAt: string | null;
             owner: components["schemas"]["OwnerInfo"];
-            locality: components["schemas"]["app__modules__catalog__schemas__LocalityInfo"];
+            locality: components["schemas"]["ListingLocality"];
             /** Amenities */
             amenities: string[];
             /** Categories */
@@ -1275,8 +1286,8 @@ export interface components {
             description: string;
             /** Addressline */
             addressLine: string;
-            location: components["schemas"]["app__modules__catalog__schemas__Location"];
-            displayLocation: components["schemas"]["app__modules__catalog__schemas__Location"];
+            location: components["schemas"]["LatLng"];
+            displayLocation: components["schemas"]["LatLng"];
             locationPrecision: components["schemas"]["LocationPrecision"];
             genderPolicy: components["schemas"]["GenderPolicy"];
             meals: components["schemas"]["Meals"];
@@ -1290,10 +1301,12 @@ export interface components {
             /** Instantconfirm */
             instantConfirm: boolean;
             status: components["schemas"]["PropertyStatus"];
+            /** Nextstatuses */
+            nextStatuses: components["schemas"]["PropertyStatus"][];
             /** Publishedat */
             publishedAt: string | null;
             owner: components["schemas"]["OwnerInfo"];
-            locality: components["schemas"]["app__modules__catalog__schemas__LocalityInfo"];
+            locality: components["schemas"]["ListingLocality"];
             /** Amenities */
             amenities: string[];
             /** Categories */
@@ -1302,6 +1315,13 @@ export interface components {
             media: components["schemas"]["ListingMedia"][];
             /** Problems */
             problems: string[];
+        };
+        /** ListingLocality */
+        ListingLocality: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
         };
         /** ListingMedia */
         ListingMedia: {
@@ -1341,7 +1361,7 @@ export interface components {
             slug: string;
             /** Name */
             name: string;
-            locality: components["schemas"]["app__modules__catalog__schemas__LocalityInfo"];
+            locality: components["schemas"]["ListingLocality"];
             status: components["schemas"]["PropertyStatus"];
             verificationStatus: components["schemas"]["VerificationStatus"];
             /**
@@ -1353,17 +1373,27 @@ export interface components {
         };
         /** LocalityDistance */
         LocalityDistance: {
-            locality: components["schemas"]["app__modules__geo__schemas__LocalityInfo"];
+            locality: components["schemas"]["LocalityInfo"];
             /** Distancem */
             distanceM: number;
+        };
+        /** LocalityInfo */
+        LocalityInfo: {
+            /** Slug */
+            slug: string;
+            /** City */
+            city: string;
+            /** Name */
+            name: string;
+            center: components["schemas"]["Location"];
         };
         /** LocalityList */
         LocalityList: {
             /** Items */
-            items: components["schemas"]["app__modules__geo__schemas__LocalityInfo"][];
+            items: components["schemas"]["LocalityInfo"][];
         };
         /** Location */
-        "Location-Input": {
+        Location: {
             /** Lat */
             lat: number;
             /** Lng */
@@ -1484,7 +1514,7 @@ export interface components {
             slug: string;
             /** Name */
             name: string;
-            location: components["schemas"]["app__modules__geo__schemas__Location"];
+            location: components["schemas"]["Location"];
             /** Lines */
             lines: components["schemas"]["MetroLineInfo"][];
         };
@@ -1671,7 +1701,7 @@ export interface components {
             name: string;
             /** Addressline */
             addressLine: string;
-            location: components["schemas"]["Location-Input"];
+            location: components["schemas"]["LatLng"];
             locationPrecision: components["schemas"]["LocationPrecision"];
             genderPolicy: components["schemas"]["GenderPolicy"];
             meals: components["schemas"]["Meals"];
@@ -1711,7 +1741,7 @@ export interface components {
             name?: string | null;
             /** Addressline */
             addressLine?: string | null;
-            location?: components["schemas"]["Location-Input"] | null;
+            location?: components["schemas"]["LatLng"] | null;
             locationPrecision?: components["schemas"]["LocationPrecision"] | null;
             genderPolicy?: components["schemas"]["GenderPolicy"] | null;
             meals?: components["schemas"]["Meals"] | null;
@@ -1979,37 +2009,6 @@ export interface components {
          * @enum {string}
          */
         VerificationStatus: "unverified" | "scheduled" | "verified" | "rejected" | "suspended";
-        /** LocalityInfo */
-        app__modules__catalog__schemas__LocalityInfo: {
-            /** Slug */
-            slug: string;
-            /** Name */
-            name: string;
-        };
-        /** Location */
-        app__modules__catalog__schemas__Location: {
-            /** Lat */
-            lat: number;
-            /** Lng */
-            lng: number;
-        };
-        /** LocalityInfo */
-        app__modules__geo__schemas__LocalityInfo: {
-            /** Slug */
-            slug: string;
-            /** City */
-            city: string;
-            /** Name */
-            name: string;
-            center: components["schemas"]["app__modules__geo__schemas__Location"];
-        };
-        /** Location */
-        app__modules__geo__schemas__Location: {
-            /** Lat */
-            lat: number;
-            /** Lng */
-            lng: number;
-        };
     };
     responses: never;
     parameters: never;

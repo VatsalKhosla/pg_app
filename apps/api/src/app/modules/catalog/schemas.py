@@ -26,7 +26,7 @@ Paise = Annotated[int, Field(ge=0)]
 Text = Annotated[str, Field(max_length=5_000)]
 
 
-class Location(ApiModel):
+class LatLng(ApiModel):
     lat: float = Field(ge=-90, le=90)
     lng: float = Field(ge=-180, le=180)
 
@@ -95,7 +95,7 @@ class PropertyCreate(ApiModel):
     locality: str = Field(max_length=64)
     name: str = Field(max_length=200)
     address_line: str = Field(max_length=500)
-    location: Location
+    location: LatLng
     location_precision: LocationPrecision
     gender_policy: GenderPolicy
     meals: Meals
@@ -112,7 +112,7 @@ class PropertyUpdate(ApiModel):
 
     name: str | None = Field(default=None, max_length=200)
     address_line: str | None = Field(default=None, max_length=500)
-    location: Location | None = None
+    location: LatLng | None = None
     location_precision: LocationPrecision | None = None
     gender_policy: GenderPolicy | None = None
     meals: Meals | None = None
@@ -210,6 +210,8 @@ class CategoryInfo(ApiModel):
     owner_min_rent_paise: int | None
     owner_max_rent_paise: int | None
     security_deposit_paise: int
+    # How many beds each of its rooms can hold: its occupancy as a number.
+    beds_per_room: int
     mandatory_charges: list[Charge]
     # What the charges come to each month (metered ones at their estimate), and once.
     monthly_charges_paise: int
@@ -236,7 +238,7 @@ class ListingMedia(ApiModel):
     renditions: list[Rendition]
 
 
-class LocalityInfo(ApiModel):
+class ListingLocality(ApiModel):
     slug: str
     name: str
 
@@ -247,8 +249,8 @@ class ListingInfo(ApiModel):
     name: str
     description: str
     address_line: str
-    location: Location
-    display_location: Location
+    location: LatLng
+    display_location: LatLng
     location_precision: LocationPrecision
     gender_policy: GenderPolicy
     meals: Meals
@@ -259,9 +261,11 @@ class ListingInfo(ApiModel):
     society_permission: SocietyPermission
     instant_confirm: bool
     status: PropertyStatus
+    # The statuses it can move to from this one (POST .../status).
+    next_statuses: list[PropertyStatus]
     published_at: datetime | None
     owner: OwnerInfo
-    locality: LocalityInfo
+    locality: ListingLocality
     amenities: list[str]
     categories: list[CategoryInfo]
     media: list[ListingMedia]
@@ -278,7 +282,7 @@ class ListingSummary(ApiModel):
     id: uuid.UUID
     slug: str
     name: str
-    locality: LocalityInfo
+    locality: ListingLocality
     status: PropertyStatus
     verification_status: VerificationStatus
     updated_at: datetime

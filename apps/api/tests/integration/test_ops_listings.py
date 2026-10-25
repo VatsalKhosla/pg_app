@@ -261,6 +261,7 @@ def test_a_listing_is_built_a_step_at_a_time(run: Callable[..., Any]) -> None:
 
     created = steps["created"]
     assert created["status"] == "draft"
+    assert created["nextStatuses"] == ["published", "delisted"]
     assert created["possibleDuplicates"] == []
     assert created["id"] in steps["twin"]["possibleDuplicates"]
     assert created["location"] == _spot(300)
@@ -280,6 +281,7 @@ def test_a_listing_is_built_a_step_at_a_time(run: Callable[..., Any]) -> None:
         "oneTime",
     ]
     assert [bed["label"] for bed in category["rooms"][0]["beds"]] == ["A", "B"]
+    assert category["bedsPerRoom"] == 2
     assert (steps["third bed"].status_code, steps["third bed"].json()["code"]) == (
         409,
         "ROOM_FULL",
@@ -325,6 +327,7 @@ def test_a_listing_is_published_with_its_photos_in_order_and_its_history_kept(
     assert steps["media"]["media"][0]["renditions"][0]["url"].endswith("card.webp")
     assert steps["rejected media"].status_code == 422
     assert steps["published"]["status"] == "published"
+    assert steps["published"]["nextStatuses"] == ["paused", "delisted"]
     assert steps["published"]["problems"] == []
     assert steps["published"]["publishedAt"] is not None
     live = {item["id"]: item for item in steps["live"]["items"]}

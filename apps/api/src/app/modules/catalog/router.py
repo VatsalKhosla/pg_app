@@ -34,9 +34,10 @@ from app.modules.catalog.domain.listing import (
     PropertyStatus,
     SocietyPermission,
     VerificationStatus,
+    next_statuses,
 )
 from app.modules.catalog.domain.owners import KycStatus, OwnerStatus
-from app.modules.catalog.domain.rooms import BedStatus, CategoryStatus, Occupancy
+from app.modules.catalog.domain.rooms import BEDS_PER_ROOM, BedStatus, CategoryStatus, Occupancy
 from app.modules.catalog.policies import can_manage_listings
 from app.modules.catalog.schemas import (
     AmenitiesChange,
@@ -51,13 +52,13 @@ from app.modules.catalog.schemas import (
     Charge,
     History,
     HistoryEntry,
+    LatLng,
     ListingCreated,
     ListingInfo,
+    ListingLocality,
     ListingMedia,
     ListingPage,
     ListingSummary,
-    LocalityInfo,
-    Location,
     MediaChange,
     MeteredCharge,
     MonthlyCharge,
@@ -182,8 +183,8 @@ def _media(ref: MediaRef) -> ListingMedia:
     )
 
 
-def _point(point: Point) -> Location:
-    return Location(lat=point.lat, lng=point.lng)
+def _point(point: Point) -> LatLng:
+    return LatLng(lat=point.lat, lng=point.lng)
 
 
 def _listing(detail: ListingDetail) -> ListingInfo:
@@ -206,9 +207,10 @@ def _listing(detail: ListingDetail) -> ListingInfo:
         society_permission=SocietyPermission(found.society_permission),
         instant_confirm=found.instant_confirm,
         status=PropertyStatus(found.status),
+        next_statuses=next_statuses(PropertyStatus(found.status)),
         published_at=found.published_at,
         owner=_owner(detail.owner),
-        locality=LocalityInfo(slug=detail.locality.slug, name=detail.locality.name),
+        locality=ListingLocality(slug=detail.locality.slug, name=detail.locality.name),
         amenities=list(detail.amenities),
         categories=[
             CategoryInfo(
@@ -222,6 +224,7 @@ def _listing(detail: ListingDetail) -> ListingInfo:
                 owner_min_rent_paise=view.category.owner_min_rent_paise,
                 owner_max_rent_paise=view.category.owner_max_rent_paise,
                 security_deposit_paise=view.category.security_deposit_paise,
+                beds_per_room=BEDS_PER_ROOM[Occupancy(view.category.occupancy)],
                 mandatory_charges=[_charge_out(charge) for charge in view.charges],
                 monthly_charges_paise=monthly_total(view.charges),
                 one_time_charges_paise=one_time_total(view.charges),
@@ -315,7 +318,7 @@ async def listings(
                 id=item.property.public_id,
                 slug=item.property.slug,
                 name=item.property.name,
-                locality=LocalityInfo(slug=item.locality.slug, name=item.locality.name),
+                locality=ListingLocality(slug=item.locality.slug, name=item.locality.name),
                 status=PropertyStatus(item.property.status),
                 verification_status=VerificationStatus(item.property.verification_status),
                 updated_at=item.property.updated_at,

@@ -44,6 +44,14 @@ def test_fastapis_validation_error_schema_is_replaced_by_problem_details() -> No
     assert "requestId" in schemas["ProblemDetail"]["properties"]
 
 
+def test_schema_names_are_the_models_own() -> None:
+    # Two models with one name come out as app__modules__..., names that leak module paths into
+    # the generated client and change whenever code moves.
+    schemas = openapi_schema()["components"]["schemas"]
+
+    assert [name for name in schemas if "__" in name] == []
+
+
 def test_validation_errors_fall_under_the_problem_details_for_4xx() -> None:
     app = create_app(build_settings())
 
