@@ -5,7 +5,8 @@
  * ('strict-dynamic'); no 'unsafe-inline'. Next.js puts the nonce on its own scripts. Styles allow
  * inline because Radix (scroll locking), Google Maps (step 3.5) and server-rendered style
  * attributes add styles that can't carry a nonce. Injected CSS can't reach other sites either:
- * images, fonts and connections are limited to this site and the API (docs/adr/0011).
+ * images, fonts and connections are limited to this site, the API, the media and upload storage
+ * and the map tiles (docs/adr/0011, 0023).
  */
 
 /** The reporting group that `report-to` names; the proxy maps it to a URL. */
@@ -17,8 +18,10 @@ export interface CspOptions {
   isDevelopment: boolean;
   /** Only on HTTPS sites; on http://localhost it would break local production runs. */
   upgradeInsecureRequests: boolean;
-  /** Origins the browser may call besides its own: the API, error reporting. */
+  /** Origins the browser may call besides its own: the API, error reporting, uploads, tiles. */
   connectOrigins: readonly string[];
+  /** Origins images may come from besides this site: listing media, map tiles. */
+  imageOrigins?: readonly string[];
   /** Origins pages may frame (Cloudflare Turnstile's challenge); none unless given. */
   frameOrigins?: readonly string[];
   /** Where browsers report violations (Sentry's security endpoint), if anywhere. */
@@ -36,7 +39,7 @@ export function buildContentSecurityPolicy(options: CspOptions): string {
       ...(options.isDevelopment ? ["'unsafe-eval'"] : []),
     ],
     ["style-src", "'self'", "'unsafe-inline'"],
-    ["img-src", "'self'", "data:", "blob:"],
+    ["img-src", "'self'", "data:", "blob:", ...(options.imageOrigins ?? [])],
     ["font-src", "'self'"],
     ["connect-src", "'self'", ...options.connectOrigins],
     ["frame-src", ...(options.frameOrigins?.length ? options.frameOrigins : ["'none'"])],

@@ -11,11 +11,15 @@ export const SIGN_IN_PATH = "/sign-in" satisfies Route;
 export const STAFF_SIGN_IN_PATH = "/staff/sign-in" satisfies Route;
 export const ACCOUNT_PATH = "/account" satisfies Route;
 export const STAFF_HOME_PATH = "/staff" satisfies Route;
+export const OPS_HOME_PATH = "/ops" satisfies Route;
+export const OPS_LISTINGS_PATH = "/ops/listings" satisfies Route;
+export const OPS_NEW_LISTING_PATH = "/ops/listings/new" satisfies Route;
 
 /** Areas only for signed-in people, and where each sends people who aren't. */
 const PROTECTED_AREAS: readonly { prefix: Route; signIn: Route }[] = [
   { prefix: ACCOUNT_PATH, signIn: SIGN_IN_PATH },
   { prefix: STAFF_HOME_PATH, signIn: STAFF_SIGN_IN_PATH },
+  { prefix: OPS_HOME_PATH, signIn: STAFF_SIGN_IN_PATH },
 ];
 const SIGN_IN_PATHS: readonly string[] = [SIGN_IN_PATH, STAFF_SIGN_IN_PATH];
 

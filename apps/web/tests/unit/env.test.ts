@@ -47,3 +47,45 @@ describe("publicEnv", () => {
     await expect(loadEnv()).rejects.toThrow(/NEXT_PUBLIC_API_URL/);
   });
 });
+
+async function loadParser() {
+  vi.resetModules();
+  return import("@/config/env");
+}
+
+describe("parseMapTiles", () => {
+  it("uses OpenStreetMap's servers for local development only", async () => {
+    const { OSM_TILES, parseMapTiles } = await loadParser();
+
+    expect(parseMapTiles(undefined, undefined, "local")).toBe(OSM_TILES);
+    expect(OSM_TILES.attribution).toContain("OpenStreetMap");
+    for (const environment of ["test", "staging", "production"] as const) {
+      expect(parseMapTiles(undefined, undefined, environment)).toBeUndefined();
+    }
+  });
+
+  it("takes a provider's https template with the credit its terms ask for, as text", async () => {
+    const { parseMapTiles } = await loadParser();
+
+    expect(
+      parseMapTiles("https://tiles.example.test/{z}/{x}/{y}.png", "© Example <Maps>", "production"),
+    ).toEqual({
+      url: "https://tiles.example.test/{z}/{x}/{y}.png",
+      attribution: "© Example &#60;Maps&#62;",
+    });
+  });
+
+  it("refuses tiles without their credit, or a template that isn't one", async () => {
+    const { parseMapTiles } = await loadParser();
+
+    expect(() =>
+      parseMapTiles("https://tiles.example.test/{z}/{x}/{y}.png", undefined, "production"),
+    ).toThrow(/ATTRIBUTION/);
+    expect(() =>
+      parseMapTiles("http://tiles.example.test/{z}/{x}/{y}.png", "©", "production"),
+    ).toThrow(/https/);
+    expect(() => parseMapTiles("https://tiles.example.test/tile.png", "©", "production")).toThrow(
+      /\{z\}/,
+    );
+  });
+});

@@ -33,9 +33,53 @@ function optional(value: string | undefined): string | undefined {
   return value === undefined || value === "" ? undefined : value;
 }
 
+/** Raster map tiles and the credit their licence requires. */
+export interface MapTiles {
+  /** A {z}/{x}/{y} template for 256 px tiles. */
+  url: string;
+  /** HTML for the map's corner. */
+  attribution: string;
+}
+
+/** OpenStreetMap's own tile servers: fine for development, too light for a live site. */
+export const OSM_TILES: MapTiles = {
+  url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+  attribution:
+    '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+};
+
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (character) => `&#${String(character.charCodeAt(0))};`);
+}
+
+/**
+ * The pin picker's tiles. OpenStreetMap's servers are for light use only (their tile policy), so
+ * they're the default for local development alone; a deployed site names its provider's tiles,
+ * with the credit their terms ask for, or gets no map (coordinates and GPS only).
+ */
+export function parseMapTiles(
+  url: string | undefined,
+  attribution: string | undefined,
+  environment: AppEnvironment,
+): MapTiles | undefined {
+  if (url === undefined) return environment === "local" ? OSM_TILES : undefined;
+  if (
+    !/^https:\/\/[^\s]+$/u.test(url) ||
+    !["{z}", "{x}", "{y}"].every((part) => url.includes(part))
+  ) {
+    throw new Error("NEXT_PUBLIC_MAP_TILES_URL must be an https:// template with {z}, {x} and {y}");
+  }
+  if (attribution === undefined) {
+    throw new Error("NEXT_PUBLIC_MAP_TILES_ATTRIBUTION must credit the tiles, as their terms ask");
+  }
+  return { url, attribution: escapeHtml(attribution) };
+}
+
+const appEnv = parseEnvironment(process.env.NEXT_PUBLIC_APP_ENV);
+
 // Each variable is written out in full: Next.js inlines only literal process.env.NEXT_PUBLIC_*.
 export const publicEnv = {
-  appEnv: parseEnvironment(process.env.NEXT_PUBLIC_APP_ENV),
+  appEnv,
   siteUrl: parseUrl(
     "NEXT_PUBLIC_SITE_URL",
     process.env.NEXT_PUBLIC_SITE_URL,
@@ -54,4 +98,22 @@ export const publicEnv = {
    * development and tests, where the API checks nothing either).
    */
   turnstileSiteKey: optional(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY),
+  /** Where listing photos are read from: the CDN when deployed, the public bucket locally. */
+  mediaUrl: parseUrl(
+    "NEXT_PUBLIC_MEDIA_URL",
+    process.env.NEXT_PUBLIC_MEDIA_URL,
+    "http://127.0.0.1:8333/pg-platform-media",
+  ),
+  /** Where the browser posts uploads: the private bucket's storage (ADR 0022). */
+  uploadOrigin: parseUrl(
+    "NEXT_PUBLIC_UPLOAD_ORIGIN",
+    process.env.NEXT_PUBLIC_UPLOAD_ORIGIN,
+    "http://127.0.0.1:8333",
+  ),
+  /** The ops pin picker's map tiles, if it gets a map (see parseMapTiles). */
+  mapTiles: parseMapTiles(
+    optional(process.env.NEXT_PUBLIC_MAP_TILES_URL),
+    optional(process.env.NEXT_PUBLIC_MAP_TILES_ATTRIBUTION),
+    appEnv,
+  ),
 } as const;

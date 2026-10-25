@@ -83,8 +83,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # The browser tests sign in against the real API (scripts/e2e-api.sh), on PostgreSQL and
-      # Valkey from infra/docker-compose.yml.
+      # The browser tests sign in against the real API and its worker (scripts/e2e-api.sh), on
+      # PostgreSQL, Valkey and SeaweedFS from infra/docker-compose.yml.
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: ${{ env.UV_VERSION }}
@@ -108,7 +108,9 @@ jobs:
             apps/web/playwright-report/
             apps/web/test-results/
             apps/web/.e2e-api.log
-          # The API's log is a dotfile, which the action leaves out unless told otherwise.
+            apps/web/.e2e-worker.log
+          # The API's and worker's logs are dotfiles, which the action leaves out unless told
+          # otherwise.
           include-hidden-files: true
           retention-days: 14
           if-no-files-found: ignore

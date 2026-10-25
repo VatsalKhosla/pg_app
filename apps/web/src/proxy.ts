@@ -10,7 +10,15 @@ const sentry =
     ? undefined
     : sentryEndpoints(publicEnv.sentryDsn, publicEnv.appEnv);
 
-const connectOrigins = [publicEnv.apiUrl.origin, ...(sentry === undefined ? [] : [sentry.origin])];
+const tilesOrigin =
+  publicEnv.mapTiles === undefined ? [] : [new URL(publicEnv.mapTiles.url).origin];
+const connectOrigins = [
+  publicEnv.apiUrl.origin,
+  publicEnv.uploadOrigin.origin,
+  ...tilesOrigin,
+  ...(sentry === undefined ? [] : [sentry.origin]),
+];
+const imageOrigins = [publicEnv.mediaUrl.origin, ...tilesOrigin];
 /** Cloudflare Turnstile's challenge runs in a frame from here (src/components/auth/turnstile.tsx). */
 export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 const frameOrigins = publicEnv.turnstileSiteKey === undefined ? [] : [TURNSTILE_ORIGIN];
@@ -42,6 +50,7 @@ export function proxy(request: NextRequest): NextResponse {
     isDevelopment: process.env.NODE_ENV === "development",
     upgradeInsecureRequests: publicEnv.siteUrl.protocol === "https:",
     connectOrigins,
+    imageOrigins,
     frameOrigins,
     reportUrl: sentry?.securityReportUrl,
   });

@@ -10,7 +10,13 @@ import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getServerApi } from "@/lib/api/server";
 
-import { SESSION_COOKIE, SIGN_IN_PATH, STAFF_SIGN_IN_PATH, signInUrl } from "./routes";
+import {
+  SESSION_COOKIE,
+  SIGN_IN_PATH,
+  STAFF_HOME_PATH,
+  STAFF_SIGN_IN_PATH,
+  signInUrl,
+} from "./routes";
 
 export type Me = Schemas["Me"];
 
@@ -56,5 +62,15 @@ export async function requireSession(here: Route): Promise<Me> {
 export async function requireStaff(here: Route): Promise<Me> {
   const me = await getSession();
   if (me === null || !isStaff(me)) redirect(signInUrl(STAFF_SIGN_IN_PATH, here));
+  return me;
+}
+
+/**
+ * Ops or an admin in a staff session: the ops console's people. Other staff go to the staff home,
+ * which shows what their roles allow (the API refuses them anyway).
+ */
+export async function requireOps(here: Route): Promise<Me> {
+  const me = await requireStaff(here);
+  if (!me.roles.some((role) => role === "ops" || role === "admin")) redirect(STAFF_HOME_PATH);
   return me;
 }

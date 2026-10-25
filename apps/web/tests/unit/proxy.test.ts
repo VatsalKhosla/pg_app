@@ -28,16 +28,38 @@ describe("proxy", () => {
     expect(nonceOf(next.headers.get("content-security-policy"))).not.toBe(nonce);
   });
 
-  it("lets the browser call the API", async () => {
+  it("lets the browser call the API, post uploads and load media and map tiles", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_ENV", "production");
     vi.stubEnv("NEXT_PUBLIC_API_URL", "https://api.example.test");
+    vi.stubEnv("NEXT_PUBLIC_UPLOAD_ORIGIN", "https://uploads.example.test");
+    vi.stubEnv("NEXT_PUBLIC_MEDIA_URL", "https://media.example.test/listings");
+    vi.stubEnv("NEXT_PUBLIC_MAP_TILES_URL", "https://tiles.example.test/{z}/{x}/{y}.png");
+    vi.stubEnv("NEXT_PUBLIC_MAP_TILES_ATTRIBUTION", "© Example Maps");
     const { proxy } = await loadProxy();
 
-    const policy = proxy(new NextRequest("http://localhost:3000/")).headers.get(
+    const policy = proxy(new NextRequest("https://www.example.test/")).headers.get(
       "content-security-policy",
     );
 
-    expect(policy).toContain("connect-src 'self' https://api.example.test;");
+    expect(policy).toContain(
+      "connect-src 'self' https://api.example.test https://uploads.example.test https://tiles.example.test;",
+    );
+    expect(policy).toContain(
+      "img-src 'self' data: blob: https://media.example.test https://tiles.example.test;",
+    );
     expect(policy).not.toContain("report-uri");
+  });
+
+  it("allows no map tiles where none are set up", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_MAP_TILES_URL", "");
+    const { proxy } = await loadProxy();
+
+    const policy =
+      proxy(new NextRequest("https://www.example.test/")).headers.get("content-security-policy") ??
+      "";
+
+    expect(policy).not.toContain("tile");
   });
 
   it("sends Sentry's origin and violation reports there when error reporting is on", async () => {
