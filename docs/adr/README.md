@@ -26,5 +26,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0020](0020-geo-reference-data.md) | Geo reference data: places chosen by hand, coordinates generated from OpenStreetMap and lines from Wikidata under their usage policies, loaded idempotently, served publicly | Accepted |
 | [0021](0021-catalog-schema.md) | The catalog: paise checked twice, typed mandatory charges, the listing's state machine, beds capped by occupancy, display points from a CSPRNG and public distances only from them | Accepted |
 | [0022](0022-media-pipeline.md) | Media: presigned uploads straight to storage, originals kept private and deleted, every variant re-encoded without metadata, videos remuxed without their location, signed links for private files | Accepted |
+| [0023](0023-ops-console.md) | The ops console: `/v1/ops` answers with the whole listing and what may happen next, forms send only what changed, a pin by GPS, coordinates or a map behind `MapProvider` (MapLibre first, tiles as configuration), uploads straight to storage | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

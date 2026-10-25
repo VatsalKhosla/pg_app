@@ -178,8 +178,15 @@ Start the slow ones in week 1.
   - **Not accepted:** HEIC (iPhones send JPEG when it isn't offered).
   - **Local buckets:** `make seed` creates them (ADR 0022).
 
-- [ ] **2.4 Ops console: listings.** `/ops` screens to create and edit properties, room categories, rooms and beds; pin picker (drag the pin, or use the agent's GPS); amenities and house rules; photo and video upload with ordering; publish and unpause; full audit trail.
+- [x] **2.4 Ops console: listings.** `/ops` screens to create and edit properties, room categories, rooms and beds; pin picker (drag the pin, or use the agent's GPS); amenities and house rules; photo and video upload with ordering; publish and unpause; full audit trail.
   *Done when* ops can create a complete listing from a phone in under 10 minutes.
+  *Note (2026-10-25):*
+  - **API:** `/v1/ops/*` for ops and admins in a staff session. Owners are added by phone. A new draft lists listings pinned within 30 m as possible duplicates. Every change answers with the whole listing, including the statuses it can move to (`nextStatuses`) and what stops it being published.
+  - **Pages:** listings by status or search; a new listing (owner, locality, building); and the listing's page (status, details, rooms and beds with their charges, amenities, photos and videos, history).
+  - **Forms** send only what changed, so the audit history says what changed. The API's field errors show next to their fields. The browser only turns typed rupees into paise.
+  - **The pin:** GPS, coordinates or a map. The map is behind `MapProvider`: MapLibre 6 with raster tiles, OpenStreetMap's for local development only. A deployed site has no map until the founders choose a provider (ADR 0023).
+  - **Photos and videos** go straight to storage, join the listing when the worker has prepared them, and are ordered with the first as the cover.
+  - **Tested on a phone:** the browser test signs in as ops with an authenticator, builds and publishes a complete listing, photo included, in under a minute, and axe checks the pages.
 
 - [ ] **2.5 Field verification workflow.** Mobile checklist for agents: building age and condition, cracks, exits, extinguishers, CCTV, warden, women's-safety features, licence number, society permission; GPS and time captured; result sets `verification_status`. Unverified properties can't be published while `verified_only` is the default.
   *Done when* a property moves unverified → scheduled → verified with a stored report and photos.

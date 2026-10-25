@@ -23,6 +23,10 @@ Run the commands where the API's settings are: `make manage args="…"` locally,
 
 They then sign in on the web app's staff sign-in page (step 1.6). A staff session ends 12 hours after sign-in.
 
+What each role opens:
+- `ops` and `admin`: the ops console at `/ops`, where listings are built and published (ADR 0023).
+- `field_agent`: the staff home for now; verification screens come later.
+
 ## Take access away
 
 - **All of it:** `make manage args="staff remove +91XXXXXXXXXX"`. Their staff sessions stop working at their next request, and their authenticator app is removed.
