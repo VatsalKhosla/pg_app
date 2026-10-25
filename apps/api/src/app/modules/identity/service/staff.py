@@ -32,11 +32,14 @@ from app.core.pagination import split_page
 from app.core.ratelimit import RateLimit, enforce
 from app.modules.identity.domain.staff import IdentityProvider, google_account_allowed
 from app.modules.identity.domain.totp import (
+    DRIFT_STEPS,
     SALT_BYTES,
     SECRET_BYTES,
+    code_at,
     matching_step,
     provisioning_uri,
     secret_text,
+    time_step,
 )
 from app.modules.identity.errors import (
     StaffAccountNotAllowedError,
@@ -399,6 +402,32 @@ class StaffAdmin:
             credential.last_used_step = step
             await self._audit(user, "staff.authenticator_enrolled", {})
             return True
+
+    async def confirm_without_app(self, phone_e164: str) -> bool:
+        """Confirm the authenticator just enrolled with the code its app would show now. Local
+        development only (the command refuses when deployed): there, nobody needs the app."""
+        return await self.confirm_authenticator(phone_e164, await self._code(phone_e164))
+
+    async def code_now(self, phone_e164: str) -> str:
+        """The code an authenticator app would show now, which signs in: local development only
+        (the command refuses when deployed). Each step's code works once, so after one is used
+        this is the next step's, which still counts."""
+        return await self._code(phone_e164, confirmed=True)
+
+    async def _code(self, phone_e164: str, *, confirmed: bool = False) -> str:
+        async with self._db.begin():
+            user = await self._staff_user(phone_e164)
+            credential = await self._totp.for_user(user.id)
+            if credential is None or (confirmed and credential.confirmed_at is None):
+                msg = "no authenticator app is set up for that account"
+                raise StaffAdminError(msg)
+            current = time_step(self._clock.now())
+            used = credential.last_used_step
+            step = current if used is None else max(current, used + 1)
+            if step > current + DRIFT_STEPS:
+                msg = "every code that counts now has been used; ask again in 30 seconds"
+                raise StaffAdminError(msg)
+            return code_at(totp_secret(self._secret, credential.salt), step)
 
     async def remove_authenticator(self, phone_e164: str) -> bool:
         async with self._db.begin():

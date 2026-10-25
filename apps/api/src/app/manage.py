@@ -7,7 +7,8 @@ change is written to the audit log.
     staff add PHONE --role ROLE [--role ROLE ...] [--email ADDRESS] [--name NAME]
     staff remove PHONE [--role ROLE ...]
     staff list
-    staff enrol-authenticator PHONE
+    staff enrol-authenticator PHONE [--without-app]
+    staff code PHONE
     staff remove-authenticator PHONE
     staff remove-google PHONE
     geo load [--file PATH]
@@ -15,6 +16,10 @@ change is written to the audit log.
 
 Making someone staff is the only way to staff sign-in: Google sign-in also needs their address
 (``--email``), and the fallback needs an authenticator app (``enrol-authenticator``).
+
+In local development nobody needs the app: ``enrol-authenticator --without-app`` confirms the
+authenticator itself, and ``staff code`` prints the code that signs in now. Both refuse in a
+deployed environment, where a second factor must stay on the person's own phone.
 
 ``geo load`` loads the geo reference data (cities, localities, campuses, metro lines and stations)
 from app/modules/geo/data/places.json. It changes only what differs, so it is safe to run on every
@@ -76,6 +81,16 @@ def _parser() -> argparse.ArgumentParser:
         "enrol-authenticator", help="set up an authenticator app for the fallback sign-in"
     )
     enrol.add_argument("phone")
+    enrol.add_argument(
+        "--without-app",
+        action="store_true",
+        help="local development only: confirm it here, then get codes with 'staff code'",
+    )
+
+    code = staff.add_parser(
+        "code", help="local development only: the authenticator code that signs in now"
+    )
+    code.add_argument("phone")
 
     drop = staff.add_parser("remove-authenticator", help="remove an authenticator app")
     drop.add_argument("phone")
@@ -119,11 +134,19 @@ class _Commands:
         secret: bytes,
         out: TextIO,
         read_code: Callable[[], str],
+        deployed: bool,
     ) -> None:
         self._db = db
         self._admin = StaffAdmin(db, clock, secret=secret)
         self._out = out
         self._read_code = read_code
+        self._deployed = deployed
+
+    def _locally(self, what: str) -> None:
+        """Refuse ``what`` outside local development: it hands out a second factor."""
+        if self._deployed:
+            msg = f"{what} works in local development only; here, use the authenticator app"
+            raise StaffAdminError(msg)
 
     def _say(self, line: str) -> None:
         self._out.write(line + "\n")
@@ -150,8 +173,17 @@ class _Commands:
                 )
             case "list":
                 await self._list()
+            case "enrol-authenticator" if args.without_app:
+                self._locally("--without-app")
+                await self._admin.enrol_authenticator(_phone(args.phone))
+                await self._admin.confirm_without_app(_phone(args.phone))
+                self._say("Authenticator set up without an app (local development only).")
+                self._say("At the staff sign-in, get each code with: staff code PHONE")
             case "enrol-authenticator":
                 return await self._enrol(_phone(args.phone))
+            case "code":
+                self._locally("staff code")
+                self._say(await self._admin.code_now(_phone(args.phone)))
             case "remove-authenticator":
                 removed = await self._admin.remove_authenticator(_phone(args.phone))
                 self._say("Authenticator removed." if removed else "No authenticator was set up.")
@@ -238,6 +270,7 @@ async def _main(
                 secret=settings.secret_key.get_secret_value().encode(),
                 out=out,
                 read_code=read_code,
+                deployed=settings.is_deployed,
             )
             return await commands.run(args)
     except StaffAdminError as error:

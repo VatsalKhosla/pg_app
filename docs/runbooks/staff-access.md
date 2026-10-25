@@ -27,6 +27,19 @@ What each role opens:
 - `ops` and `admin`: the ops console at `/ops`, where listings are built and published (ADR 0023).
 - `field_agent`: the staff home for now; verification screens come later.
 
+## Local development: staff without an authenticator app
+
+To try the staff tools on your own machine without setting up an app:
+
+```sh
+make dev-staff phone=98XXXXXXXX   # once: ops, admin and field agent, the authenticator confirmed
+make staff-code phone=98XXXXXXXX  # at each staff sign-in: the code that works now
+```
+
+Then sign in on the staff sign-in page with the phone: the page shows the phone code itself (no
+SMS is sent locally), and the authenticator step takes the code `make staff-code` prints. Both
+commands refuse in staging and production, where the second factor stays on the person's phone.
+
 ## Take access away
 
 - **All of it:** `make manage args="staff remove +91XXXXXXXXXX"`. Their staff sessions stop working at their next request, and their authenticator app is removed.

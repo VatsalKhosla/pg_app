@@ -755,3 +755,37 @@ def test_operators_manage_staff_from_the_command_line(
         ("staff.authenticator_enrolled", "system", {"via": "cli"}),
         ("staff.roles_removed", "system", {"roles": ["ops"], "via": "cli"}),
     ]
+
+
+def test_local_development_signs_staff_in_without_an_authenticator_app(
+    make_settings: SettingsFactory,
+    database_url: str,
+    clock: FrozenClock,
+    run: Callable[..., Any],
+) -> None:
+    settings = make_settings(database_url=database_url)
+    phone = _new_phone()
+    out = io.StringIO()
+
+    def cli(*argv: str, using: Settings = settings) -> int:
+        return manage(list(argv), settings=using, clock=clock, out=out)
+
+    assert cli("staff", "add", phone, "--role", "ops") == 0
+    assert cli("staff", "enrol-authenticator", phone, "--without-app") == 0
+    # Confirming used this step's code, so this is the next step's, which still counts.
+    assert cli("staff", "code", phone) == 0
+    code = out.getvalue().strip().splitlines()[-1]
+    deployed = settings.model_copy(update={"app_env": "production"})
+    assert cli("staff", "code", phone, using=deployed) == 1
+    assert cli("staff", "enrol-authenticator", phone, "--without-app", using=deployed) == 1
+
+    async def scenario(app: FastAPI, browser: Browser) -> int:
+        browser.cookies[SESSION_COOKIE] = await _session(app, phone)
+        response = await browser.request(
+            "POST", "/v1/auth/staff/totp", csrf=True, json={"code": code}
+        )
+        return response.status_code
+
+    assert re.fullmatch(r"[0-9]{6}", code)
+    assert run(scenario) == 200
+    assert out.getvalue().count("works in local development only") == 2

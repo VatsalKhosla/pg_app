@@ -96,6 +96,17 @@ migration: ## Generate a migration from model changes: make migration m="add boo
 manage: env ## Run an operator command on this environment's database: make manage args="staff list" (args="--help" lists them)
 	$(API) python -m app.manage $(args)
 
+.PHONY: dev-staff
+dev-staff: env ## Local only: make phone=98XXXXXXXX ops, admin and field agent, with an authenticator that needs no app
+	@[ -n "$(phone)" ] || { echo 'usage: make dev-staff phone=98XXXXXXXX' >&2; exit 2; }
+	$(API) python -m app.manage staff add $(phone) --role ops --role admin --role field_agent
+	$(API) python -m app.manage staff enrol-authenticator $(phone) --without-app
+
+.PHONY: staff-code
+staff-code: ## Local only: the authenticator code that signs phone=98XXXXXXXX in now
+	@[ -n "$(phone)" ] || { echo 'usage: make staff-code phone=98XXXXXXXX' >&2; exit 2; }
+	@$(API) python -m app.manage staff code $(phone)
+
 .PHONY: seed
 seed: migrate ## Load the sample data (the geo reference data from OpenStreetMap) and create the local storage buckets; again is fine
 	$(API) python -m app.manage geo load
