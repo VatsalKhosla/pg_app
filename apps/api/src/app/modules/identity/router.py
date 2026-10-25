@@ -184,6 +184,7 @@ async def request_otp(body: OtpRequest, request: Request, otp: OtpServiceDep) ->
         challenge_id=issued.public_id,
         expires_at=issued.expires_at,
         resend_after=issued.resend_after,
+        development_code=issued.development_code,
     )
 
 

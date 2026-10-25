@@ -111,6 +111,9 @@ class OtpChallengeIssued(ApiModel):
     expires_at: datetime
     # When another code may be asked for.
     resend_after: datetime
+    # The code itself, in local development only: OTP_SENDER=console sends no text message, and
+    # deployed environments refuse that sender. Null wherever codes are really sent.
+    development_code: str | None = None
 
 
 class ConsentInput(ApiModel):

@@ -87,6 +87,7 @@
     "code": {
       "title": "Enter the code",
       "intro": "We sent a six-digit code to {phone}. It works for 5 minutes.",
+      "developmentCode": "This is local development, so no text message is sent. Your code is {code}.",
       "label": "Six-digit code",
       "invalid": "The code is six digits.",
       "submit": "Continue",

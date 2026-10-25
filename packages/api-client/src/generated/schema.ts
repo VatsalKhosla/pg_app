@@ -1585,6 +1585,8 @@ export interface components {
              * Format: date-time
              */
             resendAfter: string;
+            /** Developmentcode */
+            developmentCode?: string | null;
         };
         /**
          * OtpRequest

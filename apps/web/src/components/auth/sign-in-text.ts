@@ -76,6 +76,8 @@ export async function signInText(): Promise<SignInText> {
       title: t("code.title"),
       // The number is filled in by the browser, which knows it.
       intro: t.raw("code.intro") as string,
+      // So is the code, when local development shows it (no text message is sent there).
+      developmentCode: t.raw("code.developmentCode") as string,
       label: t("code.label"),
       invalid: t("code.invalid"),
       submit: t("code.submit"),

@@ -62,6 +62,8 @@ SAFE_METHODS: Final = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
 class _NoSms:
+    shows_code = False
+
     async def send(self, phone_e164: str, code: str) -> None:
         return None
 

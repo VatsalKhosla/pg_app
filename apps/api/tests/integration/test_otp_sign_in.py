@@ -22,6 +22,7 @@ from app.core.clock import FrozenClock
 from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
 from app.core.csrf import issue_csrf_token
 from app.main import create_app
+from app.modules.identity.adapters.console_otp import ConsoleOtpSender
 from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.models import OtpChallenge, User
 from app.modules.identity.repository import UserRepository
@@ -39,6 +40,9 @@ START = datetime(2027, 7, 14, 10, 0, tzinfo=UTC)
 class RecordingSender:
     """Keeps the codes that would have been texted, by phone."""
 
+    # As a real SMS provider: the code goes only to the phone.
+    shows_code = False
+
     def __init__(self) -> None:
         self.sent: list[tuple[str, str]] = []
 
@@ -50,6 +54,8 @@ class RecordingSender:
 
 
 class FailingSender:
+    shows_code = False
+
     async def send(self, phone_e164: str, code: str) -> None:
         msg = "SMS gateway timed out"
         raise TimeoutError(msg)
@@ -167,7 +173,9 @@ def test_signing_in_with_a_phone_code_end_to_end(
         requested = await _request_code(client, f"0{mobile[:5]} {mobile[5:]}")
         assert requested.status_code == 202
         challenge = requested.json()
-        assert set(challenge) == {"challengeId", "expiresAt", "resendAfter"}
+        assert set(challenge) == {"challengeId", "expiresAt", "resendAfter", "developmentCode"}
+        # A real sender's code goes to the phone and nowhere else.
+        assert challenge["developmentCode"] is None
         assert sender.sent == [(f"+91{mobile}", sender.last_code())]
         assert len(sender.last_code()) == 6
 
@@ -390,6 +398,20 @@ def test_a_failed_sms_can_be_retried_at_once(
         assert retried.status_code == 202
 
     run(scenario)
+
+
+def test_local_development_shows_the_code_it_never_sends(run: Callable[..., Any]) -> None:
+    async def scenario(app: FastAPI, client: httpx.AsyncClient) -> tuple[str, httpx.Response]:
+        app.state.otp_sender = ConsoleOtpSender()
+        requested = (await _request_code(client, _new_mobile())).json()
+        code = requested["developmentCode"]
+        return code, await _verify(client, requested["challengeId"], code)
+
+    code, signed_in = run(scenario)
+
+    assert len(code) == 6
+    assert code.isdigit()
+    assert signed_in.status_code == 200
 
 
 def test_phone_sign_in_is_off_without_an_sms_provider(run: Callable[..., Any]) -> None:

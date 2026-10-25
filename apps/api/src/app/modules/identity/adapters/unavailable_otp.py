@@ -6,5 +6,7 @@ from app.core.errors import ServiceUnavailableError
 
 
 class UnavailableOtpSender:
+    shows_code = False
+
     async def send(self, phone_e164: str, code: str) -> None:
         raise ServiceUnavailableError("Signing in by phone isn't available yet.")

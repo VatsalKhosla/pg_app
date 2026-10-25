@@ -33,6 +33,8 @@ ACCOUNT_ONLY = {"noticeVersion": NOTICE_VERSION, "purposes": ["account"]}
 
 
 class RecordingSender:
+    shows_code = False
+
     def __init__(self) -> None:
         self.codes: list[str] = []
 

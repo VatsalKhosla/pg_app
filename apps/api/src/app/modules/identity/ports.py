@@ -10,6 +10,10 @@ class OtpSender(Protocol):
     """Delivers a sign-in code to a phone. Production uses an SMS provider with a DLT-registered
     template (the founders choose it); development writes the code to the log."""
 
+    # Whether the code may go back to whoever asked for it, because nothing really sends it: only
+    # the console sender, which settings refuse in every deployed environment.
+    shows_code: bool
+
     async def send(self, phone_e164: str, code: str) -> None:
         """Deliver ``code``, or raise if it couldn't be handed to the provider."""
         ...

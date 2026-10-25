@@ -4906,6 +4906,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Resendafter"
+          },
+          "developmentCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Developmentcode"
           }
         },
         "additionalProperties": false,

@@ -38,6 +38,8 @@ export interface SignInText {
   code: {
     title: string;
     intro: string;
+    /** Shown when the API hands back the code: local development, where no SMS is sent. */
+    developmentCode: string;
     label: string;
     invalid: string;
     submit: string;
@@ -378,6 +380,11 @@ function CodeStep({
         void form.handleSubmit(check)(event);
       }}
     >
+      {challenge.developmentCode ? (
+        <p className="rounded-md border border-dashed p-3 text-sm">
+          {text.code.developmentCode.replace("{code}", challenge.developmentCode)}
+        </p>
+      ) : null}
       <div className="space-y-2">
         <label htmlFor={`${id}-code`} className="block text-sm font-medium">
           {text.code.label}

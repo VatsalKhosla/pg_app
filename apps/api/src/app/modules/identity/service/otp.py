@@ -86,6 +86,8 @@ class IssuedChallenge:
     public_id: uuid.UUID
     expires_at: datetime
     resend_after: datetime
+    # The code itself, only from a sender that shows it (local development's console sender).
+    development_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -187,6 +189,7 @@ class OtpService:
             public_id=challenge.public_id,
             expires_at=challenge.expires_at,
             resend_after=now + RESEND_COOLDOWN,
+            development_code=code if self._sender.shows_code else None,
         )
 
     async def verify(

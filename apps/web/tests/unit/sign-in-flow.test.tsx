@@ -30,6 +30,7 @@ const text: SignInText = {
   code: {
     title: "Enter the code",
     intro: "Sent to {phone}.",
+    developmentCode: "Local development: the code is {code}.",
     label: "Six-digit code",
     invalid: "The code is six digits.",
     submit: "Continue",
@@ -209,6 +210,24 @@ describe("SignInFlow", () => {
       expect(assign).toHaveBeenCalledWith("/privacy");
     });
     expect(client.privacyNotice).not.toHaveBeenCalled();
+  });
+
+  it("shows the code where nothing sends it, and only there", async () => {
+    vi.mocked(client.requestCode).mockResolvedValue({ ...challenge, developmentCode: "482916" });
+    render(<SignInFlow text={text} next="/privacy" mode="people" />);
+
+    await sendCode();
+
+    expect(screen.getByText("Local development: the code is 482916.")).toBeTruthy();
+  });
+
+  it("shows no code when the API sends one by text", async () => {
+    vi.mocked(client.requestCode).mockResolvedValue({ ...challenge, developmentCode: null });
+    render(<SignInFlow text={text} next="/privacy" mode="people" />);
+
+    await sendCode();
+
+    expect(screen.queryByText(/Local development/)).toBeNull();
   });
 
   it("shows a number the API refuses next to its field", async () => {
