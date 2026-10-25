@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 
 import { ConsentPrompt } from "@/components/account/consent-prompt";
 import { DataRequests } from "@/components/account/data-requests";
@@ -31,11 +31,22 @@ export default async function AccountPage() {
     (consent) => consent.purpose === "marketing" && consent.withdrawnAt === null,
   );
   const t = await getTranslations("Account");
-  const locale = await getLocale();
-  const dates = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
+  // next-intl's formatter, so times show in India's time zone (src/i18n/config.ts), not the
+  // server's.
+  const format = await getFormatter();
   const formatDate = Object.fromEntries(
     requests.items.flatMap((item) =>
-      item.expiresAt === null ? [] : [[item.expiresAt, dates.format(new Date(item.expiresAt))]],
+      item.expiresAt === null
+        ? []
+        : [
+            [
+              item.expiresAt,
+              format.dateTime(new Date(item.expiresAt), {
+                dateStyle: "medium",
+                timeStyle: "short",
+              }),
+            ],
+          ],
     ),
   );
 
