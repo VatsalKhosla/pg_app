@@ -188,8 +188,15 @@ Start the slow ones in week 1.
   - **Photos and videos** go straight to storage, join the listing when the worker has prepared them, and are ordered with the first as the cover.
   - **Tested on a phone:** the browser test signs in as ops with an authenticator, builds and publishes a complete listing, photo included, in under a minute, and axe checks the pages.
 
-- [ ] **2.5 Field verification workflow.** Mobile checklist for agents: building age and condition, cracks, exits, extinguishers, CCTV, warden, women's-safety features, licence number, society permission; GPS and time captured; result sets `verification_status`. Unverified properties can't be published while `verified_only` is the default.
+- [x] **2.5 Field verification workflow.** Mobile checklist for agents: building age and condition, cracks, exits, extinguishers, CCTV, warden, women's-safety features, licence number, society permission; GPS and time captured; result sets `verification_status`. Unverified properties can't be published while `verified_only` is the default.
   *Done when* a property moves unverified → scheduled → verified with a stored report and photos.
+  *Note (2026-10-26):*
+  - **Visits:** ops book a visit for one field agent; the property is then `scheduled`. A passed report verifies it and a failed one rejects it; a cancelled visit puts the status back. Ops can suspend a verification, and a failed or suspended listing that is live is paused at once.
+  - **The report:** every checklist question answered, the phone's position with its accuracy, the server's time, the distance from the pin (the agent may move the pin there), and at least one private photo. The only rules that decide it: a building with an authorities' notice can't pass, and a failed visit says why (ADR 0024).
+  - **Publishing:** needs a passed verification while `verified_only` is on, the default.
+  - **Screens:** a Verification section on the ops listing page, and `/field/visits` for agents.
+  - **Tested end to end on phones:** ops book the visit, the agent reports from another phone with a photo, then ops publish. The API tests cover every rule and each role's access, and the authorization matrix covers the 8 new routes.
+  - **Local development:** `make dev-staff` and `make staff-code` sign staff in without an authenticator app.
 
 - [ ] **2.6 Owner records and agreements.** Owner profiles, business name, GSTIN (optional), versioned agreement text with click-wrap acceptance (version, document hash, timestamp, IP, user agent).
   *Done when* acceptance is recorded and visible in ops, and a new agreement version asks owners to accept again.

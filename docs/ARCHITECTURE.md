@@ -188,7 +188,7 @@ All tables have `id bigint generated always as identity`, `created_at`, `updated
 - `properties` (public_id, owner_id, slug, name, description, address_line, locality_id, `location geography(Point,4326)` exact, `display_location geography(Point,4326)` public, `location_precision: exact | approximate`, gender_policy: `boys | girls | coed`, meals: `none | breakfast | two | three | four`, house_rules, verification_status: `unverified | scheduled | verified | rejected | suspended`, licence_status: `unknown | applied | licensed | not_required`, licence_number null, society_permission: `n/a | on_file | missing`, instant_confirm bool, status: `draft | published | paused | delisted`, published_at: first listed). Draft → published ⇄ paused, any → delisted, delisted → draft; publishing needs an active room category with an active bed (ADR 0021).
 - `room_categories` — **the sellable unit and the pricing unit** (public_id, property_id, occupancy: `single | double | triple | quad`, ac bool, attached_bath bool, balcony bool, label, `base_rent_paise` (listed rent per bed per month), `owner_min_rent_paise` null, `owner_max_rent_paise` null, security_deposit_paise, mandatory_charges jsonb (typed in paise: monthly, metered with a monthly estimate, or one-time), status: `active | inactive`). The database checks base > 0, owner min ≤ base ≤ owner max, and deposit ≥ 0 as the domain does.
 - `rooms` (public_id, room_category_id, label, floor), `beds` (public_id, room_id, label, status: `active | inactive`). Labels are unique per category and per room; a room holds no more beds than its occupancy.
-- `amenities` (slug, name; seeded by a data migration, slugs permanent), `property_amenities`; `verification_reports` (property_id, agent_id, visited_at, gps geography(Point), checklist jsonb, result, notes).
+- `amenities` (slug, name; seeded by a data migration, slugs permanent), `property_amenities`; `verification_visits` (public_id, property_id, agent_id, scheduled_by, scheduled_for, status: `scheduled | submitted | cancelled`, status_before; the report: submitted_at (server time), position geography(Point) and position_accuracy_m from the agent's phone, distance_m from the pin, checklist jsonb, result: `passed | failed`, notes; cancelled_at, cancel_reason; one booked visit per property) and `verification_photos` (visit_id, media_asset_id, position) (ADR 0024).
 
 **Inventory**
 ```sql
@@ -503,7 +503,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 
 - Direct-to-storage uploads with presigned POSTs that storage itself enforces: content-type allowlist per purpose (photos JPEG, PNG, WebP; video MP4; documents PDF, JPEG, PNG), size limits (photos 15 MB, video 200 MB, documents 10 MB), no SVG, no HEIC (ADR 0022). Every upload lands in the private bucket.
 - The worker validates magic bytes, **strips all metadata including EXIF and GPS** (re-encoding every variant), creates WebP/AVIF variants (thumb 160, card 480, gallery 1080, full 2048 px) and marks moderation status. Video: remux without metadata (phones write the location there), a poster image, and a 3-minute limit (transcoding can come later). The original is deleted once processed.
-- Public listing media are served through the CDN from the public bucket; private files (KYC, agreements, invoices, dispute photos) use links signed for 5 minutes. `media_assets` holds each upload's purpose, status and variants.
+- Public listing media are served through the CDN from the public bucket; private files (KYC, agreements, invoices, dispute photos, verification photos) use links signed for 5 minutes. `media_assets` holds each upload's purpose, status and variants.
 - `verified_capture = true` marks photos taken by a field agent, shown as "Verified photo · 12 Jun 2027".
 
 ## 14. Notifications
@@ -544,7 +544,10 @@ Owner    /v1/owner/properties… /v1/owner/beds/{id}/blocks /v1/owner/pricing/ru
          /v1/owner/bookings/{code}/confirm | /reject   /v1/owner/invoices
 Ops      /v1/ops/owners  /v1/ops/properties… (+ /status /amenities /media /history /room-categories)
          /v1/ops/room-categories/{id} (+ /rooms)  /v1/ops/rooms/{id}/beds  /v1/ops/beds/{id}   (ADR 0023)
-         /v1/ops/verification… /v1/ops/visits… /v1/ops/bookings…
+         /v1/ops/field-agents  /v1/ops/properties/{id}/verification-visits (GET, POST)
+         /v1/ops/properties/{id}/verification/suspend  /v1/ops/verification-visits (agents: their own)
+         /v1/ops/verification-visits/{id} (+ /report /cancel)   (ADR 0024)
+         /v1/ops/visits… /v1/ops/bookings…
          /v1/ops/disputes… /v1/ops/refunds… /v1/ops/reconciliation
 Admin    /v1/admin/staff /v1/admin/rent-bands /v1/admin/policies /v1/admin/flags /v1/admin/audit-logs
 Media    POST /v1/media   POST /v1/media/{id}/uploaded   GET /v1/media/{id}
@@ -640,4 +643,4 @@ Coverage gates: ≥ 90% branches in `pricing`, `booking`, `payments` and `ledger
 
 - Secrets and infrastructure settings: environment variables (`.env.example` documents each one).
 - Business policy (fees, tokens, windows, caps, bands): database tables with an admin UI and audit log — never constants in code.
-- Feature flags (`feature_flags` table, cached ≤ 30 s): `remote_booking_enabled`, `token_mode` (`payment | upi_mandate`), `rent_via_app_enabled`, `hide_owner_contact`, `instant_confirm_default`, `reviews_enabled`, `whatsapp_enabled`, `price_suggestions_enabled`.
+- Feature flags (`feature_flags` table, cached ≤ 30 s): `remote_booking_enabled`, `token_mode` (`payment | upi_mandate`), `rent_via_app_enabled`, `hide_owner_contact`, `instant_confirm_default`, `reviews_enabled`, `whatsapp_enabled`, `price_suggestions_enabled`, `verified_only` (on: only verified PGs are published and searched; ADR 0024).
