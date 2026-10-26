@@ -19,13 +19,16 @@ import {
 import { Checkbox, Choices, Field, Select, Textarea } from "./fields";
 import { formatCoordinate, parseCoordinate, PinField, pinOf } from "./pin-field";
 
-/** The API's limits (apps/api/src/app/modules/catalog/schemas.py), checked here first. */
-const NAME_MAX = 200;
-const ADDRESS_MAX = 500;
+/**
+ * The API's own limits, checked here first: apps/api/src/app/modules/catalog/domain/listing.py and
+ * service/checks.py (stricter than its request schema's).
+ */
+const NAME_MAX = 120;
+const ADDRESS_MAX = 300;
 const DESCRIPTION_MAX = 5_000;
-const RULE_MAX = 300;
-const RULES_MAX = 40;
-const LICENCE_NUMBER_MAX = 100;
+const RULE_MAX = 200;
+const RULES_MAX = 30;
+const LICENCE_NUMBER_MAX = 60;
 
 export interface DetailsMessages {
   required: string;

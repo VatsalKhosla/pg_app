@@ -16,7 +16,6 @@ export type PropertyCreate = Schemas["PropertyCreate"];
 export type PropertyUpdate = Schemas["PropertyUpdate"];
 export type CategoryCreate = Schemas["CategoryCreate"];
 export type CategoryUpdate = Schemas["CategoryUpdate"];
-export type Media = Schemas["MediaInfo"];
 export type ListingStatus = Schemas["StatusChange"]["status"];
 
 export function findOwners(q: string): Promise<Schemas["OwnerPage"]> {
@@ -142,44 +141,55 @@ export function setBedStatus(
   );
 }
 
-// Uploads (ADR 0022): start one, post the file straight to storage, say it's done, then wait.
+// Verification (ADR 0024): ops book and cancel visits and suspend; field agents report.
 
-export function startUpload(
-  purpose: Schemas["UploadRequest"]["purpose"],
-  file: File,
-): Promise<Schemas["UploadStarted"]> {
+export type Visit = Schemas["VisitInfo"];
+export type ReportSubmit = Schemas["ReportSubmit"];
+
+export function bookVisit(listingId: string, agent: string, scheduledFor: string): Promise<Visit> {
   return withCsrf((headers) =>
     unwrap(
-      browserApi.POST("/v1/media", {
-        body: { purpose, contentType: file.type, byteSize: file.size },
+      browserApi.POST("/v1/ops/properties/{property_id}/verification-visits", {
+        params: { path: { property_id: listingId } },
+        body: { agent, scheduledFor },
         headers,
       }),
     ),
   );
 }
 
-/** Post the file to storage with the presigned form: storage itself checks type and size. */
-export async function sendToStorage(form: Schemas["UploadForm"], file: File): Promise<void> {
-  const body = new FormData();
-  for (const [name, value] of Object.entries(form.fields)) body.append(name, value);
-  body.append("file", file);
-  const response = await fetch(form.url, { method: "POST", body });
-  if (!response.ok) throw new Error(`storage refused the file (${String(response.status)})`);
-}
-
-export function finishUpload(mediaId: string): Promise<Media> {
+export function cancelVisit(visitId: string, reason: string): Promise<Visit> {
   return withCsrf((headers) =>
     unwrap(
-      browserApi.POST("/v1/media/{media_id}/uploaded", {
-        params: { path: { media_id: mediaId } },
+      browserApi.POST("/v1/ops/verification-visits/{visit_id}/cancel", {
+        params: { path: { visit_id: visitId } },
+        body: { reason },
         headers,
       }),
     ),
   );
 }
 
-export function getMedia(mediaId: string): Promise<Media> {
-  return unwrap(
-    browserApi.GET("/v1/media/{media_id}", { params: { path: { media_id: mediaId } } }),
+export function suspendVerification(listingId: string, reason: string): Promise<Listing> {
+  return withCsrf((headers) =>
+    unwrap(
+      browserApi.POST("/v1/ops/properties/{property_id}/verification/suspend", {
+        params: { path: { property_id: listingId } },
+        body: { reason },
+        headers,
+      }),
+    ),
+  );
+}
+
+export function submitReport(visitId: string, body: ReportSubmit): Promise<Visit> {
+  return withCsrf((headers) =>
+    unwrap(
+      browserApi.POST("/v1/ops/verification-visits/{visit_id}/report", {
+        params: { path: { visit_id: visitId } },
+        body,
+        headers,
+      }),
+    ),
   );
 }

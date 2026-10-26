@@ -9,6 +9,8 @@ import { ListingHistory } from "@/components/ops/listing-history";
 import { MediaManager } from "@/components/ops/media-manager";
 import { RoomsEditor } from "@/components/ops/rooms-editor";
 import { StatusPanel } from "@/components/ops/status-panel";
+import { VerificationPanel } from "@/components/ops/verification-panel";
+import { VisitList } from "@/components/ops/visit-list";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getServerApi } from "@/lib/api/server";
@@ -38,6 +40,12 @@ async function load(id: string) {
       unwrap(api.GET("/v1/ops/properties/{property_id}", path)),
       unwrap(api.GET("/v1/ops/properties/{property_id}/history", path)),
       unwrap(api.GET("/v1/amenities")),
+      unwrap(
+        api.GET("/v1/ops/properties/{property_id}/verification-visits", {
+          params: { ...path.params, query: { limit: 20 } },
+        }),
+      ),
+      unwrap(api.GET("/v1/ops/field-agents")),
     ]);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();
@@ -45,7 +53,10 @@ async function load(id: string) {
   }
 }
 
-/** One listing in full, and everything ops do to it: details, rooms, amenities, media, status. */
+/**
+ * One listing in full, and everything ops do to it: status, verification, details, rooms,
+ * amenities, media, and its history.
+ */
 export default async function OpsListingPage({
   params,
   searchParams,
@@ -53,12 +64,23 @@ export default async function OpsListingPage({
   const { id } = await params;
   await requireOps(`/ops/listings/${id}` as Route);
   if (!UUID.test(id)) notFound();
-  const [listing, history, amenities] = await load(id);
+  const [listing, history, amenities, visits, agents] = await load(id);
   const duplicates = duplicatesOf((await searchParams).duplicates);
   const t = await getTranslations("Ops");
 
   const sections = [
     { key: "status", title: t("publish.title"), body: <StatusPanel listing={listing} /> },
+    {
+      key: "verification",
+      title: t("visits.title"),
+      body: (
+        <div className="space-y-6">
+          <p className="font-medium">{t(`verification.${listing.verificationStatus}`)}</p>
+          <VerificationPanel listing={listing} agents={agents.items} />
+          <VisitList visits={visits.items} />
+        </div>
+      ),
+    },
     { key: "details", title: t("details.title"), body: <DetailsForm listing={listing} /> },
     { key: "rooms", title: t("rooms.title"), body: <RoomsEditor listing={listing} /> },
     {
@@ -95,9 +117,10 @@ export default async function OpsListingPage({
           <ul className="list-disc pl-5">
             {duplicates.map((other) => (
               <li key={other}>
+                {/* At least 24 px tall: links stacked in a list are touch targets (WCAG 2.5.8). */}
                 <Link
                   href={`/ops/listings/${other}` as Route}
-                  className="font-medium text-primary underline underline-offset-4"
+                  className="inline-flex min-h-6 items-center font-medium text-primary underline underline-offset-4"
                 >
                   {t("editor.duplicate", { id: other.slice(0, 8) })}
                 </Link>

@@ -66,7 +66,7 @@ export function totp(secret: string, step = Math.floor(Date.now() / 30_000)): st
 }
 
 /** A new staff member with these roles and an authenticator app, as an operator sets one up. */
-export async function newStaff(roles: readonly string[]): Promise<StaffAccount> {
+export async function newStaff(roles: readonly string[], name = "Test Ops"): Promise<StaffAccount> {
   const mobile = newMobile();
   await manage([
     "staff",
@@ -74,7 +74,7 @@ export async function newStaff(roles: readonly string[]): Promise<StaffAccount> 
     mobile,
     ...roles.flatMap((role) => ["--role", role]),
     "--name",
-    "Test Ops",
+    name,
   ]);
   let secret = "";
   await manage(["staff", "enrol-authenticator", mobile], (output) => {

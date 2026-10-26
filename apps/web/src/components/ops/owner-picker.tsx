@@ -14,8 +14,8 @@ import { addOwner, findOwners, type Owner } from "@/lib/ops/client";
 import { Field, FormOutcome } from "./fields";
 import { useOpsProblem } from "./problems";
 
-/** The API's limits for owners (apps/api/src/app/modules/catalog/schemas.py). */
-const NAME_MAX = 200;
+/** The API's limits for owners (apps/api/src/app/modules/catalog/domain/owners.py). */
+const NAME_MAX = 120;
 const GSTIN_MAX = 20;
 const SEARCH_MAX = 100;
 

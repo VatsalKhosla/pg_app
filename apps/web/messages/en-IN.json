@@ -208,7 +208,10 @@
       "ops": "Ops",
       "admin": "Admin"
     },
-    "comingSoon": "The tools for listings, visits and bookings arrive with the ops console."
+    "comingSoon": "Your roles don't open any tools yet.",
+    "tools": "Your tools",
+    "opsConsole": "Ops console",
+    "fieldVisits": "My verification visits"
   },
   "Privacy": {
     "metaTitle": "Privacy notice",
@@ -495,7 +498,11 @@
         "categoryUpdated": "Room category changed",
         "roomAdded": "Room added",
         "bedAdded": "Bed added",
-        "bedStatusChanged": "Bed changed"
+        "bedStatusChanged": "Bed changed",
+        "verificationScheduled": "Verification visit booked",
+        "verificationCancelled": "Verification visit cancelled",
+        "verificationSubmitted": "Verification report in",
+        "verificationSuspended": "Verification suspended"
       },
       "fields": {
         "name": "name",
@@ -542,6 +549,142 @@
       "SERVICE_UNAVAILABLE": "That's not working right now. Try again soon.",
       "API_UNREACHABLE": "Couldn't reach the server. Check your connection.",
       "API_TIMEOUT": "The server took too long. Try again."
+    },
+    "visits": {
+      "title": "Verification",
+      "book": "Book a verification visit",
+      "agent": "Field agent",
+      "agentChoose": "Choose the field agent",
+      "unnamed": "A field agent without a name",
+      "when": "When",
+      "bookButton": "Book the visit",
+      "booking": "Booking…",
+      "noAgents": "No field agents yet. An operator makes someone a field agent (the staff access runbook says how).",
+      "suspend": "Suspend the verification",
+      "suspendHint": "For a complaint or a notice from the authorities. A live listing is paused at once, until a new visit passes.",
+      "reason": "Why",
+      "suspendConfirm": "Suspend it",
+      "suspending": "Suspending…",
+      "empty": "No visits yet.",
+      "status": {
+        "scheduled": "Booked",
+        "submitted": "Reported",
+        "cancelled": "Cancelled"
+      },
+      "cancel": "Cancel this visit",
+      "cancelReason": "Why it's cancelled",
+      "cancelConfirm": "Cancel the visit",
+      "cancelling": "Cancelling…",
+      "keep": "Keep it",
+      "cancelledBecause": "Cancelled: {reason}",
+      "report": "The report"
+    }
+  },
+  "Field": {
+    "metaTitle": "Field visits",
+    "nav": {
+      "label": "Field visits",
+      "visits": "My visits",
+      "staffHome": "Staff tools"
+    },
+    "visits": {
+      "title": "Verification visits",
+      "intro": "The PGs booked for you to verify. Open one at the building to fill in the report.",
+      "booked": "Booked",
+      "noneBooked": "Nothing is booked for you.",
+      "done": "Reported"
+    },
+    "visit": {
+      "metaTitle": "Visit",
+      "status": {
+        "scheduled": "Booked",
+        "submitted": "Reported",
+        "cancelled": "Cancelled"
+      },
+      "where": "Where it is",
+      "directions": "Directions (opens Google Maps)",
+      "owner": "Owner: {business}",
+      "report": "Report",
+      "cancelled": "This visit was cancelled: {reason}",
+      "bookedFor": "Booked for {name}.",
+      "anAgent": "a field agent"
+    },
+    "report": {
+      "intro": "Fill this in at the building. Your location is recorded with the report, and so is the time.",
+      "position": "Where you are",
+      "useLocation": "Record my location",
+      "locating": "Finding you…",
+      "located": "Location recorded, accurate to about {metres} m.",
+      "locationFailed": "Couldn't get your location. Allow location for this site and try again.",
+      "positionRequired": "Record your location at the building first.",
+      "movePin": "Make where I am the building's pin",
+      "age": "Building's age in years (if known)",
+      "ageInvalid": "Enter whole years, from 0 to {oldest}.",
+      "exits": "Separate ways out of the building",
+      "exitsInvalid": "Enter a number from 0 to {most}.",
+      "tooLong": "That's too long.",
+      "condition": "The building's condition",
+      "conditions": {
+        "good": "Good",
+        "fair": "Fair",
+        "poor": "Poor"
+      },
+      "cracks": "Cracks",
+      "crackOptions": {
+        "none": "None",
+        "minor": "Hairline, in plaster",
+        "structural": "Through walls, beams or columns"
+      },
+      "extinguishers": "Fire extinguishers, charged and in date",
+      "cctv": "CCTV on the entrance and common areas",
+      "warden": "Someone in charge on site at night",
+      "yes": "Yes",
+      "no": "No",
+      "womenSafety": "Safety features for women",
+      "womenSafetyOptions": {
+        "woman_staff": "A woman warden or caretaker",
+        "secure_entry": "Entry by card, biometrics or a guard",
+        "lit_approach": "A well-lit street and entrance",
+        "visitor_log": "Visitors signed in and out",
+        "separate_floors": "Women's rooms on floors of their own"
+      },
+      "licenceNumber": "Licence number, as shown on site (if any)",
+      "society": "Housing society",
+      "authorityNotice": "A sealing, demolition or unsafe-building notice from the authorities",
+      "photos": "Photos",
+      "photosHint": "At least one: the building, the exits, anything you report. They stay private.",
+      "photo": "Photo {number}",
+      "removePhoto": "Remove photo {number}",
+      "addPhotos": "Add photos",
+      "uploading": "Uploading {name}…",
+      "processing": "Preparing {name}…",
+      "failed": "{name} wasn't added. {reason}",
+      "tooSlow": "It took too long to prepare. Try again.",
+      "photosRequired": "Add at least one photo.",
+      "result": "Result",
+      "results": {
+        "passed": "Passed: it can be listed",
+        "failed": "Failed: it can't be listed"
+      },
+      "noticeCantPass": "A building with a notice from the authorities can't pass.",
+      "notes": "Notes",
+      "notesHint": "What you saw. Say why, if it failed.",
+      "notesRequired": "Say why it failed.",
+      "submit": "Send the report",
+      "submitting": "Sending…"
+    },
+    "summary": {
+      "results": {
+        "passed": "Passed",
+        "failed": "Failed"
+      },
+      "submitted": "reported {when}",
+      "by": "by {name}",
+      "distance": "Reported {distance} m from the pin, to within {accuracy} m.",
+      "unknown": "Not known",
+      "years": "{years} years",
+      "none": "None seen",
+      "noLicence": "None shown"
     }
   }
 }

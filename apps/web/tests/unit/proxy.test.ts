@@ -45,7 +45,7 @@ describe("proxy", () => {
       "connect-src 'self' https://api.example.test https://uploads.example.test https://tiles.example.test;",
     );
     expect(policy).toContain(
-      "img-src 'self' data: blob: https://media.example.test https://tiles.example.test;",
+      "img-src 'self' data: blob: https://media.example.test https://uploads.example.test https://tiles.example.test;",
     );
     expect(policy).not.toContain("report-uri");
   });

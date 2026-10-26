@@ -21,6 +21,10 @@ const ACTIONS = {
   "catalog.room_added": "roomAdded",
   "catalog.bed_added": "bedAdded",
   "catalog.bed_status_changed": "bedStatusChanged",
+  "catalog.verification_scheduled": "verificationScheduled",
+  "catalog.verification_cancelled": "verificationCancelled",
+  "catalog.verification_submitted": "verificationSubmitted",
+  "catalog.verification_suspended": "verificationSuspended",
 } as const;
 
 /** The fields an update names (the API's own names), as the forms call them. */
@@ -49,6 +53,10 @@ const FIELDS = {
   status: "offered",
 } as const;
 
+function isResult(value: unknown): value is "passed" | "failed" {
+  return value === "passed" || value === "failed";
+}
+
 function isKnown<T extends object>(map: T, key: unknown): key is keyof T {
   return typeof key === "string" && Object.hasOwn(map, key);
 }
@@ -57,6 +65,7 @@ function isKnown<T extends object>(map: T, key: unknown): key is keyof T {
 export async function ListingHistory({ entries }: { entries: Entry[] }) {
   const t = await getTranslations("Ops.history");
   const tStatus = await getTranslations("Ops.status");
+  const tSummary = await getTranslations("Field.summary");
   const format = await getFormatter();
 
   function summary(entry: Entry): string | null {
@@ -71,11 +80,16 @@ export async function ListingHistory({ entries }: { entries: Entry[] }) {
       return parts.filter((part) => part !== "").join(" · ") || null;
     }
     if (entry.action === "catalog.property_status_changed") {
-      const { from, to } = details;
+      const { from, to, reason } = details;
       if (isListingStatus(from) && isListingStatus(to)) {
-        return t("moved", { from: tStatus(from), to: tStatus(to) });
+        const moved = t("moved", { from: tStatus(from), to: tStatus(to) });
+        return typeof reason === "string" ? `${moved} (${reason})` : moved;
       }
     }
+    if (entry.action === "catalog.verification_submitted" && isResult(details.result)) {
+      return tSummary(`results.${details.result}`);
+    }
+    if (typeof details.reason === "string") return details.reason;
     if (entry.action === "catalog.bed_status_changed") {
       return details.to === "inactive" ? t("bedOut") : t("bedBack");
     }

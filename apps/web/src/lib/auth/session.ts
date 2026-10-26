@@ -58,6 +58,11 @@ export async function requireSession(here: Route): Promise<Me> {
   return me;
 }
 
+/** Whether the person may use the ops console (ops and admins). */
+export function isOps(me: Me): boolean {
+  return me.roles.some((role) => role === "ops" || role === "admin");
+}
+
 /** A staff member in a staff session, or a redirect to the staff sign-in page. */
 export async function requireStaff(here: Route): Promise<Me> {
   const me = await getSession();
@@ -71,6 +76,17 @@ export async function requireStaff(here: Route): Promise<Me> {
  */
 export async function requireOps(here: Route): Promise<Me> {
   const me = await requireStaff(here);
-  if (!me.roles.some((role) => role === "ops" || role === "admin")) redirect(STAFF_HOME_PATH);
+  if (!isOps(me)) redirect(STAFF_HOME_PATH);
+  return me;
+}
+
+/**
+ * A field agent, or ops or an admin, in a staff session: the field screens' people. The API shows
+ * an agent only the visits booked for them, and ops all of them.
+ */
+export async function requireFieldStaff(here: Route): Promise<Me> {
+  const me = await requireStaff(here);
+  const allowed: readonly string[] = ["field_agent", "ops", "admin"];
+  if (!me.roles.some((role) => allowed.includes(role))) redirect(STAFF_HOME_PATH);
   return me;
 }

@@ -7,15 +7,8 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  finishUpload,
-  getMedia,
-  type Listing,
-  type Media,
-  sendToStorage,
-  setMedia,
-  startUpload,
-} from "@/lib/ops/client";
+import { upload } from "@/lib/media/client";
+import { type Listing, setMedia } from "@/lib/ops/client";
 
 import { FormOutcome } from "./fields";
 import { useOpsProblem } from "./problems";
@@ -27,31 +20,10 @@ type ListingMedia = Schemas["ListingMedia"];
 const ACCEPT = "image/jpeg,image/png,image/webp,video/mp4";
 /** A listing's photos and videos at most (apps/api/src/app/modules/catalog/service/listings.py). */
 const MAX_MEDIA = 40;
-/** How long to wait for the worker to prepare a file before giving up on it. */
-const PROCESSING_TIMEOUT_MS = 5 * 60_000;
-
 type Upload =
   | { key: string; name: string; state: "uploading" }
   | { key: string; name: string; state: "processing" }
   | { key: string; name: string; state: "rejected" | "failed"; reason: string };
-
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-/** Ask after the file until the worker has finished with it, more slowly as time goes on. */
-async function whenProcessed(mediaId: string): Promise<Media | null> {
-  const started = Date.now();
-  for (let delay = 1_000; Date.now() - started < PROCESSING_TIMEOUT_MS;) {
-    await wait(delay);
-    const media = await getMedia(mediaId);
-    if (media.status !== "processing") return media;
-    delay = Math.min(delay * 1.5, 5_000);
-  }
-  return null;
-}
 
 /** The picture to show for a photo, or a video's poster: the card-sized WebP. */
 function pictureOf(media: ListingMedia): Schemas["Rendition"] | undefined {
@@ -113,17 +85,15 @@ export function MediaManager({ listing }: { listing: Listing }) {
     });
   }
 
-  async function upload(file: File) {
+  async function add(file: File) {
     const key = crypto.randomUUID();
     const name = file.name;
     track(key, { key, name, state: "uploading" });
     try {
       const purpose = file.type.startsWith("video/") ? "listing_video" : "listing_photo";
-      const started = await startUpload(purpose, file);
-      await sendToStorage(started.upload, file);
-      await finishUpload(started.media.id);
-      track(key, { key, name, state: "processing" });
-      const processed = await whenProcessed(started.media.id);
+      const processed = await upload(purpose, file, () => {
+        track(key, { key, name, state: "processing" });
+      });
       if (processed === null) {
         track(key, { key, name, state: "failed", reason: t("tooSlow") });
       } else if (processed.status === "rejected") {
@@ -284,7 +254,7 @@ export function MediaManager({ listing }: { listing: Listing }) {
             onChange={(event) => {
               const files = Array.from(event.target.files ?? []).slice(0, room);
               event.target.value = "";
-              for (const file of files) void upload(file);
+              for (const file of files) void add(file);
             }}
           />
           <label

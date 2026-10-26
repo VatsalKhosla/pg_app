@@ -18,7 +18,11 @@ const connectOrigins = [
   ...tilesOrigin,
   ...(sentry === undefined ? [] : [sentry.origin]),
 ];
-const imageOrigins = [publicEnv.mediaUrl.origin, ...tilesOrigin];
+// Listing media from the CDN; private files (verification photos) through links signed on the
+// private bucket's storage, the upload origin; and the map tiles.
+const imageOrigins = [
+  ...new Set([publicEnv.mediaUrl.origin, publicEnv.uploadOrigin.origin, ...tilesOrigin]),
+];
 /** Cloudflare Turnstile's challenge runs in a frame from here (src/components/auth/turnstile.tsx). */
 export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 const frameOrigins = publicEnv.turnstileSiteKey === undefined ? [] : [TURNSTILE_ORIGIN];

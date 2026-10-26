@@ -5,9 +5,10 @@ import { expect, test, wcagViolations } from "./fixtures";
 import { newMobile } from "./sign-in-codes";
 import { newStaff, signInAsStaff } from "./staff";
 
-// The ops console end to end (BUILD_PLAN 2.4): an ops person signs in on a phone, builds a
-// listing from nothing (owner, building, pin, rooms, amenities, a photo) and publishes it, against
-// the real API and its worker (scripts/e2e-api.sh).
+// The ops console and field verification end to end (BUILD_PLAN 2.4 and 2.5), on phones, against
+// the real API and its worker (scripts/e2e-api.sh): an ops person builds a listing from nothing
+// (owner, building, pin, rooms, amenities, a photo) and books a verification visit; a field agent
+// reports from the building, with their location and a photo; then ops publish it.
 
 interface Places {
   localities: { name: string; center: { lat: number; lng: number } }[];
@@ -36,7 +37,10 @@ test.describe("ops console", () => {
     expectedConsoleErrors: [/status of 400/],
   });
 
-  test("ops build a listing on a phone and publish it", async ({ page }, testInfo) => {
+  test("ops build a listing, a field agent verifies it, and ops publish it", async ({
+    page,
+    browser,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== "phone", "one run is enough, and phones are the hard case");
     // Signing in, then the worker preparing the photo.
     test.slow();
@@ -122,6 +126,70 @@ test.describe("ops console", () => {
     await expect(media.getByRole("img", { name: "Photo 1" })).toBeVisible({ timeout: 60_000 });
     await expect(media.getByText("Cover", { exact: true })).toBeVisible();
 
+    // Not live until a field agent has verified it.
+    await expect(status.getByText("needs a passed verification visit")).toBeVisible();
+    await expect(status.getByRole("button", { name: "Publish" })).toBeDisabled();
+
+    // Ops book a visit for a field agent, for an hour from now in the browser's own time.
+    const agentName = `Test Agent ${owner.slice(-4)}`;
+    const agent = await newStaff(["field_agent"], agentName);
+    await page.reload();
+    const verification = page.getByRole("region", { name: "Verification" });
+    await verification.getByLabel("Field agent").selectOption({ label: agentName });
+    const soon = await page.evaluate(() => {
+      const at = new Date(Date.now() + 60 * 60_000);
+      const two = (part: number) => String(part).padStart(2, "0");
+      return `${String(at.getFullYear())}-${two(at.getMonth() + 1)}-${two(at.getDate())}T${two(at.getHours())}:${two(at.getMinutes())}`;
+    });
+    await verification.getByLabel("When").fill(soon);
+    await verification.getByRole("button", { name: "Book the visit" }).click();
+    await expect(verification.getByText("Verification booked")).toBeVisible();
+
+    // The agent, on their own phone, reports from the building.
+    const phone = await browser.newContext({
+      ...testInfo.project.use,
+      geolocation: { latitude: here.lat, longitude: here.lng, accuracy: 9 },
+      permissions: ["geolocation"],
+    });
+    const field = await phone.newPage();
+    await field.goto("/field/visits");
+    await expect(field).toHaveURL(/\/staff\/sign-in\?next=%2Ffield%2Fvisits$/);
+    await signInAsStaff(field, agent);
+    await expect(field).toHaveURL(/\/field\/visits$/);
+    await field.getByRole("link", { name: new RegExp(name) }).click();
+    await expect(field.getByRole("heading", { name, level: 1 })).toBeVisible();
+    const report = field.getByRole("region", { name: "Report" });
+    await report.getByRole("button", { name: "Record my location" }).click();
+    await expect(report.getByText(/^Location recorded/)).toBeVisible();
+    await report.getByLabel("Separate ways out of the building").fill("2");
+    const answer = async (question: string, choice: string) => {
+      await report
+        .getByRole("group", { name: question })
+        .getByLabel(choice, { exact: true })
+        .check();
+    };
+    await answer("The building's condition", "Good");
+    await answer("Cracks", "None");
+    await answer("Fire extinguishers, charged and in date", "Yes");
+    await answer("CCTV on the entrance and common areas", "Yes");
+    await answer("Someone in charge on site at night", "Yes");
+    await report.getByLabel("Entry by card, biometrics or a guard").check();
+    await answer("Housing society", "Not in a society");
+    await answer("A sealing, demolition or unsafe-building notice from the authorities", "No");
+    await report
+      .getByLabel("Add photos")
+      .setInputFiles(path.resolve(process.cwd(), "tests/e2e/files/room.jpg"));
+    await expect(report.getByRole("img", { name: "Photo 1" })).toBeVisible({ timeout: 60_000 });
+    await answer("Result", "Passed: it can be listed");
+    expect(await wcagViolations(field)).toEqual([]);
+    await report.getByRole("button", { name: "Send the report" }).click();
+    await expect(report.getByText(/^Passed/)).toBeVisible();
+    await expect(report.getByRole("img", { name: "Photo 1" })).toBeVisible();
+    await phone.close();
+
+    // Verified: now it can go live.
+    await page.reload();
+    await expect(verification.getByText("Verified", { exact: true })).toBeVisible();
     await expect(status.getByRole("button", { name: "Publish" })).toBeEnabled();
     await status.getByRole("button", { name: "Publish" }).click();
     await expect(status.getByText("Status: Published")).toBeVisible();
