@@ -60,6 +60,7 @@ Renovate's configuration is `.github/renovate.json5`. It does nothing until a fo
 
 - **API client:** run `make gen-client` and commit the result with the API change.
 - **API contract:** the schema has a breaking change, such as a removed endpoint or field, or a new required input. Keep changes additive. To retire something, mark it deprecated (`deprecated=True` on the route or field), ship that, and remove it in a later release. This is the same expand-then-contract rule as migrations.
+  - A change that is meant and safe for our only client, such as a rename with the same shape or an enum value the web app is regenerated for, goes in `docs/api-contract-exceptions.md` in the same commit, with the date and why. The check ignores exactly the changes listed there.
 - **Dependencies:** an advisory affects a locked package.
   - Upgrade it if a fix exists.
   - If no fix exists and our code can't reach the flaw, record the advisory with the reason and date: `auditConfig.ignoreGhsas` in `pnpm-workspace.yaml` for JavaScript, an `--ignore-vuln` flag in `scripts/audit.sh` for Python. Review it again when a fix ships.
