@@ -1,4 +1,4 @@
-"""Use cases of the catalog module; each method is one transaction (ADR 0021, ADR 0023)."""
+"""Use cases of the catalog module; each method is one transaction (ADR 0021, 0023, 0024)."""
 
 from app.modules.catalog.service.inventory import CategoryChanges, CategoryDraft, InventoryService
 from app.modules.catalog.service.listings import ListingService, PropertyChanges, PropertyDraft
@@ -9,6 +9,12 @@ from app.modules.catalog.service.reads import (
     ListingDetail,
     ListingSummary,
     RoomView,
+)
+from app.modules.catalog.service.verification import (
+    Report,
+    VerificationService,
+    VisitReader,
+    VisitView,
 )
 
 __all__ = [
@@ -24,5 +30,9 @@ __all__ = [
     "OwnerService",
     "PropertyChanges",
     "PropertyDraft",
+    "Report",
     "RoomView",
+    "VerificationService",
+    "VisitReader",
+    "VisitView",
 ]

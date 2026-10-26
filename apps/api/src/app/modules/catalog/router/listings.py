@@ -38,6 +38,7 @@ from app.modules.catalog.domain.listing import (
 )
 from app.modules.catalog.domain.owners import KycStatus, OwnerStatus
 from app.modules.catalog.domain.rooms import BEDS_PER_ROOM, BedStatus, CategoryStatus, Occupancy
+from app.modules.catalog.domain.verification import can_schedule, can_suspend
 from app.modules.catalog.policies import can_manage_listings
 from app.modules.catalog.schemas import (
     AmenitiesChange,
@@ -92,17 +93,19 @@ router = APIRouter(prefix="/v1", tags=["catalog"])
 SearchText = Annotated[str | None, Query(max_length=100, description="Part of a name, or a phone")]
 
 
-def _staff(actor: CurrentActor) -> None:
+def require_listing_staff(actor: CurrentActor) -> None:
     if not can_manage_listings(actor):
         raise ForbiddenError
 
 
-def _reader(request: Request, db: DbSession) -> CatalogReader:
-    return CatalogReader(db, buckets=request.app.state.media_buckets)
+def catalog_reader(request: Request, db: DbSession) -> CatalogReader:
+    return CatalogReader(db, buckets=request.app.state.media_buckets, flags=request.app.state.flags)
 
 
 def _listings(request: Request, db: DbSession, clock: ClockDep) -> ListingService:
-    return ListingService(db, clock, buckets=request.app.state.media_buckets)
+    return ListingService(
+        db, clock, buckets=request.app.state.media_buckets, flags=request.app.state.flags
+    )
 
 
 # Charges: the API's shapes and the domain's.
@@ -162,7 +165,7 @@ def _owner(record: OwnerRecord) -> OwnerInfo:
     )
 
 
-def _media(ref: MediaRef) -> ListingMedia:
+def media_info(ref: MediaRef) -> ListingMedia:
     return ListingMedia(
         id=ref.public_id,
         purpose=ref.purpose,
@@ -183,7 +186,7 @@ def _media(ref: MediaRef) -> ListingMedia:
     )
 
 
-def _point(point: Point) -> LatLng:
+def lat_lng(point: Point) -> LatLng:
     return LatLng(lat=point.lat, lng=point.lng)
 
 
@@ -195,8 +198,8 @@ def _listing(detail: ListingDetail) -> ListingInfo:
         name=found.name,
         description=found.description,
         address_line=found.address_line,
-        location=_point(detail.exact),
-        display_location=_point(detail.display),
+        location=lat_lng(detail.exact),
+        display_location=lat_lng(detail.display),
         location_precision=LocationPrecision(found.location_precision),
         gender_policy=GenderPolicy(found.gender_policy),
         meals=Meals(found.meals),
@@ -208,6 +211,8 @@ def _listing(detail: ListingDetail) -> ListingInfo:
         instant_confirm=found.instant_confirm,
         status=PropertyStatus(found.status),
         next_statuses=next_statuses(PropertyStatus(found.status)),
+        can_book_visit=can_schedule(VerificationStatus(found.verification_status)),
+        can_suspend=can_suspend(VerificationStatus(found.verification_status)),
         published_at=found.published_at,
         owner=_owner(detail.owner),
         locality=ListingLocality(slug=detail.locality.slug, name=detail.locality.name),
@@ -244,13 +249,13 @@ def _listing(detail: ListingDetail) -> ListingInfo:
             )
             for view in detail.categories
         ],
-        media=[_media(ref) for ref in detail.media],
+        media=[media_info(ref) for ref in detail.media],
         problems=list(detail.problems),
     )
 
 
-async def _current(request: Request, db: DbSession, property_id: uuid.UUID) -> ListingInfo:
-    return _listing(await _reader(request, db).listing(property_id))
+async def current_listing(request: Request, db: DbSession, property_id: uuid.UUID) -> ListingInfo:
+    return _listing(await catalog_reader(request, db).listing(property_id))
 
 
 # Public.
@@ -259,7 +264,7 @@ async def _current(request: Request, db: DbSession, property_id: uuid.UUID) -> L
 @router.get("/amenities", summary="The amenities a listing can have")
 async def amenities(request: Request, response: Response, db: DbSession) -> AmenityList:
     response.headers["Cache-Control"] = "public, max-age=3600"
-    found = await _reader(request, db).amenities()
+    found = await catalog_reader(request, db).amenities()
     return AmenityList(items=[AmenityInfo(slug=item.slug, name=item.name) for item in found])
 
 
@@ -275,7 +280,7 @@ async def owners(
     q: SearchText = None,
 ) -> OwnerPage:
     """By phone number (exactly) or by name (any part)."""
-    _staff(actor)
+    require_listing_staff(actor)
     found, next_cursor = await OwnerService(db, clock).page(page, text=q)
     return OwnerPage(items=[_owner(record) for record in found], next_cursor=next_cursor)
 
@@ -285,7 +290,7 @@ async def add_owner(
     body: OwnerCreate, actor: CurrentActor, db: DbSession, clock: ClockDep
 ) -> OwnerInfo:
     """Makes the owner's account from their phone if they haven't signed in yet."""
-    _staff(actor)
+    require_listing_staff(actor)
     record = await OwnerService(db, clock).add(
         actor,
         phone=body.phone,
@@ -310,8 +315,10 @@ async def listings(
     q: SearchText = None,
     listing_status: Annotated[PropertyStatus | None, Query(alias="status")] = None,
 ) -> ListingPage:
-    _staff(actor)
-    found, next_cursor = await _reader(request, db).listings(page, status=listing_status, text=q)
+    require_listing_staff(actor)
+    found, next_cursor = await catalog_reader(request, db).listings(
+        page, status=listing_status, text=q
+    )
     return ListingPage(
         items=[
             ListingSummary(
@@ -322,7 +329,7 @@ async def listings(
                 status=PropertyStatus(item.property.status),
                 verification_status=VerificationStatus(item.property.verification_status),
                 updated_at=item.property.updated_at,
-                cover=None if item.cover is None else _media(item.cover),
+                cover=None if item.cover is None else media_info(item.cover),
             )
             for item in found
         ],
@@ -337,7 +344,7 @@ async def create_listing(
     body: PropertyCreate, request: Request, actor: CurrentActor, db: DbSession, clock: ClockDep
 ) -> ListingCreated:
     """Answers with any listing whose pin is within 30 m, which may be the same building."""
-    _staff(actor)
+    require_listing_staff(actor)
     created = await _listings(request, db, clock).create_property(
         actor,
         PropertyDraft(
@@ -357,7 +364,7 @@ async def create_listing(
             instant_confirm=body.instant_confirm,
         ),
     )
-    reader = _reader(request, db)
+    reader = catalog_reader(request, db)
     listing = _listing(await reader.listing(created.public_id))
     duplicates = await reader.duplicates_of(created.public_id)
     return ListingCreated(**dict(listing), possible_duplicates=duplicates)
@@ -367,8 +374,8 @@ async def create_listing(
 async def listing(
     property_id: uuid.UUID, request: Request, actor: CurrentActor, db: DbSession
 ) -> ListingInfo:
-    _staff(actor)
-    return await _current(request, db, property_id)
+    require_listing_staff(actor)
+    return await current_listing(request, db, property_id)
 
 
 @router.patch("/ops/properties/{property_id}", summary="Change a listing's details")
@@ -382,7 +389,7 @@ async def update_listing(
     clock: ClockDep,
 ) -> ListingInfo:
     """Only the fields sent change. Moving the pin makes a new display point."""
-    _staff(actor)
+    require_listing_staff(actor)
     sent = body.model_dump(include=body.model_fields_set, by_alias=False)
     changes: PropertyChanges = {}
     for name in ("name", "address_line", "description", "licence_number"):
@@ -403,7 +410,7 @@ async def update_listing(
     if body.location is not None:
         changes["location"] = Point(lat=body.location.lat, lng=body.location.lng)
     await _listings(request, db, clock).update_property(actor, property_id, changes)
-    return await _current(request, db, property_id)
+    return await current_listing(request, db, property_id)
 
 
 @router.post("/ops/properties/{property_id}/status", summary="Publish, pause, delist or relist")
@@ -417,9 +424,9 @@ async def change_status(
     clock: ClockDep,
 ) -> ListingInfo:
     """Publishing needs a room category with a bed to sell (409 LISTING_INCOMPLETE)."""
-    _staff(actor)
+    require_listing_staff(actor)
     await _listings(request, db, clock).move(actor, property_id, body.status)
-    return await _current(request, db, property_id)
+    return await current_listing(request, db, property_id)
 
 
 @router.put("/ops/properties/{property_id}/amenities", summary="Set a listing's amenities")
@@ -432,9 +439,9 @@ async def set_amenities(
     db: DbSession,
     clock: ClockDep,
 ) -> ListingInfo:
-    _staff(actor)
+    require_listing_staff(actor)
     await _listings(request, db, clock).set_amenities(actor, property_id, body.amenities)
-    return await _current(request, db, property_id)
+    return await current_listing(request, db, property_id)
 
 
 @router.put("/ops/properties/{property_id}/media", summary="Set a listing's photos and videos")
@@ -448,9 +455,9 @@ async def set_media(
     clock: ClockDep,
 ) -> ListingInfo:
     """In page order, the first being the cover; uploads come from POST /v1/media."""
-    _staff(actor)
+    require_listing_staff(actor)
     await _listings(request, db, clock).set_media(actor, property_id, body.media)
-    return await _current(request, db, property_id)
+    return await current_listing(request, db, property_id)
 
 
 @router.get("/ops/properties/{property_id}/history", summary="Everything done to a listing")
@@ -458,8 +465,8 @@ async def history(
     property_id: uuid.UUID, request: Request, actor: CurrentActor, db: DbSession
 ) -> History:
     """From the audit log, newest first: the listing, its rooms and its beds."""
-    _staff(actor)
-    entries = await _reader(request, db).history(property_id)
+    require_listing_staff(actor)
+    entries = await catalog_reader(request, db).history(property_id)
     return History(
         items=[
             HistoryEntry(
@@ -492,7 +499,7 @@ async def add_room_category(
     db: DbSession,
     clock: ClockDep,
 ) -> ListingInfo:
-    _staff(actor)
+    require_listing_staff(actor)
     await InventoryService(db, clock).add_room_category(
         actor,
         property_id,
@@ -513,7 +520,7 @@ async def add_room_category(
             mandatory_charges=tuple(_charge_in(charge) for charge in body.mandatory_charges),
         ),
     )
-    return await _current(request, db, property_id)
+    return await current_listing(request, db, property_id)
 
 
 @router.patch("/ops/room-categories/{category_id}", summary="Change a room category")
@@ -527,7 +534,7 @@ async def update_room_category(
     clock: ClockDep,
 ) -> ListingInfo:
     """Only the fields sent change; null clears the owner's minimum or maximum."""
-    _staff(actor)
+    require_listing_staff(actor)
     sent = body.model_fields_set
     changes: CategoryChanges = {}
     if body.label is not None:
@@ -550,7 +557,9 @@ async def update_room_category(
             _charge_in(charge) for charge in body.mandatory_charges
         )
     await InventoryService(db, clock).update_room_category(actor, category_id, changes)
-    return await _current(request, db, await _reader(request, db).listing_of(category=category_id))
+    return await current_listing(
+        request, db, await catalog_reader(request, db).listing_of(category=category_id)
+    )
 
 
 @router.post(
@@ -567,11 +576,13 @@ async def add_room(
     db: DbSession,
     clock: ClockDep,
 ) -> ListingInfo:
-    _staff(actor)
+    require_listing_staff(actor)
     await InventoryService(db, clock).add_room(
         actor, category_id, label=body.label, floor=body.floor, beds=body.beds
     )
-    return await _current(request, db, await _reader(request, db).listing_of(category=category_id))
+    return await current_listing(
+        request, db, await catalog_reader(request, db).listing_of(category=category_id)
+    )
 
 
 @router.post("/ops/rooms/{room_id}/beds", status_code=status.HTTP_201_CREATED, summary="Add a bed")
@@ -585,9 +596,11 @@ async def add_bed(
     clock: ClockDep,
 ) -> ListingInfo:
     """409 ROOM_FULL once the room has as many beds as its occupancy."""
-    _staff(actor)
+    require_listing_staff(actor)
     await InventoryService(db, clock).add_bed(actor, room_id, label=body.label)
-    return await _current(request, db, await _reader(request, db).listing_of(room=room_id))
+    return await current_listing(
+        request, db, await catalog_reader(request, db).listing_of(room=room_id)
+    )
 
 
 @router.patch("/ops/beds/{bed_id}", summary="Take a bed out of what can be sold, or back")
@@ -600,6 +613,8 @@ async def update_bed(
     db: DbSession,
     clock: ClockDep,
 ) -> ListingInfo:
-    _staff(actor)
+    require_listing_staff(actor)
     await InventoryService(db, clock).set_bed_status(actor, bed_id, body.status)
-    return await _current(request, db, await _reader(request, db).listing_of(bed=bed_id))
+    return await current_listing(
+        request, db, await catalog_reader(request, db).listing_of(bed=bed_id)
+    )

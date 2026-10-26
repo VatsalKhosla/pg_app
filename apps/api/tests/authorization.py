@@ -47,6 +47,7 @@ PATH_VALUES: Final = frozenset(
         "a_room_category",
         "a_room",
         "a_bed",
+        "someone_elses_visit",
     }
 )
 
@@ -97,6 +98,40 @@ def _new_listing() -> dict[str, Any]:
             "meals": "two",
         }
     }
+
+
+def _visit_booking() -> dict[str, Any]:
+    # Nobody is a field agent by that id, so ops get 422; the verification tests book real ones.
+    return {"json": {"agent": str(uuid.uuid7()), "scheduledFor": "2027-07-14T10:00:00+00:00"}}
+
+
+def _visit_report() -> dict[str, Any]:
+    # A report that would pass its checks: only whose visit it is decides the answer.
+    return {
+        "json": {
+            "checklist": {
+                "buildingAgeYears": None,
+                "condition": "good",
+                "cracks": "none",
+                "exits": 2,
+                "fireExtinguishers": True,
+                "cctv": True,
+                "warden": True,
+                "womenSafety": [],
+                "licenceNumber": None,
+                "societyPermission": "n/a",
+                "authorityNotice": False,
+            },
+            "result": "passed",
+            "position": {"lat": 28.68, "lng": 77.2},
+            "accuracyM": 10,
+            "photos": [str(uuid.uuid7())],
+        }
+    }
+
+
+def _reason() -> dict[str, Any]:
+    return {"json": {"reason": "A fictional reason"}}
 
 
 @dataclass(frozen=True)
@@ -234,6 +269,32 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ),
     ("PATCH", "/v1/ops/beds/{bed_id}"): Rule(
         ops_only(200), lambda: {"json": {"status": "inactive"}}, path={"bed_id": "a_bed"}
+    ),
+    # Verification (ADR 0024): ops book and cancel, field agents report on their own visits.
+    ("GET", "/v1/ops/field-agents"): Rule(ops_only(200)),
+    ("POST", "/v1/ops/properties/{property_id}/verification-visits"): Rule(
+        ops_only(422), _visit_booking, path={"property_id": "a_listing"}
+    ),
+    ("GET", "/v1/ops/properties/{property_id}/verification-visits"): Rule(
+        ops_only(200), path={"property_id": "a_listing"}
+    ),
+    ("GET", "/v1/ops/verification-visits"): Rule(
+        signed_in(403, field_agent=200, ops=200, admin=200)
+    ),
+    # Another agent's visit doesn't exist for a field agent.
+    ("GET", "/v1/ops/verification-visits/{visit_id}"): Rule(
+        signed_in(403, field_agent=404, ops=200, admin=200),
+        path={"visit_id": "someone_elses_visit"},
+    ),
+    ("POST", "/v1/ops/verification-visits/{visit_id}/report"): Rule(
+        signed_in(403, field_agent=404), _visit_report, path={"visit_id": "someone_elses_visit"}
+    ),
+    ("POST", "/v1/ops/verification-visits/{visit_id}/cancel"): Rule(
+        ops_only(200), _reason, path={"visit_id": "someone_elses_visit"}
+    ),
+    # A new listing isn't verified yet, so there is nothing to suspend.
+    ("POST", "/v1/ops/properties/{property_id}/verification/suspend"): Rule(
+        ops_only(409), _reason, path={"property_id": "a_listing"}
     ),
 }
 

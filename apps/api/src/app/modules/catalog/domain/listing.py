@@ -91,11 +91,21 @@ def next_statuses(current: PropertyStatus) -> list[PropertyStatus]:
     return [status for status in PropertyStatus if can_move(current, status)]
 
 
-def publishing_problems(*, sellable_categories: int) -> list[str]:
-    """What stops a property going live; empty when it can."""
+def publishing_problems(
+    *, sellable_categories: int, verification: VerificationStatus, verified_only: bool
+) -> list[str]:
+    """What stops a property going live; empty when it can. With ``verified_only`` (the flag, on
+    by default) only a verified property goes live; a failed or suspended one never does."""
+    problems = []
     if sellable_categories == 0:
-        return ["needs at least one active room category with an active bed"]
-    return []
+        problems.append("needs at least one active room category with an active bed")
+    if verification is VerificationStatus.REJECTED:
+        problems.append("failed its verification visit")
+    elif verification is VerificationStatus.SUSPENDED:
+        problems.append("its verification is suspended")
+    elif verified_only and verification is not VerificationStatus.VERIFIED:
+        problems.append("needs a passed verification visit")
+    return problems
 
 
 def slugify(*parts: str) -> str:

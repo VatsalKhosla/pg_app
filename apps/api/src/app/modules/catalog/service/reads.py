@@ -9,8 +9,13 @@ from typing import TYPE_CHECKING, Final
 
 from app.core import audit
 from app.core.errors import NotFoundError
+from app.core.flags import Flag
 from app.core.pagination import split_page
-from app.modules.catalog.domain.listing import PropertyStatus, publishing_problems
+from app.modules.catalog.domain.listing import (
+    PropertyStatus,
+    VerificationStatus,
+    publishing_problems,
+)
 from app.modules.catalog.repository import CatalogRepository, charges_from_json
 from app.modules.catalog.service.owners import OwnerRecord
 from app.modules.geo.service import GeoLookup
@@ -23,6 +28,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.core.audit import AuditLog
+    from app.core.flags import FlagReader
     from app.core.geometry import Point
     from app.core.pagination import PageRequest
     from app.modules.catalog.domain.charges import MandatoryCharge
@@ -70,8 +76,9 @@ class ListingDetail:
 
 
 class CatalogReader:
-    def __init__(self, db: AsyncSession, *, buckets: Buckets) -> None:
+    def __init__(self, db: AsyncSession, *, buckets: Buckets, flags: FlagReader) -> None:
         self._db = db
+        self._flags = flags
         self._catalog = CatalogRepository(db)
         self._geo = GeoLookup(db)
         self._media = MediaLookup(db, buckets)
@@ -106,6 +113,7 @@ class CatalogReader:
         ], next_cursor
 
     async def listing(self, property_id: uuid.UUID) -> ListingDetail:
+        verified_only = await self._flags.is_enabled(Flag.VERIFIED_ONLY)
         async with self._db.begin():
             found = await self._catalog.property(property_id)
             if found is None:
@@ -145,11 +153,18 @@ class CatalogReader:
             ),
             amenities=tuple(amenities),
             media=tuple(media[media_id] for media_id in media_ids if media_id in media),
-            problems=tuple(publishing_problems(sellable_categories=sellable)),
+            problems=tuple(
+                publishing_problems(
+                    sellable_categories=sellable,
+                    verification=VerificationStatus(found.verification_status),
+                    verified_only=verified_only,
+                )
+            ),
         )
 
     async def history(self, property_id: uuid.UUID) -> list[AuditLog]:
-        """Everything done to the listing, its rooms and its beds, newest first."""
+        """Everything done to the listing, its rooms, its beds and its verification visits,
+        newest first."""
         async with self._db.begin():
             found = await self._catalog.property(property_id)
             if found is None:
@@ -157,11 +172,13 @@ class CatalogReader:
             categories = await self._catalog.categories(found.id)
             rooms = await self._catalog.rooms_of([category.id for category in categories])
             beds = await self._catalog.beds_of([room.id for room in rooms])
+            visits = await self._catalog.visit_ids_of(found.id)
             entity_ids = {
                 str(found.public_id),
                 *(str(category.public_id) for category in categories),
                 *(str(room.public_id) for room in rooms),
                 *(str(bed.public_id) for bed in beds),
+                *(str(visit) for visit in visits),
             }
             return await audit.trail(self._db, entity_ids=entity_ids)
 

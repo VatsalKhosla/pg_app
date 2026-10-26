@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Final, cast
+from typing import TYPE_CHECKING, Any, Final, Protocol, cast
 
 import structlog
 from fastapi import Request  # noqa: TC002 - FastAPI reads dependency signatures at runtime
@@ -46,6 +46,7 @@ class Flag(StrEnum):
     REVIEWS_ENABLED = "reviews_enabled"
     WHATSAPP_ENABLED = "whatsapp_enabled"
     PRICE_SUGGESTIONS_ENABLED = "price_suggestions_enabled"
+    VERIFIED_ONLY = "verified_only"
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,8 +88,19 @@ FLAGS: Final[Mapping[Flag, FlagSpec]] = MappingProxyType(
         Flag.PRICE_SUGGESTIONS_ENABLED: FlagSpec(
             False, "Price suggestions for owners from demand data (Phase 9)."
         ),
+        Flag.VERIFIED_ONLY: FlagSpec(
+            True,
+            "Only PGs a field agent has verified can be published, and search shows only those"
+            " (BUILD_PLAN 2.5).",
+        ),
     }
 )
+
+
+class FlagReader(Protocol):
+    """What a service needs of the flags: FeatureFlags, or fixed values in a test."""
+
+    async def is_enabled(self, flag: Flag) -> bool: ...
 
 
 class FeatureFlag(Model):

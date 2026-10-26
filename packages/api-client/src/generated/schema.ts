@@ -777,6 +777,147 @@ export interface paths {
         patch: operations["catalogUpdateBed"];
         trace?: never;
     };
+    "/v1/ops/field-agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Field agents, to book a visit for one */
+        get: operations["catalogFieldAgents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/properties/{property_id}/verification-visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A property's visits
+         * @description Newest first.
+         */
+        get: operations["catalogPropertyVisits"];
+        put?: never;
+        /**
+         * Book a verification visit
+         * @description For an unverified, failed or suspended property, one visit at a time (409
+         *     INVALID_TRANSITION otherwise). The property is then `scheduled`.
+         */
+        post: operations["catalogBookVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/verification-visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Visits: an agent's own, or every one
+         * @description Soonest first. A field agent sees the visits booked for them; ops and admins see all.
+         */
+        get: operations["catalogVisits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/verification-visits/{visit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A visit, with its report */
+        get: operations["catalogVisit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/verification-visits/{visit_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report on a visit
+         * @description Only by the agent it was booked for. The property becomes `verified`, or `rejected` and
+         *     paused if it was live. A building with a notice from the authorities can't pass (422
+         *     LISTING_INVALID).
+         */
+        post: operations["catalogReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/verification-visits/{visit_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a booked visit
+         * @description The property's verification status goes back to what it was before the booking.
+         */
+        post: operations["catalogCancelVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/properties/{property_id}/verification/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suspend a property's verification
+         * @description A complaint, or a notice from the authorities: a live listing is paused at once.
+         */
+        post: operations["catalogSuspendVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/media": {
         parameters: {
             query?: never;
@@ -843,6 +984,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AgentInfo */
+        AgentInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string | null;
+        };
         /** AmenitiesChange */
         AmenitiesChange: {
             /** Amenities */
@@ -1040,6 +1191,12 @@ export interface components {
             items: components["schemas"]["CityInfo"][];
         };
         /**
+         * Condition
+         * @description The building as a whole, as the agent sees it.
+         * @enum {string}
+         */
+        Condition: "good" | "fair" | "poor";
+        /**
          * ConsentInput
          * @description What the person agreed to: the privacy notice version they were shown (GET
          *     /v1/privacy-notice), and the purposes they chose themselves (never pre-ticked).
@@ -1076,6 +1233,11 @@ export interface components {
             /** Withdrawnat */
             withdrawnAt: string | null;
         };
+        /**
+         * Cracks
+         * @enum {string}
+         */
+        Cracks: "none" | "minor" | "structural";
         /**
          * CsrfToken
          * @description Send this value in the X-CSRF-Token header of every POST, PUT, PATCH and DELETE.
@@ -1146,6 +1308,11 @@ export interface components {
          * @enum {string}
          */
         DataRequestStatus: "received" | "ready" | "expired" | "completed" | "rejected";
+        /** FieldAgentList */
+        FieldAgentList: {
+            /** Items */
+            items: components["schemas"]["AgentInfo"][];
+        };
         /**
          * FieldError
          * @description One invalid input. ``pointer`` locates a body field (JSON Pointer, e.g. ``/moveIn``);
@@ -1256,6 +1423,10 @@ export interface components {
             status: components["schemas"]["PropertyStatus"];
             /** Nextstatuses */
             nextStatuses: components["schemas"]["PropertyStatus"][];
+            /** Canbookvisit */
+            canBookVisit: boolean;
+            /** Cansuspend */
+            canSuspend: boolean;
             /** Publishedat */
             publishedAt: string | null;
             owner: components["schemas"]["OwnerInfo"];
@@ -1303,6 +1474,10 @@ export interface components {
             status: components["schemas"]["PropertyStatus"];
             /** Nextstatuses */
             nextStatuses: components["schemas"]["PropertyStatus"][];
+            /** Canbookvisit */
+            canBookVisit: boolean;
+            /** Cansuspend */
+            canSuspend: boolean;
             /** Publishedat */
             publishedAt: string | null;
             owner: components["schemas"]["OwnerInfo"];
@@ -1762,7 +1937,7 @@ export interface components {
          * Purpose
          * @enum {string}
          */
-        Purpose: "listing_photo" | "listing_video" | "document";
+        Purpose: "listing_photo" | "listing_video" | "document" | "verification_photo";
         /** QueuedDataRequest */
         QueuedDataRequest: {
             /**
@@ -1800,6 +1975,11 @@ export interface components {
                 [key: string]: "ok" | "unavailable";
             };
         };
+        /** Reason */
+        Reason: {
+            /** Reason */
+            reason: string;
+        };
         /** Rendition */
         Rendition: {
             /** Name */
@@ -1827,6 +2007,26 @@ export interface components {
             height: number | null;
             /** Bytes */
             bytes: number;
+        };
+        /** ReportSubmit */
+        ReportSubmit: {
+            checklist: components["schemas"]["VisitChecklist"];
+            result: components["schemas"]["VisitResult"];
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            position: components["schemas"]["LatLng"];
+            /** Accuracym */
+            accuracyM: number;
+            /** Photos */
+            photos: string[];
+            /**
+             * Movepin
+             * @default false
+             */
+            movePin: boolean;
         };
         /** Requester */
         Requester: {
@@ -2011,6 +2211,123 @@ export interface components {
          * @enum {string}
          */
         VerificationStatus: "unverified" | "scheduled" | "verified" | "rejected" | "suspended";
+        /**
+         * VisitChecklist
+         * @description The agent's answers on site. Every field is required, so nothing is assumed.
+         */
+        VisitChecklist: {
+            /** Buildingageyears */
+            buildingAgeYears: number | null;
+            condition: components["schemas"]["Condition"];
+            cracks: components["schemas"]["Cracks"];
+            /** Exits */
+            exits: number;
+            /** Fireextinguishers */
+            fireExtinguishers: boolean;
+            /** Cctv */
+            cctv: boolean;
+            /** Warden */
+            warden: boolean;
+            /** Womensafety */
+            womenSafety: components["schemas"]["WomenSafety"][];
+            /** Licencenumber */
+            licenceNumber: string | null;
+            societyPermission: components["schemas"]["SocietyPermission"];
+            /** Authoritynotice */
+            authorityNotice: boolean;
+        };
+        /** VisitCreate */
+        VisitCreate: {
+            /**
+             * Agent
+             * Format: uuid
+             */
+            agent: string;
+            /**
+             * Scheduledfor
+             * Format: date-time
+             */
+            scheduledFor: string;
+        };
+        /** VisitInfo */
+        VisitInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            status: components["schemas"]["VisitStatus"];
+            /**
+             * Scheduledfor
+             * Format: date-time
+             */
+            scheduledFor: string;
+            agent: components["schemas"]["AgentInfo"] | null;
+            property: components["schemas"]["VisitPlace"];
+            /** Submittedat */
+            submittedAt: string | null;
+            result: components["schemas"]["VisitResult"] | null;
+            /** Notes */
+            notes: string;
+            position: components["schemas"]["LatLng"] | null;
+            /** Accuracym */
+            accuracyM: number | null;
+            /** Distancem */
+            distanceM: number | null;
+            checklist: components["schemas"]["VisitChecklist"] | null;
+            /** Photos */
+            photos: components["schemas"]["ListingMedia"][];
+            /** Cancelledat */
+            cancelledAt: string | null;
+            /** Cancelreason */
+            cancelReason: string | null;
+        };
+        /** VisitPage */
+        VisitPage: {
+            /** Items */
+            items: components["schemas"]["VisitInfo"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /**
+         * VisitPlace
+         * @description The property, as the agent needs it to get there: staff see the address and the pin.
+         */
+        VisitPlace: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Addressline */
+            addressLine: string;
+            location: components["schemas"]["LatLng"];
+            locality: components["schemas"]["ListingLocality"];
+            /** Ownerbusinessname */
+            ownerBusinessName: string;
+            /** Ownerphone */
+            ownerPhone: string | null;
+            verificationStatus: components["schemas"]["VerificationStatus"];
+            status: components["schemas"]["PropertyStatus"];
+        };
+        /**
+         * VisitResult
+         * @enum {string}
+         */
+        VisitResult: "passed" | "failed";
+        /**
+         * VisitStatus
+         * @enum {string}
+         */
+        VisitStatus: "scheduled" | "submitted" | "cancelled";
+        /**
+         * WomenSafety
+         * @description Features that make a PG safer for women, ticked where the agent saw them.
+         * @enum {string}
+         */
+        WomenSafety: "woman_staff" | "secure_entry" | "lit_approach" | "visitor_log" | "separate_floors";
     };
     responses: never;
     parameters: never;
@@ -3835,6 +4152,347 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BedUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogFieldAgents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldAgentList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogPropertyVisits: {
+        parameters: {
+            query?: {
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogBookVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisitCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogVisits: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["VisitStatus"] | null;
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportSubmit"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogCancelVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Reason"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogSuspendVerification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Reason"];
             };
         };
         responses: {

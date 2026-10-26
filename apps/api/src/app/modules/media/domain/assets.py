@@ -20,6 +20,9 @@ class Purpose(StrEnum):
     LISTING_VIDEO = "listing_video"
     # A private file: a licence, an agreement scan, a KYC document.
     DOCUMENT = "document"
+    # A field agent's evidence from a verification visit (ADR 0024): kept private, like a
+    # document, but prepared as a photo.
+    VERIFICATION_PHOTO = "verification_photo"
 
 
 class Visibility(StrEnum):
@@ -61,6 +64,7 @@ RULES: Final = {
     Purpose.LISTING_PHOTO: Rules(frozenset({JPEG, PNG, WEBP}), 15 * MIB, Visibility.PUBLIC),
     Purpose.LISTING_VIDEO: Rules(frozenset({MP4}), 200 * MIB, Visibility.PUBLIC),
     Purpose.DOCUMENT: Rules(frozenset({PDF, JPEG, PNG}), 10 * MIB, Visibility.PRIVATE),
+    Purpose.VERIFICATION_PHOTO: Rules(frozenset({JPEG, PNG, WEBP}), 15 * MIB, Visibility.PRIVATE),
 }
 
 # How long a presigned upload stays usable, and a signed link to a private file.

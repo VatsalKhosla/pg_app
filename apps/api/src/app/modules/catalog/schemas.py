@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import AwareDatetime, Field
 
 from app.core.schemas import ApiModel
 from app.modules.catalog.domain.charges import LABEL_MAX_LENGTH, UNIT_MAX_LENGTH, ChargeKind
@@ -21,6 +21,20 @@ from app.modules.catalog.domain.listing import (
 )
 from app.modules.catalog.domain.owners import KycStatus, OwnerStatus
 from app.modules.catalog.domain.rooms import BedStatus, CategoryStatus, Occupancy
+from app.modules.catalog.domain.verification import (
+    LICENCE_NUMBER_MAX_LENGTH,
+    MAX_PHOTOS,
+    MIN_PHOTOS,
+    MOST_EXITS,
+    NOTES_MAX_LENGTH,
+    OLDEST_BUILDING_YEARS,
+    REASON_MAX_LENGTH,
+    Condition,
+    Cracks,
+    VisitResult,
+    VisitStatus,
+    WomenSafety,
+)
 
 Paise = Annotated[int, Field(ge=0)]
 Text = Annotated[str, Field(max_length=5_000)]
@@ -263,6 +277,10 @@ class ListingInfo(ApiModel):
     status: PropertyStatus
     # The statuses it can move to from this one (POST .../status).
     next_statuses: list[PropertyStatus]
+    # Whether a verification visit can be booked for it now, and whether its verification can be
+    # suspended (ADR 0024).
+    can_book_visit: bool
+    can_suspend: bool
     published_at: datetime | None
     owner: OwnerInfo
     locality: ListingLocality
@@ -314,3 +332,98 @@ class AmenityInfo(ApiModel):
 
 class AmenityList(ApiModel):
     items: list[AmenityInfo]
+
+
+# Verification visits (ADR 0024).
+
+
+class AgentInfo(ApiModel):
+    id: uuid.UUID
+    name: str | None
+
+
+class FieldAgentList(ApiModel):
+    items: list[AgentInfo]
+
+
+class VisitCreate(ApiModel):
+    # A field agent (GET /v1/ops/field-agents).
+    agent: uuid.UUID
+    # With its offset, so there is no doubt about the time zone.
+    scheduled_for: AwareDatetime
+
+
+class Reason(ApiModel):
+    reason: str = Field(min_length=1, max_length=REASON_MAX_LENGTH)
+
+
+class VisitChecklist(ApiModel):
+    """The agent's answers on site. Every field is required, so nothing is assumed."""
+
+    # As the owner or a document says; null if nobody knows.
+    building_age_years: int | None = Field(ge=0, le=OLDEST_BUILDING_YEARS)
+    condition: Condition
+    cracks: Cracks
+    exits: int = Field(ge=0, le=MOST_EXITS)
+    fire_extinguishers: bool
+    cctv: bool
+    warden: bool
+    women_safety: list[WomenSafety] = Field(max_length=len(WomenSafety))
+    # As shown on the licence on site; null if there is none to see.
+    licence_number: str | None = Field(max_length=LICENCE_NUMBER_MAX_LENGTH)
+    society_permission: SocietyPermission
+    # A sealing, demolition or unsafe-building notice from the authorities: the visit can't pass.
+    authority_notice: bool
+
+
+class ReportSubmit(ApiModel):
+    checklist: VisitChecklist
+    result: VisitResult
+    # Required when the visit failed.
+    notes: str = Field(default="", max_length=NOTES_MAX_LENGTH)
+    # Where the agent's phone says they are, and how sure it is (metres).
+    position: LatLng
+    accuracy_m: float = Field(ge=0, le=10_000)
+    # Verification photos the agent uploaded (purpose verification_photo), in order.
+    photos: list[uuid.UUID] = Field(min_length=MIN_PHOTOS, max_length=MAX_PHOTOS)
+    # Make the agent's position the building's pin; a new public point follows.
+    move_pin: bool = False
+
+
+class VisitPlace(ApiModel):
+    """The property, as the agent needs it to get there: staff see the address and the pin."""
+
+    id: uuid.UUID
+    name: str
+    address_line: str
+    location: LatLng
+    locality: ListingLocality
+    owner_business_name: str
+    owner_phone: str | None
+    verification_status: VerificationStatus
+    status: PropertyStatus
+
+
+class VisitInfo(ApiModel):
+    id: uuid.UUID
+    status: VisitStatus
+    scheduled_for: datetime
+    agent: AgentInfo | None
+    property: VisitPlace
+    # The report, once in: when (the server's clock), where the agent was, how far that was from
+    # the pin, the answers, and private photos behind links signed for five minutes.
+    submitted_at: datetime | None
+    result: VisitResult | None
+    notes: str
+    position: LatLng | None
+    accuracy_m: int | None
+    distance_m: int | None
+    checklist: VisitChecklist | None
+    photos: list[ListingMedia]
+    cancelled_at: datetime | None
+    cancel_reason: str | None
+
+
+class VisitPage(ApiModel):
+    items: list[VisitInfo]
+    next_cursor: uuid.UUID | None

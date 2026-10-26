@@ -23,6 +23,7 @@ from app.modules.catalog.domain.charges import (
 from app.modules.catalog.domain.listing import (
     SLUG_MAX_LENGTH,
     PropertyStatus,
+    VerificationStatus,
     can_move,
     free_slug,
     next_statuses,
@@ -84,8 +85,35 @@ def test_the_next_statuses_are_exactly_those_it_can_move_to(current: PropertySta
 
 
 def test_publishing_needs_something_to_sell() -> None:
-    assert publishing_problems(sellable_categories=0)
-    assert publishing_problems(sellable_categories=1) == []
+    verified = VerificationStatus.VERIFIED
+
+    assert publishing_problems(sellable_categories=0, verification=verified, verified_only=True)
+    assert (
+        publishing_problems(sellable_categories=1, verification=verified, verified_only=True) == []
+    )
+
+
+@pytest.mark.parametrize(
+    ("verification", "verified_only", "publishable"),
+    [
+        (VerificationStatus.VERIFIED, True, True),
+        (VerificationStatus.UNVERIFIED, True, False),
+        (VerificationStatus.SCHEDULED, True, False),
+        (VerificationStatus.UNVERIFIED, False, True),
+        (VerificationStatus.SCHEDULED, False, True),
+        # A building that failed its checks, or was suspended, never goes live.
+        (VerificationStatus.REJECTED, False, False),
+        (VerificationStatus.SUSPENDED, False, False),
+    ],
+)
+def test_publishing_needs_a_passed_verification_while_the_flag_says_so(
+    verification: VerificationStatus, verified_only: bool, publishable: bool
+) -> None:
+    problems = publishing_problems(
+        sellable_categories=1, verification=verification, verified_only=verified_only
+    )
+
+    assert (problems == []) is publishable
 
 
 @pytest.mark.parametrize(

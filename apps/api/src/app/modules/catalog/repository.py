@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from geoalchemy2 import Geography
-from sqlalchemy import cast, delete, func, insert, or_, select, update
+from sqlalchemy import and_, cast, delete, func, insert, or_, select, update
 
 from app.core import postgis
 from app.core.geometry import Point
@@ -21,8 +21,15 @@ from app.modules.catalog.domain.charges import (
     MonthlyCharge,
     OneTimeCharge,
 )
-from app.modules.catalog.domain.listing import PropertyStatus
+from app.modules.catalog.domain.listing import PropertyStatus, SocietyPermission
 from app.modules.catalog.domain.rooms import BedStatus, CategoryStatus, Occupancy
+from app.modules.catalog.domain.verification import (
+    Checklist,
+    Condition,
+    Cracks,
+    VisitStatus,
+    WomenSafety,
+)
 from app.modules.catalog.models import (
     Amenity,
     Bed,
@@ -32,6 +39,8 @@ from app.modules.catalog.models import (
     PropertyMedia,
     Room,
     RoomCategory,
+    VerificationPhoto,
+    VerificationVisit,
 )
 
 if TYPE_CHECKING:
@@ -105,6 +114,38 @@ def charges_from_json(stored: Iterable[dict[str, Any]]) -> tuple[MandatoryCharge
     return tuple(charges)
 
 
+def checklist_to_json(checklist: Checklist) -> dict[str, Any]:
+    return {
+        "building_age_years": checklist.building_age_years,
+        "condition": checklist.condition.value,
+        "cracks": checklist.cracks.value,
+        "exits": checklist.exits,
+        "fire_extinguishers": checklist.fire_extinguishers,
+        "cctv": checklist.cctv,
+        "warden": checklist.warden,
+        "women_safety": sorted(feature.value for feature in checklist.women_safety),
+        "licence_number": checklist.licence_number,
+        "society_permission": checklist.society_permission.value,
+        "authority_notice": checklist.authority_notice,
+    }
+
+
+def checklist_from_json(stored: dict[str, Any]) -> Checklist:
+    return Checklist(
+        building_age_years=stored["building_age_years"],
+        condition=Condition(stored["condition"]),
+        cracks=Cracks(stored["cracks"]),
+        exits=stored["exits"],
+        fire_extinguishers=stored["fire_extinguishers"],
+        cctv=stored["cctv"],
+        warden=stored["warden"],
+        women_safety=frozenset(WomenSafety(feature) for feature in stored["women_safety"]),
+        licence_number=stored["licence_number"],
+        society_permission=SocietyPermission(stored["society_permission"]),
+        authority_notice=stored["authority_notice"],
+    )
+
+
 def _escape_like(text: str) -> str:
     """``text`` as a literal inside a LIKE pattern."""
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
@@ -151,6 +192,35 @@ class CatalogRepository:
 
     async def property_by_slug(self, slug: str) -> Property | None:
         return await self._db.scalar(select(Property).where(Property.slug == slug))
+
+    async def property_by_id(self, property_id: int, *, lock: bool = False) -> Property:
+        """A property another row points at, so it exists."""
+        query = select(Property).where(Property.id == property_id)
+        return (await self._db.execute(query.with_for_update() if lock else query)).scalar_one()
+
+    async def properties_by_id(self, ids: Collection[int]) -> dict[int, Property]:
+        if not ids:
+            return {}
+        rows = await self._db.scalars(select(Property).where(Property.id.in_(ids)))
+        return {row.id: row for row in rows}
+
+    async def visit_ids_of(self, property_id: int) -> list[uuid.UUID]:
+        """The public ids of a property's verification visits."""
+        rows = await self._db.scalars(
+            select(VerificationVisit.public_id).where(VerificationVisit.property_id == property_id)
+        )
+        return list(rows)
+
+    async def exact_points(self, ids: Collection[int]) -> dict[int, Point]:
+        """Each property's exact point, which only staff see."""
+        if not ids:
+            return {}
+        rows = await self._db.execute(
+            select(
+                Property.id, postgis.lat(Property.location), postgis.lng(Property.location)
+            ).where(Property.id.in_(ids))
+        )
+        return {row_id: Point(lat=lat, lng=lng) for row_id, lat, lng in rows}
 
     async def points(self, property_id: int) -> tuple[Point, Point]:
         """The exact and display points."""
@@ -437,3 +507,120 @@ class CatalogRepository:
             .order_by(Property.public_id)
         )
         return list(found)
+
+
+class VisitRepository:
+    """Verification visits and their photos (ADR 0024)."""
+
+    def __init__(self, db: AsyncSession) -> None:
+        self._db = db
+
+    async def visit(self, public_id: uuid.UUID, *, lock: bool = False) -> VerificationVisit | None:
+        query = select(VerificationVisit).where(VerificationVisit.public_id == public_id)
+        return await self._db.scalar(query.with_for_update() if lock else query)
+
+    async def position(self, visit_id: int) -> Point | None:
+        """Where the agent's phone said they were, once the report is in."""
+        row = (
+            await self._db.execute(
+                select(
+                    postgis.lat(VerificationVisit.position),
+                    postgis.lng(VerificationVisit.position),
+                ).where(VerificationVisit.id == visit_id, VerificationVisit.position.is_not(None))
+            )
+        ).one_or_none()
+        return None if row is None else Point(lat=row[0], lng=row[1])
+
+    async def positions(self, visit_ids: Collection[int]) -> dict[int, Point]:
+        if not visit_ids:
+            return {}
+        rows = await self._db.execute(
+            select(
+                VerificationVisit.id,
+                postgis.lat(VerificationVisit.position),
+                postgis.lng(VerificationVisit.position),
+            ).where(VerificationVisit.id.in_(visit_ids), VerificationVisit.position.is_not(None))
+        )
+        return {visit_id: Point(lat=lat, lng=lng) for visit_id, lat, lng in rows}
+
+    async def set_position(self, visit: VerificationVisit, point: Point) -> None:
+        await self._db.execute(
+            update(VerificationVisit)
+            .where(VerificationVisit.id == visit.id)
+            .values(position=postgis.point_wkt(point))
+            .execution_options(synchronize_session=False)
+        )
+        self._db.expire(visit, ["position"])
+
+    async def of_property(
+        self, property_id: int, *, before: uuid.UUID | None, limit: int
+    ) -> list[VerificationVisit]:
+        """A property's visits, newest first: ``limit + 1`` at most, so the caller can tell
+        whether another page follows."""
+        query = (
+            select(VerificationVisit)
+            .where(VerificationVisit.property_id == property_id)
+            .order_by(VerificationVisit.public_id.desc())
+            .limit(limit + 1)
+        )
+        if before is not None:
+            query = query.where(VerificationVisit.public_id < before)
+        return list(await self._db.scalars(query))
+
+    async def page(
+        self,
+        *,
+        after: uuid.UUID | None,
+        limit: int,
+        agent_id: int | None = None,
+        status: VisitStatus | None = None,
+    ) -> list[VerificationVisit]:
+        """Visits by when they're booked for, soonest first, then by public id: ``limit + 1``
+        at most. ``after`` is the last visit of the previous page."""
+        query = (
+            select(VerificationVisit)
+            .order_by(VerificationVisit.scheduled_for, VerificationVisit.public_id)
+            .limit(limit + 1)
+        )
+        if agent_id is not None:
+            query = query.where(VerificationVisit.agent_id == agent_id)
+        if status is not None:
+            query = query.where(VerificationVisit.status == status)
+        if after is not None:
+            anchor = await self.visit(after)
+            if anchor is None:
+                return []
+            query = query.where(
+                or_(
+                    VerificationVisit.scheduled_for > anchor.scheduled_for,
+                    and_(
+                        VerificationVisit.scheduled_for == anchor.scheduled_for,
+                        VerificationVisit.public_id > anchor.public_id,
+                    ),
+                )
+            )
+        return list(await self._db.scalars(query))
+
+    async def photos_of(self, visit_ids: Collection[int]) -> dict[int, list[int]]:
+        """Each visit's photos (media asset ids), in the order taken."""
+        if not visit_ids:
+            return {}
+        rows = await self._db.execute(
+            select(VerificationPhoto.visit_id, VerificationPhoto.media_asset_id)
+            .where(VerificationPhoto.visit_id.in_(visit_ids))
+            .order_by(VerificationPhoto.visit_id, VerificationPhoto.position)
+        )
+        photos: dict[int, list[int]] = {}
+        for visit_id, asset_id in rows:
+            photos.setdefault(visit_id, []).append(asset_id)
+        return photos
+
+    async def add_photos(self, visit_id: int, asset_ids: Sequence[int]) -> None:
+        if asset_ids:
+            await self._db.execute(
+                insert(VerificationPhoto),
+                [
+                    {"visit_id": visit_id, "media_asset_id": asset_id, "position": position}
+                    for position, asset_id in enumerate(asset_ids)
+                ],
+            )

@@ -232,7 +232,7 @@ def _process(asset: MediaAsset, original: Path, work: Path, now: datetime) -> Pr
         msg = f"the file isn't the {asset.content_type} it was said to be"
         raise UnprocessableError(msg)
     match Purpose(asset.purpose):
-        case Purpose.LISTING_PHOTO:
+        case Purpose.LISTING_PHOTO | Purpose.VERIFICATION_PHOTO:
             return process_photo(original.read_bytes(), asset.content_type, now=now)
         case Purpose.LISTING_VIDEO:
             return process_video(original, work)
@@ -322,19 +322,47 @@ class MediaRef:
     content_type: str
     verified_capture: bool
     captured_at: datetime | None
+    uploaded_by: int | None
     renditions: tuple[RenditionView, ...]
 
 
 class MediaLookup:
     """Media reads for other modules, inside the caller's transaction (it starts none): what the
-    catalog attaches to a listing. Only public media come with addresses."""
+    catalog attaches to a listing, or to a verification report. Public media come with their
+    addresses; private ones only when the caller passes ``storage``, with links signed for five
+    minutes, and only for a caller that has already decided the reader may see them."""
 
-    def __init__(self, db: AsyncSession, buckets: Buckets) -> None:
+    def __init__(
+        self, db: AsyncSession, buckets: Buckets, *, storage: ObjectStorage | None = None
+    ) -> None:
         self._media = MediaRepository(db)
         self._buckets = buckets
+        self._storage = storage
+
+    def _url(self, asset: MediaAsset, key: str) -> str | None:
+        if asset.visibility == Visibility.PUBLIC:
+            return f"{self._buckets.public_base_url}/{key}"
+        if self._storage is None:
+            return None
+        return self._storage.presign_download(
+            self._buckets.private, key, expires_in=SIGNED_URL_TTL, filename=key.rsplit("/", 1)[-1]
+        )
 
     def _ref(self, asset: MediaAsset) -> MediaRef:
-        public = asset.visibility == Visibility.PUBLIC
+        renditions = []
+        for stored in asset.renditions:
+            url = self._url(asset, str(stored["key"]))
+            if url is not None:
+                renditions.append(
+                    RenditionView(
+                        name=str(stored["name"]),
+                        content_type=str(stored["content_type"]),
+                        url=url,
+                        width=_maybe_int(stored.get("width")),
+                        height=_maybe_int(stored.get("height")),
+                        bytes=int(str(stored["bytes"])),
+                    )
+                )
         return MediaRef(
             id=asset.id,
             public_id=asset.public_id,
@@ -343,19 +371,8 @@ class MediaLookup:
             content_type=asset.content_type,
             verified_capture=asset.verified_capture,
             captured_at=asset.captured_at,
-            renditions=tuple(
-                RenditionView(
-                    name=str(stored["name"]),
-                    content_type=str(stored["content_type"]),
-                    url=f"{self._buckets.public_base_url}/{stored['key']}",
-                    width=_maybe_int(stored.get("width")),
-                    height=_maybe_int(stored.get("height")),
-                    bytes=int(str(stored["bytes"])),
-                )
-                for stored in asset.renditions
-            )
-            if public
-            else (),
+            uploaded_by=asset.uploaded_by,
+            renditions=tuple(renditions),
         )
 
     async def by_public_id(self, public_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, MediaRef]:

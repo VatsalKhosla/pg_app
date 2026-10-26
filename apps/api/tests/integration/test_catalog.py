@@ -58,6 +58,7 @@ from app.modules.catalog.service import (
 from app.modules.geo.reference import read_reference_data
 from app.modules.geo.service import GeoReferenceLoader
 from app.modules.identity.repository import UserRepository
+from tests.flags import FixedFlags
 from tests.storage import BUCKETS
 
 pytestmark = pytest.mark.integration
@@ -86,7 +87,11 @@ class World:
     owner: Owner
 
     def listings(self, db: AsyncSession) -> ListingService:
-        return ListingService(db, self.clock, buckets=BUCKETS)
+        # These are step 2.2's listings, published without the verification visit that
+        # verified_only asks for (tests/integration/test_verification.py covers that).
+        return ListingService(
+            db, self.clock, buckets=BUCKETS, flags=FixedFlags(verified_only=False)
+        )
 
     def inventory(self, db: AsyncSession) -> InventoryService:
         return InventoryService(db, self.clock)

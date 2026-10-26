@@ -4,157 +4,27 @@ published once it has a bed to sell, its photos in order, and every step in its 
 Listings here are fictional, placed by moving away from a seeded campus.
 """
 
-import asyncio
-import secrets
 from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime
 from typing import Any
 
-import httpx
 import pytest
-from fastapi import FastAPI
 from sqlalchemy import event
 
 from app.config import Settings
 from app.core.actor import Role
-from app.core.clock import FrozenClock
-from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
-from app.core.csrf import issue_csrf_token
-from app.main import create_app
-from app.modules.catalog.domain.location import Offset, moved
-from app.modules.geo.reference import read_reference_data
-from app.modules.geo.service import GeoReferenceLoader
-from app.modules.identity.domain.sessions import SessionKind
-from app.modules.identity.repository import UserRepository
-from app.modules.identity.service import SessionService
-from app.modules.media.domain.assets import AssetStatus, Moderation, Purpose, Visibility
-from app.modules.media.models import MediaAsset
-from app.modules.media.repository import MediaRepository
-from tests.conftest import TEST_SECRET_KEY
+from app.modules.media.domain.assets import AssetStatus
+from tests.staff_api import Staff, run_as_staff, verify
+from tests.staff_api import spot as _spot
 
 pytestmark = pytest.mark.integration
 
-DATA = read_reference_data()
-CAMPUS = next(campus for campus in DATA.campuses if campus.slug == "hindu-college").location.point
-
-
-def _phone() -> str:
-    return f"{6_000_000_000 + secrets.randbelow(4_000_000_000)}"
-
-
-def _spot(metres: float, bearing: float = 45.0) -> dict[str, float]:
-    point = moved(CAMPUS, Offset(bearing_deg=bearing, distance_m=metres))
-    return {"lat": point.lat, "lng": point.lng}
-
-
-class Ops:
-    """A member of ops, signed in to staff tools, using the API as the console does."""
-
-    def __init__(self, app: FastAPI, client: httpx.AsyncClient, token: str) -> None:
-        self.app = app
-        self.client = client
-        self._token = token
-
-    def _headers(self) -> dict[str, str]:
-        csrf = issue_csrf_token(TEST_SECRET_KEY.encode(), self._token)
-        return {
-            CSRF_HEADER: csrf,
-            "Cookie": f"{SESSION_COOKIE}={self._token}; {CSRF_COOKIE}={csrf}",
-        }
-
-    async def call(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
-        return await self.client.request(method, path, headers=self._headers(), **kwargs)
-
-    async def ok(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
-        response = await self.call(method, path, **kwargs)
-        assert response.status_code in {200, 201}, response.text
-        body: dict[str, Any] = response.json()
-        return body
-
-    async def owner(self) -> dict[str, Any]:
-        return await self.ok(
-            "POST",
-            "/v1/ops/owners",
-            json={
-                "phone": _phone(),
-                "legalName": "Fictional Stays Private Limited",
-                "businessName": f"Fictional Stays {secrets.token_hex(3)}",
-                "name": "A Fictional Owner",
-            },
-        )
-
-    async def listing(self, owner: dict[str, Any], *, at: dict[str, float]) -> dict[str, Any]:
-        return await self.ok(
-            "POST",
-            "/v1/ops/properties",
-            json={
-                "owner": owner["id"],
-                "locality": "kamla-nagar",
-                "name": "Fictional Residency",
-                "addressLine": "House 1, a fictional lane",
-                "location": at,
-                "locationPrecision": "exact",
-                "genderPolicy": "girls",
-                "meals": "two",
-                "houseRules": ["No smoking"],
-            },
-        )
-
-    async def media(self, status: AssetStatus = AssetStatus.READY) -> str:
-        """A listing photo the media pipeline has finished with (or rejected)."""
-        async with self.app.state.sessionmaker() as db, db.begin():
-            asset = await MediaRepository(db).add(
-                MediaAsset(
-                    purpose=Purpose.LISTING_PHOTO,
-                    visibility=Visibility.PUBLIC,
-                    status=status,
-                    moderation=Moderation.APPROVED,
-                    content_type="image/jpeg",
-                    renditions=[]
-                    if status != AssetStatus.READY
-                    else [
-                        {
-                            "name": "card",
-                            "content_type": "image/webp",
-                            "key": "media/fictional/card.webp",
-                            "width": 480,
-                            "height": 360,
-                            "bytes": 1000,
-                        }
-                    ],
-                    verified_capture=False,
-                )
-            )
-            return str(asset.public_id)
+Ops = Staff
 
 
 @pytest.fixture
 def run(make_settings: Callable[..., Settings], database_url: str) -> Callable[..., Any]:
     def run_scenario(scenario: Callable[[Ops], Awaitable[Any]], *, role: Role = Role.OPS) -> Any:
-        app = create_app(
-            make_settings(database_url=database_url),
-            clock=FrozenClock(datetime(2027, 7, 14, 10, 0, tzinfo=UTC)),
-        )
-
-        async def wrapped() -> Any:
-            async with app.router.lifespan_context(app):
-                async with app.state.sessionmaker() as db:
-                    await GeoReferenceLoader(db, app.state.clock).load(DATA)
-                async with app.state.sessionmaker() as db:
-                    async with db.begin():
-                        user = await UserRepository(db).add(
-                            phone_e164=f"+91{_phone()}", roles=[role]
-                        )
-                    session = await SessionService(db, app.state.clock).start(
-                        user.id, kind=SessionKind.STAFF, ip_address=None, user_agent=None
-                    )
-                transport = httpx.ASGITransport(app=app)
-                async with httpx.AsyncClient(
-                    transport=transport, base_url="https://api.test"
-                ) as client:
-                    return await scenario(Ops(app, client, session.token))
-
-        return asyncio.run(wrapped())
+        return run_as_staff(make_settings(database_url=database_url), scenario, role=role)
 
     return run_scenario
 
@@ -296,11 +166,17 @@ def test_a_listing_is_published_with_its_photos_in_order_and_its_history_kept(
     run: Callable[..., Any],
 ) -> None:
     async def scenario(ops: Ops) -> dict[str, Any]:
-        listing_id = (await _with_a_room(ops, at=_spot(1_000)))["id"]
+        built = await _with_a_room(ops, at=_spot(1_000))
+        listing_id = built["id"]
         photo, cover = await ops.media(), await ops.media()
         rejected = await ops.media(AssetStatus.REJECTED)
+        unverified = await ops.call(
+            "POST", f"/v1/ops/properties/{listing_id}/status", json={"status": "published"}
+        )
+        await verify(ops, built)
         return {
             "ids": {"listing": listing_id, "cover": cover, "photo": photo},
+            "unverified": unverified,
             "amenities": await ops.ok(
                 "PUT",
                 f"/v1/ops/properties/{listing_id}/amenities",
@@ -322,6 +198,11 @@ def test_a_listing_is_published_with_its_photos_in_order_and_its_history_kept(
     steps = run(scenario)
 
     ids = steps["ids"]
+    # Not before a field agent has verified it (verified_only, on by default).
+    assert (steps["unverified"].status_code, steps["unverified"].json()["detail"]) == (
+        409,
+        "needs a passed verification visit",
+    )
     assert steps["amenities"]["amenities"] == ["cctv", "wifi"]
     assert [media["id"] for media in steps["media"]["media"]] == [ids["cover"], ids["photo"]]
     assert steps["media"]["media"][0]["renditions"][0]["url"].endswith("card.webp")
@@ -340,6 +221,8 @@ def test_a_listing_is_published_with_its_photos_in_order_and_its_history_kept(
         "catalog.room_added",
         "catalog.amenities_set",
         "catalog.media_set",
+        "catalog.verification_scheduled",
+        "catalog.verification_submitted",
     } <= set(actions)
 
 

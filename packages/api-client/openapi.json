@@ -2534,6 +2534,530 @@
         }
       }
     },
+    "/v1/ops/field-agents": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Field agents, to book a visit for one",
+        "operationId": "catalogFieldAgents",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldAgentList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/properties/{property_id}/verification-visits": {
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Book a verification visit",
+        "description": "For an unverified, failed or suspended property, one visit at a time (409\nINVALID_TRANSITION otherwise). The property is then `scheduled`.",
+        "operationId": "catalogBookVisit",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "A property's visits",
+        "description": "Newest first.",
+        "operationId": "catalogPropertyVisits",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/verification-visits": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Visits: an agent's own, or every one",
+        "description": "Soonest first. A field agent sees the visits booked for them; ops and admins see all.",
+        "operationId": "catalogVisits",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/VisitStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/verification-visits/{visit_id}": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "A visit, with its report",
+        "operationId": "catalogVisit",
+        "parameters": [
+          {
+            "name": "visit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visit Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/verification-visits/{visit_id}/report": {
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Report on a visit",
+        "description": "Only by the agent it was booked for. The property becomes `verified`, or `rejected` and\npaused if it was live. A building with a notice from the authorities can't pass (422\nLISTING_INVALID).",
+        "operationId": "catalogReport",
+        "parameters": [
+          {
+            "name": "visit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visit Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportSubmit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/verification-visits/{visit_id}/cancel": {
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Cancel a booked visit",
+        "description": "The property's verification status goes back to what it was before the booking.",
+        "operationId": "catalogCancelVisit",
+        "parameters": [
+          {
+            "name": "visit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visit Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/properties/{property_id}/verification/suspend": {
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Suspend a property's verification",
+        "description": "A complaint, or a notice from the authorities: a live listing is paused at once.",
+        "operationId": "catalogSuspendVerification",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/media": {
       "post": {
         "tags": [
@@ -2697,6 +3221,33 @@
   },
   "components": {
     "schemas": {
+      "AgentInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "AgentInfo"
+      },
       "AmenitiesChange": {
         "properties": {
           "amenities": {
@@ -3362,6 +3913,16 @@
         ],
         "title": "CityList"
       },
+      "Condition": {
+        "type": "string",
+        "enum": [
+          "good",
+          "fair",
+          "poor"
+        ],
+        "title": "Condition",
+        "description": "The building as a whole, as the agent sees it."
+      },
       "ConsentInput": {
         "properties": {
           "noticeVersion": {
@@ -3450,6 +4011,15 @@
           "withdrawnAt"
         ],
         "title": "ConsentRecord"
+      },
+      "Cracks": {
+        "type": "string",
+        "enum": [
+          "none",
+          "minor",
+          "structural"
+        ],
+        "title": "Cracks"
       },
       "CsrfToken": {
         "properties": {
@@ -3650,6 +4220,23 @@
           "rejected"
         ],
         "title": "DataRequestStatus"
+      },
+      "FieldAgentList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AgentInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "FieldAgentList"
       },
       "FieldError": {
         "properties": {
@@ -3907,6 +4494,14 @@
             "type": "array",
             "title": "Nextstatuses"
           },
+          "canBookVisit": {
+            "type": "boolean",
+            "title": "Canbookvisit"
+          },
+          "canSuspend": {
+            "type": "boolean",
+            "title": "Cansuspend"
+          },
           "publishedAt": {
             "anyOf": [
               {
@@ -3983,6 +4578,8 @@
           "instantConfirm",
           "status",
           "nextStatuses",
+          "canBookVisit",
+          "canSuspend",
           "publishedAt",
           "owner",
           "locality",
@@ -4073,6 +4670,14 @@
             "type": "array",
             "title": "Nextstatuses"
           },
+          "canBookVisit": {
+            "type": "boolean",
+            "title": "Canbookvisit"
+          },
+          "canSuspend": {
+            "type": "boolean",
+            "title": "Cansuspend"
+          },
           "publishedAt": {
             "anyOf": [
               {
@@ -4141,6 +4746,8 @@
           "instantConfirm",
           "status",
           "nextStatuses",
+          "canBookVisit",
+          "canSuspend",
           "publishedAt",
           "owner",
           "locality",
@@ -5489,7 +6096,8 @@
         "enum": [
           "listing_photo",
           "listing_video",
-          "document"
+          "document",
+          "verification_photo"
         ],
         "title": "Purpose"
       },
@@ -5602,6 +6210,22 @@
         "title": "Readiness",
         "description": "Readiness: whether this instance can serve traffic, with the state of each dependency."
       },
+      "Reason": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "Reason"
+      },
       "Rendition": {
         "properties": {
           "name": {
@@ -5702,6 +6326,56 @@
           "bytes"
         ],
         "title": "RenditionInfo"
+      },
+      "ReportSubmit": {
+        "properties": {
+          "checklist": {
+            "$ref": "#/components/schemas/VisitChecklist"
+          },
+          "result": {
+            "$ref": "#/components/schemas/VisitResult"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Notes",
+            "default": ""
+          },
+          "position": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "accuracyM": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Accuracym"
+          },
+          "photos": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Photos"
+          },
+          "movePin": {
+            "type": "boolean",
+            "title": "Movepin",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "checklist",
+          "result",
+          "position",
+          "accuracyM",
+          "photos"
+        ],
+        "title": "ReportSubmit"
       },
       "Requester": {
         "properties": {
@@ -6170,6 +6844,378 @@
           "suspended"
         ],
         "title": "VerificationStatus"
+      },
+      "VisitChecklist": {
+        "properties": {
+          "buildingAgeYears": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 200.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Buildingageyears"
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Condition"
+          },
+          "cracks": {
+            "$ref": "#/components/schemas/Cracks"
+          },
+          "exits": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Exits"
+          },
+          "fireExtinguishers": {
+            "type": "boolean",
+            "title": "Fireextinguishers"
+          },
+          "cctv": {
+            "type": "boolean",
+            "title": "Cctv"
+          },
+          "warden": {
+            "type": "boolean",
+            "title": "Warden"
+          },
+          "womenSafety": {
+            "items": {
+              "$ref": "#/components/schemas/WomenSafety"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "title": "Womensafety"
+          },
+          "licenceNumber": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licencenumber"
+          },
+          "societyPermission": {
+            "$ref": "#/components/schemas/SocietyPermission"
+          },
+          "authorityNotice": {
+            "type": "boolean",
+            "title": "Authoritynotice"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "buildingAgeYears",
+          "condition",
+          "cracks",
+          "exits",
+          "fireExtinguishers",
+          "cctv",
+          "warden",
+          "womenSafety",
+          "licenceNumber",
+          "societyPermission",
+          "authorityNotice"
+        ],
+        "title": "VisitChecklist",
+        "description": "The agent's answers on site. Every field is required, so nothing is assumed."
+      },
+      "VisitCreate": {
+        "properties": {
+          "agent": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Agent"
+          },
+          "scheduledFor": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scheduledfor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "agent",
+          "scheduledFor"
+        ],
+        "title": "VisitCreate"
+      },
+      "VisitInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VisitStatus"
+          },
+          "scheduledFor": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scheduledfor"
+          },
+          "agent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "property": {
+            "$ref": "#/components/schemas/VisitPlace"
+          },
+          "submittedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submittedat"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VisitResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "title": "Notes"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LatLng"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accuracyM": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracym"
+          },
+          "distanceM": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distancem"
+          },
+          "checklist": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VisitChecklist"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photos": {
+            "items": {
+              "$ref": "#/components/schemas/ListingMedia"
+            },
+            "type": "array",
+            "title": "Photos"
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelledat"
+          },
+          "cancelReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelreason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "scheduledFor",
+          "agent",
+          "property",
+          "submittedAt",
+          "result",
+          "notes",
+          "position",
+          "accuracyM",
+          "distanceM",
+          "checklist",
+          "photos",
+          "cancelledAt",
+          "cancelReason"
+        ],
+        "title": "VisitInfo"
+      },
+      "VisitPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VisitInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "VisitPage"
+      },
+      "VisitPlace": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "addressLine": {
+            "type": "string",
+            "title": "Addressline"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "locality": {
+            "$ref": "#/components/schemas/ListingLocality"
+          },
+          "ownerBusinessName": {
+            "type": "string",
+            "title": "Ownerbusinessname"
+          },
+          "ownerPhone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ownerphone"
+          },
+          "verificationStatus": {
+            "$ref": "#/components/schemas/VerificationStatus"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PropertyStatus"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "addressLine",
+          "location",
+          "locality",
+          "ownerBusinessName",
+          "ownerPhone",
+          "verificationStatus",
+          "status"
+        ],
+        "title": "VisitPlace",
+        "description": "The property, as the agent needs it to get there: staff see the address and the pin."
+      },
+      "VisitResult": {
+        "type": "string",
+        "enum": [
+          "passed",
+          "failed"
+        ],
+        "title": "VisitResult"
+      },
+      "VisitStatus": {
+        "type": "string",
+        "enum": [
+          "scheduled",
+          "submitted",
+          "cancelled"
+        ],
+        "title": "VisitStatus"
+      },
+      "WomenSafety": {
+        "type": "string",
+        "enum": [
+          "woman_staff",
+          "secure_entry",
+          "lit_approach",
+          "visitor_log",
+          "separate_floors"
+        ],
+        "title": "WomenSafety",
+        "description": "Features that make a PG safer for women, ticked where the agent saw them."
       }
     }
   }

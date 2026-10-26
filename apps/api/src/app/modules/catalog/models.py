@@ -1,5 +1,5 @@
 """Catalog tables (ARCHITECTURE §6, ADR 0021): owners, properties, room categories, rooms, beds and
-amenities.
+amenities, and the verification visits that vouch for a property (ADR 0024).
 
 Money is integer paise, and the database checks it as the domain does (CLAUDE.md rule 12). A
 property's exact location and address line are for staff, and later for a student with a
@@ -18,10 +18,12 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    Integer,
     SmallInteger,
     Text,
     UniqueConstraint,
     Uuid,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -47,6 +49,7 @@ from app.modules.catalog.domain.rooms import (
     CategoryStatus,
     Occupancy,
 )
+from app.modules.catalog.domain.verification import VisitResult, VisitStatus
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -262,4 +265,82 @@ class PropertyMedia(Model):
         UniqueConstraint("property_id", "media_asset_id"),
         CheckConstraint("position >= 0", name="position"),
         Index("ix_property_media_media_asset_id", "media_asset_id"),
+    )
+
+
+class VerificationVisit(Model):
+    """A field agent's visit to vouch for a property: scheduled by ops for one agent, then the
+    report the agent submits on site, or cancelled (ADR 0024)."""
+
+    __tablename__ = "verification_visits"
+
+    public_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, default=new_public_id)
+    property_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("properties.id"))
+    agent_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
+    scheduled_by: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
+    scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(Text)
+    # The property's verification status before the visit was booked, which a cancellation puts
+    # back.
+    status_before: Mapped[str] = mapped_column(Text)
+    # The report: when it came in (the server's clock), where the agent's phone said they were,
+    # and how far that was from the property's pin at the time.
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    position: Mapped[WKBElement | None] = mapped_column(_point(), nullable=True)
+    position_accuracy_m: Mapped[int | None] = mapped_column(Integer)
+    distance_m: Mapped[int | None] = mapped_column(Integer)
+    checklist: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    result: Mapped[str | None] = mapped_column(Text)
+    notes: Mapped[str] = mapped_column(Text, server_default="")
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancel_reason: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        CheckConstraint(_one_of("status", VisitStatus), name="status"),
+        CheckConstraint(_one_of("status_before", VerificationStatus), name="status_before"),
+        CheckConstraint(_one_of("result", VisitResult), name="result"),
+        # A submitted visit has the whole report, and only a submitted one has any of it.
+        CheckConstraint(
+            "(status = 'submitted') = (submitted_at IS NOT NULL AND position IS NOT NULL"
+            " AND position_accuracy_m IS NOT NULL AND distance_m IS NOT NULL"
+            " AND checklist IS NOT NULL AND result IS NOT NULL)",
+            name="report",
+        ),
+        CheckConstraint("(status = 'cancelled') = (cancelled_at IS NOT NULL)", name="cancelled"),
+        CheckConstraint("result IS DISTINCT FROM 'failed' OR notes <> ''", name="failed_notes"),
+        CheckConstraint("position_accuracy_m >= 0 AND distance_m >= 0", name="distances"),
+        # One visit booked at a time for a property.
+        Index(
+            "uq_verification_visits_property_id_scheduled",
+            "property_id",
+            unique=True,
+            postgresql_where=text("status = 'scheduled'"),
+        ),
+        Index("ix_verification_visits_property_id", "property_id"),
+        Index(
+            "ix_verification_visits_agent_id_status_scheduled_for",
+            "agent_id",
+            "status",
+            "scheduled_for",
+        ),
+        Index("ix_verification_visits_scheduled_by", "scheduled_by"),
+    )
+
+
+class VerificationPhoto(Model):
+    """A report's photos, in the order the agent took them: private evidence (ADR 0024)."""
+
+    __tablename__ = "verification_photos"
+
+    visit_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("verification_visits.id", ondelete="CASCADE")
+    )
+    media_asset_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("media_assets.id"))
+    position: Mapped[int] = mapped_column(SmallInteger)
+
+    __table_args__ = (
+        # Also the index for the visit's foreign key.
+        UniqueConstraint("visit_id", "media_asset_id"),
+        CheckConstraint("position >= 0", name="position"),
+        Index("ix_verification_photos_media_asset_id", "media_asset_id"),
     )

@@ -118,6 +118,7 @@ ignore = [
 "src/app/core/clock.py" = ["TID251"]
 # FastAPI evaluates route and dependency signatures at runtime, so their imports must stay real.
 "src/app/modules/*/router.py" = ["TC001", "TC002", "TC003"]
+"src/app/modules/*/router/*.py" = ["TC001", "TC002", "TC003"]
 "src/app/modules/*/auth.py" = ["TC001", "TC002", "TC003"]
 "src/app/core/pagination.py" = ["TC003"]
 "src/app/core/current_actor.py" = ["TC001", "TC002", "TC003"]

@@ -32,6 +32,7 @@ from app.modules.catalog.service import (
     ListingService,
     OwnerService,
     PropertyDraft,
+    VerificationService,
 )
 from app.modules.compliance.domain.requests import EXPORT_TTL, DataRequestKind, DataRequestStatus
 from app.modules.compliance.repository import DataExportRepository, DataRequestRepository
@@ -136,7 +137,9 @@ async def _part_of_a_listing(app: FastAPI, kind: str) -> str:
             staff, phone=_new_phone(), legal_name="Fictional Owner", business_name="Fictional"
         )
     async with app.state.sessionmaker() as db:
-        listing = await ListingService(db, clock, buckets=app.state.media_buckets).create_property(
+        listing = await ListingService(
+            db, clock, buckets=app.state.media_buckets, flags=app.state.flags
+        ).create_property(
             staff,
             PropertyDraft(
                 owner=owner.owner.public_id,
@@ -176,25 +179,52 @@ async def _part_of_a_listing(app: FastAPI, kind: str) -> str:
     return str(beds[0].public_id)
 
 
+async def _someone_elses_visit(app: FastAPI) -> str:
+    """A visit booked for a field agent who isn't the caller."""
+    listing = await _part_of_a_listing(app, "a_listing")
+    ops_id = await _add_user(app, Role.OPS)
+    agent_id = await _add_user(app, Role.FIELD_AGENT)
+    async with app.state.sessionmaker() as db:
+        agent = await UserRepository(db).get(agent_id)
+        assert agent is not None
+        agent_public_id = agent.public_id
+    ops = Actor(
+        user_id=ops_id,
+        user_public_id=uuid.uuid7(),
+        roles=frozenset({Role.OPS}),
+        session_id=0,
+        session_public_id=uuid.uuid7(),
+    )
+    async with app.state.sessionmaker() as db:
+        service = VerificationService(db, app.state.clock, buckets=app.state.media_buckets)
+        visit = await service.schedule(
+            ops, uuid.UUID(listing), agent=agent_public_id, scheduled_for=app.state.clock.now()
+        )
+    return str(visit.public_id)
+
+
 async def _path_value(app: FastAPI, kind: str) -> str:
     match kind:
         case "someone_elses_session":
             user_id = await _add_user(app, Role.STUDENT)
-            return (await _start_session(app, user_id, SessionKind.USER))[1]
+            value = (await _start_session(app, user_id, SessionKind.USER))[1]
         case "someone_elses_export" | "someone_elses_deletion_request":
             wanted = DataRequestKind.EXPORT if kind.endswith("export") else DataRequestKind.DELETION
-            return await _someone_elses_request(app, wanted)
+            value = await _someone_elses_request(app, wanted)
         case "an_optional_purpose":
-            return "marketing"
+            value = "marketing"
         case "a_campus":
-            return read_reference_data().campuses[0].slug
+            value = read_reference_data().campuses[0].slug
         case "someone_elses_media":
-            return await _someone_elses_media(app)
+            value = await _someone_elses_media(app)
         case "a_listing" | "a_room_category" | "a_room" | "a_bed":
-            return await _part_of_a_listing(app, kind)
+            value = await _part_of_a_listing(app, kind)
+        case "someone_elses_visit":
+            value = await _someone_elses_visit(app)
         case _:
             msg = f"no way to make {kind!r}"
             raise LookupError(msg)
+    return value
 
 
 def _headers(token: str | None, *, unsafe: bool) -> dict[str, str]:

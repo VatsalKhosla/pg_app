@@ -72,6 +72,20 @@ class UserRepository:
     async def by_phone(self, phone_e164: str) -> User | None:
         return await self._db.scalar(select(User).where(User.phone_e164 == phone_e164))
 
+    async def by_public_id(self, public_id: uuid.UUID) -> User | None:
+        return await self._db.scalar(select(User).where(User.public_id == public_id))
+
+    async def with_role(self, role: Role, *, limit: int) -> list[User]:
+        """Active users with ``role``, by name (unnamed last), then public id."""
+        query = (
+            select(User)
+            .join(UserRole, UserRole.user_id == User.id)
+            .where(UserRole.role == role, User.status == "active")
+            .order_by(User.name.asc().nulls_last(), User.public_id)
+            .limit(limit)
+        )
+        return list(await self._db.scalars(query))
+
     async def by_email(self, email: str) -> User | None:
         """The user with this address, compared without regard to case (citext)."""
         return await self._db.scalar(select(User).where(User.email == email))

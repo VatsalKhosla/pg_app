@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, NotRequired, TypedDict
 
 from app.core.errors import InvalidTransitionError, NotFoundError
+from app.core.flags import Flag
 from app.core.postgis import point_wkt
 from app.modules.catalog.domain.listing import (
     NAME_MAX_LENGTH,
@@ -54,6 +55,7 @@ if TYPE_CHECKING:
 
     from app.core.actor import Actor
     from app.core.clock import Clock
+    from app.core.flags import FlagReader
     from app.core.geometry import Point
     from app.modules.media.service import Buckets
 
@@ -160,10 +162,12 @@ class ListingService:
         clock: Clock,
         *,
         buckets: Buckets,
+        flags: FlagReader,
         rng: Random | None = None,
     ) -> None:
         self._db = db
         self._clock = clock
+        self._flags = flags
         self._catalog = CatalogRepository(db)
         self._geo = GeoLookup(db)
         self._media = MediaLookup(db, buckets)
@@ -290,7 +294,10 @@ class ListingService:
         return sorted(ids)
 
     async def move(self, actor: Actor, property_id: uuid.UUID, target: PropertyStatus) -> Property:
-        """Publish, pause, delist or relist (back to draft), as the state machine allows."""
+        """Publish, pause, delist or relist (back to draft), as the state machine allows.
+        Publishing needs something to sell and, while the flag says so, a passed verification."""
+        # Read before the transaction: the flags have their own session, and no lock is held yet.
+        verified_only = await self._flags.is_enabled(Flag.VERIFIED_ONLY)
         async with self._db.begin():
             found = await self._catalog.property(property_id, lock=True)
             if found is None:
@@ -300,7 +307,11 @@ class ListingService:
                 raise InvalidTransitionError(f"A {current} property can't become {target}.")
             if target is PropertyStatus.PUBLISHED:
                 sellable = await self._catalog.sellable_categories(found.id)
-                if problems := publishing_problems(sellable_categories=sellable):
+                if problems := publishing_problems(
+                    sellable_categories=sellable,
+                    verification=VerificationStatus(found.verification_status),
+                    verified_only=verified_only,
+                ):
                     raise ListingIncompleteError(problems)
                 if found.published_at is None:
                     found.published_at = self._clock.now()

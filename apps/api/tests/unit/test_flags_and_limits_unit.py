@@ -26,11 +26,13 @@ def test_every_flag_is_declared_with_a_valid_default() -> None:
 
 def test_flag_defaults_match_the_product_context() -> None:
     # PRODUCT_CONTEXT §9: contacts hidden pending legal advice, token as a payment until Razorpay
-    # enables mandates, and everything later-phase off.
+    # enables mandates, only verified PGs published (BUILD_PLAN 2.5), and everything later-phase
+    # off.
     defaults = {flag: spec.default for flag, spec in FLAGS.items()}
 
     assert defaults.pop(Flag.HIDE_OWNER_CONTACT) is True
     assert defaults.pop(Flag.TOKEN_MODE) == "payment"
+    assert defaults.pop(Flag.VERIFIED_ONLY) is True
     assert set(defaults.values()) == {False}
 
 
