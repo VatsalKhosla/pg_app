@@ -304,6 +304,7 @@ export function ListingFields({
       <Field
         id={`${id}-description`}
         label={t("details.description")}
+        hint={t("details.descriptionHint")}
         error={errors.description?.message}
       >
         {(control) => <Textarea {...control} rows={5} {...form.register("description")} />}
