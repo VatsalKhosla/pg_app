@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Final
 from app.core.idempotency import IDEMPOTENCY_CLEANUP, delete_expired_keys
 from app.core.outbox import OUTBOX_CLEANUP, JobRegistry, delete_finished_jobs
 from app.core.scheduler import DailyAt, Every, ScheduledJob
+from app.modules.catalog.service import owner_data
 from app.modules.compliance.jobs import (
     BUILD_EXPORT,
     RETENTION,
@@ -37,7 +38,7 @@ if TYPE_CHECKING:
 
 # A person's data export (DPDP): one part from every module that holds personal data. A module
 # that starts keeping personal data adds its part here.
-EXPORTERS: Final = (personal_data, data_requests_part)
+EXPORTERS: Final = (personal_data, owner_data, data_requests_part)
 
 # The retention schedule (DPDP: no longer than needed). A module that starts keeping personal data
 # adds its rule here; periods still to be decided by the founders are noted in ADR 0018.

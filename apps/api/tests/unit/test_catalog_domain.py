@@ -38,7 +38,7 @@ from app.modules.catalog.domain.location import (
     moved,
     random_offset,
 )
-from app.modules.catalog.domain.owners import normalize_gstin
+from app.modules.catalog.domain.owners import gstin_check_character, normalize_gstin
 from app.modules.catalog.domain.rooms import BEDS_PER_ROOM, Occupancy, rent_problems, room_has_space
 
 ncr_points = st.builds(
@@ -250,18 +250,44 @@ def test_moving_north_raises_only_the_latitude() -> None:
     assert north.lat > exact.lat
 
 
+# Made-up GSTINs, with the check characters their made-up first 14 characters give.
 @pytest.mark.parametrize(
     ("raw", "stored"),
     [
-        ("07aaacb1234f1z5", "07AAACB1234F1Z5"),
-        ("07 AAACB 1234F 1Z5", "07AAACB1234F1Z5"),
-        ("07AAACB1234F1Y5", None),
+        ("07aaacb1234f1zb", "07AAACB1234F1ZB"),
+        ("07 AAACB 1234F 1ZB", "07AAACB1234F1ZB"),
+        ("07AAACB1234F1YB", None),
         ("AAACB1234F", None),
     ],
 )
 def test_a_gstin_is_stored_in_capitals_or_refused(raw: str, stored: str | None) -> None:
-    # Made-up numbers in the GSTIN's shape: the check digit comes in step 2.6.
     assert normalize_gstin(raw) == stored
+
+
+_GSTIN_FIRST_FOURTEEN = st.from_regex(r"[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z", fullmatch=True)
+
+
+@given(_GSTIN_FIRST_FOURTEEN, st.sampled_from("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+def test_a_gstin_is_refused_unless_its_last_character_checks_the_rest(
+    first_fourteen: str, last: str
+) -> None:
+    valid = last == gstin_check_character(first_fourteen)
+
+    assert (normalize_gstin(first_fourteen + last) is not None) is valid
+
+
+@given(_GSTIN_FIRST_FOURTEEN, st.integers(min_value=0, max_value=13), st.data())
+def test_one_mistyped_character_is_caught(
+    first_fourteen: str, position: int, data: st.DataObject
+) -> None:
+    gstin = first_fourteen + gstin_check_character(first_fourteen)
+    wrong = data.draw(
+        st.sampled_from("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ").filter(
+            lambda character: character != gstin[position]
+        )
+    )
+
+    assert normalize_gstin(gstin[:position] + wrong + gstin[position + 1 :]) is None
 
 
 def test_a_taken_slug_gets_the_first_free_number_however_many_are_taken() -> None:

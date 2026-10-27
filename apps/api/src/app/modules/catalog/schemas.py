@@ -83,6 +83,14 @@ class OwnerCreate(ApiModel):
     name: str | None = Field(default=None, max_length=200)
 
 
+class OwnerUpdate(ApiModel):
+    """Only the fields sent change; ``gstin: null`` clears it."""
+
+    legal_name: str | None = Field(default=None, max_length=200)
+    business_name: str | None = Field(default=None, max_length=200)
+    gstin: str | None = Field(default=None, max_length=20)
+
+
 class OwnerInfo(ApiModel):
     id: uuid.UUID
     legal_name: str
@@ -90,9 +98,13 @@ class OwnerInfo(ApiModel):
     gstin: str | None
     kyc_status: KycStatus
     status: OwnerStatus
-    # Staff see the owner's phone in full.
+    # Staff, and the owner, see the owner's phone in full.
     phone: str | None
     name: str | None
+    # The owner agreement's version they accepted last, and whether that is the current one
+    # (ADR 0025): a new version asks them to accept again.
+    agreement_version: str | None
+    agreement_current: bool
 
 
 class OwnerPage(ApiModel):
@@ -427,3 +439,38 @@ class VisitInfo(ApiModel):
 class VisitPage(ApiModel):
     items: list[VisitInfo]
     next_cursor: uuid.UUID | None
+
+
+# The owner agreement (ADR 0025).
+
+
+class AgreementInfo(ApiModel):
+    version: str
+    # Markdown: headings, paragraphs and lists.
+    text: str
+    # What an acceptance must name: the hash of exactly this text.
+    document_sha256: str
+    # Whether this owner has accepted this version, and when; and the version they accepted last.
+    accepted: bool
+    accepted_at: datetime | None
+    accepted_version: str | None
+
+
+class AcceptanceCreate(ApiModel):
+    """The version and text the owner was shown; anything else is refused (409
+    AGREEMENT_CHANGED)."""
+
+    version: str = Field(max_length=64)
+    document_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class AcceptanceInfo(ApiModel):
+    version: str
+    document_sha256: str
+    accepted_at: datetime
+    ip: str
+    user_agent: str | None
+
+
+class AcceptanceList(ApiModel):
+    items: list[AcceptanceInfo]

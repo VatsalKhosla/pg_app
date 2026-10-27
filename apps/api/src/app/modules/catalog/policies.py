@@ -22,3 +22,8 @@ def can_manage_verification(actor: Actor) -> bool:
 def can_make_visits(actor: Actor) -> bool:
     """Field agents, in a staff session, see the visits booked for them and report on them."""
     return actor.has_role(Role.FIELD_AGENT)
+
+
+def can_act_as_owner(actor: Actor) -> bool:
+    """Owners, signed in by phone, see their own record and accept the owner agreement."""
+    return actor.has_role(Role.OWNER)

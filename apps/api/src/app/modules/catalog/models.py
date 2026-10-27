@@ -28,7 +28,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db import Model
+from app.core.db import AppendOnlyModel, Model
 from app.core.ids import new_public_id
 from app.modules.catalog.domain.listing import (
     HOUSE_RULES_MAX,
@@ -343,4 +343,25 @@ class VerificationPhoto(Model):
         UniqueConstraint("visit_id", "media_asset_id"),
         CheckConstraint("position >= 0", name="position"),
         Index("ix_verification_photos_media_asset_id", "media_asset_id"),
+    )
+
+
+class OwnerAgreement(AppendOnlyModel):
+    """An owner's click-wrap acceptance of one version of the owner agreement (ADR 0025): what was
+    accepted (the version and the SHA-256 of its exact text), when, from where. The database
+    refuses to change or delete one: they're the evidence of what the owner agreed to."""
+
+    __tablename__ = "owner_agreements"
+
+    owner_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("owners.id"))
+    version: Mapped[str] = mapped_column(Text)
+    document_sha256: Mapped[str] = mapped_column(Text)
+    accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    accepted_ip: Mapped[str] = mapped_column(Text)
+    accepted_user_agent: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        CheckConstraint("version ~ '^[a-z0-9][a-z0-9.-]{0,63}$'", name="version"),
+        CheckConstraint("document_sha256 ~ '^[0-9a-f]{64}$'", name="document_sha256"),
+        Index("ix_owner_agreements_owner_id_accepted_at", "owner_id", "accepted_at"),
     )

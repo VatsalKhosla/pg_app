@@ -1,6 +1,6 @@
 """Staff using the API as the ops console and the field agents' screens do (steps 2.4 and 2.5): a
 signed-in staff member of a given role, with the console's calls, and listings built and verified
-the way staff build and verify them.
+the way staff build and verify them; and the owners they add, signed in (step 2.6).
 
 Listings here are fictional, placed by moving away from a seeded campus.
 """
@@ -48,7 +48,8 @@ def spot(metres: float, bearing: float = 45.0) -> dict[str, float]:
 
 
 class Staff:
-    """A staff member, signed in to staff tools."""
+    """A staff member, signed in to staff tools; or, from ``as_owner``, an owner signed in by
+    phone."""
 
     def __init__(
         self, app: FastAPI, client: httpx.AsyncClient, *, user_id: int, token: str
@@ -72,8 +73,12 @@ class Staff:
             assert user is not None
             return str(user.public_id)
 
-    async def call(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
-        return await self.client.request(method, path, headers=self._headers(), **kwargs)
+    async def call(
+        self, method: str, path: str, *, headers: dict[str, str] | None = None, **kwargs: Any
+    ) -> httpx.Response:
+        return await self.client.request(
+            method, path, headers=self._headers() | (headers or {}), **kwargs
+        )
 
     async def ok(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
         response = await self.call(method, path, **kwargs)
@@ -152,6 +157,18 @@ async def sign_in(app: FastAPI, client: httpx.AsyncClient, *roles: Role) -> Staf
             user.id, kind=SessionKind.STAFF, ip_address=None, user_agent=None
         )
     return Staff(app, client, user_id=user.id, token=session.token)
+
+
+async def as_owner(ops: Staff, owner: dict[str, Any]) -> Staff:
+    """The owner ``ops`` added, signed in with their phone, as the OTP sign-in leaves them."""
+    async with ops.app.state.sessionmaker() as db:
+        async with db.begin():
+            user = await UserRepository(db).by_phone(owner["phone"])
+        assert user is not None
+        session = await SessionService(db, ops.app.state.clock).start(
+            user.id, kind=SessionKind.USER, ip_address=None, user_agent=None
+        )
+    return Staff(ops.app, ops.client, user_id=user.id, token=session.token)
 
 
 CHECKLIST: dict[str, Any] = {

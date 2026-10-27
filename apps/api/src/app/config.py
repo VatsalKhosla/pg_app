@@ -101,6 +101,10 @@ class Settings(DatabaseSettings):
     # Changing it asks everyone to agree again. A "draft" one (not yet reviewed by a lawyer)
     # can't go to production.
     privacy_notice_version: str = Field(default="draft-1", pattern=r"^[a-z0-9][a-z0-9.-]{0,63}$")
+    # The owner agreement owners accept (ADR 0025): a file in catalog/data/agreements. Changing it
+    # asks every owner to accept again. A "draft" one (not yet reviewed by a lawyer) can't go to
+    # production.
+    owner_agreement_version: str = Field(default="draft-1", pattern=r"^[a-z0-9][a-z0-9.-]{0,63}$")
 
     # Object storage (S3; SeaweedFS locally). Uploads and private files go to one bucket; listing
     # media anyone may see go to the other, which the CDN serves when deployed. On AWS the endpoint
@@ -275,6 +279,16 @@ class Settings(DatabaseSettings):
         if self.app_env == "production" and self.privacy_notice_version.startswith("draft"):
             msg = (
                 "PRIVACY_NOTICE_VERSION is a draft; production needs the reviewed notice's version"
+            )
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def _reviewed_owner_agreement_in_production(self) -> Self:
+        if self.app_env == "production" and self.owner_agreement_version.startswith("draft"):
+            msg = (
+                "OWNER_AGREEMENT_VERSION is a draft; production needs the reviewed agreement's"
+                " version"
             )
             raise ValueError(msg)
         return self

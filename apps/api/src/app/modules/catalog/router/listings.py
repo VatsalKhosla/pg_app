@@ -18,6 +18,7 @@ from app.core.errors import ForbiddenError
 from app.core.geometry import Point
 from app.core.money import Paise
 from app.core.pagination import PageParams
+from app.modules.catalog.domain.agreements import needs_acceptance
 from app.modules.catalog.domain.charges import (
     MandatoryCharge,
     monthly_total,
@@ -64,9 +65,7 @@ from app.modules.catalog.schemas import (
     MeteredCharge,
     MonthlyCharge,
     OneTimeCharge,
-    OwnerCreate,
     OwnerInfo,
-    OwnerPage,
     PropertyCreate,
     PropertyUpdate,
     Rendition,
@@ -82,7 +81,6 @@ from app.modules.catalog.service import (
     ListingDetail,
     ListingService,
     OwnerRecord,
-    OwnerService,
     PropertyChanges,
     PropertyDraft,
 )
@@ -151,7 +149,7 @@ def _charge_out(charge: MandatoryCharge) -> Charge:
 # Responses.
 
 
-def _owner(record: OwnerRecord) -> OwnerInfo:
+def owner_info(record: OwnerRecord, *, current_agreement: str) -> OwnerInfo:
     owner, account = record.owner, record.account
     return OwnerInfo(
         id=owner.public_id,
@@ -162,7 +160,15 @@ def _owner(record: OwnerRecord) -> OwnerInfo:
         status=OwnerStatus(owner.status),
         phone=None if account is None else account.phone_e164,
         name=None if account is None else account.name,
+        agreement_version=owner.agreement_version,
+        agreement_current=not needs_acceptance(owner.agreement_version, current_agreement),
     )
+
+
+def current_agreement(request: Request) -> str:
+    """The owner agreement's version owners accept now (OWNER_AGREEMENT_VERSION)."""
+    version: str = request.app.state.owner_agreement_version
+    return version
 
 
 def media_info(ref: MediaRef) -> ListingMedia:
@@ -190,7 +196,7 @@ def lat_lng(point: Point) -> LatLng:
     return LatLng(lat=point.lat, lng=point.lng)
 
 
-def _listing(detail: ListingDetail) -> ListingInfo:
+def _listing(detail: ListingDetail, *, agreement: str) -> ListingInfo:
     found = detail.property
     return ListingInfo(
         id=found.public_id,
@@ -214,7 +220,7 @@ def _listing(detail: ListingDetail) -> ListingInfo:
         can_book_visit=can_schedule(VerificationStatus(found.verification_status)),
         can_suspend=can_suspend(VerificationStatus(found.verification_status)),
         published_at=found.published_at,
-        owner=_owner(detail.owner),
+        owner=owner_info(detail.owner, current_agreement=agreement),
         locality=ListingLocality(slug=detail.locality.slug, name=detail.locality.name),
         amenities=list(detail.amenities),
         categories=[
@@ -255,7 +261,8 @@ def _listing(detail: ListingDetail) -> ListingInfo:
 
 
 async def current_listing(request: Request, db: DbSession, property_id: uuid.UUID) -> ListingInfo:
-    return _listing(await catalog_reader(request, db).listing(property_id))
+    detail = await catalog_reader(request, db).listing(property_id)
+    return _listing(detail, agreement=current_agreement(request))
 
 
 # Public.
@@ -266,40 +273,6 @@ async def amenities(request: Request, response: Response, db: DbSession) -> Amen
     response.headers["Cache-Control"] = "public, max-age=3600"
     found = await catalog_reader(request, db).amenities()
     return AmenityList(items=[AmenityInfo(slug=item.slug, name=item.name) for item in found])
-
-
-# Owners.
-
-
-@router.get("/ops/owners", summary="Owners, to choose one for a listing")
-async def owners(
-    actor: CurrentActor,
-    page: PageParams,
-    db: DbSession,
-    clock: ClockDep,
-    q: SearchText = None,
-) -> OwnerPage:
-    """By phone number (exactly) or by name (any part)."""
-    require_listing_staff(actor)
-    found, next_cursor = await OwnerService(db, clock).page(page, text=q)
-    return OwnerPage(items=[_owner(record) for record in found], next_cursor=next_cursor)
-
-
-@router.post("/ops/owners", status_code=status.HTTP_201_CREATED, summary="Add an owner")
-async def add_owner(
-    body: OwnerCreate, actor: CurrentActor, db: DbSession, clock: ClockDep
-) -> OwnerInfo:
-    """Makes the owner's account from their phone if they haven't signed in yet."""
-    require_listing_staff(actor)
-    record = await OwnerService(db, clock).add(
-        actor,
-        phone=body.phone,
-        legal_name=body.legal_name,
-        business_name=body.business_name,
-        gstin=body.gstin,
-        name=body.name,
-    )
-    return _owner(record)
 
 
 # Listings.
@@ -365,7 +338,9 @@ async def create_listing(
         ),
     )
     reader = catalog_reader(request, db)
-    listing = _listing(await reader.listing(created.public_id))
+    listing = _listing(
+        await reader.listing(created.public_id), agreement=current_agreement(request)
+    )
     duplicates = await reader.duplicates_of(created.public_id)
     return ListingCreated(**dict(listing), possible_duplicates=duplicates)
 

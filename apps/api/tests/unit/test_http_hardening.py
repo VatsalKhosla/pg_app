@@ -8,6 +8,8 @@ from fastapi import FastAPI, Request
 from app.config import Settings
 from app.core.security import API_CSP, HSTS
 from app.main import create_app
+from app.modules.catalog.domain.agreements import Agreement
+from tests.agreements import FixedAgreements
 
 type Requester = Callable[..., httpx.Response]
 type SettingsFactory = Callable[..., Settings]
@@ -41,9 +43,11 @@ def test_deployed_environments_add_hsts_and_hide_the_interactive_docs(
             api_url="https://api.example.in",
             media_public_base_url="https://media.example.in",
             privacy_notice_version="2027-01",
+            owner_agreement_version="2027-01",
             otp_sender="unavailable",
             turnstile_secret_key="test-turnstile-secret",
-        )
+        ),
+        agreements=FixedAgreements(Agreement("2027-01", "A fictional reviewed agreement.")),
     )
 
     assert request_app(app, "GET", "/healthz").headers["strict-transport-security"] == HSTS

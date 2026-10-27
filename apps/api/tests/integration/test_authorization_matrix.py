@@ -30,6 +30,7 @@ from app.modules.catalog.service import (
     CategoryDraft,
     InventoryService,
     ListingService,
+    OwnerRecord,
     OwnerService,
     PropertyDraft,
     VerificationService,
@@ -120,22 +121,39 @@ async def _someone_elses_media(app: FastAPI) -> str:
         return str(asset.public_id)
 
 
-async def _part_of_a_listing(app: FastAPI, kind: str) -> str:
-    """A fresh fictional listing, or its room category, an empty room in it, or a bed."""
-    ops_id = await _add_user(app, Role.OPS)
-    staff = Actor(
-        user_id=ops_id,
+async def _ops(app: FastAPI) -> Actor:
+    """A new ops member, to make records as the ops console would."""
+    return Actor(
+        user_id=await _add_user(app, Role.OPS),
         user_public_id=uuid.uuid7(),
         roles=frozenset({Role.OPS}),
         session_id=0,
         session_public_id=uuid.uuid7(),
     )
-    clock = app.state.clock
-    campus = read_reference_data().campuses[0].location.point
+
+
+async def _add_owner(app: FastAPI) -> OwnerRecord:
+    """A fictional owner, added by ops with their business record."""
+    staff = await _ops(app)
     async with app.state.sessionmaker() as db:
-        owner = await OwnerService(db, clock).add(
+        return await OwnerService(db, app.state.clock).add(
             staff, phone=_new_phone(), legal_name="Fictional Owner", business_name="Fictional"
         )
+
+
+async def _add_caller(app: FastAPI, role: Role) -> int:
+    """A caller's account. The owner's comes with a business record, so the owner area is theirs."""
+    if role is Role.OWNER:
+        return (await _add_owner(app)).owner.user_id
+    return await _add_user(app, role)
+
+
+async def _part_of_a_listing(app: FastAPI, kind: str) -> str:
+    """A fresh fictional listing, or its room category, an empty room in it, or a bed."""
+    staff = await _ops(app)
+    clock = app.state.clock
+    campus = read_reference_data().campuses[0].location.point
+    owner = await _add_owner(app)
     async with app.state.sessionmaker() as db:
         listing = await ListingService(
             db, clock, buckets=app.state.media_buckets, flags=app.state.flags
@@ -182,19 +200,12 @@ async def _part_of_a_listing(app: FastAPI, kind: str) -> str:
 async def _someone_elses_visit(app: FastAPI) -> str:
     """A visit booked for a field agent who isn't the caller."""
     listing = await _part_of_a_listing(app, "a_listing")
-    ops_id = await _add_user(app, Role.OPS)
+    ops = await _ops(app)
     agent_id = await _add_user(app, Role.FIELD_AGENT)
     async with app.state.sessionmaker() as db:
         agent = await UserRepository(db).get(agent_id)
         assert agent is not None
         agent_public_id = agent.public_id
-    ops = Actor(
-        user_id=ops_id,
-        user_public_id=uuid.uuid7(),
-        roles=frozenset({Role.OPS}),
-        session_id=0,
-        session_public_id=uuid.uuid7(),
-    )
     async with app.state.sessionmaker() as db:
         service = VerificationService(db, app.state.clock, buckets=app.state.media_buckets)
         visit = await service.schedule(
@@ -221,6 +232,8 @@ async def _path_value(app: FastAPI, kind: str) -> str:
             value = await _part_of_a_listing(app, kind)
         case "someone_elses_visit":
             value = await _someone_elses_visit(app)
+        case "an_owner":
+            value = str((await _add_owner(app)).owner.public_id)
         case _:
             msg = f"no way to make {kind!r}"
             raise LookupError(msg)
@@ -254,7 +267,7 @@ def test_every_caller_gets_what_the_authorization_matrix_says(
             async with app.state.sessionmaker() as db:
                 await GeoReferenceLoader(db, app.state.clock).load(read_reference_data())
             accounts = {
-                caller: (await _add_user(app, role), kind)
+                caller: (await _add_caller(app, role), kind)
                 for caller, (role, kind) in SIGNED_IN.items()
             }
             transport = httpx.ASGITransport(app=app, client=(address, 50_000))

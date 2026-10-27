@@ -27,6 +27,14 @@ def missing_required(purposes: frozenset[ConsentPurpose]) -> frozenset[ConsentPu
     return REQUIRED_PURPOSES - purposes
 
 
+def has_agreed(active: frozenset[tuple[ConsentPurpose, str]]) -> bool:
+    """Whether the active consents cover every required purpose under some notice version. An
+    account ops made for someone (an owner, ADR 0025) hasn't, until its person signs in and
+    agrees."""
+    agreed = {purpose for purpose, _ in active}
+    return agreed >= REQUIRED_PURPOSES
+
+
 def is_current(active: frozenset[tuple[ConsentPurpose, str]], *, notice_version: str) -> bool:
     """Whether the active consents (purpose and notice version) cover every required purpose
     under the current notice; if not, the person must be asked again."""

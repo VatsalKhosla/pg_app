@@ -13,6 +13,7 @@ bound to their challenge, and never stored or logged in plain text outside devel
 A first sign-in creates the account only with consent to the current privacy notice. Without it
 the answer is CONSENT_REQUIRED, given only once the code has proved to be right (so it says nothing
 to anyone without the phone), and the challenge stays usable for a second try with the consent.
+An account ops made for someone (an owner) counts as new until its person has agreed.
 """
 
 import hmac
@@ -30,6 +31,7 @@ from app.core.hashing import keyed_digest
 from app.core.human_check import HumanCheckFailedError
 from app.core.ids import new_public_id
 from app.core.ratelimit import RateLimit, enforce
+from app.modules.identity.domain.consent import has_agreed
 from app.modules.identity.domain.otp import (
     CODE_DIGITS,
     CODE_TTL,
@@ -238,9 +240,11 @@ class OtpService:
             detail = f"{left} attempts left." if left else "No attempts left; ask for a new code."
             return OtpInvalidError(detail)
         existing = await self._users.by_phone(challenge.phone_e164)
+        # A first sign-in: no account yet, or one made for this person that they never agreed to.
+        first = existing is None or not has_agreed(await self._consents.active(existing.id))
         if consent is not None:
-            check_consent(consent, notice_version=self._notice_version, signing_up=existing is None)
-        elif existing is None:
+            check_consent(consent, notice_version=self._notice_version, signing_up=first)
+        elif first:
             # Nothing has changed yet, so the challenge stays open for a try with the consent.
             raise _refused("consent_required", ConsentRequiredError())
         challenge.consumed_at = now

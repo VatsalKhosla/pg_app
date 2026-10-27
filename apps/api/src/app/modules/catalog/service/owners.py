@@ -2,9 +2,10 @@
 account is made if the owner hasn't signed in yet; they sign in with that phone later."""
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 from app.core.actor import Role
+from app.core.errors import NotFoundError
 from app.core.pagination import split_page
 from app.modules.catalog.domain.owners import (
     NAME_MAX_LENGTH,
@@ -34,6 +35,14 @@ if TYPE_CHECKING:
 class OwnerRecord:
     owner: Owner
     account: Account | None
+
+
+class OwnerChanges(TypedDict, total=False):
+    """The business details to change; any left out stay as they are. ``gstin`` None clears it."""
+
+    legal_name: str
+    business_name: str
+    gstin: NotRequired[str | None]
 
 
 class OwnerService:
@@ -113,3 +122,71 @@ class OwnerService:
             owners, next_cursor = split_page(rows, request, cursor_of=lambda owner: owner.public_id)
             accounts = await self._accounts.many(owner.user_id for owner in owners)
         return [OwnerRecord(owner, accounts.get(owner.user_id)) for owner in owners], next_cursor
+
+    async def get(self, owner_id: uuid.UUID) -> OwnerRecord:
+        async with self._db.begin():
+            owner = await self._catalog.owner(owner_id)
+            if owner is None:
+                raise NotFoundError
+            accounts = await self._accounts.many([owner.user_id])
+        return OwnerRecord(owner, accounts.get(owner.user_id))
+
+    async def of_user(self, user_id: int) -> OwnerRecord | None:
+        """The signed-in person's owner record, if they are an owner."""
+        async with self._db.begin():
+            owner = await self._catalog.owner_of_user(user_id)
+            if owner is None:
+                return None
+            accounts = await self._accounts.many([owner.user_id])
+        return OwnerRecord(owner, accounts.get(owner.user_id))
+
+    async def update(self, actor: Actor, owner_id: uuid.UUID, changes: OwnerChanges) -> OwnerRecord:
+        """Change an owner's business details, as ops do from the owner's page. The audit entry
+        names the fields whose values changed; saving the same values again writes none."""
+        problems = []
+        if "legal_name" in changes:
+            problems += text_problems(
+                "the legal name", changes["legal_name"], required=True, max_length=NAME_MAX_LENGTH
+            )
+        if "business_name" in changes:
+            problems += text_problems(
+                "the business name",
+                changes["business_name"],
+                required=True,
+                max_length=NAME_MAX_LENGTH,
+            )
+        gstin = changes.get("gstin")
+        normalized = None if gstin is None else normalize_gstin(gstin)
+        if gstin is not None and normalized is None:
+            problems.append("that isn't a GSTIN")
+        check(problems)
+        async with self._db.begin():
+            owner = await self._catalog.owner(owner_id, lock=True)
+            if owner is None:
+                raise NotFoundError
+            changed = []
+            if "legal_name" in changes and changes["legal_name"].strip() != owner.legal_name:
+                owner.legal_name = changes["legal_name"].strip()
+                changed.append("legal_name")
+            if (
+                "business_name" in changes
+                and changes["business_name"].strip() != owner.business_name
+            ):
+                owner.business_name = changes["business_name"].strip()
+                changed.append("business_name")
+            if "gstin" in changes and normalized != owner.gstin:
+                owner.gstin = normalized
+                changed.append("gstin")
+            if changed:
+                await self._db.flush()
+                await staff_did(
+                    self._db,
+                    self._clock,
+                    actor,
+                    "catalog.owner_updated",
+                    entity="owner",
+                    entity_id=owner.public_id,
+                    fields=sorted(changed),
+                )
+            accounts = await self._accounts.many([owner.user_id])
+        return OwnerRecord(owner, accounts.get(owner.user_id))

@@ -34,6 +34,7 @@ from app.modules.catalog.models import (
     Amenity,
     Bed,
     Owner,
+    OwnerAgreement,
     Property,
     PropertyAmenity,
     PropertyMedia,
@@ -49,7 +50,7 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from app.core.db import Model
+    from app.core.db import AppendOnlyModel
     from app.core.geometry import Bounds
 
 
@@ -162,18 +163,33 @@ class CatalogRepository:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
-    async def add[M: Model](self, row: M) -> M:
+    async def add[M: AppendOnlyModel](self, row: M) -> M:
         self._db.add(row)
         await self._db.flush()
         return row
 
     # Owners.
 
-    async def owner(self, public_id: uuid.UUID) -> Owner | None:
-        return await self._db.scalar(select(Owner).where(Owner.public_id == public_id))
+    async def owner(self, public_id: uuid.UUID, *, lock: bool = False) -> Owner | None:
+        query = select(Owner).where(Owner.public_id == public_id)
+        return await self._db.scalar(query.with_for_update() if lock else query)
 
-    async def owner_of_user(self, user_id: int) -> Owner | None:
-        return await self._db.scalar(select(Owner).where(Owner.user_id == user_id))
+    async def owner_of_user(self, user_id: int, *, lock: bool = False) -> Owner | None:
+        query = select(Owner).where(Owner.user_id == user_id)
+        return await self._db.scalar(query.with_for_update() if lock else query)
+
+    async def acceptances(
+        self, owner_id: int, *, version: str | None = None
+    ) -> list[OwnerAgreement]:
+        """An owner's agreement acceptances (of ``version``, if given), newest first: one per
+        version they accepted, so a handful."""
+        query = select(OwnerAgreement).where(OwnerAgreement.owner_id == owner_id)
+        if version is not None:
+            query = query.where(OwnerAgreement.version == version)
+        rows = await self._db.scalars(
+            query.order_by(OwnerAgreement.accepted_at.desc(), OwnerAgreement.id.desc())
+        )
+        return list(rows)
 
     # Properties.
 

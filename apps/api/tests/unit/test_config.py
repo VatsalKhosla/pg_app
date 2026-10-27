@@ -53,6 +53,7 @@ def _deployed(environment: pytest.MonkeyPatch, app_env: str = "production") -> p
         "TURNSTILE_SECRET_KEY": "a-turnstile-secret",
         "OTP_SENDER": "unavailable",
         "PRIVACY_NOTICE_VERSION": "2027-01",
+        "OWNER_AGREEMENT_VERSION": "2027-01",
     }.items():
         environment.setenv(name, value)
     return environment
@@ -333,6 +334,29 @@ def test_staging_may_run_with_a_draft_privacy_notice(environment: pytest.MonkeyP
     _deployed(environment, "staging").setenv("PRIVACY_NOTICE_VERSION", "draft-2")
 
     assert Settings().privacy_notice_version == "draft-2"
+
+
+def test_production_needs_a_reviewed_owner_agreement(environment: pytest.MonkeyPatch) -> None:
+    _deployed(environment).setenv("OWNER_AGREEMENT_VERSION", "draft-2")
+
+    with pytest.raises(ValidationError, match="OWNER_AGREEMENT_VERSION is a draft"):
+        Settings()
+
+
+def test_staging_may_run_with_a_draft_owner_agreement(environment: pytest.MonkeyPatch) -> None:
+    _deployed(environment, "staging").setenv("OWNER_AGREEMENT_VERSION", "draft-2")
+
+    assert Settings().owner_agreement_version == "draft-2"
+
+
+@pytest.mark.parametrize("version", ["", "Draft 1", "../draft-1", "x" * 65])
+def test_an_owner_agreement_version_is_a_short_lowercase_label(
+    environment: pytest.MonkeyPatch, version: str
+) -> None:
+    environment.setenv("OWNER_AGREEMENT_VERSION", version)
+
+    with pytest.raises(ValidationError, match="owner_agreement_version"):
+        Settings()
 
 
 @pytest.mark.parametrize("version", ["", "Draft 1", "v1/2", "x" * 65])

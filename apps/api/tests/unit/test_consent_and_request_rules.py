@@ -6,7 +6,12 @@ from app.modules.compliance.domain.requests import (
     can_move,
     is_open,
 )
-from app.modules.identity.domain.consent import ConsentPurpose, is_current, missing_required
+from app.modules.identity.domain.consent import (
+    ConsentPurpose,
+    has_agreed,
+    is_current,
+    missing_required,
+)
 
 ACCOUNT, MARKETING = ConsentPurpose.ACCOUNT, ConsentPurpose.MARKETING
 EXPORT, DELETION = DataRequestKind.EXPORT, DataRequestKind.DELETION
@@ -26,6 +31,13 @@ def test_consent_is_current_only_for_the_current_notice() -> None:
     assert is_current(
         frozenset({(ACCOUNT, "2026-10"), (ACCOUNT, "2027-01")}), notice_version="2027-01"
     )
+
+
+def test_someone_has_agreed_once_the_account_purpose_is_given_under_any_notice() -> None:
+    assert has_agreed(frozenset({(ACCOUNT, "2026-10")}))
+    # An account ops made for someone, before they've signed in.
+    assert not has_agreed(frozenset())
+    assert not has_agreed(frozenset({(MARKETING, "2027-01")}))
 
 
 @pytest.mark.parametrize(

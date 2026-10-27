@@ -23,6 +23,7 @@ from app.core.redis import create_redis
 from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
+from app.modules.catalog.agreements import FileAgreements
 from app.modules.catalog.router import router as catalog_router
 from app.modules.compliance.router import router as compliance_router
 from app.modules.geo.router import router as geo_router
@@ -42,6 +43,8 @@ if TYPE_CHECKING:
 
     from fastapi import FastAPI
     from starlette.types import Scope
+
+    from app.modules.catalog.agreements import AgreementLibrary
 
 # Headers the web app may send on cross-origin requests (CSRF arrives in step 1.1, idempotency
 # keys in step 0.4).
@@ -68,8 +71,33 @@ ROUTERS: Final = (
 )
 
 
-def create_app(settings: Settings | None = None, *, clock: Clock | None = None) -> FastAPI:
-    """Build the API. Tests pass their own ``settings`` and a ``FrozenClock``."""
+def _set_shared_state(app: FastAPI, settings: Settings, agreements: AgreementLibrary) -> None:
+    """What routes read from ``app.state`` that needs no connection, so is there before startup."""
+    app.state.cookies = CookiePolicy(domain=settings.session_cookie_domain)
+    app.state.secret_key = settings.secret_key.get_secret_value().encode()
+    # Who a request's session belongs to, for every module's CurrentActor.
+    app.state.authenticate = authenticate_session
+    app.state.site_url = settings.site_url
+    app.state.privacy_notice_version = settings.privacy_notice_version
+    # The owner agreement's versions, and the one owners accept now; a version without its text
+    # stops the API starting rather than failing owners later.
+    app.state.agreements = agreements
+    if agreements.get(settings.owner_agreement_version) is None:
+        msg = f"OWNER_AGREEMENT_VERSION {settings.owner_agreement_version} has no agreement text"
+        raise RuntimeError(msg)
+    app.state.owner_agreement_version = settings.owner_agreement_version
+    app.state.staff_google_domains = settings.staff_google_domains
+    app.state.staff_google_emails = settings.staff_google_emails
+
+
+def create_app(
+    settings: Settings | None = None,
+    *,
+    clock: Clock | None = None,
+    agreements: AgreementLibrary | None = None,
+) -> FastAPI:
+    """Build the API. Tests pass their own ``settings``, a ``FrozenClock`` and, to try versions of
+    the owner agreement that aren't written yet, the agreement's texts."""
     settings = settings or get_settings()
     clock = clock or SystemClock()
     configure_logging(level=settings.log_level, fmt=settings.log_format)
@@ -141,14 +169,7 @@ def create_app(settings: Settings | None = None, *, clock: Clock | None = None) 
         dependencies=[Depends(require_csrf_token)],
         telemetry={"exclude": _is_probe},
     )
-    app.state.cookies = CookiePolicy(domain=settings.session_cookie_domain)
-    app.state.secret_key = settings.secret_key.get_secret_value().encode()
-    # Who a request's session belongs to, for every module's CurrentActor.
-    app.state.authenticate = authenticate_session
-    app.state.site_url = settings.site_url
-    app.state.privacy_notice_version = settings.privacy_notice_version
-    app.state.staff_google_domains = settings.staff_google_domains
-    app.state.staff_google_emails = settings.staff_google_emails
+    _set_shared_state(app, settings, agreements or FileAgreements())
     install_error_handlers(app)
     # Added innermost first, so a request passes RequestContext, SecurityHeaders, CORS and then
     # BodySizeLimit before reaching a route.

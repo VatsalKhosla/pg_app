@@ -53,3 +53,12 @@ class LabelTakenError(AppError):
     status = 409
     code = "LABEL_TAKEN"
     title = "That label is already used here"
+
+
+class AgreementChangedError(AppError):
+    """An acceptance of a version, or a text, that isn't the current agreement's: it changed after
+    the owner opened it."""
+
+    status = 409
+    code = "AGREEMENT_CHANGED"
+    title = "The agreement has changed; read the current version and accept that"

@@ -17,11 +17,13 @@ from fastapi import FastAPI
 from sqlalchemy import func, select
 
 from app.config import Settings
+from app.core.actor import Role
 from app.core.clock import FrozenClock
 from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
 from app.core.csrf import issue_csrf_token
 from app.main import create_app
 from app.modules.identity.models import User
+from app.modules.identity.repository import UserRepository
 from tests.conftest import NOTICE_VERSION, TEST_SECRET_KEY
 
 pytestmark = pytest.mark.integration
@@ -185,6 +187,31 @@ def test_a_returning_person_signs_in_without_being_asked_again(run: Callable[...
 
         assert again.status_code == 200
         assert again.json()["newUser"] is False
+
+    run(scenario)
+
+
+def test_an_account_made_for_someone_asks_for_their_consent_at_their_first_sign_in(
+    run: Callable[..., Any],
+) -> None:
+    async def scenario(app: FastAPI, client: httpx.AsyncClient) -> None:
+        # As ops add an owner (ADR 0025): the account exists before its person has agreed.
+        mobile = _new_mobile()
+        async with app.state.sessionmaker() as db, db.begin():
+            await UserRepository(db).add(phone_e164=f"+91{mobile}", roles=(Role.OWNER,))
+        challenge, code = await _ask_for_code(app, client, mobile)
+
+        refused = await _verify(client, challenge, code, None)
+        accepted = await _verify(client, challenge, code, ACCOUNT_ONLY)
+        app.state.clock.advance(timedelta(seconds=30))
+        challenge, code = await _ask_for_code(app, client, mobile)
+        again = await _verify(client, challenge, code, None)
+
+        assert (refused.status_code, refused.json()["code"]) == (400, "CONSENT_REQUIRED")
+        assert (accepted.status_code, accepted.json()["newUser"]) == (200, False)
+        assert accepted.json()["user"]["consentRequired"] is False
+        # Once they've agreed, they sign in like anyone returning.
+        assert again.status_code == 200
 
     run(scenario)
 

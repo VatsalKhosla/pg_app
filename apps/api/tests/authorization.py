@@ -20,7 +20,12 @@ from typing import Any, Final
 from fastapi import FastAPI
 from fastapi.routing import APIRoute, iter_route_contexts
 
+from app.config import Settings
+from app.modules.catalog.agreements import FileAgreements
 from tests.conftest import NOTICE_VERSION
+
+# The owner agreement the API runs with in tests: the settings' default.
+AGREEMENT_VERSION: Final = Settings.model_fields["owner_agreement_version"].default
 
 # Who calls: nobody signed in; people signed in by phone (an admin's phone session carries no staff
 # roles); staff in staff sessions.
@@ -48,6 +53,7 @@ PATH_VALUES: Final = frozenset(
         "a_room",
         "a_bed",
         "someone_elses_visit",
+        "an_owner",
     }
 )
 
@@ -82,6 +88,12 @@ def _new_owner() -> dict[str, Any]:
             "businessName": "Fictional Stays",
         }
     }
+
+
+def _acceptance() -> dict[str, Any]:
+    agreement = FileAgreements().get(AGREEMENT_VERSION)
+    assert agreement is not None
+    return {"json": {"version": agreement.version, "documentSha256": agreement.sha256}}
 
 
 def _new_listing() -> dict[str, Any]:
@@ -222,6 +234,18 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("GET", "/v1/amenities"): Rule(everyone(200)),
     ("GET", "/v1/ops/owners"): Rule(ops_only(200)),
     ("POST", "/v1/ops/owners"): Rule(ops_only(201), _new_owner),
+    ("GET", "/v1/ops/owners/{owner_id}"): Rule(ops_only(200), path={"owner_id": "an_owner"}),
+    ("PATCH", "/v1/ops/owners/{owner_id}"): Rule(
+        ops_only(200), lambda: {"json": {"businessName": "Renamed"}}, path={"owner_id": "an_owner"}
+    ),
+    ("GET", "/v1/ops/owners/{owner_id}/agreements"): Rule(
+        ops_only(200), path={"owner_id": "an_owner"}
+    ),
+    # The owner area (ADR 0025): only an owner, signed in by phone, with a business record. The
+    # owner caller has one; tests/integration/test_owners.py covers an owner without.
+    ("GET", "/v1/owner/profile"): Rule(signed_in(403, owner=200)),
+    ("GET", "/v1/owner/agreement"): Rule(signed_in(403, owner=200)),
+    ("POST", "/v1/owner/agreement/acceptances"): Rule(signed_in(403, owner=201), _acceptance),
     ("GET", "/v1/ops/properties"): Rule(ops_only(200)),
     ("POST", "/v1/ops/properties"): Rule(ops_only(404), _new_listing),
     ("GET", "/v1/ops/properties/{property_id}"): Rule(
