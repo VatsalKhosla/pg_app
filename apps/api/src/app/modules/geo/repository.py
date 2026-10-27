@@ -221,6 +221,31 @@ class GeoRepository:
         campus_id, name, lat, lng = found
         return campus_id, name, Point(lat=lat, lng=lng)
 
+    async def campuses_near(
+        self, point: Point, *, within_m: float, limit: int
+    ) -> list[tuple[str, str, float]]:
+        """The campuses within ``within_m`` of a point, nearest first: slug, name, metres."""
+        here = postgis.geography(point)
+        rows = await self._db.execute(
+            select(Campus.slug, Campus.name, postgis.distance(Campus.location, here))
+            .where(func.ST_DWithin(Campus.location, here, within_m))
+            .order_by(Campus.location.op("<->")(here), Campus.slug)
+            .limit(limit)
+        )
+        return [(slug, name, metres) for slug, name, metres in rows]
+
+    async def stations_near(self, point: Point, *, limit: int) -> list[tuple[str, str, float]]:
+        """The metro stations nearest a point, nearest first: slug, name, metres."""
+        here = postgis.geography(point)
+        rows = await self._db.execute(
+            select(
+                MetroStation.slug, MetroStation.name, postgis.distance(MetroStation.location, here)
+            )
+            .order_by(MetroStation.location.op("<->")(here), MetroStation.slug)
+            .limit(limit)
+        )
+        return [(slug, name, metres) for slug, name, metres in rows]
+
     async def nearest_station_to_each(
         self, points: Sequence[Point]
     ) -> list[tuple[str, str, float] | None]:

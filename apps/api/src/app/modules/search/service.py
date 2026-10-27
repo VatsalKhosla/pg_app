@@ -51,7 +51,7 @@ if TYPE_CHECKING:
     from app.core.clock import Clock
     from app.core.flags import FlagReader
     from app.core.geometry import Bounds, Point
-    from app.modules.geo.service import StationNear
+    from app.modules.geo.service import PlaceNear
     from app.modules.media.service import Buckets, MediaRef
     from app.modules.search.cache import PinCache
 
@@ -118,7 +118,7 @@ class SearchIndex:
 @dataclass(frozen=True, slots=True)
 class Card:
     hit: Hit
-    station: StationNear | None
+    station: PlaceNear | None
     cover: MediaRef | None
 
 

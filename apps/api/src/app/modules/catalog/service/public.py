@@ -11,22 +11,30 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Final
 
 from app.core import audit
+from app.core.calendar import india_date
 from app.core.errors import NotFoundError
 from app.core.flags import Flag
 from app.core.money import Paise
 from app.core.ratelimit import RateLimit, enforce
 from app.modules.catalog.domain.listing import (
     GenderPolicy,
+    LicenceStatus,
     LocationPrecision,
     Meals,
     PropertyStatus,
+    SocietyPermission,
     VerificationStatus,
     is_public,
 )
 from app.modules.catalog.domain.privacy import contact_shown
 from app.modules.catalog.domain.rooms import BedStatus, CategoryStatus, Occupancy
 from app.modules.catalog.errors import ContactHiddenError
-from app.modules.catalog.repository import CatalogRepository, charges_from_json
+from app.modules.catalog.repository import (
+    CatalogRepository,
+    VisitRepository,
+    charges_from_json,
+    checklist_from_json,
+)
 from app.modules.geo.service import GeoLookup
 from app.modules.identity.service import Accounts
 from app.modules.media.domain.assets import AssetStatus, Moderation
@@ -34,6 +42,7 @@ from app.modules.media.service import MediaLookup
 
 if TYPE_CHECKING:
     import uuid
+    from datetime import date
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,10 +53,16 @@ if TYPE_CHECKING:
     from app.core.ratelimit import RateLimiter
     from app.modules.catalog.contact import ContactAccess
     from app.modules.catalog.domain.charges import MandatoryCharge
-    from app.modules.catalog.models import Amenity, Property
-    from app.modules.geo.service import LocalityRef
+    from app.modules.catalog.domain.verification import WomenSafety
+    from app.modules.catalog.models import Amenity, Property, VerificationVisit
+    from app.modules.geo.service import LocalityRef, PlaceNear
     from app.modules.media.service import Buckets, MediaRef
 
+# What the page shows around a listing: campuses within walking or a short ride, and the two
+# nearest metro stations.
+CAMPUSES_WITHIN_M: Final = 5_000
+NEARBY_CAMPUSES: Final = 3
+NEARBY_STATIONS: Final = 2
 # Looking up contact details, per person: plenty for anyone choosing a PG, too few to harvest
 # owners' numbers. Let through while Redis is down, so a student on the way to a visit isn't
 # stuck.
@@ -68,6 +83,16 @@ class PublicCategoryView:
 
 
 @dataclass(frozen=True, slots=True)
+class SafetySummary:
+    verified_on: date
+    exits: int
+    fire_extinguishers: bool
+    cctv: bool
+    warden: bool
+    women_safety: tuple[WomenSafety, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class PublicListingView:
     """A listing as anyone sees it. It holds nothing private, so nothing private can leave."""
 
@@ -79,8 +104,15 @@ class PublicListingView:
     meals: Meals
     house_rules: tuple[str, ...]
     verified: bool
+    # From the last visit that passed it; None before one has.
+    safety: SafetySummary | None
+    licence_status: LicenceStatus
+    society_permission: SocietyPermission
     display: Point
     locality: LocalityRef
+    # Nearest first, measured from the display point (ADR 0021).
+    campuses: tuple[PlaceNear, ...]
+    stations: tuple[PlaceNear, ...]
     owner_business_name: str
     # Active categories with a bed to sell, and approved media ready to show, in page order.
     categories: tuple[PublicCategoryView, ...]
@@ -94,6 +126,21 @@ class ContactDetails:
     address_line: str
     exact: Point
     location_precision: LocationPrecision
+
+
+def _safety(visit: VerificationVisit | None) -> SafetySummary | None:
+    """The public part of the last passing report: what was there to keep people safe."""
+    if visit is None or visit.checklist is None or visit.submitted_at is None:
+        return None
+    checklist = checklist_from_json(visit.checklist)
+    return SafetySummary(
+        verified_on=india_date(visit.submitted_at),
+        exits=checklist.exits,
+        fire_extinguishers=checklist.fire_extinguishers,
+        cctv=checklist.cctv,
+        warden=checklist.warden,
+        women_safety=tuple(sorted(checklist.women_safety)),
+    )
 
 
 def _shown(ref: MediaRef) -> bool:
@@ -121,6 +168,7 @@ class PublicCatalog:
         self._access = access
         self._limiter = limiter
         self._catalog = CatalogRepository(db)
+        self._visits = VisitRepository(db)
         self._geo = GeoLookup(db)
         # Without storage, so private files can't be signed for the public.
         self._media = MediaLookup(db, buckets)
@@ -154,6 +202,11 @@ class PublicCatalog:
             amenities = await self._catalog.property_amenities(found.id)
             media_ids = (await self._catalog.media_of([found.id])).get(found.id, [])
             media = await self._media.by_id(media_ids)
+            visit = await self._visits.latest_passed(found.id)
+            campuses = await self._geo.campuses_near(
+                display, within_m=CAMPUSES_WITHIN_M, limit=NEARBY_CAMPUSES
+            )
+            stations = await self._geo.stations_near(display, limit=NEARBY_STATIONS)
         rooms_with_beds = {bed.room_id for bed in beds if bed.status == BedStatus.ACTIVE}
         selling = {room.room_category_id for room in rooms if room.id in rooms_with_beds}
         return PublicListingView(
@@ -165,8 +218,13 @@ class PublicCatalog:
             meals=Meals(found.meals),
             house_rules=tuple(found.house_rules),
             verified=found.verification_status == VerificationStatus.VERIFIED,
+            safety=_safety(visit),
+            licence_status=LicenceStatus(found.licence_status),
+            society_permission=SocietyPermission(found.society_permission),
             display=display,
             locality=locality,
+            campuses=tuple(campuses),
+            stations=tuple(stations),
             owner_business_name=owner.business_name,
             categories=tuple(
                 PublicCategoryView(

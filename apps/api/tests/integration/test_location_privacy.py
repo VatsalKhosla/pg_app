@@ -269,6 +269,23 @@ def test_a_live_listing_shows_its_display_point_and_what_can_be_sold(
     )
     # Only the photo that's processed and approved.
     assert [media["id"] for media in public["media"]] == [found["shown"]]
+    # What the field agent found (tests/staff_api.py's checklist), and what's around it.
+    assert public["safety"] == {
+        "verifiedOn": "2027-07-14",
+        "exits": 2,
+        "fireExtinguishers": True,
+        "cctv": True,
+        "warden": True,
+        "womenSafety": ["secure_entry", "woman_staff"],
+    }
+    assert (public["licenceStatus"], public["societyPermission"]) == ("unknown", "n/a")
+    campuses = public["campusesNearby"]
+    assert 1 <= len(campuses) <= 3
+    assert [campus["distanceM"] for campus in campuses] == sorted(
+        campus["distanceM"] for campus in campuses
+    )
+    assert all(campus["distanceM"] <= 5_000 for campus in campuses)
+    assert len(public["stationsNearby"]) == 2
     assert set(public) >= {"description", "houseRules", "genderPolicy", "meals"}
     assert not {"addressLine", "location", "owner", "licenceNumber", "status"} & set(public)
     assert found["cache"] == "public, max-age=60"

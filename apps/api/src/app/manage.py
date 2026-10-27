@@ -13,6 +13,7 @@ change is written to the audit log.
     staff remove-google PHONE
     geo load [--file PATH]
     media buckets
+    catalog samples
 
 Making someone staff is the only way to staff sign-in: Google sign-in also needs their address
 (``--email``), and the fallback needs an authenticator app (``enrol-authenticator``).
@@ -27,6 +28,9 @@ deploy, and it is what ``make seed`` runs (ADR 0020).
 
 ``media buckets`` creates the object-storage buckets for local development (ADR 0022); when
 deployed, Terraform does.
+
+``catalog samples`` adds six fictional sample PGs, verified and live with generated photos, to
+try the site on locally (ADR 0030); a second run adds nothing. It refuses anywhere deployed.
 """
 
 import argparse
@@ -45,6 +49,8 @@ from app.modules.geo.service import GeoReferenceLoader
 from app.modules.identity.domain.phones import normalize_indian_mobile
 from app.modules.identity.service import StaffAdmin, StaffAdminError, StaffDirectory
 from app.modules.media.adapters.s3 import S3Storage
+from app.modules.media.service import Buckets
+from app.samples import SampleBuilder
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -110,6 +116,13 @@ def _parser() -> argparse.ArgumentParser:
         dest="command", required=True
     )
     media.add_parser("buckets", help="create the buckets (local development only)")
+
+    catalog = groups.add_parser("catalog", help="listings").add_subparsers(
+        dest="command", required=True
+    )
+    catalog.add_parser(
+        "samples", help="add fictional sample PGs, live, photos included (local development only)"
+    )
     return parser
 
 
@@ -280,6 +293,29 @@ async def _main(
         await engine.dispose()
 
 
+async def _samples(settings: Settings, *, clock: Clock, out: TextIO) -> int:
+    if settings.is_deployed:
+        out.write("Not done: sample listings are for local development only.\n")
+        return 1
+    engine = create_engine(settings, application_name=f"{settings.otel_service_name}-manage")
+    try:
+        built = await SampleBuilder(
+            create_sessionmaker(engine),
+            clock,
+            storage=S3Storage.from_settings(settings),
+            buckets=Buckets.from_settings(settings),
+            say=lambda line: out.write(f"{line}\n"),
+        ).build()
+    finally:
+        await engine.dispose()
+    if built:
+        out.write(
+            f"{len(built)} fictional sample PGs are live; their pages are at"
+            f" {settings.site_url}/pg/<slug> once the worker has refreshed search.\n"
+        )
+    return 0
+
+
 def _media_buckets(settings: Settings, out: TextIO) -> int:
     if settings.is_deployed:
         out.write("Not done: deployed environments get their buckets from Terraform.\n")
@@ -309,6 +345,10 @@ def main(
     args = _parser().parse_args(argv)
     if args.group == "media":
         return _media_buckets(settings or get_settings(), out)
+    if args.group == "catalog":
+        return asyncio.run(
+            _samples(settings or get_settings(), clock=clock or SystemClock(), out=out)
+        )
     return asyncio.run(
         _main(
             args,

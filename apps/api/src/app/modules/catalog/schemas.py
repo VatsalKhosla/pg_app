@@ -3,7 +3,7 @@
 public response."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated, Literal
 
 from pydantic import AwareDatetime, Field
@@ -372,6 +372,26 @@ class PublicMedia(ApiModel):
     renditions: list[Rendition]
 
 
+class SafetySummary(ApiModel):
+    """What the field agent found on their last visit that passed the building (ADR 0024)."""
+
+    verified_on: date
+    # Separate ways out of the building.
+    exits: int
+    fire_extinguishers: bool
+    cctv: bool
+    # Someone in charge on site at night.
+    warden: bool
+    women_safety: list[WomenSafety]
+
+
+class PlaceNearby(ApiModel):
+    slug: str
+    name: str
+    # From the display point.
+    distance_m: int
+
+
 class PublicListing(ApiModel):
     """A live listing as anyone sees it. Its location is the display point, 80 to 150 m from the
     building; the address, the exact point and the owner's phone come only from .../contact."""
@@ -385,8 +405,14 @@ class PublicListing(ApiModel):
     gender_policy: GenderPolicy
     meals: Meals
     house_rules: list[str]
-    # A field agent's visit passed (ADR 0024).
+    # A field agent's visit passed (ADR 0024), and what they found; null before one has.
     verified: bool
+    safety: SafetySummary | None
+    licence_status: LicenceStatus
+    society_permission: SocietyPermission
+    # Campuses within 5 km and the two nearest metro stations, nearest first.
+    campuses_nearby: list[PlaceNearby]
+    stations_nearby: list[PlaceNearby]
     owner_business_name: str
     amenities: list[AmenityInfo]
     # Active categories with a bed to sell.

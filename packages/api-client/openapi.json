@@ -7069,6 +7069,30 @@
         "title": "OwnerUpdate",
         "description": "Only the fields sent change; ``gstin: null`` clears it."
       },
+      "PlaceNearby": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "distanceM": {
+            "type": "integer",
+            "title": "Distancem"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "distanceM"
+        ],
+        "title": "PlaceNearby"
+      },
       "PrivacyNoticeInfo": {
         "properties": {
           "version": {
@@ -7538,6 +7562,36 @@
             "type": "boolean",
             "title": "Verified"
           },
+          "safety": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SafetySummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "licenceStatus": {
+            "$ref": "#/components/schemas/LicenceStatus"
+          },
+          "societyPermission": {
+            "$ref": "#/components/schemas/SocietyPermission"
+          },
+          "campusesNearby": {
+            "items": {
+              "$ref": "#/components/schemas/PlaceNearby"
+            },
+            "type": "array",
+            "title": "Campusesnearby"
+          },
+          "stationsNearby": {
+            "items": {
+              "$ref": "#/components/schemas/PlaceNearby"
+            },
+            "type": "array",
+            "title": "Stationsnearby"
+          },
           "ownerBusinessName": {
             "type": "string",
             "title": "Ownerbusinessname"
@@ -7577,6 +7631,11 @@
           "meals",
           "houseRules",
           "verified",
+          "safety",
+          "licenceStatus",
+          "societyPermission",
+          "campusesNearby",
+          "stationsNearby",
           "ownerBusinessName",
           "amenities",
           "categories",
@@ -8022,6 +8081,50 @@
           "beds"
         ],
         "title": "RoomInfo"
+      },
+      "SafetySummary": {
+        "properties": {
+          "verifiedOn": {
+            "type": "string",
+            "format": "date",
+            "title": "Verifiedon"
+          },
+          "exits": {
+            "type": "integer",
+            "title": "Exits"
+          },
+          "fireExtinguishers": {
+            "type": "boolean",
+            "title": "Fireextinguishers"
+          },
+          "cctv": {
+            "type": "boolean",
+            "title": "Cctv"
+          },
+          "warden": {
+            "type": "boolean",
+            "title": "Warden"
+          },
+          "womenSafety": {
+            "items": {
+              "$ref": "#/components/schemas/WomenSafety"
+            },
+            "type": "array",
+            "title": "Womensafety"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "verifiedOn",
+          "exits",
+          "fireExtinguishers",
+          "cctv",
+          "warden",
+          "womenSafety"
+        ],
+        "title": "SafetySummary",
+        "description": "What the field agent found on their last visit that passed the building (ADR 0024)."
       },
       "SearchCard": {
         "properties": {

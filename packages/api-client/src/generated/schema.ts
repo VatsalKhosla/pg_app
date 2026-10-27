@@ -2134,6 +2134,15 @@ export interface components {
             /** Gstin */
             gstin?: string | null;
         };
+        /** PlaceNearby */
+        PlaceNearby: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Distancem */
+            distanceM: number;
+        };
         /**
          * PrivacyNoticeInfo
          * @description The current privacy notice: its version, which consent must name, and its purposes. The
@@ -2287,6 +2296,13 @@ export interface components {
             houseRules: string[];
             /** Verified */
             verified: boolean;
+            safety: components["schemas"]["SafetySummary"] | null;
+            licenceStatus: components["schemas"]["LicenceStatus"];
+            societyPermission: components["schemas"]["SocietyPermission"];
+            /** Campusesnearby */
+            campusesNearby: components["schemas"]["PlaceNearby"][];
+            /** Stationsnearby */
+            stationsNearby: components["schemas"]["PlaceNearby"][];
             /** Ownerbusinessname */
             ownerBusinessName: string;
             /** Amenities */
@@ -2447,6 +2463,27 @@ export interface components {
             floor: number | null;
             /** Beds */
             beds: components["schemas"]["BedInfo"][];
+        };
+        /**
+         * SafetySummary
+         * @description What the field agent found on their last visit that passed the building (ADR 0024).
+         */
+        SafetySummary: {
+            /**
+             * Verifiedon
+             * Format: date
+             */
+            verifiedOn: string;
+            /** Exits */
+            exits: number;
+            /** Fireextinguishers */
+            fireExtinguishers: boolean;
+            /** Cctv */
+            cctv: boolean;
+            /** Warden */
+            warden: boolean;
+            /** Womensafety */
+            womenSafety: components["schemas"]["WomenSafety"][];
         };
         /** SearchCard */
         SearchCard: {

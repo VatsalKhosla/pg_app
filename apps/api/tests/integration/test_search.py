@@ -329,7 +329,10 @@ def test_only_verified_listings_show_while_verified_only_is_on(run: Callable[...
             )
         }
         await run_due_jobs(ops.app)
+        page = await ops.client.get(f"/v1/properties/{world['d']['slug']}")
         found = {
+            # No visit has passed it, so its page has nothing to say about safety.
+            "safety": [page.json()["safety"]],
             "flag off": _which(await _search(ops, q=token), world),
             "flag off, asked for all": _which(
                 await _search(ops, q=token, verified_only="false"), world
@@ -342,6 +345,7 @@ def test_only_verified_listings_show_while_verified_only_is_on(run: Callable[...
         return found
 
     assert run(scenario) == {
+        "safety": [None],
         "flag off": [],
         "flag off, asked for all": ["d"],
         "flag on, asked for all": [],

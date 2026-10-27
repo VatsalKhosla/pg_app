@@ -16,17 +16,24 @@ from app.modules.catalog.schemas import (
     LatLng,
     ListingContact,
     ListingLocality,
+    PlaceNearby,
     PublicCategory,
     PublicListing,
     PublicMedia,
+    SafetySummary,
 )
 from app.modules.catalog.service.public import PublicCatalog
+from app.modules.geo.service import PlaceNear
 
 router = APIRouter(prefix="/v1", tags=["catalog"])
 
 # A listing changes when ops edit it; a minute's caching keeps the page fresh enough.
 CACHE_CONTROL: Final = "public, max-age=60"
 Slug = Annotated[str, Path(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$", max_length=SLUG_MAX_LENGTH)]
+
+
+def _nearby(place: PlaceNear) -> PlaceNearby:
+    return PlaceNearby(slug=place.slug, name=place.name, distance_m=round(place.distance_m))
 
 
 def _public(request: Request, db: DbSession, clock: ClockDep) -> PublicCatalog:
@@ -60,6 +67,20 @@ async def public_listing(
         meals=found.meals,
         house_rules=list(found.house_rules),
         verified=found.verified,
+        safety=None
+        if found.safety is None
+        else SafetySummary(
+            verified_on=found.safety.verified_on,
+            exits=found.safety.exits,
+            fire_extinguishers=found.safety.fire_extinguishers,
+            cctv=found.safety.cctv,
+            warden=found.safety.warden,
+            women_safety=list(found.safety.women_safety),
+        ),
+        licence_status=found.licence_status,
+        society_permission=found.society_permission,
+        campuses_nearby=[_nearby(place) for place in found.campuses],
+        stations_nearby=[_nearby(place) for place in found.stations],
         owner_business_name=found.owner_business_name,
         amenities=[AmenityInfo(slug=item.slug, name=item.name) for item in found.amenities],
         categories=[

@@ -86,8 +86,8 @@ class CampusRef:
 
 
 @dataclass(frozen=True, slots=True)
-class StationNear:
-    """The metro station nearest a point, and how far it is in metres."""
+class PlaceNear:
+    """A campus or metro station near a point, and how far it is in metres."""
 
     slug: str
     name: str
@@ -107,12 +107,26 @@ class GeoLookup:
         campus_id, name, location = found
         return CampusRef(id=campus_id, slug=slug, name=name, location=location)
 
-    async def nearest_stations(self, points: Sequence[Point]) -> list[StationNear | None]:
+    async def campuses_near(self, point: Point, *, within_m: float, limit: int) -> list[PlaceNear]:
+        """The campuses within reach of a point, nearest first."""
+        return [
+            PlaceNear(slug=slug, name=name, distance_m=metres)
+            for slug, name, metres in await self._geo.campuses_near(
+                point, within_m=within_m, limit=limit
+            )
+        ]
+
+    async def stations_near(self, point: Point, *, limit: int) -> list[PlaceNear]:
+        """The metro stations nearest a point, nearest first."""
+        return [
+            PlaceNear(slug=slug, name=name, distance_m=metres)
+            for slug, name, metres in await self._geo.stations_near(point, limit=limit)
+        ]
+
+    async def nearest_stations(self, points: Sequence[Point]) -> list[PlaceNear | None]:
         """The metro station nearest each point, in the points' order: one query for a page."""
         return [
-            None
-            if found is None
-            else StationNear(slug=found[0], name=found[1], distance_m=found[2])
+            None if found is None else PlaceNear(slug=found[0], name=found[1], distance_m=found[2])
             for found in await self._geo.nearest_station_to_each(points)
         ]
 

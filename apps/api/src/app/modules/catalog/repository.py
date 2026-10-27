@@ -27,6 +27,7 @@ from app.modules.catalog.domain.verification import (
     Checklist,
     Condition,
     Cracks,
+    VisitResult,
     VisitStatus,
     WomenSafety,
 )
@@ -628,6 +629,19 @@ class VisitRepository:
             .execution_options(synchronize_session=False)
         )
         self._db.expire(visit, ["position"])
+
+    async def latest_passed(self, property_id: int) -> VerificationVisit | None:
+        """The property's most recent visit whose report passed it: what its safety summary
+        shows (step 3.4)."""
+        return await self._db.scalar(
+            select(VerificationVisit)
+            .where(
+                VerificationVisit.property_id == property_id,
+                VerificationVisit.result == VisitResult.PASSED,
+            )
+            .order_by(VerificationVisit.submitted_at.desc(), VerificationVisit.id.desc())
+            .limit(1)
+        )
 
     async def of_property(
         self, property_id: int, *, before: uuid.UUID | None, limit: int
