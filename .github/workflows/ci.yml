@@ -51,7 +51,15 @@ jobs:
       - name: Type-check (mypy --strict)
         run: make typecheck-api
       - name: Test, unit and integration (PostGIS and Valkey in containers)
-        run: make test-api
+        run: |
+          set -o pipefail
+          make test-api 2>&1 | tee "$RUNNER_TEMP/test-api.log"
+      # Each failed test as an annotation, which the checks API shows without the job's log.
+      - name: Annotate failed tests
+        if: failure()
+        run: |
+          grep -E '^(FAILED|ERROR) ' "$RUNNER_TEMP/test-api.log" \
+            | sed 's/^/::error title=API test::/' || true
 
   web:
     name: Web
