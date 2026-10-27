@@ -28,6 +28,7 @@ from app.modules.catalog.errors import LabelTakenError, ListingInvalidError, Roo
 from app.modules.catalog.models import Bed, Room, RoomCategory
 from app.modules.catalog.repository import CatalogRepository, charges_to_json
 from app.modules.catalog.service.checks import check, text_problems
+from app.modules.catalog.service.events import inventory_changed
 from app.modules.catalog.service.trail import staff_did
 
 if TYPE_CHECKING:
@@ -156,6 +157,7 @@ class InventoryService:
                 property=str(found.public_id),
                 base_rent_paise=draft.base_rent,
             )
+            await inventory_changed(self._db, self._clock, found.id)
         return category
 
     async def update_room_category(
@@ -205,6 +207,7 @@ class InventoryService:
                 entity_id=category.public_id,
                 **details,
             )
+            await inventory_changed(self._db, self._clock, category.property_id)
         return category
 
     async def add_room(
@@ -251,6 +254,7 @@ class InventoryService:
                     entity_id=room.public_id,
                     beds=beds,
                 )
+                await inventory_changed(self._db, self._clock, category.property_id)
         except IntegrityError as error:
             if _label_taken(error):
                 raise LabelTakenError from error
@@ -281,6 +285,8 @@ class InventoryService:
                     entity="bed",
                     entity_id=bed.public_id,
                 )
+                property_id = (await self._catalog.property_of_room(room.id)).id
+                await inventory_changed(self._db, self._clock, property_id)
         except IntegrityError as error:
             if _label_taken(error):
                 raise LabelTakenError from error
@@ -305,4 +311,6 @@ class InventoryService:
                 entity_id=bed.public_id,
                 **{"from": before.value, "to": status.value},
             )
+            property_id = (await self._catalog.property_of_room(bed.room_id)).id
+            await inventory_changed(self._db, self._clock, property_id)
         return bed

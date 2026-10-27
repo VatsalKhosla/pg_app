@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Final
 from app.core.idempotency import IDEMPOTENCY_CLEANUP, delete_expired_keys
 from app.core.outbox import OUTBOX_CLEANUP, JobRegistry, delete_finished_jobs
 from app.core.scheduler import DailyAt, Every, ScheduledJob
-from app.modules.catalog.service import owner_data
+from app.modules.catalog.service import INVENTORY_CHANGED, owner_data
 from app.modules.compliance.jobs import (
     BUILD_EXPORT,
     RETENTION,
@@ -30,6 +30,12 @@ from app.modules.media.jobs import (
     PROCESS,
     discard_upload_handler,
     process_handler,
+)
+from app.modules.search.jobs import (
+    RECOMPUTE,
+    RECOMPUTE_ALL,
+    recompute_all_handler,
+    recompute_handler,
 )
 
 if TYPE_CHECKING:
@@ -62,6 +68,8 @@ SCHEDULES: Final = (
         name=IDEMPOTENCY_CLEANUP, kind=IDEMPOTENCY_CLEANUP, schedule=Every(timedelta(hours=1))
     ),
     ScheduledJob(name=RETENTION, kind=RETENTION, schedule=DailyAt(time(3, 30))),
+    # Just after midnight, so the months roll forward as soon as a new one starts.
+    ScheduledJob(name=RECOMPUTE_ALL, kind=RECOMPUTE_ALL, schedule=DailyAt(time(0, 30))),
 )
 
 
@@ -74,4 +82,8 @@ def build_registry(*, storage: ObjectStorage, buckets: Buckets) -> JobRegistry:
     registry.register(RETENTION, retention_handler(RETENTION_RULES))
     registry.register(PROCESS, process_handler(storage, buckets))
     registry.register(DISCARD_UPLOAD, discard_upload_handler(storage, buckets))
+    # A listing's rents, rooms or beds changed: its price summaries follow (step 3.1).
+    registry.register(INVENTORY_CHANGED, recompute_handler)
+    registry.register(RECOMPUTE, recompute_handler)
+    registry.register(RECOMPUTE_ALL, recompute_all_handler)
     return registry

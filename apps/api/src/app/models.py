@@ -10,11 +10,14 @@ from app.modules.catalog.models import (
     Amenity,
     Bed,
     Owner,
+    OwnerAgreement,
     Property,
     PropertyAmenity,
     PropertyMedia,
     Room,
     RoomCategory,
+    VerificationPhoto,
+    VerificationVisit,
 )
 from app.modules.compliance.models import DataExport, DataRequest
 from app.modules.geo.models import (
@@ -35,6 +38,7 @@ from app.modules.identity.models import (
     UserSession,
 )
 from app.modules.media.models import MediaAsset
+from app.modules.search.models import PropertyPriceSummary
 
 __all__ = [
     "Amenity",
@@ -56,9 +60,11 @@ __all__ = [
     "OtpChallenge",
     "OutboxJob",
     "Owner",
+    "OwnerAgreement",
     "Property",
     "PropertyAmenity",
     "PropertyMedia",
+    "PropertyPriceSummary",
     "Room",
     "RoomCategory",
     "TotpCredential",
@@ -66,4 +72,6 @@ __all__ = [
     "UserIdentity",
     "UserRole",
     "UserSession",
+    "VerificationPhoto",
+    "VerificationVisit",
 ]

@@ -342,6 +342,31 @@ class CatalogRepository:
         )
         return list(found)
 
+    async def category_rents(self, property_id: int) -> list[tuple[int, int, int]]:
+        """Each active room category's id, base rent and active beds, for categories with a bed
+        to sell: what other modules price and count."""
+        active_beds = func.count(Bed.id).filter(Bed.status == BedStatus.ACTIVE)
+        rows = await self._db.execute(
+            select(RoomCategory.id, RoomCategory.base_rent_paise, active_beds)
+            .join(Room, Room.room_category_id == RoomCategory.id)
+            .join(Bed, Bed.room_id == Room.id)
+            .where(
+                RoomCategory.property_id == property_id,
+                RoomCategory.status == CategoryStatus.ACTIVE,
+            )
+            .group_by(RoomCategory.id)
+            .having(active_beds > 0)
+            .order_by(RoomCategory.id)
+        )
+        return [(category_id, rent, beds) for category_id, rent, beds in rows]
+
+    async def property_ids_after(self, after: int | None, *, limit: int) -> list[int]:
+        """Properties' internal ids in order, a page at a time."""
+        query = select(Property.id).order_by(Property.id).limit(limit)
+        if after is not None:
+            query = query.where(Property.id > after)
+        return list(await self._db.scalars(query))
+
     async def category_for_update(self, public_id: uuid.UUID) -> RoomCategory | None:
         return await self._db.scalar(
             select(RoomCategory).where(RoomCategory.public_id == public_id).with_for_update()
