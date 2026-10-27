@@ -37,6 +37,7 @@ from app.modules.identity.router import router as identity_router
 from app.modules.media.adapters.s3 import S3Storage
 from app.modules.media.router import router as media_router
 from app.modules.media.service import Buckets
+from app.modules.search.router import router as search_router
 from app.modules.system.router import router as system_router
 
 if TYPE_CHECKING:
@@ -68,6 +69,7 @@ ROUTERS: Final = (
     compliance_router,
     geo_router,
     catalog_router,
+    search_router,
     media_router,
 )
 

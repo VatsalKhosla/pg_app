@@ -1060,6 +1060,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/search/properties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search live PGs
+         * @description Around one place at most (a campus within a radius, a locality or a map area), for a
+         *     move-in month, by budget and what the PG and its rooms offer, sorted and a page at a time.
+         *     Distances are from display points. 422 SEARCH_INVALID for a search that can't be answered.
+         */
+        get: operations["searchSearchProperties"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/media": {
         parameters: {
             query?: never;
@@ -1230,6 +1252,13 @@ export interface components {
         BedUpdate: {
             status: components["schemas"]["BedStatus"];
         };
+        /**
+         * BedsFree
+         * @description How many beds are free that month, roughly: real inventory (CLAUDE.md rule 7), without
+         *     handing out exact counts.
+         * @enum {string}
+         */
+        BedsFree: "none" | "few" | "some" | "many";
         /** CampusDetail */
         CampusDetail: {
             /** Slug */
@@ -2363,6 +2392,47 @@ export interface components {
             /** Beds */
             beds: components["schemas"]["BedInfo"][];
         };
+        /** SearchCard */
+        SearchCard: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            locality: components["schemas"]["ListingLocality"];
+            displayLocation: components["schemas"]["LatLng"];
+            /** Distancem */
+            distanceM: number | null;
+            nearestStation: components["schemas"]["StationNearby"] | null;
+            /** Minrentpaise */
+            minRentPaise: number;
+            /** Maxrentpaise */
+            maxRentPaise: number;
+            genderPolicy: components["schemas"]["GenderPolicy"];
+            meals: components["schemas"]["Meals"];
+            /** Verified */
+            verified: boolean;
+            /** Licensed */
+            licensed: boolean;
+            cover: components["schemas"]["PublicMedia"] | null;
+            bedsFree: components["schemas"]["BedsFree"];
+        };
+        /** SearchPage */
+        SearchPage: {
+            /** Items */
+            items: components["schemas"]["SearchCard"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+            /**
+             * Month
+             * Format: date
+             */
+            month: string;
+        };
         /**
          * SessionInfo
          * @description One browser or device where the account is signed in.
@@ -2414,6 +2484,11 @@ export interface components {
          * @enum {string}
          */
         SocietyPermission: "n/a" | "on_file" | "missing";
+        /**
+         * Sort
+         * @enum {string}
+         */
+        Sort: "recommended" | "price_asc" | "price_desc" | "distance" | "newest";
         /** StaffMember */
         StaffMember: {
             /**
@@ -2461,6 +2536,15 @@ export interface components {
         /** StationDistance */
         StationDistance: {
             station: components["schemas"]["MetroStationInfo"];
+            /** Distancem */
+            distanceM: number;
+        };
+        /** StationNearby */
+        StationNearby: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
             /** Distancem */
             distanceM: number;
         };
@@ -5117,6 +5201,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListingContact"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    searchSearchProperties: {
+        parameters: {
+            query?: {
+                /** @description Search around this campus. */
+                campus?: string | null;
+                /** @description How far from the campus, in metres. */
+                radius_m?: number;
+                /** @description Search in this locality. */
+                locality?: string | null;
+                /** @description Search in this map area: west,south,east,north in degrees. */
+                bbox?: string | null;
+                /** @description YYYY-MM: this month or one of the next six. Prices are for it; this month if left out. */
+                move_in_month?: string | null;
+                budget_min_paise?: number | null;
+                budget_max_paise?: number | null;
+                gender?: components["schemas"]["GenderPolicy"] | null;
+                occupancy?: components["schemas"]["Occupancy"] | null;
+                meals?: components["schemas"]["Meals"] | null;
+                ac?: boolean;
+                attached_bath?: boolean;
+                amenities?: string[];
+                /** @description Only verified PGs; always so while verified_only is on. */
+                verified_only?: boolean;
+                /** @description Only PGs with a bed free that month. */
+                available?: boolean;
+                q?: string | null;
+                sort?: components["schemas"]["Sort"];
+                /** @description The previous page's nextCursor. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchPage"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

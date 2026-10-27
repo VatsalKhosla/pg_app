@@ -25,11 +25,12 @@ from app.modules.geo.repository import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Collection
+    from collections.abc import Collection, Sequence
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.core.clock import Clock
+    from app.core.geometry import Point
     from app.modules.geo.domain.places import OsmRef
     from app.modules.geo.reference import ReferenceData
 
@@ -74,11 +75,46 @@ class LocalityRef:
     name: str
 
 
+@dataclass(frozen=True, slots=True)
+class CampusRef:
+    """A campus, as another module refers to it: search measures distances from its location."""
+
+    id: int
+    slug: str
+    name: str
+    location: Point
+
+
+@dataclass(frozen=True, slots=True)
+class StationNear:
+    """The metro station nearest a point, and how far it is in metres."""
+
+    slug: str
+    name: str
+    distance_m: float
+
+
 class GeoLookup:
     """Geo reads for other modules, inside the caller's transaction (it starts none)."""
 
     def __init__(self, db: AsyncSession) -> None:
         self._geo = GeoRepository(db)
+
+    async def campus(self, slug: str) -> CampusRef | None:
+        found = await self._geo.campus_point(slug)
+        if found is None:
+            return None
+        campus_id, name, location = found
+        return CampusRef(id=campus_id, slug=slug, name=name, location=location)
+
+    async def nearest_stations(self, points: Sequence[Point]) -> list[StationNear | None]:
+        """The metro station nearest each point, in the points' order: one query for a page."""
+        return [
+            None
+            if found is None
+            else StationNear(slug=found[0], name=found[1], distance_m=found[2])
+            for found in await self._geo.nearest_station_to_each(points)
+        ]
 
     async def locality(self, slug: str) -> LocalityRef | None:
         found = await self._geo.locality(slug)

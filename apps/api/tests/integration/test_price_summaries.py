@@ -9,13 +9,12 @@ import pytest
 from sqlalchemy import select
 
 from app.config import Settings
-from app.core.outbox import OutboxJob, OutboxWorker
-from app.jobs import build_registry
+from app.core.outbox import OutboxJob
 from app.modules.catalog.repository import CatalogRepository
 from app.modules.search.repository import SummaryRepository
-from app.modules.search.service import RECOMPUTE, PriceSummaries
+from app.modules.search.service import REFRESH, SearchIndex
+from tests.jobs import run_due_jobs
 from tests.staff_api import NOW, Staff, run_as_staff, spot
-from tests.storage import BUCKETS, MemoryStorage
 
 pytestmark = pytest.mark.integration
 
@@ -31,16 +30,7 @@ def run(make_settings: Callable[..., Settings], database_url: str) -> Callable[.
 
 
 async def _run_worker(ops: Ops) -> None:
-    """Every job that's due, as the worker process runs them."""
-    worker = OutboxWorker(
-        sessionmaker=ops.app.state.sessionmaker,
-        registry=build_registry(storage=MemoryStorage(), buckets=BUCKETS),
-        clock=ops.app.state.clock,
-        worker_id="test",
-        batch_size=50,
-    )
-    while await worker.run_once():
-        pass
+    await run_due_jobs(ops.app)
 
 
 async def _listing(ops: Ops, *, at: dict[str, float]) -> dict[str, Any]:
@@ -181,11 +171,11 @@ def test_the_nightly_refresh_queues_every_listing_once_a_day_and_rolls_the_month
         added = []
         for _ in range(2):
             async with ops.app.state.sessionmaker() as db, db.begin():
-                added.append(await PriceSummaries(db, ops.app.state.clock).recompute_all())
+                added.append(await SearchIndex(db, ops.app.state.clock).refresh_all())
         async with ops.app.state.sessionmaker() as db, db.begin():
             queued = await db.scalar(
                 select(OutboxJob.id).where(
-                    OutboxJob.dedupe_key == f"{RECOMPUTE}:{property_id}:2027-08-01"
+                    OutboxJob.dedupe_key == f"{REFRESH}:{property_id}:2027-08-01"
                 )
             )
         await _run_worker(ops)

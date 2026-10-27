@@ -1,17 +1,29 @@
 """Reads and writes of the search module's own tables."""
 
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import delete, insert, select
+from sqlalchemy import Float, delete, func, insert, literal, or_, select, true, tuple_
+from sqlalchemy.dialects.postgresql import insert as upsert
 
-from app.modules.search.models import PropertyPriceSummary
+from app.core import postgis
+from app.core.geometry import Point
+from app.modules.search.domain.query import Order
+from app.modules.search.models import PropertyPriceSummary, SearchListing
 
 if TYPE_CHECKING:
+    import uuid
     from collections.abc import Sequence
-    from datetime import datetime
+    from datetime import date
 
+    from sqlalchemy import ColumnElement, SQLColumnExpression
     from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.sql.selectable import LateralFromClause
 
+    from app.core.geometry import Bounds
+    from app.modules.catalog.service import SearchEntry
+    from app.modules.search.domain.query import Cursor
     from app.modules.search.domain.summaries import MonthSummary
 
 
@@ -37,6 +49,9 @@ class SummaryRepository:
                         "min_rent_paise": summary.min_rent,
                         "max_rent_paise": summary.max_rent,
                         "available_beds": summary.available_beds,
+                        "occupancy": summary.occupancy,
+                        "ac": summary.ac,
+                        "attached_bath": summary.attached_bath,
                         "computed_at": computed_at,
                     }
                     for summary in summaries
@@ -50,3 +65,249 @@ class SummaryRepository:
             .order_by(PropertyPriceSummary.room_category_id, PropertyPriceSummary.month)
         )
         return list(found)
+
+
+@dataclass(frozen=True, slots=True)
+class Filters:
+    """A search, as the query needs it: places already looked up, the month decided."""
+
+    month: date
+    campus: Point | None = None
+    radius_m: int = 0
+    locality_id: int | None = None
+    bbox: Bounds | None = None
+    budget_min: int | None = None
+    budget_max: int | None = None
+    gender: str | None = None
+    occupancy: str | None = None
+    meals: str | None = None
+    ac: bool = False
+    attached_bath: bool = False
+    amenities: tuple[str, ...] = ()
+    verified_only: bool = True
+    available: bool = False
+    text: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Hit:
+    """One listing in the results, with what its categories that match come to that month."""
+
+    property_id: int
+    public_id: uuid.UUID
+    slug: str
+    name: str
+    locality_slug: str
+    locality_name: str
+    display: Point
+    gender_policy: str
+    meals: str
+    verified: bool
+    licensed: bool
+    media_ids: tuple[int, ...]
+    min_rent: int
+    max_rent: int
+    beds_free: int
+    # From the chosen campus to the display point, in metres; None without a campus.
+    distance_m: float | None
+    # Its place in the order, for the next page's cursor.
+    key: int | float | str
+
+
+class SearchRepository:
+    def __init__(self, db: AsyncSession) -> None:
+        self._db = db
+
+    async def put(self, property_id: int, entry: SearchEntry, *, refreshed_at: datetime) -> None:
+        values: dict[str, Any] = {
+            "public_id": entry.public_id,
+            "slug": entry.slug,
+            "name": entry.name,
+            "locality_id": entry.locality.id,
+            "locality_slug": entry.locality.slug,
+            "locality_name": entry.locality.name,
+            "display_location": postgis.point_wkt(entry.display),
+            "gender_policy": entry.gender_policy.value,
+            "meals": entry.meals.value,
+            "verified": entry.verified,
+            "licensed": entry.licensed,
+            "amenities": list(entry.amenities),
+            "media_ids": list(entry.media_ids),
+            "published_at": entry.published_at,
+            "refreshed_at": refreshed_at,
+        }
+        await self._db.execute(
+            upsert(SearchListing)
+            .values(property_id=property_id, **values)
+            .on_conflict_do_update(index_elements=[SearchListing.property_id], set_=values)
+        )
+
+    async def remove(self, property_id: int) -> None:
+        await self._db.execute(
+            delete(SearchListing).where(SearchListing.property_id == property_id)
+        )
+
+    async def search(
+        self, filters: Filters, *, order: Order, cursor: Cursor | None, limit: int
+    ) -> list[Hit]:
+        """One page of listings, ``limit + 1`` of them (the extra one says there's another
+        page), in one query however many match."""
+        matching = _matching_categories(filters)
+        listing = SearchListing
+        distance = (
+            None
+            if filters.campus is None
+            else postgis.distance(listing.display_location, postgis.geography(filters.campus))
+        )
+        # Only listings with a category that matches.
+        conditions = [*_listing_conditions(filters), matching.c.min_rent.is_not(None)]
+        relevance = None
+        if filters.text is not None:
+            words = func.plainto_tsquery("simple", filters.text)
+            conditions.append(
+                or_(
+                    listing.search_vector.op("@@")(words),
+                    literal(filters.text).op("<%")(listing.search_text),
+                )
+            )
+            relevance = (
+                func.ts_rank(listing.search_vector, words)
+                + func.word_similarity(filters.text, listing.search_text)
+            ).cast(Float)
+        keys: dict[Order, SQLColumnExpression[Any] | None] = {
+            Order.RELEVANCE: relevance,
+            Order.PRICE_ASC: matching.c.min_rent,
+            Order.PRICE_DESC: matching.c.min_rent,
+            Order.DISTANCE: distance,
+            Order.NEWEST: listing.published_at,
+        }
+        key = keys[order]
+        if key is None:  # pragma: no cover - the service picks orders the request supports
+            msg = f"can't order by {order} for this search"
+            raise ValueError(msg)
+        ascending = order in {Order.PRICE_ASC, Order.DISTANCE}
+        if cursor is not None:
+            last = datetime.fromisoformat(str(cursor.key)) if order is Order.NEWEST else cursor.key
+            position = tuple_(key, listing.public_id)
+            after = tuple_(literal(last), literal(cursor.after))
+            conditions.append(position > after if ascending else position < after)
+        query = (
+            select(
+                listing.property_id,
+                listing.public_id,
+                listing.slug,
+                listing.name,
+                listing.locality_slug,
+                listing.locality_name,
+                postgis.lat(listing.display_location),
+                postgis.lng(listing.display_location),
+                listing.gender_policy,
+                listing.meals,
+                listing.verified,
+                listing.licensed,
+                listing.media_ids,
+                matching.c.min_rent,
+                matching.c.max_rent,
+                matching.c.beds_free,
+                literal(None, Float) if distance is None else distance,
+                key,
+            )
+            .select_from(listing)
+            .join(matching, true())
+            .where(*conditions)
+            .order_by(
+                *(
+                    (key.asc(), listing.public_id.asc())
+                    if ascending
+                    else (key.desc(), listing.public_id.desc())
+                )
+            )
+            .limit(limit + 1)
+        )
+        return [_hit(tuple(row)) for row in await self._db.execute(query)]
+
+
+def _matching_categories(filters: Filters) -> LateralFromClause:
+    """For each listing, its room categories that match the search in the month: their rents'
+    range and free beds (all null when none match). A lateral lookup by listing and month, so
+    the work grows with the listings the other filters leave, whatever the planner guesses."""
+    summary = PropertyPriceSummary
+    conditions: list[ColumnElement[bool]] = [
+        summary.property_id == SearchListing.property_id,
+        summary.month == filters.month,
+    ]
+    if filters.occupancy is not None:
+        conditions.append(summary.occupancy == filters.occupancy)
+    if filters.ac:
+        conditions.append(summary.ac.is_(True))
+    if filters.attached_bath:
+        conditions.append(summary.attached_bath.is_(True))
+    # A category's range for the month overlaps the budget.
+    if filters.budget_min is not None:
+        conditions.append(summary.max_rent_paise >= filters.budget_min)
+    if filters.budget_max is not None:
+        conditions.append(summary.min_rent_paise <= filters.budget_max)
+    if filters.available:
+        conditions.append(summary.available_beds > 0)
+    return (
+        select(
+            func.min(summary.min_rent_paise).label("min_rent"),
+            func.max(summary.max_rent_paise).label("max_rent"),
+            func.sum(summary.available_beds).label("beds_free"),
+        )
+        .where(*conditions)
+        .lateral("matching")
+    )
+
+
+def _listing_conditions(filters: Filters) -> list[ColumnElement[bool]]:
+    """What the listing itself must be: verified, for whom, its meals and amenities, and where."""
+    listing = SearchListing
+    conditions: list[ColumnElement[bool]] = []
+    if filters.verified_only:
+        conditions.append(listing.verified.is_(True))
+    if filters.gender is not None:
+        conditions.append(listing.gender_policy == filters.gender)
+    if filters.meals is not None:
+        conditions.append(listing.meals == filters.meals)
+    if filters.amenities:
+        conditions.append(listing.amenities.contains(list(filters.amenities)))
+    if filters.campus is not None:
+        conditions.append(
+            func.ST_DWithin(
+                listing.display_location, postgis.geography(filters.campus), filters.radius_m
+            )
+        )
+    if filters.locality_id is not None:
+        conditions.append(listing.locality_id == filters.locality_id)
+    if filters.bbox is not None:
+        box = filters.bbox
+        envelope = func.geography(
+            func.ST_MakeEnvelope(box.west, box.south, box.east, box.north, 4326)
+        )
+        conditions.append(func.ST_Intersects(listing.display_location, envelope))
+    return conditions
+
+
+def _hit(row: tuple[Any, ...]) -> Hit:
+    (property_id, public_id, slug, name, locality_slug, locality_name, lat, lng) = row[:8]
+    gender, meals, verified, licensed, media_ids, low, high, beds, metres, value = row[8:]
+    return Hit(
+        property_id=property_id,
+        public_id=public_id,
+        slug=slug,
+        name=name,
+        locality_slug=locality_slug,
+        locality_name=locality_name,
+        display=Point(lat=lat, lng=lng),
+        gender_policy=gender,
+        meals=meals,
+        verified=verified,
+        licensed=licensed,
+        media_ids=tuple(media_ids),
+        min_rent=low,
+        max_rent=high,
+        beds_free=int(beds),
+        distance_m=metres,
+        key=value.isoformat() if isinstance(value, datetime) else value,
+    )

@@ -3472,6 +3472,340 @@
         }
       }
     },
+    "/v1/search/properties": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search live PGs",
+        "description": "Around one place at most (a campus within a radius, a locality or a map area), for a\nmove-in month, by budget and what the PG and its rooms offer, sorted and a page at a time.\nDistances are from display points. 422 SEARCH_INVALID for a search that can't be answered.",
+        "operationId": "searchSearchProperties",
+        "parameters": [
+          {
+            "name": "campus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64,
+                  "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search around this campus.",
+              "title": "Campus"
+            },
+            "description": "Search around this campus."
+          },
+          {
+            "name": "radius_m",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 15000,
+              "minimum": 200,
+              "description": "How far from the campus, in metres.",
+              "default": 3000,
+              "title": "Radius M"
+            },
+            "description": "How far from the campus, in metres."
+          },
+          {
+            "name": "locality",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64,
+                  "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search in this locality.",
+              "title": "Locality"
+            },
+            "description": "Search in this locality."
+          },
+          {
+            "name": "bbox",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]{1,3}(\\.[0-9]{1,15})?,-?[0-9]{1,3}(\\.[0-9]{1,15})?,-?[0-9]{1,3}(\\.[0-9]{1,15})?,-?[0-9]{1,3}(\\.[0-9]{1,15})?$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search in this map area: west,south,east,north in degrees.",
+              "title": "Bbox"
+            },
+            "description": "Search in this map area: west,south,east,north in degrees."
+          },
+          {
+            "name": "move_in_month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM: this month or one of the next six. Prices are for it; this month if left out.",
+              "title": "Move In Month"
+            },
+            "description": "YYYY-MM: this month or one of the next six. Prices are for it; this month if left out."
+          },
+          {
+            "name": "budget_min_paise",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Budget Min Paise"
+            }
+          },
+          {
+            "name": "budget_max_paise",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Budget Max Paise"
+            }
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GenderPolicy"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Gender"
+            }
+          },
+          {
+            "name": "occupancy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Occupancy"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Occupancy"
+            }
+          },
+          {
+            "name": "meals",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Meals"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Meals"
+            }
+          },
+          {
+            "name": "ac",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Ac"
+            }
+          },
+          {
+            "name": "attached_bath",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Attached Bath"
+            }
+          },
+          {
+            "name": "amenities",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 20,
+              "default": [],
+              "title": "Amenities"
+            }
+          },
+          {
+            "name": "verified_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only verified PGs; always so while verified_only is on.",
+              "default": true,
+              "title": "Verified Only"
+            },
+            "description": "Only verified PGs; always so while verified_only is on."
+          },
+          {
+            "name": "available",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only PGs with a bed free that month.",
+              "default": false,
+              "title": "Available"
+            },
+            "description": "Only PGs with a bed free that month."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Sort",
+              "default": "recommended"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/media": {
       "post": {
         "tags": [
@@ -3921,6 +4255,17 @@
           "status"
         ],
         "title": "BedUpdate"
+      },
+      "BedsFree": {
+        "type": "string",
+        "enum": [
+          "none",
+          "few",
+          "some",
+          "many"
+        ],
+        "title": "BedsFree",
+        "description": "How many beds are free that month, roughly: real inventory (CLAUDE.md rule 7), without\nhanding out exact counts."
       },
       "CampusDetail": {
         "properties": {
@@ -7348,6 +7693,140 @@
         ],
         "title": "RoomInfo"
       },
+      "SearchCard": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "locality": {
+            "$ref": "#/components/schemas/ListingLocality"
+          },
+          "displayLocation": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "distanceM": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distancem"
+          },
+          "nearestStation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StationNearby"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minRentPaise": {
+            "type": "integer",
+            "title": "Minrentpaise"
+          },
+          "maxRentPaise": {
+            "type": "integer",
+            "title": "Maxrentpaise"
+          },
+          "genderPolicy": {
+            "$ref": "#/components/schemas/GenderPolicy"
+          },
+          "meals": {
+            "$ref": "#/components/schemas/Meals"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "licensed": {
+            "type": "boolean",
+            "title": "Licensed"
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicMedia"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bedsFree": {
+            "$ref": "#/components/schemas/BedsFree"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "locality",
+          "displayLocation",
+          "distanceM",
+          "nearestStation",
+          "minRentPaise",
+          "maxRentPaise",
+          "genderPolicy",
+          "meals",
+          "verified",
+          "licensed",
+          "cover",
+          "bedsFree"
+        ],
+        "title": "SearchCard"
+      },
+      "SearchPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SearchCard"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          },
+          "month": {
+            "type": "string",
+            "format": "date",
+            "title": "Month"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor",
+          "month"
+        ],
+        "title": "SearchPage"
+      },
       "SessionInfo": {
         "properties": {
           "id": {
@@ -7448,6 +7927,17 @@
           "missing"
         ],
         "title": "SocietyPermission"
+      },
+      "Sort": {
+        "type": "string",
+        "enum": [
+          "recommended",
+          "price_asc",
+          "price_desc",
+          "distance",
+          "newest"
+        ],
+        "title": "Sort"
       },
       "StaffMember": {
         "properties": {
@@ -7600,6 +8090,30 @@
           "distanceM"
         ],
         "title": "StationDistance"
+      },
+      "StationNearby": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "distanceM": {
+            "type": "integer",
+            "title": "Distancem"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "distanceM"
+        ],
+        "title": "StationNearby"
       },
       "StatusChange": {
         "properties": {

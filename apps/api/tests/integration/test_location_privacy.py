@@ -3,6 +3,7 @@ never its exact point, its address or the owner's phone. Those show only to some
 while hide_owner_contact is off or once they're entitled (a visit, later a booking)."""
 
 import json
+import secrets
 from collections.abc import Awaitable, Callable, Iterator
 from typing import Any
 
@@ -21,6 +22,7 @@ from app.modules.identity.domain.sessions import SessionKind
 from app.modules.media.domain.assets import AssetStatus, Moderation
 from tests.authorization import MATRIX
 from tests.flags import FixedFlags
+from tests.jobs import run_due_jobs
 from tests.staff_api import Staff, run_as_staff, sign_in, spot, verify
 
 pytestmark = pytest.mark.integration
@@ -41,7 +43,9 @@ def run(
     return run_scenario
 
 
-async def _built(ops: Ops, *, at: dict[str, float]) -> dict[str, Any]:
+async def _built(
+    ops: Ops, *, at: dict[str, float], name: str = "Fictional Residency"
+) -> dict[str, Any]:
     """A listing ops built: a double room category with room 101 and its two beds, and a photo."""
     owner = await ops.owner()
     listing = await ops.ok(
@@ -50,7 +54,7 @@ async def _built(ops: Ops, *, at: dict[str, float]) -> dict[str, Any]:
         json={
             "owner": owner["id"],
             "locality": "kamla-nagar",
-            "name": "Fictional Residency",
+            "name": name,
             "addressLine": ADDRESS,
             "location": at,
             "locationPrecision": "exact",
@@ -82,9 +86,11 @@ async def _built(ops: Ops, *, at: dict[str, float]) -> dict[str, Any]:
     return await ops.ok("PUT", f"{path}/media", json={"media": [await ops.media()]})
 
 
-async def _live(ops: Ops, *, at: dict[str, float]) -> tuple[dict[str, Any], str]:
+async def _live(
+    ops: Ops, *, at: dict[str, float], name: str = "Fictional Residency"
+) -> tuple[dict[str, Any], str]:
     """A listing verified by a field agent and published: the listing, and the owner's phone."""
-    built = await _built(ops, at=at)
+    built = await _built(ops, at=at, name=name)
     await verify(ops, built)
     published = await ops.ok(
         "POST", f"/v1/ops/properties/{built['id']}/status", json={"status": "published"}
@@ -126,8 +132,10 @@ def _leaks(body: str, *, exact: Point, phone_e164: str) -> list[str]:
     return found
 
 
-def _filled(path: str, *, slug: str) -> str:
-    """A public route's path for the listing under test (or a campus)."""
+def _filled(path: str, *, slug: str, word: str) -> str:
+    """A public route's path for the listing under test (or a campus); search looks for it."""
+    if path == "/v1/search/properties":
+        return f"{path}?q={word}&campus=hindu-college&radius_m=5000"
     if "{" not in path:
         return path
     if path.startswith("/v1/properties/"):
@@ -143,7 +151,11 @@ def test_no_public_route_gives_away_the_exact_point_the_address_or_the_owners_ph
 ) -> None:
     async def scenario(ops: Ops) -> dict[str, Any]:
         at = spot(700, bearing=30)
-        listing, owner_phone = await _live(ops, at=at)
+        # A word of its own, for search to find it by among every other test's listings.
+        word = f"sweep{secrets.token_hex(4)}"
+        listing, owner_phone = await _live(ops, at=at, name=f"Fictional Residency {word}")
+        # Its search entry, as the worker makes it.
+        await run_due_jobs(ops.app)
         student = await sign_in(ops.app, ops.client, Role.STUDENT, kind=SessionKind.USER)
         # Every route anyone may read, as anyone and as a student, and the contact route too.
         public = sorted(
@@ -152,21 +164,25 @@ def test_no_public_route_gives_away_the_exact_point_the_address_or_the_owners_ph
             if method == "GET" and rule.expected["anonymous"] == 200
         )
         leaks: dict[str, list[str]] = {}
+        shown_by: set[str] = set()
         for path in [*public, "/v1/properties/{slug}/contact"]:
-            url = _filled(path, slug=listing["slug"])
+            url = _filled(path, slug=listing["slug"], word=word)
             for who, response in (
                 ("anyone", await ops.client.get(url)),
                 ("a student", await student.call("GET", url)),
             ):
+                if listing["id"] in response.text:
+                    shown_by.add(path)
                 found = _leaks(response.text, exact=Point(**at), phone_e164=owner_phone)
                 if found:
                     leaks[f"{path} to {who} ({response.status_code})"] = found
-        return {"public": public, "leaks": leaks}
+        return {"public": public, "shown by": shown_by, "leaks": leaks}
 
     found = run(scenario)
 
-    # The sweep covers the listing itself, whatever else becomes public later (search, the map).
-    assert "/v1/properties/{slug}" in found["public"]
+    # The sweep sees the listing where the public meets it, whatever else becomes public later
+    # (the map), so a leak there would show.
+    assert {"/v1/properties/{slug}", "/v1/search/properties"} <= found["shown by"]
     assert found["leaks"] == {}
 
 

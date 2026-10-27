@@ -41,6 +41,7 @@ from app.modules.catalog.service.checks import (
     location_problems,
     text_problems,
 )
+from app.modules.catalog.service.events import listing_changed
 from app.modules.catalog.service.trail import staff_did
 from app.modules.geo.service import GeoLookup
 from app.modules.media.domain.assets import AssetStatus, Purpose
@@ -272,6 +273,7 @@ class ListingService:
                 entity_id=found.public_id,
                 fields=changed,
             )
+            await listing_changed(self._db, self._clock, found.id)
         return found
 
     async def set_amenities(
@@ -295,6 +297,7 @@ class ListingService:
                 entity_id=found.public_id,
                 amenities=sorted(ids),
             )
+            await listing_changed(self._db, self._clock, found.id)
         return sorted(ids)
 
     async def move(self, actor: Actor, property_id: uuid.UUID, target: PropertyStatus) -> Property:
@@ -330,6 +333,7 @@ class ListingService:
                 entity_id=found.public_id,
                 **{"from": current.value, "to": target.value},
             )
+            await listing_changed(self._db, self._clock, found.id)
         return found
 
     async def set_media(
@@ -366,3 +370,4 @@ class ListingService:
                 entity_id=found.public_id,
                 media=[str(media_id) for media_id in media],
             )
+            await listing_changed(self._db, self._clock, found.id)

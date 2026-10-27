@@ -38,6 +38,7 @@ from app.modules.catalog.repository import (
     checklist_to_json,
 )
 from app.modules.catalog.service.checks import check, location_problems, text_problems
+from app.modules.catalog.service.events import listing_changed
 from app.modules.catalog.service.trail import staff_did
 from app.modules.geo.service import GeoLookup
 from app.modules.identity.service import Accounts
@@ -160,6 +161,7 @@ class VerificationService:
                 agent=str(visitor.public_id),
                 scheduled_for=scheduled_for.isoformat(),
             )
+            await listing_changed(self._db, self._clock, found.id)
         return visit
 
     async def cancel(self, actor: Actor, visit_id: uuid.UUID, *, reason: str) -> VerificationVisit:
@@ -186,6 +188,7 @@ class VerificationService:
                 entity_id=visit.public_id,
                 reason=reason.strip(),
             )
+            await listing_changed(self._db, self._clock, found.id)
         return visit
 
     async def submit(self, actor: Actor, visit_id: uuid.UUID, report: Report) -> VerificationVisit:
@@ -237,6 +240,7 @@ class VerificationService:
                 pin_moved=report.move_pin,
             )
             await self._take_down_if_needed(actor, found, outcome)
+            await listing_changed(self._db, self._clock, found.id)
         return visit
 
     async def suspend(self, actor: Actor, property_id: uuid.UUID, *, reason: str) -> Property:
@@ -260,6 +264,7 @@ class VerificationService:
                 entity_id=found.public_id,
                 reason=reason.strip(),
             )
+            await listing_changed(self._db, self._clock, found.id)
             await self._take_down_if_needed(actor, found, VerificationStatus.SUSPENDED)
         return found
 

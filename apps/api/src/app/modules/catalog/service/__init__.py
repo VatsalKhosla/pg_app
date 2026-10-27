@@ -1,11 +1,11 @@
 """Use cases of the catalog module; each method is one transaction (ADR 0021, 0023-0026)."""
 
 from app.modules.catalog.service.agreements import AgreementService, Standing
-from app.modules.catalog.service.events import INVENTORY_CHANGED
+from app.modules.catalog.service.events import INVENTORY_CHANGED, LISTING_CHANGED
 from app.modules.catalog.service.export import owner_data
 from app.modules.catalog.service.inventory import CategoryChanges, CategoryDraft, InventoryService
 from app.modules.catalog.service.listings import ListingService, PropertyChanges, PropertyDraft
-from app.modules.catalog.service.lookup import CatalogLookup, CategoryRent
+from app.modules.catalog.service.lookup import CatalogLookup, CategoryRent, SearchEntry
 from app.modules.catalog.service.owners import OwnerChanges, OwnerRecord, OwnerService
 from app.modules.catalog.service.public import (
     ContactDetails,
@@ -29,6 +29,7 @@ from app.modules.catalog.service.verification import (
 
 __all__ = [
     "INVENTORY_CHANGED",
+    "LISTING_CHANGED",
     "AgreementService",
     "CatalogLookup",
     "CatalogReader",
@@ -51,6 +52,7 @@ __all__ = [
     "PublicListingView",
     "Report",
     "RoomView",
+    "SearchEntry",
     "Standing",
     "VerificationService",
     "VisitReader",

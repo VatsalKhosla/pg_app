@@ -6,7 +6,7 @@ duplicates when staff add a listing, and is never returned (domain/location.py).
 """
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from geoalchemy2 import Geography
 from sqlalchemy import and_, cast, delete, func, insert, or_, select, update
@@ -157,6 +157,15 @@ class NearbyProperty:
     property: Property
     # From the display point.
     distance_m: float
+
+
+class RentRow(NamedTuple):
+    category_id: int
+    base_rent_paise: int
+    active_beds: int
+    occupancy: str
+    ac: bool
+    attached_bath: bool
 
 
 class CatalogRepository:
@@ -342,12 +351,19 @@ class CatalogRepository:
         )
         return list(found)
 
-    async def category_rents(self, property_id: int) -> list[tuple[int, int, int]]:
-        """Each active room category's id, base rent and active beds, for categories with a bed
-        to sell: what other modules price and count."""
+    async def category_rents(self, property_id: int) -> list[RentRow]:
+        """Each active room category with a bed to sell: its id, base rent, active beds,
+        occupancy, AC and attached bath. What other modules price, count and filter by."""
         active_beds = func.count(Bed.id).filter(Bed.status == BedStatus.ACTIVE)
         rows = await self._db.execute(
-            select(RoomCategory.id, RoomCategory.base_rent_paise, active_beds)
+            select(
+                RoomCategory.id,
+                RoomCategory.base_rent_paise,
+                active_beds,
+                RoomCategory.occupancy,
+                RoomCategory.ac,
+                RoomCategory.attached_bath,
+            )
             .join(Room, Room.room_category_id == RoomCategory.id)
             .join(Bed, Bed.room_id == Room.id)
             .where(
@@ -358,7 +374,7 @@ class CatalogRepository:
             .having(active_beds > 0)
             .order_by(RoomCategory.id)
         )
-        return [(category_id, rent, beds) for category_id, rent, beds in rows]
+        return [RentRow(*row) for row in rows]
 
     async def property_ids_after(self, after: int | None, *, limit: int) -> list[int]:
         """Properties' internal ids in order, a page at a time."""

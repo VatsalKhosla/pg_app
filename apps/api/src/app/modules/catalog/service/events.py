@@ -12,9 +12,16 @@ if TYPE_CHECKING:
     from app.core.clock import Clock
 
 INVENTORY_CHANGED: Final = "catalog.inventory_changed"
+LISTING_CHANGED: Final = "catalog.listing_changed"
 
 
 async def inventory_changed(db: AsyncSession, clock: Clock, property_id: int) -> None:
     """A listing's room categories, rents, rooms or beds changed (search's price summaries
     follow, step 3.1). One job per change: the outbox dedupes a key forever, not per run."""
     await enqueue(db, INVENTORY_CHANGED, {"property_id": property_id}, clock=clock)
+
+
+async def listing_changed(db: AsyncSession, clock: Clock, property_id: int) -> None:
+    """A listing's own details changed: its name, place, status, verification, amenities or
+    photos (search's entry for it follows, step 3.2)."""
+    await enqueue(db, LISTING_CHANGED, {"property_id": property_id}, clock=clock)

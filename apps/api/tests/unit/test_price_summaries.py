@@ -41,7 +41,16 @@ def test_the_month_is_indias() -> None:
 
 
 def test_the_base_rent_is_the_whole_range_until_the_pricing_engine() -> None:
-    rents = [CategoryRent(category_id=7, base_rent=Paise(1_200_000), active_beds=2)]
+    rents = [
+        CategoryRent(
+            category_id=7,
+            base_rent=Paise(1_200_000),
+            active_beds=2,
+            occupancy="double",
+            ac=True,
+            attached_bath=False,
+        )
+    ]
 
     [summary, *_] = summarise(rents, months_from(date(2027, 7, 14)))
 
@@ -58,7 +67,9 @@ def test_the_base_rent_is_the_whole_range_until_the_pricing_engine() -> None:
             st.integers(min_value=1),
             st.integers(min_value=1, max_value=10_000_000),
             st.integers(min_value=1, max_value=4),
-        ).map(lambda drawn: CategoryRent(drawn[0], Paise(drawn[1]), drawn[2])),
+        ).map(
+            lambda drawn: CategoryRent(drawn[0], Paise(drawn[1]), drawn[2], "double", False, True)
+        ),
         max_size=6,
         unique_by=lambda rent: rent.category_id,
     ),

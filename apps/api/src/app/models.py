@@ -38,7 +38,7 @@ from app.modules.identity.models import (
     UserSession,
 )
 from app.modules.media.models import MediaAsset
-from app.modules.search.models import PropertyPriceSummary
+from app.modules.search.models import PropertyPriceSummary, SearchListing
 
 __all__ = [
     "Amenity",
@@ -67,6 +67,7 @@ __all__ = [
     "PropertyPriceSummary",
     "Room",
     "RoomCategory",
+    "SearchListing",
     "TotpCredential",
     "User",
     "UserIdentity",

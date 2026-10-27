@@ -26,6 +26,10 @@ class CategoryRent:
     category_id: int
     base_rent: Paise
     active_beds: int
+    # What search filters categories by (step 3.2): its sharing, AC and attached bath.
+    occupancy: str
+    ac: bool
+    attached_bath: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +40,9 @@ class MonthSummary:
     min_rent: Paise
     max_rent: Paise
     available_beds: int
+    occupancy: str
+    ac: bool
+    attached_bath: bool
 
 
 def months_from(today: date, count: int = SUMMARY_MONTHS) -> list[date]:
@@ -56,6 +63,9 @@ def summarise(categories: Sequence[CategoryRent], months: Sequence[date]) -> lis
             min_rent=category.base_rent,
             max_rent=category.base_rent,
             available_beds=category.active_beds,
+            occupancy=category.occupancy,
+            ac=category.ac,
+            attached_bath=category.attached_bath,
         )
         for category in categories
         for month in months

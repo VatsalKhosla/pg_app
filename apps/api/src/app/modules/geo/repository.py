@@ -8,7 +8,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     Boolean,
     ColumnElement,
+    Float,
+    Integer,
     and_,
+    column,
     delete,
     func,
     literal_column,
@@ -16,6 +19,7 @@ from sqlalchemy import (
     select,
     true,
     tuple_,
+    values,
 )
 from sqlalchemy.dialects.postgresql import insert
 
@@ -199,6 +203,52 @@ class GeoRepository:
             await self._db.execute(select(Locality.id, Locality.name).where(Locality.slug == slug))
         ).one_or_none()
         return None if found is None else (found.id, found.name)
+
+    async def campus_point(self, slug: str) -> tuple[int, str, Point] | None:
+        """A campus's internal id, name and location."""
+        found = (
+            await self._db.execute(
+                select(
+                    Campus.id,
+                    Campus.name,
+                    postgis.lat(Campus.location),
+                    postgis.lng(Campus.location),
+                ).where(Campus.slug == slug)
+            )
+        ).one_or_none()
+        if found is None:
+            return None
+        campus_id, name, lat, lng = found
+        return campus_id, name, Point(lat=lat, lng=lng)
+
+    async def nearest_station_to_each(
+        self, points: Sequence[Point]
+    ) -> list[tuple[str, str, float] | None]:
+        """The metro station nearest each point: its slug, name and distance in metres. One query
+        however many points."""
+        if not points:
+            return []
+        given = values(
+            column("position", Integer), column("lng", Float), column("lat", Float), name="given"
+        ).data([(position, point.lng, point.lat) for position, point in enumerate(points)])
+        here = func.geography(func.ST_SetSRID(func.ST_MakePoint(given.c.lng, given.c.lat), 4326))
+        nearest = (
+            select(
+                MetroStation.slug.label("slug"),
+                MetroStation.name.label("name"),
+                postgis.distance(MetroStation.location, here).label("distance"),
+            )
+            .order_by(MetroStation.location.op("<->")(here))
+            .limit(1)
+            .lateral("nearest")
+        )
+        rows = await self._db.execute(
+            select(given.c.position, nearest.c.slug, nearest.c.name, nearest.c.distance)
+            .select_from(given)
+            .join(nearest, true())
+        )
+        found = {position: (slug, name, metres) for position, slug, name, metres in rows}
+        return [found.get(position) for position in range(len(points))]
 
     async def localities_by_id(self, ids: Collection[int]) -> dict[int, tuple[str, str]]:
         """Localities' slugs and names, by internal id."""
