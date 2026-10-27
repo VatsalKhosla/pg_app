@@ -3482,6 +3482,183 @@
         "operationId": "searchSearchProperties",
         "parameters": [
           {
+            "name": "move_in_month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM: this month or one of the next six. Prices are for it; this month if left out.",
+              "title": "Move In Month"
+            },
+            "description": "YYYY-MM: this month or one of the next six. Prices are for it; this month if left out."
+          },
+          {
+            "name": "budget_min_paise",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Budget Min Paise"
+            }
+          },
+          {
+            "name": "budget_max_paise",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Budget Max Paise"
+            }
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GenderPolicy"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Gender"
+            }
+          },
+          {
+            "name": "occupancy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Occupancy"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Occupancy"
+            }
+          },
+          {
+            "name": "meals",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Meals"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Meals"
+            }
+          },
+          {
+            "name": "ac",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Ac"
+            }
+          },
+          {
+            "name": "attached_bath",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Attached Bath"
+            }
+          },
+          {
+            "name": "amenities",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 20,
+              "default": [],
+              "title": "Amenities"
+            }
+          },
+          {
+            "name": "verified_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only verified PGs; always so while verified_only is on.",
+              "default": true,
+              "title": "Verified Only"
+            },
+            "description": "Only verified PGs; always so while verified_only is on."
+          },
+          {
+            "name": "available",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only PGs with a bed free that month.",
+              "default": false,
+              "title": "Available"
+            },
+            "description": "Only PGs with a bed free that month."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
             "name": "campus",
             "in": "query",
             "required": false,
@@ -3554,6 +3731,90 @@
             },
             "description": "Search in this map area: west,south,east,north in degrees."
           },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Sort",
+              "default": "recommended"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/map/pins": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Pins for the map's area",
+        "description": "Every live listing in the area that matches the filters, as a pin at its display point,\n2,000 at most (``truncated`` says there were more: zoom in). Cached for a minute by the\narea snapped to the zoom's grid, the zoom and the filters, with an ETag.",
+        "operationId": "searchMapPins",
+        "parameters": [
           {
             "name": "move_in_month",
             "in": "query",
@@ -3732,44 +3993,29 @@
             }
           },
           {
-            "name": "sort",
+            "name": "bbox",
             "in": "query",
-            "required": false,
+            "required": true,
             "schema": {
-              "$ref": "#/components/schemas/Sort",
-              "default": "recommended"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 300
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "The previous page's nextCursor.",
-              "title": "Cursor"
+              "type": "string",
+              "pattern": "^-?[0-9]{1,3}(\\.[0-9]{1,15})?,-?[0-9]{1,3}(\\.[0-9]{1,15})?,-?[0-9]{1,3}(\\.[0-9]{1,15})?,-?[0-9]{1,3}(\\.[0-9]{1,15})?$",
+              "description": "The map's area: west,south,east,north in degrees.",
+              "title": "Bbox"
             },
-            "description": "The previous page's nextCursor."
+            "description": "The map's area: west,south,east,north in degrees."
           },
           {
-            "name": "limit",
+            "name": "zoom",
             "in": "query",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "integer",
-              "maximum": 50,
-              "minimum": 1,
-              "default": 20,
-              "title": "Limit"
-            }
+              "maximum": 20,
+              "minimum": 5,
+              "description": "The map's zoom level.",
+              "title": "Zoom"
+            },
+            "description": "The map's zoom level."
           }
         ],
         "responses": {
@@ -3778,7 +4024,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SearchPage"
+                  "$ref": "#/components/schemas/MapPins"
                 }
               }
             }
@@ -3802,6 +4048,9 @@
                 }
               }
             }
+          },
+          "304": {
+            "description": "Not modified: the pins with that ETag are still current."
           }
         }
       }
@@ -5935,6 +6184,87 @@
           "approximate"
         ],
         "title": "LocationPrecision"
+      },
+      "MapPin": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "lat": {
+            "type": "number",
+            "title": "Lat"
+          },
+          "lng": {
+            "type": "number",
+            "title": "Lng"
+          },
+          "minRentPaise": {
+            "type": "integer",
+            "title": "Minrentpaise"
+          },
+          "maxRentPaise": {
+            "type": "integer",
+            "title": "Maxrentpaise"
+          },
+          "genderPolicy": {
+            "$ref": "#/components/schemas/GenderPolicy"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "bedsFree": {
+            "$ref": "#/components/schemas/BedsFree"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "lat",
+          "lng",
+          "minRentPaise",
+          "maxRentPaise",
+          "genderPolicy",
+          "verified",
+          "bedsFree"
+        ],
+        "title": "MapPin"
+      },
+      "MapPins": {
+        "properties": {
+          "pins": {
+            "items": {
+              "$ref": "#/components/schemas/MapPin"
+            },
+            "type": "array",
+            "title": "Pins"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "month": {
+            "type": "string",
+            "format": "date",
+            "title": "Month"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pins",
+          "truncated",
+          "month"
+        ],
+        "title": "MapPins"
       },
       "Me": {
         "properties": {

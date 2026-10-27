@@ -163,17 +163,8 @@ class SearchRepository:
         conditions = [*_listing_conditions(filters), matching.c.min_rent.is_not(None)]
         relevance = None
         if filters.text is not None:
-            words = func.plainto_tsquery("simple", filters.text)
-            conditions.append(
-                or_(
-                    listing.search_vector.op("@@")(words),
-                    literal(filters.text).op("<%")(listing.search_text),
-                )
-            )
-            relevance = (
-                func.ts_rank(listing.search_vector, words)
-                + func.word_similarity(filters.text, listing.search_text)
-            ).cast(Float)
+            match, relevance = _text(filters.text)
+            conditions.append(match)
         keys: dict[Order, SQLColumnExpression[Any] | None] = {
             Order.RELEVANCE: relevance,
             Order.PRICE_ASC: matching.c.min_rent,
@@ -225,6 +216,68 @@ class SearchRepository:
             .limit(limit + 1)
         )
         return [_hit(tuple(row)) for row in await self._db.execute(query)]
+
+    async def pins(self, filters: Filters, *, limit: int) -> list[PinRow]:
+        """Every listing that matches, as a pin, ``limit`` at most: one query, in a stable order."""
+        matching = _matching_categories(filters)
+        listing = SearchListing
+        conditions = [*_listing_conditions(filters), matching.c.min_rent.is_not(None)]
+        if filters.text is not None:
+            conditions.append(_text(filters.text)[0])
+        rows = await self._db.execute(
+            select(
+                listing.public_id,
+                listing.slug,
+                postgis.lat(listing.display_location),
+                postgis.lng(listing.display_location),
+                matching.c.min_rent,
+                matching.c.max_rent,
+                listing.gender_policy,
+                listing.verified,
+                matching.c.beds_free,
+            )
+            .select_from(listing)
+            .join(matching, true())
+            .where(*conditions)
+            .order_by(listing.public_id)
+            .limit(limit)
+        )
+        return [
+            PinRow(
+                public_id=public_id,
+                slug=slug,
+                display=Point(lat=lat, lng=lng),
+                min_rent=low,
+                max_rent=high,
+                gender_policy=gender,
+                verified=verified,
+                beds_free=int(beds),
+            )
+            for public_id, slug, lat, lng, low, high, gender, verified, beds in rows
+        ]
+
+
+@dataclass(frozen=True, slots=True)
+class PinRow:
+    public_id: uuid.UUID
+    slug: str
+    display: Point
+    min_rent: int
+    max_rent: int
+    gender_policy: str
+    verified: bool
+    beds_free: int
+
+
+def _text(text: str) -> tuple[ColumnElement[bool], ColumnElement[float]]:
+    """Whole words (full text) or near misses (trigrams), and how well each listing matches."""
+    listing = SearchListing
+    words = func.plainto_tsquery("simple", text)
+    match = or_(listing.search_vector.op("@@")(words), literal(text).op("<%")(listing.search_text))
+    relevance = (
+        func.ts_rank(listing.search_vector, words) + func.word_similarity(text, listing.search_text)
+    ).cast(Float)
+    return match, relevance
 
 
 def _matching_categories(filters: Filters) -> LateralFromClause:

@@ -8,8 +8,12 @@ These run inside a job's transaction (they start none): the worker commits them 
 Searching: one page of live listings, filtered, sorted and cut by a cursor, with the distance from
 the chosen campus and the nearest metro station measured from display points (ADR 0021), and
 each card's cover. A fixed number of queries, however many listings match.
+
+The map's pins: every live listing in an area that matches the same filters, at most 2,000,
+cached for a minute (step 3.3).
 """
 
+import hashlib
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
@@ -18,13 +22,17 @@ import structlog
 from app.core.calendar import india_date
 from app.core.flags import Flag
 from app.core.outbox import enqueue
+from app.modules.catalog.domain.listing import GenderPolicy
 from app.modules.catalog.service import CatalogLookup
 from app.modules.geo.service import GeoLookup
 from app.modules.media.domain.assets import AssetStatus, Moderation
 from app.modules.media.service import MediaLookup
+from app.modules.search.cache import Cached
+from app.modules.search.domain.pins import PIN_CAP, cache_key, snapped
 from app.modules.search.domain.query import (
     Cursor,
     SearchRequest,
+    beds_free,
     decode_cursor,
     encode_cursor,
     order_for,
@@ -33,6 +41,7 @@ from app.modules.search.domain.query import (
 from app.modules.search.domain.summaries import CategoryRent, months_from, summarise
 from app.modules.search.errors import SearchInvalidError
 from app.modules.search.repository import Filters, Hit, SearchRepository, SummaryRepository
+from app.modules.search.schemas import MapPin, MapPins
 
 if TYPE_CHECKING:
     from datetime import date
@@ -41,8 +50,10 @@ if TYPE_CHECKING:
 
     from app.core.clock import Clock
     from app.core.flags import FlagReader
+    from app.core.geometry import Bounds, Point
     from app.modules.geo.service import StationNear
     from app.modules.media.service import Buckets, MediaRef
+    from app.modules.search.cache import PinCache
 
 REFRESH: Final = "search.refresh_listing"
 REFRESH_ALL: Final = "search.refresh_all"
@@ -202,21 +213,101 @@ class Search:
             if locality is None:
                 raise SearchInvalidError(["no locality has that slug"])
             locality_id = locality.id
-        return Filters(
+        return _filters(
+            request,
             month=month,
+            verified_only=verified_only,
             campus=campus,
-            radius_m=request.radius_m,
             locality_id=locality_id,
             bbox=request.bbox,
-            budget_min=request.budget_min,
-            budget_max=request.budget_max,
-            gender=request.gender,
-            occupancy=request.occupancy,
-            meals=request.meals,
-            ac=request.ac,
-            attached_bath=request.attached_bath,
-            amenities=request.amenities,
-            verified_only=verified_only,
-            available=request.available,
-            text=request.text,
         )
+
+
+def _filters(
+    request: SearchRequest,
+    *,
+    month: date,
+    verified_only: bool,
+    bbox: Bounds | None,
+    campus: Point | None = None,
+    locality_id: int | None = None,
+) -> Filters:
+    return Filters(
+        month=month,
+        campus=campus,
+        radius_m=request.radius_m,
+        locality_id=locality_id,
+        bbox=bbox,
+        budget_min=request.budget_min,
+        budget_max=request.budget_max,
+        gender=request.gender,
+        occupancy=request.occupancy,
+        meals=request.meals,
+        ac=request.ac,
+        attached_bath=request.attached_bath,
+        amenities=request.amenities,
+        verified_only=verified_only,
+        available=request.available,
+        text=request.text,
+    )
+
+
+class Pins:
+    """The map's pins (step 3.3, ADR 0029): every live listing in the area that matches, as
+    the API answers, cached for a minute by the snapped area, the zoom and the filters."""
+
+    def __init__(
+        self, db: AsyncSession, clock: Clock, *, flags: FlagReader, cache: PinCache
+    ) -> None:
+        self._db = db
+        self._clock = clock
+        self._flags = flags
+        self._cache = cache
+        self._search = SearchRepository(db)
+
+    async def pins(self, request: SearchRequest, *, zoom: int) -> Cached:
+        """The answer, as JSON, with its ETag: from the cache when it's there."""
+        months = months_from(india_date(self._clock.now()))
+        problems = request_problems(request, months=months)
+        if request.bbox is None:  # pragma: no cover - the API asks for one
+            problems.append("pins need a map area")
+        if problems:
+            raise SearchInvalidError(problems)
+        assert request.bbox is not None  # noqa: S101 - checked above
+        verified_only = request.verified_only or await self._flags.is_enabled(Flag.VERIFIED_ONLY)
+        month = request.month or months[0]
+        area = snapped(request.bbox, zoom)
+        key = cache_key(request, area=area, zoom=zoom, month=month, verified_only=verified_only)
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return cached
+        async with self._db.begin():
+            rows = await self._search.pins(
+                _filters(request, month=month, verified_only=verified_only, bbox=area),
+                limit=PIN_CAP + 1,
+            )
+        body = (
+            MapPins(
+                pins=[
+                    MapPin(
+                        id=row.public_id,
+                        slug=row.slug,
+                        lat=row.display.lat,
+                        lng=row.display.lng,
+                        min_rent_paise=row.min_rent,
+                        max_rent_paise=row.max_rent,
+                        gender_policy=GenderPolicy(row.gender_policy),
+                        verified=row.verified,
+                        beds_free=beds_free(row.beds_free),
+                    )
+                    for row in rows[:PIN_CAP]
+                ],
+                truncated=len(rows) > PIN_CAP,
+                month=month,
+            )
+            .model_dump_json(by_alias=True)
+            .encode()
+        )
+        cached = Cached(etag=hashlib.sha256(body).hexdigest()[:32], body=body)
+        await self._cache.put(key, cached)
+        return cached

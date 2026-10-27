@@ -1,7 +1,8 @@
-"""Search routes (ARCHITECTURE §10.1, §15; ADR 0028): live listings, for anyone."""
+"""Search routes (ARCHITECTURE §10.1, §10.2, §15; ADR 0028, 0029): live listings and the map's
+pins, for anyone."""
 
 from datetime import date, timedelta
-from typing import Annotated, Final
+from typing import Annotated, Any, Final
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 
@@ -12,9 +13,18 @@ from app.core.money import Paise
 from app.core.ratelimit import RateLimit, rate_limited
 from app.modules.catalog.domain.listing import GenderPolicy, Meals
 from app.modules.catalog.schemas import LatLng, ListingLocality, PublicMedia, Rendition
+from app.modules.search.cache import PinCache
 from app.modules.search.domain.query import SearchRequest, beds_free
-from app.modules.search.schemas import SearchCard, SearchPage, SearchQuery, StationNearby
-from app.modules.search.service import Card, Search
+from app.modules.search.schemas import (
+    FilterParams,
+    MapPins,
+    PinsQuery,
+    SearchCard,
+    SearchPage,
+    SearchQuery,
+    StationNearby,
+)
+from app.modules.search.service import Card, Pins, Search
 
 router = APIRouter(prefix="/v1", tags=["search"])
 
@@ -23,38 +33,56 @@ router = APIRouter(prefix="/v1", tags=["search"])
 SEARCHES_PER_IP: Final = RateLimit("searches-per-ip", limit=600, window=timedelta(minutes=10))
 # Results move as listings change; a little caching spares the database repeated searches.
 CACHE_CONTROL: Final = "public, max-age=30"
+# The map asks again with every pan: a generous limit, and pins kept a minute (ADR 0029).
+PINS_PER_IP: Final = RateLimit("map-pins-per-ip", limit=1_200, window=timedelta(minutes=10))
+PINS_CACHE_CONTROL: Final = "public, max-age=60"
 
 
-def _request(query: SearchQuery) -> SearchRequest:
-    bbox = None
-    if query.bbox is not None:
-        west, south, east, north = (float(part) for part in query.bbox.split(","))
-        bbox = Bounds(south=south, west=west, north=north, east=east)
+def _bounds(bbox: str) -> Bounds:
+    west, south, east, north = (float(part) for part in bbox.split(","))
+    return Bounds(south=south, west=west, north=north, east=east)
+
+
+def _filters(query: FilterParams) -> dict[str, Any]:
+    """The filters search and the map share, as the domain has them."""
     month = None
     if query.move_in_month is not None:
         year, number = query.move_in_month.split("-")
         month = date(int(year), int(number), 1)
+    return {
+        "month": month,
+        "budget_min": None if query.budget_min_paise is None else Paise(query.budget_min_paise),
+        "budget_max": None if query.budget_max_paise is None else Paise(query.budget_max_paise),
+        "gender": None if query.gender is None else query.gender.value,
+        "occupancy": None if query.occupancy is None else query.occupancy.value,
+        "meals": None if query.meals is None else query.meals.value,
+        "ac": query.ac,
+        "attached_bath": query.attached_bath,
+        "amenities": tuple(sorted(set(query.amenities))),
+        "verified_only": query.verified_only,
+        "available": query.available,
+        "text": None if query.q is None or not query.q.strip() else query.q.strip(),
+    }
+
+
+def _request(query: SearchQuery) -> SearchRequest:
     return SearchRequest(
         campus=query.campus,
         radius_m=query.radius_m,
         locality=query.locality,
-        bbox=bbox,
-        month=month,
-        budget_min=None if query.budget_min_paise is None else Paise(query.budget_min_paise),
-        budget_max=None if query.budget_max_paise is None else Paise(query.budget_max_paise),
-        gender=None if query.gender is None else query.gender.value,
-        occupancy=None if query.occupancy is None else query.occupancy.value,
-        meals=None if query.meals is None else query.meals.value,
-        ac=query.ac,
-        attached_bath=query.attached_bath,
-        amenities=tuple(sorted(set(query.amenities))),
-        verified_only=query.verified_only,
-        available=query.available,
-        text=None if query.q is None or not query.q.strip() else query.q.strip(),
+        bbox=None if query.bbox is None else _bounds(query.bbox),
         sort=query.sort,
         cursor=query.cursor,
         limit=query.limit,
+        **_filters(query),
     )
+
+
+def _etags(header: str | None) -> set[str]:
+    """The ETags an If-None-Match header names, weak ones as strong."""
+    if header is None:
+        return set()
+    return {tag.strip().removeprefix("W/") for tag in header.split(",")}
 
 
 def _card(card: Card) -> SearchCard:
@@ -123,3 +151,27 @@ async def search_properties(
         next_cursor=results.next_cursor,
         month=results.month,
     )
+
+
+@router.get(
+    "/map/pins",
+    summary="Pins for the map's area",
+    response_model=MapPins,
+    responses={304: {"description": "Not modified: the pins with that ETag are still current."}},
+    dependencies=[Depends(rate_limited(PINS_PER_IP))],
+)
+async def map_pins(
+    query: Annotated[PinsQuery, Query()], request: Request, db: DbSession, clock: ClockDep
+) -> Response:
+    """Every live listing in the area that matches the filters, as a pin at its display point,
+    2,000 at most (``truncated`` says there were more: zoom in). Cached for a minute by the
+    area snapped to the zoom's grid, the zoom and the filters, with an ETag."""
+    state = request.app.state
+    found = await Pins(db, clock, flags=state.flags, cache=PinCache(state.redis)).pins(
+        SearchRequest(bbox=_bounds(query.bbox), **_filters(query)), zoom=query.zoom
+    )
+    etag = f'"{found.etag}"'
+    headers = {"ETag": etag, "Cache-Control": PINS_CACHE_CONTROL}
+    if {etag, "*"} & _etags(request.headers.get("if-none-match")):
+        return Response(status_code=304, headers=headers)
+    return Response(content=found.body, media_type="application/json", headers=headers)

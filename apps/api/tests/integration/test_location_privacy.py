@@ -136,6 +136,8 @@ def _filled(path: str, *, slug: str, word: str) -> str:
     """A public route's path for the listing under test (or a campus); search looks for it."""
     if path == "/v1/search/properties":
         return f"{path}?q={word}&campus=hindu-college&radius_m=5000"
+    if path == "/v1/map/pins":
+        return f"{path}?q={word}&bbox=77.10,28.60,77.30,28.75&zoom=12"
     if "{" not in path:
         return path
     if path.startswith("/v1/properties/"):
@@ -180,9 +182,8 @@ def test_no_public_route_gives_away_the_exact_point_the_address_or_the_owners_ph
 
     found = run(scenario)
 
-    # The sweep sees the listing where the public meets it, whatever else becomes public later
-    # (the map), so a leak there would show.
-    assert {"/v1/properties/{slug}", "/v1/search/properties"} <= found["shown by"]
+    # The sweep sees the listing everywhere the public meets it, so a leak there would show.
+    assert {"/v1/properties/{slug}", "/v1/search/properties", "/v1/map/pins"} <= found["shown by"]
     assert found["leaks"] == {}
 
 

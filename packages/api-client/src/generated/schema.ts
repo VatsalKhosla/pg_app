@@ -1082,6 +1082,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/map/pins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pins for the map's area
+         * @description Every live listing in the area that matches the filters, as a pin at its display point,
+         *     2,000 at most (``truncated`` says there were more: zoom in). Cached for a minute by the
+         *     area snapped to the zoom's grid, the zoom and the filters, with an ETag.
+         */
+        get: operations["searchMapPins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/media": {
         parameters: {
             query?: never;
@@ -1809,6 +1831,40 @@ export interface components {
          * @enum {string}
          */
         LocationPrecision: "exact" | "approximate";
+        /** MapPin */
+        MapPin: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Slug */
+            slug: string;
+            /** Lat */
+            lat: number;
+            /** Lng */
+            lng: number;
+            /** Minrentpaise */
+            minRentPaise: number;
+            /** Maxrentpaise */
+            maxRentPaise: number;
+            genderPolicy: components["schemas"]["GenderPolicy"];
+            /** Verified */
+            verified: boolean;
+            bedsFree: components["schemas"]["BedsFree"];
+        };
+        /** MapPins */
+        MapPins: {
+            /** Pins */
+            pins: components["schemas"]["MapPin"][];
+            /** Truncated */
+            truncated: boolean;
+            /**
+             * Month
+             * Format: date
+             */
+            month: string;
+        };
         /**
          * Me
          * @description The signed-in user.
@@ -5226,14 +5282,6 @@ export interface operations {
     searchSearchProperties: {
         parameters: {
             query?: {
-                /** @description Search around this campus. */
-                campus?: string | null;
-                /** @description How far from the campus, in metres. */
-                radius_m?: number;
-                /** @description Search in this locality. */
-                locality?: string | null;
-                /** @description Search in this map area: west,south,east,north in degrees. */
-                bbox?: string | null;
                 /** @description YYYY-MM: this month or one of the next six. Prices are for it; this month if left out. */
                 move_in_month?: string | null;
                 budget_min_paise?: number | null;
@@ -5249,6 +5297,14 @@ export interface operations {
                 /** @description Only PGs with a bed free that month. */
                 available?: boolean;
                 q?: string | null;
+                /** @description Search around this campus. */
+                campus?: string | null;
+                /** @description How far from the campus, in metres. */
+                radius_m?: number;
+                /** @description Search in this locality. */
+                locality?: string | null;
+                /** @description Search in this map area: west,south,east,north in degrees. */
+                bbox?: string | null;
                 sort?: components["schemas"]["Sort"];
                 /** @description The previous page's nextCursor. */
                 cursor?: string | null;
@@ -5268,6 +5324,71 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SearchPage"];
                 };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    searchMapPins: {
+        parameters: {
+            query: {
+                /** @description YYYY-MM: this month or one of the next six. Prices are for it; this month if left out. */
+                move_in_month?: string | null;
+                budget_min_paise?: number | null;
+                budget_max_paise?: number | null;
+                gender?: components["schemas"]["GenderPolicy"] | null;
+                occupancy?: components["schemas"]["Occupancy"] | null;
+                meals?: components["schemas"]["Meals"] | null;
+                ac?: boolean;
+                attached_bath?: boolean;
+                amenities?: string[];
+                /** @description Only verified PGs; always so while verified_only is on. */
+                verified_only?: boolean;
+                /** @description Only PGs with a bed free that month. */
+                available?: boolean;
+                q?: string | null;
+                /** @description The map's area: west,south,east,north in degrees. */
+                bbox: string;
+                /** @description The map's zoom level. */
+                zoom: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapPins"];
+                };
+            };
+            /** @description Not modified: the pins with that ETag are still current. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Client error (RFC 9457 problem details) */
             "4XX": {

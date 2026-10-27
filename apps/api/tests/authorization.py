@@ -237,6 +237,9 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("GET", "/v1/search/properties"): Rule(
         everyone(200), lambda: {"params": {"campus": "hindu-college", "sort": "distance"}}
     ),
+    ("GET", "/v1/map/pins"): Rule(
+        everyone(200), lambda: {"params": {"bbox": "77.15,28.65,77.25,28.72", "zoom": 13}}
+    ),
     # The owner's contact details (ADR 0026): with hide_owner_contact on, as by default, only for
     # someone with a visit or booking there, which nobody here has.
     ("GET", "/v1/properties/{slug}/contact"): Rule(signed_in(403), path={"slug": "a_live_listing"}),
