@@ -205,8 +205,12 @@ Start the slow ones in week 1.
   - **Owners:** a new version sends every owner back to the agreement. Ops edit owners' details, and GSTINs must pass their check character. An account ops made now asks for privacy consent at its person's first sign-in.
   - **Web:** the owner area (`/owner`, with the agreement and a click-wrap whose box starts unticked); the console's Owners list and each owner's page with every acceptance; runbook `docs/runbooks/owner-agreement.md`.
 
-- [ ] **2.7 Location privacy and contact hiding.** Generate and store `display_location` (random 80–150 m offset, stable); public APIs expose only display data; the owner phone and exact address are hidden behind `hide_owner_contact`.
+- [x] **2.7 Location privacy and contact hiding.** Generate and store `display_location` (random 80–150 m offset, stable); public APIs expose only display data; the owner phone and exact address are hidden behind `hide_owner_contact`.
   *Done when* tests prove public endpoints never return the exact point, the address line or the owner's phone.
+  *Note (2026-10-27):*
+  - **The public read:** `GET /v1/properties/{slug}` gives a live listing with its display point (made in step 2.2, stable unless the pin moves). It reads neither the exact point, nor the address, nor the owner's account, so it can't return them. Not live, or not verified while `verified_only` is on, means 404.
+  - **The contact details:** `GET /v1/properties/{slug}/contact` gives the phone, address and exact point to someone signed in, while `hide_owner_contact` is off or once entitled. Visits (3.7) and bookings (Phase 5) will entitle; until then nobody is. Otherwise `403 CONTACT_HIDDEN`. Each look is audited and rate-limited.
+  - **Proof:** a sweep calls every public route, as anyone and as a student, and fails on the address, the phone or any point within 80 m of the building; a planted leak was caught. Public listing text can't carry a phone number (ADR 0026).
 
 ## Phase 3 — Discovery: search, PG pages, map, visits → **Milestone A**
 
