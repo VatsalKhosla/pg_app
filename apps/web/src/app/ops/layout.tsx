@@ -3,7 +3,12 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 
 import { OpsNav } from "@/components/ops/ops-nav";
-import { OPS_LISTINGS_PATH, OPS_NEW_LISTING_PATH, STAFF_HOME_PATH } from "@/lib/auth/routes";
+import {
+  OPS_LISTINGS_PATH,
+  OPS_NEW_LISTING_PATH,
+  OPS_OWNERS_PATH,
+  STAFF_HOME_PATH,
+} from "@/lib/auth/routes";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Ops");
@@ -29,6 +34,7 @@ export default async function OpsLayout({ children }: LayoutProps<"/ops">) {
           links={[
             { href: OPS_LISTINGS_PATH, label: t("listings"), exact: true },
             { href: OPS_NEW_LISTING_PATH, label: t("newListing"), exact: true },
+            { href: OPS_OWNERS_PATH, label: t("owners") },
             { href: STAFF_HOME_PATH, label: t("staffHome"), exact: true },
           ]}
         />

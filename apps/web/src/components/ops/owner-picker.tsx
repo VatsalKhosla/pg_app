@@ -15,8 +15,8 @@ import { Field, FormOutcome } from "./fields";
 import { useOpsProblem } from "./problems";
 
 /** The API's limits for owners (apps/api/src/app/modules/catalog/domain/owners.py). */
-const NAME_MAX = 120;
-const GSTIN_MAX = 20;
+export const NAME_MAX = 120;
+export const GSTIN_MAX = 20;
 const SEARCH_MAX = 100;
 
 const OWNER_FIELDS = ["phone", "name", "legalName", "businessName", "gstin"] as const;
@@ -149,7 +149,8 @@ export function OwnerPicker({
   );
 }
 
-function AddOwner({ onAdded }: { onAdded: (owner: Owner) => void }) {
+/** A new owner, by their phone number and business names. */
+export function AddOwner({ onAdded }: { onAdded: (owner: Owner) => void }) {
   const t = useTranslations("Ops");
   const problem = useOpsProblem();
   const id = useId();

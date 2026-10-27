@@ -163,6 +163,7 @@
     "signingOut": "Signing out…",
     "signOutFailed": "Couldn't sign out. Please try again.",
     "staffTools": "Go to staff tools",
+    "ownerArea": "Go to the owner area",
     "dataTitle": "Your data",
     "dataIntro": "Get a copy of everything we keep about you, or ask for your account's deletion.",
     "exportButton": "Get a copy of my data",
@@ -185,6 +186,54 @@
     "marketing": "Send me offers and news by SMS, WhatsApp or email.",
     "marketingSaved": "Saved.",
     "marketingFailed": "That didn't save. Please try again."
+  },
+  "Owner": {
+    "metaTitle": "Owner area",
+    "home": {
+      "metaTitle": "Your business",
+      "intro": "Your business as we keep it on file.",
+      "detailsTitle": "Business details",
+      "businessName": "Business name",
+      "legalName": "Legal name",
+      "gstin": "GSTIN",
+      "noGstin": "None given",
+      "phone": "Mobile number",
+      "changes": "To change any of these, ask our team: they keep your records up to date.",
+      "agreementTitle": "Owner agreement",
+      "accepted": "You've accepted version {version} of the owner agreement.",
+      "read": "Read the owner agreement"
+    },
+    "agreement": {
+      "metaTitle": "Owner agreement",
+      "title": "Owner agreement",
+      "version": "Version {version}",
+      "firstTime": "Before you use the owner area, please read the owner agreement and accept it.",
+      "changedSince": "We've changed the owner agreement since you accepted version {version}. Please read this version and accept it to keep using the owner area.",
+      "changedWhileReading": "The agreement changed while you were reading it. Please read this version and accept it.",
+      "draft": "This is a draft for discussion. A lawyer hasn't reviewed it yet, and it isn't in force.",
+      "acceptTitle": "Accepting the agreement",
+      "agree": "I've read this owner agreement (version {version}) and I accept it on behalf of my business.",
+      "required": "Tick the box to accept the agreement.",
+      "submit": "Accept the agreement",
+      "submitting": "Accepting…",
+      "accepted": "You've accepted this version.",
+      "acceptedOn": "You accepted this version on {date}.",
+      "back": "Back to your business"
+    },
+    "notSetUp": {
+      "title": "Your business isn't set up yet",
+      "body": "Our team adds your business to {brand} when they list your PG with you. Once they have, it shows here."
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "UNAUTHENTICATED": "You've been signed out. Please sign in again.",
+      "CSRF_TOKEN_INVALID": "Your session changed. Please reload the page.",
+      "NOT_FOUND": "Your business isn't set up yet. Please reload the page.",
+      "RATE_LIMITED": "Too many tries. Please wait a minute.",
+      "SERVICE_UNAVAILABLE": "That's not working right now. Please try again soon.",
+      "API_UNREACHABLE": "Couldn't reach the server. Please check your connection.",
+      "API_TIMEOUT": "The server took too long. Please try again."
+    }
   },
   "Staff": {
     "signInMetaTitle": "Staff sign-in",
@@ -229,6 +278,7 @@
       "label": "Ops console",
       "listings": "Listings",
       "newListing": "New listing",
+      "owners": "Owners",
       "staffHome": "Staff tools"
     },
     "listings": {
@@ -264,7 +314,7 @@
     },
     "editor": {
       "metaTitle": "Listing",
-      "owner": "Owner: {business}, {phone}",
+      "owner": "Owner: <link>{business}</link>, {phone}",
       "duplicate": "Listing {id}…"
     },
     "duplicates": "Another listing's pin is within 30 m of this one. Check it isn't the same building:",
@@ -288,6 +338,47 @@
       "gstin": "GSTIN (optional)",
       "add": "Add the owner",
       "adding": "Adding…"
+    },
+    "owners": {
+      "title": "Owners",
+      "intro": "Every owner, and whether they've accepted the current owner agreement.",
+      "search": "Phone number or business name",
+      "searchButton": "Find",
+      "empty": "No owners found.",
+      "accepted": "Agreement accepted",
+      "notAccepted": "Agreement not accepted",
+      "first": "First page",
+      "next": "Next page",
+      "addTitle": "Add an owner"
+    },
+    "ownerPage": {
+      "metaTitle": "Owner",
+      "details": "Business details",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved.",
+      "agreementTitle": "Owner agreement",
+      "current": "Accepted the current owner agreement (version {version}).",
+      "outdated": "Accepted version {version}, which is no longer current: they're asked to accept the new one in the owner area.",
+      "never": "Hasn't accepted the owner agreement yet: they're asked to when they open the owner area.",
+      "history": "Acceptances, newest first",
+      "historyEmpty": "No acceptances yet.",
+      "version": "Version",
+      "acceptedAt": "Accepted",
+      "ip": "IP address",
+      "userAgent": "Browser",
+      "unknown": "Not known",
+      "hash": "SHA-256 of the text",
+      "kyc": {
+        "not_started": "KYC not started",
+        "pending": "KYC pending",
+        "verified": "KYC verified",
+        "rejected": "KYC rejected"
+      },
+      "status": {
+        "active": "Active",
+        "suspended": "Suspended"
+      }
     },
     "validation": {
       "required": "Fill this in.",

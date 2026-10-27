@@ -26,6 +26,18 @@ export function addOwner(body: Schemas["OwnerCreate"]): Promise<Owner> {
   return withCsrf((headers) => unwrap(browserApi.POST("/v1/ops/owners", { body, headers })));
 }
 
+export function updateOwner(id: string, body: Schemas["OwnerUpdate"]): Promise<Owner> {
+  return withCsrf((headers) =>
+    unwrap(
+      browserApi.PATCH("/v1/ops/owners/{owner_id}", {
+        params: { path: { owner_id: id } },
+        body,
+        headers,
+      }),
+    ),
+  );
+}
+
 export function createListing(body: PropertyCreate): Promise<ListingCreated> {
   return withCsrf((headers) => unwrap(browserApi.POST("/v1/ops/properties", { body, headers })));
 }

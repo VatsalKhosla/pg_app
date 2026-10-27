@@ -33,6 +33,8 @@ describe("signInPageFor", () => {
     expect(signInPageFor("/account/sessions")).toBe("/sign-in");
     expect(signInPageFor("/staff")).toBe("/staff/sign-in");
     expect(signInPageFor("/staff/data-requests")).toBe("/staff/sign-in");
+    expect(signInPageFor("/owner")).toBe("/sign-in");
+    expect(signInPageFor("/owner/agreement")).toBe("/sign-in");
   });
 
   it("leaves sign-in pages and everything else alone", () => {
@@ -40,6 +42,7 @@ describe("signInPageFor", () => {
     expect(signInPageFor("/staff/sign-in")).toBeUndefined();
     expect(signInPageFor("/")).toBeUndefined();
     expect(signInPageFor("/accounting")).toBeUndefined();
+    expect(signInPageFor("/owners-guide")).toBeUndefined();
   });
 });
 

@@ -11,8 +11,8 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 import { publicEnv } from "@/config/env";
 import { unwrap } from "@/lib/api/client";
 import { getServerApi } from "@/lib/api/server";
-import { ACCOUNT_PATH, STAFF_HOME_PATH } from "@/lib/auth/routes";
-import { isStaff, requireSession } from "@/lib/auth/session";
+import { ACCOUNT_PATH, OWNER_HOME_PATH, STAFF_HOME_PATH } from "@/lib/auth/routes";
+import { isOwner, isStaff, requireSession } from "@/lib/auth/session";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Account");
@@ -134,6 +134,14 @@ export default async function AccountPage() {
             className="text-sm font-medium text-primary underline underline-offset-4"
           >
             {t("staffTools")}
+          </Link>
+        ) : null}
+        {isOwner(me) ? (
+          <Link
+            href={OWNER_HOME_PATH}
+            className="text-sm font-medium text-primary underline underline-offset-4"
+          >
+            {t("ownerArea")}
           </Link>
         ) : null}
       </div>

@@ -26,6 +26,7 @@ export GOOGLE_CLIENT_SECRET=
 export STAFF_GOOGLE_DOMAINS=
 export STAFF_GOOGLE_EMAILS=
 export PRIVACY_NOTICE_VERSION=draft-1
+export OWNER_AGREEMENT_VERSION=draft-1
 export SENTRY_DSN=
 export OTEL_EXPORTER_OTLP_ENDPOINT=
 # Local SeaweedFS with its development identity (infra/seaweedfs/s3.json), in buckets of its own.

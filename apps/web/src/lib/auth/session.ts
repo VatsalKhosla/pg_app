@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api/errors";
 import { getServerApi } from "@/lib/api/server";
 
 import {
+  ACCOUNT_PATH,
   SESSION_COOKIE,
   SIGN_IN_PATH,
   STAFF_HOME_PATH,
@@ -55,6 +56,21 @@ export function isStaff(me: Me): boolean {
 export async function requireSession(here: Route): Promise<Me> {
   const me = await getSession();
   if (me === null) redirect(signInUrl(SIGN_IN_PATH, here));
+  return me;
+}
+
+/** Whether the person is an owner: ops added their business with this phone number. */
+export function isOwner(me: Me): boolean {
+  return me.roles.includes("owner");
+}
+
+/**
+ * An owner, signed in by phone: the owner area's people. Anyone else signed in goes to their
+ * account page (the API refuses them anyway).
+ */
+export async function requireOwner(here: Route): Promise<Me> {
+  const me = await requireSession(here);
+  if (!isOwner(me)) redirect(ACCOUNT_PATH);
   return me;
 }
 

@@ -104,9 +104,17 @@ export default async function OpsListingPage({
           ].join(" · ")}
         </p>
         <p className="text-sm text-muted-foreground">
-          {t("editor.owner", {
+          {t.rich("editor.owner", {
             business: listing.owner.businessName,
             phone: listing.owner.phone ?? "",
+            link: (business) => (
+              <Link
+                href={`/ops/owners/${listing.owner.id}` as Route}
+                className="font-medium text-primary underline underline-offset-4"
+              >
+                {business}
+              </Link>
+            ),
           })}
         </p>
       </div>
