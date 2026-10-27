@@ -198,8 +198,12 @@ Start the slow ones in week 1.
   - **Tested end to end on phones:** ops book the visit, the agent reports from another phone with a photo, then ops publish. The API tests cover every rule and each role's access, and the authorization matrix covers the 8 new routes.
   - **Local development:** `make dev-staff` and `make staff-code` sign staff in without an authenticator app.
 
-- [ ] **2.6 Owner records and agreements.** Owner profiles, business name, GSTIN (optional), versioned agreement text with click-wrap acceptance (version, document hash, timestamp, IP, user agent).
+- [x] **2.6 Owner records and agreements.** Owner profiles, business name, GSTIN (optional), versioned agreement text with click-wrap acceptance (version, document hash, timestamp, IP, user agent).
   *Done when* acceptance is recorded and visible in ops, and a new agreement version asks owners to accept again.
+  *Note (2026-10-27):*
+  - **The agreement:** one Markdown file per version in the repository; `OWNER_AGREEMENT_VERSION` picks the current one, and production refuses a draft. `draft-1` is a DRAFT for the founders and a lawyer to review. An acceptance names the version and the SHA-256 of the text shown, or is refused (`409 AGREEMENT_CHANGED`). Each one keeps the time, IP and user agent in an append-only table, and goes into the audit log and the owner's data export (ADR 0025).
+  - **Owners:** a new version sends every owner back to the agreement. Ops edit owners' details, and GSTINs must pass their check character. An account ops made now asks for privacy consent at its person's first sign-in.
+  - **Web:** the owner area (`/owner`, with the agreement and a click-wrap whose box starts unticked); the console's Owners list and each owner's page with every acceptance; runbook `docs/runbooks/owner-agreement.md`.
 
 - [ ] **2.7 Location privacy and contact hiding.** Generate and store `display_location` (random 80–150 m offset, stable); public APIs expose only display data; the owner phone and exact address are hidden behind `hide_owner_contact`.
   *Done when* tests prove public endpoints never return the exact point, the address line or the owner's phone.

@@ -37,8 +37,9 @@ make staff-code phone=98XXXXXXXX  # at each staff sign-in: the code that works n
 ```
 
 Then sign in on the staff sign-in page with the phone: the page shows the phone code itself (no
-SMS is sent locally), and the authenticator step takes the code `make staff-code` prints. Both
-commands refuse in staging and production, where the second factor stays on the person's phone.
+SMS is sent locally). The first time, agree to the privacy notice, as everyone does at their first
+sign-in. The authenticator step then takes the code `make staff-code` prints. Both commands refuse
+in staging and production, where the second factor stays on the person's phone.
 
 ## Take access away
 

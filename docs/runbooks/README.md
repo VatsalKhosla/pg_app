@@ -10,6 +10,7 @@ What to do when something goes wrong in production. Each runbook says how to rec
 | [Staff access](staff-access.md) | Giving or taking away staff access, setting up Google sign-in, failed staff sign-ins |
 | [Data requests](data-requests.md) | Export and deletion requests (DPDP), stuck exports, and checking the retention job |
 | [Geo data](geo-data.md) | Adding or correcting a city, locality, campus or metro station; a refresh that refuses; loading the data after a deploy |
+| [Owner agreement](owner-agreement.md) | Publishing a new version of the owner agreement; an owner disputing what they agreed to |
 
 Ground rules for every runbook:
 - **Don't make it worse.** Read before you write, and take a snapshot before any manual data change.

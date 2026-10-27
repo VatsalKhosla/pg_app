@@ -28,5 +28,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0022](0022-media-pipeline.md) | Media: presigned uploads straight to storage, originals kept private and deleted, every variant re-encoded without metadata, videos remuxed without their location, signed links for private files | Accepted |
 | [0023](0023-ops-console.md) | The ops console: `/v1/ops` answers with the whole listing and what may happen next, forms send only what changed, a pin by GPS, coordinates or a map behind `MapProvider` (MapLibre first, tiles as configuration), uploads straight to storage | Accepted |
 | [0024](0024-field-verification.md) | Field verification: a visit booked by ops for one agent, reported from the building with the phone's position, the server's time and private photos; only an authorities' notice decides a fail; `verified_only` gates publishing | Accepted |
+| [0025](0025-owner-agreement.md) | The owner agreement: versioned texts in the repository, click-wrap acceptance of the exact text (version and SHA-256), append-only evidence with the time, IP and user agent, accepted again for every new version; GSTINs' check character | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.
