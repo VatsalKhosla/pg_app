@@ -67,8 +67,13 @@ class OwnerService:
         problems += text_problems(
             "the legal name", legal_name, required=True, max_length=NAME_MAX_LENGTH
         )
+        # The business name shows on the PG's page.
         problems += text_problems(
-            "the business name", business_name, required=True, max_length=NAME_MAX_LENGTH
+            "the business name",
+            business_name,
+            required=True,
+            max_length=NAME_MAX_LENGTH,
+            public=True,
         )
         if name is not None:
             problems += text_problems("the name", name, required=False, max_length=NAME_MAX_LENGTH)
@@ -154,6 +159,7 @@ class OwnerService:
                 changes["business_name"],
                 required=True,
                 max_length=NAME_MAX_LENGTH,
+                public=True,
             )
         gstin = changes.get("gstin")
         normalized = None if gstin is None else normalize_gstin(gstin)

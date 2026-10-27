@@ -98,14 +98,16 @@ class Staff:
             },
         )
 
-    async def listing(self, owner: dict[str, Any], *, at: dict[str, float]) -> dict[str, Any]:
+    async def listing(
+        self, owner: dict[str, Any], *, at: dict[str, float], name: str = "Fictional Residency"
+    ) -> dict[str, Any]:
         return await self.ok(
             "POST",
             "/v1/ops/properties",
             json={
                 "owner": owner["id"],
                 "locality": "kamla-nagar",
-                "name": "Fictional Residency",
+                "name": name,
                 "addressLine": "House 1, a fictional lane",
                 "location": at,
                 "locationPrecision": "exact",
@@ -116,7 +118,10 @@ class Staff:
         )
 
     async def media(
-        self, status: AssetStatus = AssetStatus.READY, purpose: Purpose = Purpose.LISTING_PHOTO
+        self,
+        status: AssetStatus = AssetStatus.READY,
+        purpose: Purpose = Purpose.LISTING_PHOTO,
+        moderation: Moderation = Moderation.APPROVED,
     ) -> str:
         """A photo of this staff member's that the media pipeline has finished with (or
         rejected): a listing photo, or a verification photo kept private."""
@@ -127,7 +132,7 @@ class Staff:
                     purpose=purpose,
                     visibility=Visibility.PRIVATE if private else Visibility.PUBLIC,
                     status=status,
-                    moderation=Moderation.APPROVED,
+                    moderation=moderation,
                     content_type="image/jpeg",
                     renditions=[]
                     if status != AssetStatus.READY
@@ -148,13 +153,16 @@ class Staff:
             return str(asset.public_id)
 
 
-async def sign_in(app: FastAPI, client: httpx.AsyncClient, *roles: Role) -> Staff:
-    """A new staff member with these roles, in a staff session."""
+async def sign_in(
+    app: FastAPI, client: httpx.AsyncClient, *roles: Role, kind: SessionKind = SessionKind.STAFF
+) -> Staff:
+    """A new staff member with these roles, in a staff session; or, with ``SessionKind.USER``,
+    someone signed in by phone, such as a student."""
     async with app.state.sessionmaker() as db:
         async with db.begin():
             user = await UserRepository(db).add(phone_e164=f"+91{phone()}", roles=roles)
         session = await SessionService(db, app.state.clock).start(
-            user.id, kind=SessionKind.STAFF, ip_address=None, user_agent=None
+            user.id, kind=kind, ip_address=None, user_agent=None
         )
     return Staff(app, client, user_id=user.id, token=session.token)
 

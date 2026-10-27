@@ -125,7 +125,7 @@ def _charge_in(charge: Charge) -> MandatoryCharge:
             return OneTimeChargeRule(charge.kind, charge.label, Paise(charge.amount_paise))
 
 
-def _charge_out(charge: MandatoryCharge) -> Charge:
+def charge_info(charge: MandatoryCharge) -> Charge:
     match charge:
         case MonthlyChargeRule():
             return MonthlyCharge(
@@ -171,6 +171,19 @@ def current_agreement(request: Request) -> str:
     return version
 
 
+def renditions(ref: MediaRef) -> list[Rendition]:
+    return [
+        Rendition(
+            name=rendition.name,
+            content_type=rendition.content_type,
+            url=rendition.url,
+            width=rendition.width,
+            height=rendition.height,
+        )
+        for rendition in ref.renditions
+    ]
+
+
 def media_info(ref: MediaRef) -> ListingMedia:
     return ListingMedia(
         id=ref.public_id,
@@ -179,16 +192,7 @@ def media_info(ref: MediaRef) -> ListingMedia:
         content_type=ref.content_type,
         verified_capture=ref.verified_capture,
         captured_at=ref.captured_at,
-        renditions=[
-            Rendition(
-                name=rendition.name,
-                content_type=rendition.content_type,
-                url=rendition.url,
-                width=rendition.width,
-                height=rendition.height,
-            )
-            for rendition in ref.renditions
-        ],
+        renditions=renditions(ref),
     )
 
 
@@ -236,7 +240,7 @@ def _listing(detail: ListingDetail, *, agreement: str) -> ListingInfo:
                 owner_max_rent_paise=view.category.owner_max_rent_paise,
                 security_deposit_paise=view.category.security_deposit_paise,
                 beds_per_room=BEDS_PER_ROOM[Occupancy(view.category.occupancy)],
-                mandatory_charges=[_charge_out(charge) for charge in view.charges],
+                mandatory_charges=[charge_info(charge) for charge in view.charges],
                 monthly_charges_paise=monthly_total(view.charges),
                 one_time_charges_paise=one_time_total(view.charges),
                 status=CategoryStatus(view.category.status),

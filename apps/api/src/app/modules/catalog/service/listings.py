@@ -104,7 +104,7 @@ def _change_problems(changes: PropertyChanges) -> list[str]:
     problems = []
     if "name" in changes:
         problems += text_problems(
-            "the name", changes["name"], required=True, max_length=NAME_MAX_LENGTH
+            "the name", changes["name"], required=True, max_length=NAME_MAX_LENGTH, public=True
         )
     if "description" in changes:
         problems += text_problems(
@@ -112,6 +112,7 @@ def _change_problems(changes: PropertyChanges) -> list[str]:
             changes["description"],
             required=False,
             max_length=DESCRIPTION_MAX_LENGTH,
+            public=True,
         )
     if "address_line" in changes:
         problems += text_problems(
@@ -179,12 +180,15 @@ class ListingService:
     async def create_property(self, actor: Actor, draft: PropertyDraft) -> Property:
         check(
             [
-                *text_problems("the name", draft.name, required=True, max_length=NAME_MAX_LENGTH),
+                *text_problems(
+                    "the name", draft.name, required=True, max_length=NAME_MAX_LENGTH, public=True
+                ),
                 *text_problems(
                     "the description",
                     draft.description,
                     required=False,
                     max_length=DESCRIPTION_MAX_LENGTH,
+                    public=True,
                 ),
                 *text_problems(
                     "the address", draft.address_line, required=True, max_length=ADDRESS_MAX_LENGTH

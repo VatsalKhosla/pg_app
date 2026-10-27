@@ -346,6 +346,63 @@ class AmenityList(ApiModel):
     items: list[AmenityInfo]
 
 
+# What anyone may see (step 2.7, ADR 0026): nothing here is private.
+
+
+class PublicCategory(ApiModel):
+    id: uuid.UUID
+    occupancy: Occupancy
+    label: str
+    ac: bool
+    attached_bath: bool
+    balcony: bool
+    base_rent_paise: int
+    security_deposit_paise: int
+    mandatory_charges: list[Charge]
+    # What the charges come to each month (metered ones at their estimate), and once.
+    monthly_charges_paise: int
+    one_time_charges_paise: int
+
+
+class PublicMedia(ApiModel):
+    id: uuid.UUID
+    content_type: str
+    # Taken on site by our field agent (ADR 0022): shown as a verified photo.
+    verified_capture: bool
+    renditions: list[Rendition]
+
+
+class PublicListing(ApiModel):
+    """A live listing as anyone sees it. Its location is the display point, 80 to 150 m from the
+    building; the address, the exact point and the owner's phone come only from .../contact."""
+
+    id: uuid.UUID
+    slug: str
+    name: str
+    description: str
+    locality: ListingLocality
+    display_location: LatLng
+    gender_policy: GenderPolicy
+    meals: Meals
+    house_rules: list[str]
+    # A field agent's visit passed (ADR 0024).
+    verified: bool
+    owner_business_name: str
+    amenities: list[AmenityInfo]
+    # Active categories with a bed to sell.
+    categories: list[PublicCategory]
+    media: list[PublicMedia]
+
+
+class ListingContact(ApiModel):
+    """The owner's phone, the address and the exact point, for someone allowed to see them."""
+
+    owner_phone: str | None
+    address_line: str
+    location: LatLng
+    location_precision: LocationPrecision
+
+
 # Verification visits (ADR 0024).
 
 

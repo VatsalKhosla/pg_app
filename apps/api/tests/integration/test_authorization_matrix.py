@@ -14,6 +14,7 @@ from typing import Final
 import httpx
 import pytest
 from fastapi import FastAPI
+from sqlalchemy import update
 
 from app.config import Settings
 from app.core.actor import Actor, Role
@@ -22,11 +23,19 @@ from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
 from app.core.csrf import issue_csrf_token
 from app.core.money import Paise
 from app.main import create_app
-from app.modules.catalog.domain.listing import GenderPolicy, LocationPrecision, Meals
+from app.modules.catalog.domain.listing import (
+    GenderPolicy,
+    LocationPrecision,
+    Meals,
+    PropertyStatus,
+    VerificationStatus,
+)
 from app.modules.catalog.domain.location import Offset, moved
 from app.modules.catalog.domain.rooms import Occupancy
+from app.modules.catalog.models import Property
 from app.modules.catalog.repository import CatalogRepository
 from app.modules.catalog.service import (
+    CatalogReader,
     CategoryDraft,
     InventoryService,
     ListingService,
@@ -197,6 +206,27 @@ async def _part_of_a_listing(app: FastAPI, kind: str) -> str:
     return str(beds[0].public_id)
 
 
+async def _live_listing(app: FastAPI) -> str:
+    """A fresh fictional listing with a bed to sell, verified and published: its slug."""
+    bed = await _part_of_a_listing(app, "a_bed")
+    async with app.state.sessionmaker() as db:
+        listing = await CatalogReader(
+            db, buckets=app.state.media_buckets, flags=app.state.flags
+        ).listing_of(bed=uuid.UUID(bed))
+    async with app.state.sessionmaker() as db, db.begin():
+        # As a passed visit leaves it (tests/integration/test_verification.py books real ones).
+        await db.execute(
+            update(Property)
+            .where(Property.public_id == listing)
+            .values(verification_status=VerificationStatus.VERIFIED)
+        )
+    async with app.state.sessionmaker() as db:
+        published = await ListingService(
+            db, app.state.clock, buckets=app.state.media_buckets, flags=app.state.flags
+        ).move(await _ops(app), listing, PropertyStatus.PUBLISHED)
+    return published.slug
+
+
 async def _someone_elses_visit(app: FastAPI) -> str:
     """A visit booked for a field agent who isn't the caller."""
     listing = await _part_of_a_listing(app, "a_listing")
@@ -234,6 +264,8 @@ async def _path_value(app: FastAPI, kind: str) -> str:
             value = await _someone_elses_visit(app)
         case "an_owner":
             value = str((await _add_owner(app)).owner.public_id)
+        case "a_live_listing":
+            value = await _live_listing(app)
         case _:
             msg = f"no way to make {kind!r}"
             raise LookupError(msg)

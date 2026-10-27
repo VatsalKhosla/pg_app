@@ -111,7 +111,11 @@ class InventoryService:
         check(
             [
                 *text_problems(
-                    "the label", draft.label, required=True, max_length=LABEL_MAX_LENGTH
+                    "the label",
+                    draft.label,
+                    required=True,
+                    max_length=LABEL_MAX_LENGTH,
+                    public=True,
                 ),
                 *rent_problems(
                     base_rent=draft.base_rent,
@@ -160,7 +164,11 @@ class InventoryService:
         problems = []
         if "label" in changes:
             problems += text_problems(
-                "the label", changes["label"], required=True, max_length=LABEL_MAX_LENGTH
+                "the label",
+                changes["label"],
+                required=True,
+                max_length=LABEL_MAX_LENGTH,
+                public=True,
             )
         if "mandatory_charges" in changes:
             problems += charge_problems(changes["mandatory_charges"])

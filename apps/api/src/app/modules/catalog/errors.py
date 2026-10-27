@@ -62,3 +62,13 @@ class AgreementChangedError(AppError):
     status = 409
     code = "AGREEMENT_CHANGED"
     title = "The agreement has changed; read the current version and accept that"
+
+
+class ContactHiddenError(AppError):
+    """The owner's phone, the address and the exact point stay hidden from this person for now
+    (``hide_owner_contact``, ADR 0026): they show once a visit is scheduled or a booking is
+    confirmed."""
+
+    status = 403
+    code = "CONTACT_HIDDEN"
+    title = "The owner's contact details show once you've booked a visit"

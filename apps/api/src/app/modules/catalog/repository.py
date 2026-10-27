@@ -252,6 +252,17 @@ class CatalogRepository:
         ).one()
         return Point(lat=row[0], lng=row[1]), Point(lat=row[2], lng=row[3])
 
+    async def display_point(self, property_id: int) -> Point:
+        """The display point alone: what public reads ask for, so they never hold the exact one."""
+        row = (
+            await self._db.execute(
+                select(
+                    postgis.lat(Property.display_location), postgis.lng(Property.display_location)
+                ).where(Property.id == property_id)
+            )
+        ).one()
+        return Point(lat=row[0], lng=row[1])
+
     async def set_points(self, found: Property, exact: Point, display: Point) -> None:
         await self._db.execute(
             update(Property)
@@ -463,6 +474,15 @@ class CatalogRepository:
 
     async def all_amenities(self) -> list[Amenity]:
         return list(await self._db.scalars(select(Amenity).order_by(Amenity.name)))
+
+    async def property_amenities(self, property_id: int) -> list[Amenity]:
+        found = await self._db.scalars(
+            select(Amenity)
+            .join(PropertyAmenity, PropertyAmenity.amenity_id == Amenity.id)
+            .where(PropertyAmenity.property_id == property_id)
+            .order_by(Amenity.name)
+        )
+        return list(found)
 
     async def amenities_of(self, property_id: int) -> list[str]:
         found = await self._db.scalars(

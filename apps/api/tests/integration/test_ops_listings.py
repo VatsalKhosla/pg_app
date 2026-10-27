@@ -4,6 +4,7 @@ published once it has a bed to sell, its photos in order, and every step in its 
 Listings here are fictional, placed by moving away from a seeded campus.
 """
 
+import secrets
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -71,9 +72,11 @@ CHARGES = [
 ]
 
 
-async def _with_a_room(ops: Ops, *, at: dict[str, float]) -> dict[str, Any]:
+async def _with_a_room(
+    ops: Ops, *, at: dict[str, float], name: str = "Fictional Residency"
+) -> dict[str, Any]:
     """A listing with a double room category, its charges, and room 101 with two beds."""
-    listing = await ops.listing(await ops.owner(), at=at)
+    listing = await ops.listing(await ops.owner(), at=at, name=name)
     built = await ops.ok(
         "POST",
         f"/v1/ops/properties/{listing['id']}/room-categories",
@@ -166,7 +169,9 @@ def test_a_listing_is_published_with_its_photos_in_order_and_its_history_kept(
     run: Callable[..., Any],
 ) -> None:
     async def scenario(ops: Ops) -> dict[str, Any]:
-        built = await _with_a_room(ops, at=_spot(1_000))
+        # Its own name, to find it among every other test's live listings.
+        name = f"Fictional Residency {secrets.token_hex(3)}"
+        built = await _with_a_room(ops, at=_spot(1_000), name=name)
         listing_id = built["id"]
         photo, cover = await ops.media(), await ops.media()
         rejected = await ops.media(AssetStatus.REJECTED)
@@ -191,7 +196,9 @@ def test_a_listing_is_published_with_its_photos_in_order_and_its_history_kept(
             "published": await ops.ok(
                 "POST", f"/v1/ops/properties/{listing_id}/status", json={"status": "published"}
             ),
-            "live": await ops.ok("GET", "/v1/ops/properties", params={"status": "published"}),
+            "live": await ops.ok(
+                "GET", "/v1/ops/properties", params={"status": "published", "q": name}
+            ),
             "history": await ops.ok("GET", f"/v1/ops/properties/{listing_id}/history"),
         }
 

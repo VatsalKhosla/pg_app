@@ -319,6 +319,8 @@ class MediaRef:
     public_id: uuid.UUID
     purpose: Purpose
     status: AssetStatus
+    # Only an approved file may be shown to the public.
+    moderation: Moderation
     content_type: str
     verified_capture: bool
     captured_at: datetime | None
@@ -368,6 +370,7 @@ class MediaLookup:
             public_id=asset.public_id,
             purpose=Purpose(asset.purpose),
             status=AssetStatus(asset.status),
+            moderation=Moderation(asset.moderation),
             content_type=asset.content_type,
             verified_capture=asset.verified_capture,
             captured_at=asset.captured_at,

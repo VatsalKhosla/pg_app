@@ -3362,6 +3362,116 @@
         }
       }
     },
+    "/v1/properties/{slug}": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "A live listing, as anyone sees it",
+        "description": "Its location is the display point, 80 to 150 m from the building. Anything not live, or\nnot verified while only verified PGs are shown, answers 404.",
+        "operationId": "catalogPublicListing",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicListing"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/properties/{slug}/contact": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "The owner's phone and the exact address",
+        "description": "For someone signed in, while ``hide_owner_contact`` is off or once they have a visit\nscheduled or a booking confirmed there; otherwise 403 CONTACT_HIDDEN. Each answer is\naudited.",
+        "operationId": "catalogListingContact",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingContact"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/media": {
       "post": {
         "tags": [
@@ -4853,6 +4963,41 @@
           "not_required"
         ],
         "title": "LicenceStatus"
+      },
+      "ListingContact": {
+        "properties": {
+          "ownerPhone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ownerphone"
+          },
+          "addressLine": {
+            "type": "string",
+            "title": "Addressline"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "locationPrecision": {
+            "$ref": "#/components/schemas/LocationPrecision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ownerPhone",
+          "addressLine",
+          "location",
+          "locationPrecision"
+        ],
+        "title": "ListingContact",
+        "description": "The owner's phone, the address and the exact point, for someone allowed to see them."
       },
       "ListingCreated": {
         "properties": {
@@ -6590,6 +6735,213 @@
         "type": "object",
         "title": "PropertyUpdate",
         "description": "Only the fields sent change; ``licenceNumber: null`` clears it."
+      },
+      "PublicCategory": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "occupancy": {
+            "$ref": "#/components/schemas/Occupancy"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "ac": {
+            "type": "boolean",
+            "title": "Ac"
+          },
+          "attachedBath": {
+            "type": "boolean",
+            "title": "Attachedbath"
+          },
+          "balcony": {
+            "type": "boolean",
+            "title": "Balcony"
+          },
+          "baseRentPaise": {
+            "type": "integer",
+            "title": "Baserentpaise"
+          },
+          "securityDepositPaise": {
+            "type": "integer",
+            "title": "Securitydepositpaise"
+          },
+          "mandatoryCharges": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/MonthlyCharge"
+                },
+                {
+                  "$ref": "#/components/schemas/MeteredCharge"
+                },
+                {
+                  "$ref": "#/components/schemas/OneTimeCharge"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "metered": "#/components/schemas/MeteredCharge",
+                  "monthly": "#/components/schemas/MonthlyCharge",
+                  "oneTime": "#/components/schemas/OneTimeCharge"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Mandatorycharges"
+          },
+          "monthlyChargesPaise": {
+            "type": "integer",
+            "title": "Monthlychargespaise"
+          },
+          "oneTimeChargesPaise": {
+            "type": "integer",
+            "title": "Onetimechargespaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "occupancy",
+          "label",
+          "ac",
+          "attachedBath",
+          "balcony",
+          "baseRentPaise",
+          "securityDepositPaise",
+          "mandatoryCharges",
+          "monthlyChargesPaise",
+          "oneTimeChargesPaise"
+        ],
+        "title": "PublicCategory"
+      },
+      "PublicListing": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "locality": {
+            "$ref": "#/components/schemas/ListingLocality"
+          },
+          "displayLocation": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "genderPolicy": {
+            "$ref": "#/components/schemas/GenderPolicy"
+          },
+          "meals": {
+            "$ref": "#/components/schemas/Meals"
+          },
+          "houseRules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Houserules"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "ownerBusinessName": {
+            "type": "string",
+            "title": "Ownerbusinessname"
+          },
+          "amenities": {
+            "items": {
+              "$ref": "#/components/schemas/AmenityInfo"
+            },
+            "type": "array",
+            "title": "Amenities"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/PublicCategory"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/PublicMedia"
+            },
+            "type": "array",
+            "title": "Media"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "locality",
+          "displayLocation",
+          "genderPolicy",
+          "meals",
+          "houseRules",
+          "verified",
+          "ownerBusinessName",
+          "amenities",
+          "categories",
+          "media"
+        ],
+        "title": "PublicListing",
+        "description": "A live listing as anyone sees it. Its location is the display point, 80 to 150 m from the\nbuilding; the address, the exact point and the owner's phone come only from .../contact."
+      },
+      "PublicMedia": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "contentType": {
+            "type": "string",
+            "title": "Contenttype"
+          },
+          "verifiedCapture": {
+            "type": "boolean",
+            "title": "Verifiedcapture"
+          },
+          "renditions": {
+            "items": {
+              "$ref": "#/components/schemas/Rendition"
+            },
+            "type": "array",
+            "title": "Renditions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "contentType",
+          "verifiedCapture",
+          "renditions"
+        ],
+        "title": "PublicMedia"
       },
       "Purpose": {
         "type": "string",

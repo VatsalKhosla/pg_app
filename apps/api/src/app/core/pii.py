@@ -21,6 +21,11 @@ def mask_text(text: str) -> str:
     return _PHONE.sub(_last_four, text)
 
 
+def contains_phone(text: str) -> bool:
+    """Whether ``text`` holds a phone number in any form ``mask_text`` masks."""
+    return _PHONE.search(text) is not None
+
+
 def mask_pii(value: object) -> object:
     """Return ``value`` with every phone number masked, looking inside mappings and sequences."""
     if isinstance(value, str):

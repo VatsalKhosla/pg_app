@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Final
 
 from app.core.geometry import NCR_BOUNDS
 from app.modules.catalog.domain.listing import HOUSE_RULE_MAX_LENGTH, HOUSE_RULES_MAX
+from app.modules.catalog.domain.privacy import phone_problems
 from app.modules.catalog.errors import ListingInvalidError
 
 if TYPE_CHECKING:
@@ -16,13 +17,16 @@ ADDRESS_MAX_LENGTH: Final = 300
 LICENCE_NUMBER_MAX_LENGTH: Final = 60
 
 
-def text_problems(name: str, value: str, *, required: bool, max_length: int) -> list[str]:
+def text_problems(
+    name: str, value: str, *, required: bool, max_length: int, public: bool = False
+) -> list[str]:
+    """``public`` text is shown to anyone, so it can't carry a phone number (ADR 0026)."""
     stripped = value.strip()
     if required and not stripped:
         return [f"{name} is required"]
     if len(stripped) > max_length:
         return [f"{name} is longer than {max_length} characters"]
-    return []
+    return phone_problems(name, stripped) if public else []
 
 
 def house_rule_problems(rules: Collection[str]) -> list[str]:
@@ -30,6 +34,9 @@ def house_rule_problems(rules: Collection[str]) -> list[str]:
         return [f"at most {HOUSE_RULES_MAX} house rules"]
     if any(not rule.strip() or len(rule.strip()) > HOUSE_RULE_MAX_LENGTH for rule in rules):
         return [f"each house rule needs 1 to {HOUSE_RULE_MAX_LENGTH} characters"]
+    for rule in rules:
+        if problems := phone_problems("a house rule", rule):
+            return problems
     return []
 
 

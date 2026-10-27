@@ -1017,6 +1017,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/properties/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A live listing, as anyone sees it
+         * @description Its location is the display point, 80 to 150 m from the building. Anything not live, or
+         *     not verified while only verified PGs are shown, answers 404.
+         */
+        get: operations["catalogPublicListing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/properties/{slug}/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The owner's phone and the exact address
+         * @description For someone signed in, while ``hide_owner_contact`` is off or once they have a visit
+         *     scheduled or a booking confirmed there; otherwise 403 CONTACT_HIDDEN. Each answer is
+         *     audited.
+         */
+        get: operations["catalogListingContact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/media": {
         parameters: {
             query?: never;
@@ -1537,6 +1580,18 @@ export interface components {
          * @enum {string}
          */
         LicenceStatus: "unknown" | "applied" | "licensed" | "not_required";
+        /**
+         * ListingContact
+         * @description The owner's phone, the address and the exact point, for someone allowed to see them.
+         */
+        ListingContact: {
+            /** Ownerphone */
+            ownerPhone: string | null;
+            /** Addressline */
+            addressLine: string;
+            location: components["schemas"]["LatLng"];
+            locationPrecision: components["schemas"]["LocationPrecision"];
+        };
         /** ListingCreated */
         ListingCreated: {
             /**
@@ -2094,6 +2149,81 @@ export interface components {
             societyPermission?: components["schemas"]["SocietyPermission"] | null;
             /** Instantconfirm */
             instantConfirm?: boolean | null;
+        };
+        /** PublicCategory */
+        PublicCategory: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            occupancy: components["schemas"]["Occupancy"];
+            /** Label */
+            label: string;
+            /** Ac */
+            ac: boolean;
+            /** Attachedbath */
+            attachedBath: boolean;
+            /** Balcony */
+            balcony: boolean;
+            /** Baserentpaise */
+            baseRentPaise: number;
+            /** Securitydepositpaise */
+            securityDepositPaise: number;
+            /** Mandatorycharges */
+            mandatoryCharges: (components["schemas"]["MonthlyCharge"] | components["schemas"]["MeteredCharge"] | components["schemas"]["OneTimeCharge"])[];
+            /** Monthlychargespaise */
+            monthlyChargesPaise: number;
+            /** Onetimechargespaise */
+            oneTimeChargesPaise: number;
+        };
+        /**
+         * PublicListing
+         * @description A live listing as anyone sees it. Its location is the display point, 80 to 150 m from the
+         *     building; the address, the exact point and the owner's phone come only from .../contact.
+         */
+        PublicListing: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            locality: components["schemas"]["ListingLocality"];
+            displayLocation: components["schemas"]["LatLng"];
+            genderPolicy: components["schemas"]["GenderPolicy"];
+            meals: components["schemas"]["Meals"];
+            /** Houserules */
+            houseRules: string[];
+            /** Verified */
+            verified: boolean;
+            /** Ownerbusinessname */
+            ownerBusinessName: string;
+            /** Amenities */
+            amenities: components["schemas"]["AmenityInfo"][];
+            /** Categories */
+            categories: components["schemas"]["PublicCategory"][];
+            /** Media */
+            media: components["schemas"]["PublicMedia"][];
+        };
+        /** PublicMedia */
+        PublicMedia: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Contenttype */
+            contentType: string;
+            /** Verifiedcapture */
+            verifiedCapture: boolean;
+            /** Renditions */
+            renditions: components["schemas"]["Rendition"][];
         };
         /**
          * Purpose
@@ -4907,6 +5037,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcceptanceInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogPublicListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicListing"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogListingContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingContact"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

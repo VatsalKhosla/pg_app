@@ -108,6 +108,18 @@ def publishing_problems(
     return problems
 
 
+def is_public(
+    status: PropertyStatus, verification: VerificationStatus, *, verified_only: bool
+) -> bool:
+    """Whether anyone may see the listing (ADR 0026): live, and verified as publishing needs it,
+    so a listing published before ``verified_only`` was turned on disappears until verified."""
+    if status is not PropertyStatus.PUBLISHED:
+        return False
+    if verification in {VerificationStatus.REJECTED, VerificationStatus.SUSPENDED}:
+        return False
+    return verification is VerificationStatus.VERIFIED or not verified_only
+
+
 def slugify(*parts: str) -> str:
     """A URL slug from a name and its locality: ``slugify("Asha's PG", "Kamla Nagar")`` is
     ``"ashas-pg-kamla-nagar"``. Accents are dropped; a name with no Latin letters or digits at

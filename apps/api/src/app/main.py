@@ -24,6 +24,7 @@ from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestCont
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
 from app.modules.catalog.agreements import FileAgreements
+from app.modules.catalog.contact import NobodyYet
 from app.modules.catalog.router import router as catalog_router
 from app.modules.compliance.router import router as compliance_router
 from app.modules.geo.router import router as geo_router
@@ -86,6 +87,9 @@ def _set_shared_state(app: FastAPI, settings: Settings, agreements: AgreementLib
         msg = f"OWNER_AGREEMENT_VERSION {settings.owner_agreement_version} has no agreement text"
         raise RuntimeError(msg)
     app.state.owner_agreement_version = settings.owner_agreement_version
+    # Who may see an owner's contact details while hide_owner_contact is on (ADR 0026): visits
+    # (step 3.7) and bookings (Phase 5) will say; until then, nobody.
+    app.state.contact_access = NobodyYet()
     app.state.staff_google_domains = settings.staff_google_domains
     app.state.staff_google_emails = settings.staff_google_emails
 

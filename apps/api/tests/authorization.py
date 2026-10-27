@@ -54,6 +54,7 @@ PATH_VALUES: Final = frozenset(
         "a_bed",
         "someone_elses_visit",
         "an_owner",
+        "a_live_listing",
     }
 )
 
@@ -230,8 +231,12 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("GET", "/v1/media/{media_id}"): Rule(
         signed_in(404, ops=200, admin=200), path={"media_id": "someone_elses_media"}
     ),
-    # The catalog: amenities for everyone; listings for ops and admins.
+    # The catalog: amenities and live listings for everyone; listings in full for ops and admins.
     ("GET", "/v1/amenities"): Rule(everyone(200)),
+    ("GET", "/v1/properties/{slug}"): Rule(everyone(200), path={"slug": "a_live_listing"}),
+    # The owner's contact details (ADR 0026): with hide_owner_contact on, as by default, only for
+    # someone with a visit or booking there, which nobody here has.
+    ("GET", "/v1/properties/{slug}/contact"): Rule(signed_in(403), path={"slug": "a_live_listing"}),
     ("GET", "/v1/ops/owners"): Rule(ops_only(200)),
     ("POST", "/v1/ops/owners"): Rule(ops_only(201), _new_owner),
     ("GET", "/v1/ops/owners/{owner_id}"): Rule(ops_only(200), path={"owner_id": "an_owner"}),

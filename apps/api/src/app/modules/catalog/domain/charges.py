@@ -13,6 +13,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Final
 
 from app.core.money import Paise
+from app.modules.catalog.domain.privacy import phone_problems
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -70,6 +71,7 @@ def charge_problems(charges: Sequence[MandatoryCharge]) -> list[str]:
         label = charge.label.strip()
         if not label or len(label) > LABEL_MAX_LENGTH:
             problems.append(f"each charge needs a label of 1 to {LABEL_MAX_LENGTH} characters")
+        problems += phone_problems("a charge's label", label)
         key = (charge.kind, label.casefold())
         if key in seen:
             problems.append(f"{label}: listed twice")
