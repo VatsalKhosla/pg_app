@@ -216,7 +216,7 @@ This constraint is the double-booking guarantee. Never work around it.
 - `pricing_rule_sets` (property_id, version int, status: `draft | active | archived`, created_by, activated_at); unique (property_id) where status = 'active'. Active and archived sets are immutable.
 - `pricing_rules` (rule_set_id, kind, room_category_ids bigint[] null (= all), params jsonb validated per kind, label shown to students, enabled).
 - `price_quotes` (public_id, user_id null, room_category_id, move_in, stay_months, base_rent_paise, monthly_rent_paise, adjustments jsonb, clamps jsonb, fee_paise, gst_paise, owner_fee_total_paise, token_paise, due_at_move_in_paise, deposit_paise, mandatory_charges jsonb, rule_set_id, fee_policy_id, rent_band_id null, engine_version, inputs_sha256, expires_at).
-- `property_price_summaries` (property_id, room_category_id, month date, min_rent_paise, max_rent_paise, available_beds, computed_at) — feeds search and the map.
+- `property_price_summaries` (property_id, room_category_id, month date, min_rent_paise, max_rent_paise, available_beds, computed_at) — feeds search and the map. Owned by the search module: one row per category with a bed to sell and month, for this month and the next six; base rents until the pricing engine (ADR 0027).
 
 **Visits and booking**
 - `visits` (public_id, property_id, student_id, preferred_slots tstzrange[], scheduled_slot tstzrange null, status: `requested | scheduled | completed | no_show | cancelled`, agent_id null, agent_checkin_at, agent_checkin_gps, outcome, booking_id null).
@@ -299,7 +299,7 @@ Required test: 50 concurrent hold requests for the last free bed → exactly one
 | check_windows | 5 min | CHECKED_IN past the window → ACTIVE |
 | no_shows | daily 10:00 IST | CONFIRMED past move_in + N days → NO_SHOW |
 | reconcile_payments | 15 min | Fetch status of payments stuck in created/authorized |
-| recompute_price_summaries | on event + nightly | Refresh `property_price_summaries` |
+| recompute_price_summaries | on `catalog.inventory_changed` + nightly 00:30 IST | Refresh a listing's `property_price_summaries`; the nightly `search.recompute_all_price_summaries` queues every listing once a day (ADR 0027) |
 | retention | daily 03:30 IST | `compliance.retention`: apply the retention schedule (`RETENTION_RULES` in `app/jobs.py`) and record what each rule removed (ADR 0018) |
 
 All jobs are idempotent and emit metrics (processed, failed, lag).

@@ -214,8 +214,11 @@ Start the slow ones in week 1.
 
 ## Phase 3 — Discovery: search, PG pages, map, visits → **Milestone A**
 
-- [ ] **3.1 Price summaries (base-rent version).** `property_price_summaries` for the next six months, filled from base rents for now (Phase 4 switches it to the engine). Recomputed on catalog changes through the outbox.
+- [x] **3.1 Price summaries (base-rent version).** `property_price_summaries` for the next six months, filled from base rents for now (Phase 4 switches it to the engine). Recomputed on catalog changes through the outbox.
   *Done when* summaries refresh within a minute of a rent change.
+  *Note (2026-10-27):*
+  - **The table:** the new search module owns it, with one row per room category with a bed to sell and month, for this month and the next six (India's calendar). Each row has the base rent as its range and the active beds as free.
+  - **Refreshes:** `catalog.inventory_changed`, written with every category, room or bed change, refreshes that listing within seconds; a test drives a rent change through the real worker. Every night at 00:30 IST each listing is queued once more, so the months roll forward. A data migration fills the listings that already exist. Search reads rents through `CatalogLookup`, not the catalog's tables (ADR 0027).
 
 - [ ] **3.2 Search API.** Filters, sorting, text search (trigram + full-text) and cursor pagination per ARCHITECTURE §10.1, using summaries for budget and price sort; distance to the chosen campus and nearest metro.
   *Done when* integration tests cover each filter, and p95 < 300 ms on a seeded set of 3,000 properties.
