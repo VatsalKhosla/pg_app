@@ -26,14 +26,18 @@ PINS_TTL_SECONDS: Final = 60
 
 
 def snapped(bounds: Bounds, zoom: int) -> Bounds:
-    """``bounds`` grown outwards to the zoom's grid: 360° / 2^(zoom + 2) a cell."""
+    """``bounds`` grown outwards to the zoom's grid: 360° / 2^(zoom + 2) a cell. A cell is an
+    exact binary fraction, so every grid line is an exact float and nothing needs rounding; a
+    division that lands a hair off moves the line one cell out."""
     cell = 360 / (1 << (zoom + 2))
 
     def down(value: float) -> float:
-        return round(math.floor(value / cell) * cell, 7)
+        line = math.floor(value / cell) * cell
+        return line if line <= value else line - cell
 
     def up(value: float) -> float:
-        return round(math.ceil(value / cell) * cell, 7)
+        line = math.ceil(value / cell) * cell
+        return line if line >= value else line + cell
 
     return Bounds(
         south=down(bounds.south),

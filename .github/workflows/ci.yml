@@ -54,12 +54,18 @@ jobs:
         run: |
           set -o pipefail
           make test-api 2>&1 | tee "$RUNNER_TEMP/test-api.log"
-      # Each failed test as an annotation, which the checks API shows without the job's log.
+      # Each failed test as an annotation, which the checks API shows without the job's log; the
+      # log's end when no test is named (a crash, a collection error).
       - name: Annotate failed tests
         if: failure()
         run: |
-          grep -E '^(FAILED|ERROR) ' "$RUNNER_TEMP/test-api.log" \
-            | sed 's/^/::error title=API test::/' || true
+          plain="$(sed 's/\x1b\[[0-9;]*m//g' "$RUNNER_TEMP/test-api.log")"
+          failed="$(printf '%s\n' "$plain" | grep -E '^(FAILED|ERROR) ' || true)"
+          if [ -n "$failed" ]; then
+            printf '%s\n' "$failed" | sed 's/^/::error title=API test::/'
+          else
+            printf '::error title=API tests ended::%s\n' "$(printf '%s\n' "$plain" | tail -n 30 | tr '\n' ' ')"
+          fi
 
   web:
     name: Web
