@@ -233,8 +233,12 @@ Start the slow ones in week 1.
   - **The cache:** answers are kept in Redis for a minute, as the exact JSON sent, with an ETag; `If-None-Match` gets a 304. While Redis is down, pins come from the database.
   - **Proof:** a test pans a map area across Delhi, from South Campus to North Campus, and finds each fictional listing inside the snapped areas, at its display point. A repeated request runs no database query at all.
 
-- [ ] **3.4 PG detail page.** ISR page per ARCHITECTURE §10.6: gallery with verified-photo labels, video, safety summary, room categories with prices (base rent until Phase 4), deposit and mandatory charges shown upfront, amenities, rules, small embedded map at the display location, distances, owner business name, "Book a visit" CTA.
+- [x] **3.4 PG detail page.** ISR page per ARCHITECTURE §10.6: gallery with verified-photo labels, video, safety summary, room categories with prices (base rent until Phase 4), deposit and mandatory charges shown upfront, amenities, rules, small embedded map at the display location, distances, owner business name, "Book a visit" CTA.
   *Done when* the page passes Lighthouse mobile ≥ 85 and shows no hidden charges.
+  *Note (2026-10-27):*
+  - **The page:** `/pg/[slug]` renders per request with its CSP nonce, from listing data cached for a minute across visitors. It shows photos as `<picture>` elements (with verified-photo labels), every room's rent, deposit and charges with their totals, the safety summary from the last passed visit, amenities, rules, and the area as a circle on a lazily loaded map with distances to campuses and metro stations. "Book a visit" leads to a page that says it opens soon (step 3.7) (ADR 0030).
+  - **Sample PGs:** `make seed` adds six fictional live PGs with generated photos, built through the real services; it refuses anywhere deployed.
+  - **Proof:** a browser test checks every amount against the API's listing. `make lighthouse-pg` (mobile) scored performance 90 and 100 in every other category.
 
 - [ ] **3.5 Search + map UI (the showcase).** Split view on desktop; list-first on mobile with a map toggle and draggable bottom sheet; price pins with ranges; clustering; "search as I move the map"; filters in the URL (nuqs); hover sync between cards and pins; campus rings and metro overlay; NCR bounds lock; lazy-loaded map behind the `MapProvider` interface (Google adapter first); skeletons and empty states; keyboard-accessible pins.
   *Done when* Playwright covers filter → pan → select pin → open PG page on mobile and desktop, and the map bundle loads only on the map view.

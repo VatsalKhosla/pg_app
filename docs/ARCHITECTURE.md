@@ -458,7 +458,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 - Field agents capture the exact location by GPS during verification; ops can adjust the pin manually.
 
 ### 10.6 PG page and SEO
-- `/pg/[slug]` (ISR): gallery with "verified photo" labels, video tour, safety checklist summary, room categories with live prices for the chosen month, price calendar, amenities, house rules, deposit and mandatory charges, distance to campuses and metro, owner business name, reviews (later), "Book a visit" and "Reserve a bed" CTAs.
+- `/pg/[slug]` (ISR): gallery with "verified photo" labels, video tour, safety checklist summary, room categories with live prices for the chosen month, price calendar, amenities, house rules, deposit and mandatory charges, distance to campuses and metro, owner business name, reviews (later), "Book a visit" and "Reserve a bed" CTAs. Rendered per request with its CSP nonce from listing data cached across visitors (tagged for on-demand revalidation), every charge and the deposit upfront, the safety summary from the last passing visit, and the area as a circle around the display point (ADR 0030).
 - Landing pages: `/pg-near/[campus]`, `/pg-in/[locality]` with real inventory, filters and FAQs.
 - JSON-LD (`LodgingBusiness` with `Offer` price ranges), canonical URLs, `sitemap.xml`, `robots.txt`, dynamic Open Graph images. The API triggers on-demand revalidation when a listing or its prices change.
 

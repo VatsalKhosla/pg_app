@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-10-19
 - Build step: 0.5 (web skeleton)
+- Amended by [ADR 0030](0030-pg-page.md): pages keep their per-request nonce; public data is cached across visitors instead of the HTML.
 
 ## Context
 
