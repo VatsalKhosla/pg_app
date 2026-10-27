@@ -19,7 +19,10 @@ export interface StaffAccount {
  * Run an operator command. `answer` sees the output so far and may return a line to type in,
  * once, as a person at the prompt would.
  */
-function manage(args: string[], answer?: (output: string) => string | undefined): Promise<string> {
+export function manage(
+  args: string[],
+  answer?: (output: string) => string | undefined,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn(MANAGE, args, { stdio: ["pipe", "pipe", "pipe"] });
     let output = "";

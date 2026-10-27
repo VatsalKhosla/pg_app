@@ -108,9 +108,10 @@ staff-code: ## Local only: the authenticator code that signs phone=98XXXXXXXX in
 	@$(API) python -m app.manage staff code $(phone)
 
 .PHONY: seed
-seed: migrate ## Load the sample data (the geo reference data from OpenStreetMap) and create the local storage buckets; again is fine
+seed: migrate ## Load the sample data (the geo reference data from OpenStreetMap, fictional sample PGs) and create the local storage buckets; again is fine
 	$(API) python -m app.manage geo load
 	$(API) python -m app.manage media buckets
+	$(API) python -m app.manage catalog samples
 
 .PHONY: geo-refresh
 geo-refresh: ## Rebuild the geo reference data from places.toml via OpenStreetMap and Wikidata (network; review the diff)
@@ -190,6 +191,12 @@ e2e: ## Run the browser tests against a production build and the real API (Playw
 .PHONY: lighthouse
 lighthouse: web-build ## Audit the home page with Lighthouse (mobile); fails below 90
 	$(WEB) run lighthouse
+
+.PHONY: lighthouse-pg
+lighthouse-pg: ## Audit a sample PG's page with Lighthouse (mobile) against the tests' API; fails below 85
+	NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3200 NEXT_PUBLIC_API_URL=http://127.0.0.1:$(E2E_API_PORT) \
+		NEXT_PUBLIC_TURNSTILE_SITE_KEY= $(MAKE) web-build
+	E2E_API_PORT=$(E2E_API_PORT) scripts/lighthouse-pg.sh
 
 ##@ Build
 

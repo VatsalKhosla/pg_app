@@ -3,8 +3,9 @@
  * only; a vendor's SDK is imported inside its adapter alone, and each adapter is loaded on demand.
  *
  * `PinPicker` puts one pin on a building. Ops drag it, click or tap where it goes (so nobody has
- * to drag, WCAG 2.2 2.5.7), or move it with the arrow keys once it has focus. The search map's
- * `MapView` comes with step 3.5.
+ * to drag, WCAG 2.2 2.5.7), or move it with the arrow keys once it has focus. `LocationMap` shows
+ * a PG's approximate area on its page (step 3.4): a circle around the display point, never a pin.
+ * The search map's `MapView` comes with step 3.5.
  */
 
 export interface LatLng {
@@ -55,4 +56,24 @@ export interface PinPickerProps {
 /** Pins keep 6 decimal places, about 10 cm: finer than any phone's GPS. */
 export function roundCoordinate(value: number): number {
   return Math.round(value * 1e6) / 1e6;
+}
+
+/** What the area map says, translated by the page. */
+export interface LocationMapText {
+  /** What the map shows, for screen readers: the page also says it in words. */
+  map: string;
+  zoomIn: string;
+  zoomOut: string;
+  credits: string;
+  twoFingers: string;
+  ctrlScroll: string;
+  cmdScroll: string;
+  failed: string;
+}
+
+export interface LocationMapProps {
+  /** The display point (ADR 0021): the building is somewhere within the circle. */
+  center: LatLng;
+  radiusM: number;
+  text: LocationMapText;
 }

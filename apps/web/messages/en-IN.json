@@ -235,6 +235,116 @@
       "API_TIMEOUT": "The server took too long. Please try again."
     }
   },
+  "Pg": {
+    "metaDescription": "{gender} PG in {locality}: rooms from {from} a month, deposit and every charge shown upfront.",
+    "verified": "Verified by our field agent",
+    "notVerified": "Not verified yet",
+    "runBy": "Run by {business}",
+    "bookVisit": "Book a visit",
+    "gender": {
+      "boys": "Boys",
+      "girls": "Girls",
+      "coed": "Co-ed"
+    },
+    "genderShort": {
+      "boys": "For boys",
+      "girls": "For girls",
+      "coed": "For everyone"
+    },
+    "meals": {
+      "none": "No meals",
+      "breakfast": "Breakfast",
+      "two": "Two meals a day",
+      "three": "Three meals a day",
+      "four": "Four meals a day"
+    },
+    "gallery": {
+      "title": "Photos",
+      "photo": "Photo {number} of {name}",
+      "verifiedPhoto": "Verified photo",
+      "video": "Video of {name}",
+      "none": "No photos yet."
+    },
+    "rooms": {
+      "title": "Rooms and prices",
+      "intro": "Rent is per bed, each month. The deposit and every charge you pay are listed here: nothing else is added.",
+      "sharing": {
+        "single": "A room of your own",
+        "double": "2 to a room",
+        "triple": "3 to a room",
+        "quad": "4 to a room"
+      },
+      "ac": "AC",
+      "attachedBath": "Attached bathroom",
+      "balcony": "Balcony",
+      "rent": "{amount} a month",
+      "deposit": "Security deposit: {amount}",
+      "charges": "Other charges",
+      "monthly": "{label}: {amount} a month",
+      "metered": "{label}: {rate} per {unit}, about {estimate} a month",
+      "oneTime": "{label}: {amount}, once",
+      "noCharges": "No other charges.",
+      "totals": "Other charges come to about {monthly} a month, and {once} once.",
+      "none": "No rooms are open right now."
+    },
+    "safety": {
+      "title": "Safety",
+      "checked": "Checked by our field agent on {date}.",
+      "notChecked": "Our field agent hasn't visited yet.",
+      "exits": "{count, plural, one {# way out of the building} other {# ways out of the building}}",
+      "fireExtinguishers": "Fire extinguishers",
+      "cctv": "CCTV at the entrance and in common areas",
+      "warden": "Someone in charge at night",
+      "yes": "Yes",
+      "no": "No",
+      "womenSafety": "For women",
+      "womenSafetyNone": "No features for women were noted.",
+      "feature": {
+        "woman_staff": "A woman warden or caretaker",
+        "secure_entry": "Entry by key card, biometrics or a guard",
+        "lit_approach": "A well-lit street and entrance at night",
+        "visitor_log": "Visitors signed in and out",
+        "separate_floors": "Women's rooms on floors of their own"
+      },
+      "licence": {
+        "licensed": "Licensed by the authorities",
+        "applied": "A licence has been applied for",
+        "not_required": "No licence is needed here",
+        "unknown": "Licence not confirmed"
+      },
+      "society": {
+        "on_file": "The housing society's permission is on file",
+        "missing": "The housing society's permission isn't on file",
+        "n/a": "No housing society's permission is needed"
+      }
+    },
+    "amenities": "Amenities",
+    "rules": "House rules",
+    "about": "About this PG",
+    "location": {
+      "title": "Where it is",
+      "approximate": "In {locality}, within about 150 m of the middle of the circle. You get the exact address once you've booked a visit.",
+      "campuses": "Campuses nearby",
+      "stations": "Metro stations nearby",
+      "distance": "{place}: {distance}",
+      "map": "The PG's area: it's somewhere inside the circle"
+    },
+    "map": {
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "credits": "Map credits",
+      "twoFingers": "Use two fingers to move the map",
+      "ctrlScroll": "Use Ctrl and scroll to zoom the map",
+      "cmdScroll": "Use ⌘ and scroll to zoom the map",
+      "failed": "The map couldn't load here."
+    },
+    "visit": {
+      "metaTitle": "Book a visit",
+      "title": "Book a visit to {name}",
+      "soon": "Booking a visit opens soon. Until then, this page is where it will be.",
+      "back": "Back to the PG"
+    }
+  },
   "Staff": {
     "signInMetaTitle": "Staff sign-in",
     "signInTitle": "Staff sign-in",

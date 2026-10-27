@@ -4,6 +4,9 @@
 // in a fresh browser, and judges the median, as Lighthouse CI does. The median run's reports land
 // in test-results/lighthouse/.
 //
+// `make lighthouse-pg` audits a sample PG's page instead (LIGHTHOUSE_PATH), at 85 (BUILD_PLAN
+// 3.4: LIGHTHOUSE_MIN_SCORE), against the browser tests' API (scripts/lighthouse-pg.sh).
+//
 // Lighthouse drives Playwright's Chromium (installed by `make setup`) over the DevTools protocol.
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -15,12 +18,15 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import lighthouse from "lighthouse";
 
-const minimumScore = 0.9;
+const minimumScore = Number(process.env.LIGHTHOUSE_MIN_SCORE ?? "0.9");
+const page = process.env.LIGHTHOUSE_PATH ?? "/";
+const reportName = process.env.LIGHTHOUSE_REPORT ?? "home";
 const runs = Number(process.env.LIGHTHOUSE_RUNS ?? "3");
 const timeLimitMs = 10 * 60_000;
 const appPort = Number(process.env.LIGHTHOUSE_APP_PORT ?? "3200");
 const debuggingPort = Number(process.env.LIGHTHOUSE_DEBUGGING_PORT ?? "9333");
-const url = `http://127.0.0.1:${appPort}/`;
+const origin = `http://127.0.0.1:${appPort}/`;
+const url = new URL(page, origin).toString();
 const debuggingUrl = `http://127.0.0.1:${debuggingPort}/json/version`;
 const reportDir = fileURLToPath(new URL("../test-results/lighthouse/", import.meta.url));
 
@@ -125,7 +131,7 @@ setTimeout(() => {
 try {
   // Something already listening would be audited (or driven) instead of this build.
   for (const [target, name] of [
-    [url, `LIGHTHOUSE_APP_PORT (${appPort})`],
+    [origin, `LIGHTHOUSE_APP_PORT (${appPort})`],
     [debuggingUrl, `LIGHTHOUSE_DEBUGGING_PORT (${debuggingPort})`],
   ]) {
     if (await responds(target))
@@ -141,11 +147,17 @@ try {
     "--port",
     String(appPort),
   ]);
-  await waitFor(url, server, "The web app");
+  await waitFor(origin, server, "The web app");
 
   const results = [];
   for (let run = 0; run < runs; run += 1) {
-    results.push(await audit());
+    try {
+      results.push(await audit());
+    } catch (error) {
+      // Chromium now and then fails to record a trace (NO_NAVSTART); once more is enough.
+      console.error(`lighthouse: run ${String(run + 1)} failed, trying again: ${String(error)}`);
+      results.push(await audit());
+    }
   }
 
   const scoreOf = (result, id) => result.lhr.categories[id]?.score ?? 0;
@@ -168,9 +180,9 @@ try {
   const { report } = byPerformance[Math.floor(byPerformance.length / 2)];
   await mkdir(reportDir, { recursive: true });
   const [html, json] = Array.isArray(report) ? report : [report, ""];
-  await writeFile(join(reportDir, "home.html"), html);
-  await writeFile(join(reportDir, "home.json"), json);
-  console.log(`Report: ${join(reportDir, "home.html")}`);
+  await writeFile(join(reportDir, `${reportName}.html`), html);
+  await writeFile(join(reportDir, `${reportName}.json`), json);
+  console.log(`Report: ${join(reportDir, `${reportName}.html`)}`);
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error));
 } finally {
