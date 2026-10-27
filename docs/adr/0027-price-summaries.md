@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-10-27
 - Build step: 3.1 (price summaries, base-rent version)
+- Amended by [ADR 0028](0028-search.md): summaries also carry their category's occupancy, AC and attached bath; the jobs are now `search.refresh_listing` and `search.refresh_all`, and refresh a listing's search entry too; the lookup index is (listing, month).
 
 ## Context
 

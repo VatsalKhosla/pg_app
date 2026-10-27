@@ -220,8 +220,11 @@ Start the slow ones in week 1.
   - **The table:** the new search module owns it, with one row per room category with a bed to sell and month, for this month and the next six (India's calendar). Each row has the base rent as its range and the active beds as free.
   - **Refreshes:** `catalog.inventory_changed`, written with every category, room or bed change, refreshes that listing within seconds; a test drives a rent change through the real worker. Every night at 00:30 IST each listing is queued once more, so the months roll forward. A data migration fills the listings that already exist. Search reads rents through `CatalogLookup`, not the catalog's tables (ADR 0027).
 
-- [ ] **3.2 Search API.** Filters, sorting, text search (trigram + full-text) and cursor pagination per ARCHITECTURE §10.1, using summaries for budget and price sort; distance to the chosen campus and nearest metro.
+- [x] **3.2 Search API.** Filters, sorting, text search (trigram + full-text) and cursor pagination per ARCHITECTURE §10.1, using summaries for budget and price sort; distance to the chosen campus and nearest metro.
   *Done when* integration tests cover each filter, and p95 < 300 ms on a seeded set of 3,000 properties.
+  *Note (2026-10-27):*
+  - **The API:** `GET /v1/search/properties` covers every parameter in §10.1 and refuses any other. It reads the search module's own entries for live listings, kept from the catalog's events, and the price summaries, which now carry each category's features. Distances to the campus and the nearest metro are measured from display points. Free beds show as a bucket, and cursors carry their order. A search that can't be answered gets `422 SEARCH_INVALID` (ADR 0028).
+  - **Proof:** integration tests cover each filter, sorting, paging and the refresh after a change. Over 3,000 seeded fictional listings, 253 searches of every kind took a median of 29 ms and a p95 of 65 ms. A first query was 365 ms on map-area searches until each listing's month was looked up laterally.
 
 - [ ] **3.3 Map pins API.** Bbox + filters → compact pins with price ranges from summaries; Redis cache with ETags; 2,000-pin cap.
   *Done when* a pan across NCR returns correct pins, and repeated calls hit the cache.
