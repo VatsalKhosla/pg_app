@@ -226,8 +226,12 @@ Start the slow ones in week 1.
   - **The API:** `GET /v1/search/properties` covers every parameter in §10.1 and refuses any other. It reads the search module's own entries for live listings, kept from the catalog's events, and the price summaries, which now carry each category's features. Distances to the campus and the nearest metro are measured from display points. Free beds show as a bucket, and cursors carry their order. A search that can't be answered gets `422 SEARCH_INVALID` (ADR 0028).
   - **Proof:** integration tests cover each filter, sorting, paging and the refresh after a change. Over 3,000 seeded fictional listings, 253 searches of every kind took a median of 29 ms and a p95 of 65 ms. A first query was 365 ms on map-area searches until each listing's month was looked up laterally.
 
-- [ ] **3.3 Map pins API.** Bbox + filters → compact pins with price ranges from summaries; Redis cache with ETags; 2,000-pin cap.
+- [x] **3.3 Map pins API.** Bbox + filters → compact pins with price ranges from summaries; Redis cache with ETags; 2,000-pin cap.
   *Done when* a pan across NCR returns correct pins, and repeated calls hit the cache.
+  *Note (2026-10-27):*
+  - **The API:** `GET /v1/map/pins` takes the map's area and zoom and search's filters, and gives pins at display points with the month's price range, at most 2,000 (`truncated` says there were more). The area is snapped outwards to the zoom's grid, so small pans repeat the same request (ADR 0029).
+  - **The cache:** answers are kept in Redis for a minute, as the exact JSON sent, with an ETag; `If-None-Match` gets a 304. While Redis is down, pins come from the database.
+  - **Proof:** a test pans a map area across Delhi, from South Campus to North Campus, and finds each fictional listing inside the snapped areas, at its display point. A repeated request runs no database query at all.
 
 - [ ] **3.4 PG detail page.** ISR page per ARCHITECTURE §10.6: gallery with verified-photo labels, video, safety summary, room categories with prices (base rent until Phase 4), deposit and mandatory charges shown upfront, amenities, rules, small embedded map at the display location, distances, owner business name, "Book a visit" CTA.
   *Done when* the page passes Lighthouse mobile ≥ 85 and shows no hidden charges.
