@@ -198,6 +198,12 @@ lighthouse-pg: ## Audit a sample PG's page with Lighthouse (mobile) against the 
 		NEXT_PUBLIC_TURNSTILE_SITE_KEY= $(MAKE) web-build
 	E2E_API_PORT=$(E2E_API_PORT) scripts/lighthouse-pg.sh
 
+.PHONY: lighthouse-search
+lighthouse-search: ## Audit search's list (the phone's first view) with Lighthouse (mobile) against the tests' API; fails below 85
+	NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3200 NEXT_PUBLIC_API_URL=http://127.0.0.1:$(E2E_API_PORT) \
+		NEXT_PUBLIC_TURNSTILE_SITE_KEY= $(MAKE) web-build
+	E2E_API_PORT=$(E2E_API_PORT) LIGHTHOUSE_PATH=/search LIGHTHOUSE_REPORT=search scripts/lighthouse-pg.sh
+
 ##@ Build
 
 .PHONY: web-build

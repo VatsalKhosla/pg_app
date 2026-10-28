@@ -14,6 +14,7 @@
     "menuTitle": "Menu"
   },
   "Navigation": {
+    "search": "Find a PG",
     "howItWorks": "How it works",
     "students": "Students and parents",
     "owners": "PG owners"
@@ -21,6 +22,7 @@
   "Home": {
     "status": "Coming soon",
     "intro": "Find a safe, verified bed near your college or coaching hub. Book a visit, reserve the bed with a small refundable token and move in.",
+    "findCta": "Find a PG on the map",
     "steps": {
       "title": "How it works",
       "find": {
@@ -233,6 +235,103 @@
       "SERVICE_UNAVAILABLE": "That's not working right now. Please try again soon.",
       "API_UNREACHABLE": "Couldn't reach the server. Please check your connection.",
       "API_TIMEOUT": "The server took too long. Please try again."
+    }
+  },
+  "Search": {
+    "metaTitle": "Find a PG",
+    "metaDescription": "Verified PGs in Delhi NCR on a map, with every month's rent, the deposit and every charge shown upfront.",
+    "title": "Find a PG",
+    "filters": {
+      "title": "Filters",
+      "open": "Filters",
+      "active": "{count, plural, one {# filter} other {# filters}}",
+      "show": "Show {count, plural, one {# PG} other {# PGs}}",
+      "showResults": "Show PGs",
+      "clear": "Clear filters",
+      "close": "Close filters",
+      "text": "Search by name or locality",
+      "textPlaceholder": "Asha PG, Kamla Nagar…",
+      "campus": "Near a campus",
+      "anyCampus": "Any campus",
+      "radius": "Within",
+      "radiusKm": "{km} km",
+      "locality": "In a locality",
+      "anyLocality": "Any locality",
+      "month": "Moving in",
+      "budgetMin": "Rent from",
+      "budgetMax": "Rent up to",
+      "noLimit": "Any",
+      "gender": "Who it's for",
+      "anyGender": "Anyone",
+      "occupancy": "Sharing",
+      "anyOccupancy": "Any",
+      "meals": "Meals",
+      "anyMeals": "Any",
+      "ac": "AC",
+      "attachedBath": "Attached bathroom",
+      "available": "Beds free that month",
+      "amenities": "Amenities",
+      "sort": "Sort by",
+      "mapArea": "Searching the map's area",
+      "clearArea": "Search everywhere",
+      "searchAsMove": "Search as I move the map"
+    },
+    "sort": {
+      "recommended": "Recommended",
+      "price_asc": "Price: low to high",
+      "price_desc": "Price: high to low",
+      "distance": "Nearest to the campus",
+      "newest": "Newest"
+    },
+    "results": {
+      "count": "{count, plural, =0 {No PGs} one {# PG} other {# PGs}} {more, select, true {and more} other {}}",
+      "loading": "Finding PGs…",
+      "loadMore": "Show more PGs",
+      "loadingMore": "Loading…",
+      "none": "No PG matches all of that yet.",
+      "noneHint": "Try a bigger area or fewer filters.",
+      "failed": "Search didn't work just now. Please try again.",
+      "retry": "Try again",
+      "invalid": "That search doesn't work:"
+    },
+    "card": {
+      "price": "{min} to {max} a month",
+      "onePrice": "{price} a month",
+      "fromCampus": "{distance} from the campus",
+      "station": "{name} metro, {distance}",
+      "verified": "Verified",
+      "licensed": "Licensed",
+      "beds": {
+        "none": "No beds free that month",
+        "few": "A few beds free",
+        "some": "Beds free",
+        "many": "Plenty of beds free"
+      }
+    },
+    "map": {
+      "show": "Show the map",
+      "hide": "Show the list",
+      "label": "PGs on the map",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "credits": "Map credits",
+      "twoFingers": "Use two fingers to move the map",
+      "ctrlScroll": "Use Ctrl and scroll to zoom the map",
+      "cmdScroll": "Use ⌘ and scroll to zoom the map",
+      "failed": "The map couldn't load here; the list has every PG.",
+      "cluster": "{count} PGs here, from {price} a month: zoom in",
+      "campus": "{name}",
+      "pin": "{price}, {gender}{verified, select, true {, verified} other {}}",
+      "truncated": "More PGs than the map can show at once: zoom in to see them all.",
+      "searchHere": "Search this area",
+      "sheet": "The list of PGs",
+      "sheetMore": "Show more of the list",
+      "sheetLess": "Show less of the list"
+    },
+    "preview": {
+      "open": "See the PG",
+      "close": "Close",
+      "loading": "Loading the PG…"
     }
   },
   "Pg": {

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # `make lighthouse-pg`: Lighthouse's mobile audit of a fictional sample PG's page, which must score
-# at least 85 in every category (BUILD_PLAN 3.4). The page needs the API, so this starts the
-# browser tests' API (scripts/e2e-api.sh: a database and buckets of its own), adds the sample PGs
-# to it (python -m app.manage catalog samples), and points the production build's server at it.
+# at least 85 in every category (BUILD_PLAN 3.4); `make lighthouse-search` audits search's list
+# (LIGHTHOUSE_PATH, LIGHTHOUSE_REPORT). The pages need the API, so this starts the browser tests'
+# API (scripts/e2e-api.sh: a database and buckets of its own), adds the sample PGs to it
+# (python -m app.manage catalog samples), and points the production build's server at it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # shellcheck source=scripts/e2e-env.sh
@@ -26,7 +27,7 @@ curl --fail --silent "http://127.0.0.1:$api_port/healthz" >/dev/null || {
 scripts/e2e-manage.sh catalog samples
 
 API_URL="http://127.0.0.1:$api_port" \
-  LIGHTHOUSE_PATH=/pg/fictional-sample-pg-aster-kamla-nagar \
+  LIGHTHOUSE_PATH="${LIGHTHOUSE_PATH:-/pg/fictional-sample-pg-aster-kamla-nagar}" \
   LIGHTHOUSE_MIN_SCORE=0.85 \
-  LIGHTHOUSE_REPORT=pg \
+  LIGHTHOUSE_REPORT="${LIGHTHOUSE_REPORT:-pg}" \
   pnpm --filter @pg-platform/web run lighthouse

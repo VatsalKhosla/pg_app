@@ -5,7 +5,8 @@
 // in test-results/lighthouse/.
 //
 // `make lighthouse-pg` audits a sample PG's page instead (LIGHTHOUSE_PATH), at 85 (BUILD_PLAN
-// 3.4: LIGHTHOUSE_MIN_SCORE), against the browser tests' API (scripts/lighthouse-pg.sh).
+// 3.4: LIGHTHOUSE_MIN_SCORE), against the browser tests' API (scripts/lighthouse-pg.sh), and
+// `make lighthouse-search` search's list the same way.
 //
 // Lighthouse drives Playwright's Chromium (installed by `make setup`) over the DevTools protocol.
 import { spawn } from "node:child_process";

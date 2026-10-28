@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Schemas } from "@pg-platform/api-client";
+import type { operations, Schemas } from "@pg-platform/api-client";
 import { unstable_cache } from "next/cache";
 
 import { serverEnv } from "@/config/server-env";
@@ -10,6 +10,7 @@ import { ApiError } from "./errors";
 import { SERVER_TIMEOUT_MS } from "./server";
 
 export type PublicListing = Schemas["PublicListing"];
+type SearchQueryParams = NonNullable<operations["searchSearchProperties"]["parameters"]["query"]>;
 
 /**
  * What anyone may read from the API, the same for every visitor: fetched without their cookies
@@ -43,6 +44,59 @@ export async function getPublicListing(slug: string): Promise<PublicListing | nu
     },
     ["public-listing", slug],
     { revalidate: LISTING_REVALIDATE_SECONDS, tags: ["listings", listingTag(slug)] },
+  );
+  return cached();
+}
+
+export type SearchPage = Schemas["SearchPage"];
+
+/** Reference lists for search's filters and map: they change only when the data is reloaded. */
+const REFERENCE_REVALIDATE_SECONDS = 3_600;
+const SEARCH_REVALIDATE_SECONDS = 30;
+
+export const getSearchReference = unstable_cache(
+  async () => {
+    const api = publicApi();
+    const [campuses, localities, stations, amenities] = await Promise.all([
+      unwrap(api.GET("/v1/campuses")),
+      unwrap(api.GET("/v1/localities")),
+      unwrap(api.GET("/v1/metro-stations")),
+      unwrap(api.GET("/v1/amenities")),
+    ]);
+    return {
+      campuses: campuses.items,
+      localities: localities.items,
+      stations: stations.items,
+      amenities: amenities.items,
+    };
+  },
+  ["search-reference"],
+  { revalidate: REFERENCE_REVALIDATE_SECONDS, tags: ["reference"] },
+);
+
+/**
+ * A page of search results for the page's first paint, the same for every visitor asking the
+ * same thing: cached for 30 seconds, as the API's Cache-Control says. A search the API can't
+ * answer comes back as its problem's detail, for the page to show.
+ */
+export async function getSearchPage(
+  query: SearchQueryParams,
+): Promise<{ page: SearchPage } | { problem: string }> {
+  const cached = unstable_cache(
+    async () => {
+      try {
+        return {
+          page: await unwrap(publicApi().GET("/v1/search/properties", { params: { query } })),
+        };
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 422) {
+          return { problem: error.problem?.detail ?? error.message };
+        }
+        throw error;
+      }
+    },
+    ["search-page", JSON.stringify(query)],
+    { revalidate: SEARCH_REVALIDATE_SECONDS, tags: ["listings"] },
   );
   return cached();
 }

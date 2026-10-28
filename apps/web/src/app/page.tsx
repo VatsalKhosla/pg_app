@@ -1,8 +1,10 @@
 import { CalendarCheck, KeyRound, MapPinned, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { homeSections } from "@/components/layout/navigation";
+import { buttonVariants } from "@/components/ui/button";
 import { ApiStatus, ApiStatusPending } from "@/components/system/api-status";
 
 const steps = [
@@ -31,6 +33,10 @@ export default async function HomePage() {
             {tBrand("tagline")}
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-pretty text-muted-foreground">{t("intro")}</p>
+          <Link href="/search" className={buttonVariants({ size: "lg", className: "mt-8" })}>
+            <MapPinned aria-hidden="true" />
+            {t("findCta")}
+          </Link>
         </div>
       </section>
 

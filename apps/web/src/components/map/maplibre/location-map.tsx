@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Map as MapLibreMap, NavigationControl, setWorkerUrl } from "maplibre-gl";
 import { useCallback, useRef, useState } from "react";
 
+import { brand } from "@/config/brand";
 import type { MapTiles } from "@/config/env";
 
 import { circle } from "../circle";
@@ -59,13 +60,13 @@ export default function MapLibreLocationMap({
                 id: "area-fill",
                 type: "fill",
                 source: "area",
-                paint: { "fill-color": "#0e6b74", "fill-opacity": 0.18 },
+                paint: { "fill-color": brand.colors.primary, "fill-opacity": 0.18 },
               },
               {
                 id: "area-line",
                 type: "line",
                 source: "area",
-                paint: { "line-color": "#0e6b74", "line-width": 2 },
+                paint: { "line-color": brand.colors.primary, "line-width": 2 },
               },
             ],
           },

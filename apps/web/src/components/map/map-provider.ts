@@ -5,7 +5,8 @@
  * `PinPicker` puts one pin on a building. Ops drag it, click or tap where it goes (so nobody has
  * to drag, WCAG 2.2 2.5.7), or move it with the arrow keys once it has focus. `LocationMap` shows
  * a PG's approximate area on its page (step 3.4): a circle around the display point, never a pin.
- * The search map's `MapView` comes with step 3.5.
+ * `MapView` is the search map (step 3.5): price pins that cluster, campuses (with rings around the
+ * one searched near) and metro stations, locked to NCR.
  */
 
 export interface LatLng {
@@ -77,3 +78,63 @@ export interface LocationMapProps {
   radiusM: number;
   text: LocationMapText;
 }
+
+/** One listing on the search map, at its display point. */
+export interface MapPin {
+  id: string;
+  position: LatLng;
+  /** What the pin shows: "₹8k–12k". */
+  label: string;
+  /** What a screen reader hears after the label: the full prices and who it's for. */
+  description: string;
+  verified: boolean;
+  /** The lowest rent, so a cluster can show its lowest. */
+  minRentPaise: number;
+}
+
+export interface MapPlace {
+  slug: string;
+  name: string;
+  location: LatLng;
+}
+
+export interface MapViewText {
+  map: string;
+  zoomIn: string;
+  zoomOut: string;
+  credits: string;
+  twoFingers: string;
+  ctrlScroll: string;
+  cmdScroll: string;
+  failed: string;
+  /** What a screen reader hears for a cluster, with {count} and {price} (its lowest). */
+  cluster: string;
+  /** The chosen campus's label, with {name}. */
+  campus: string;
+}
+
+export interface MapViewProps {
+  /** Pins are buttons with a `data-pin-id`, so the page can give one focus back. */
+  pins: readonly MapPin[];
+  selectedId: string | null;
+  hoveredId: string | null;
+  /**
+   * The map came to rest: its area and zoom, and whether the person moved it (dragging, zooming,
+   * the keys, a cluster) rather than the page (loading, or showing a place it was given).
+   */
+  onBoundsChange: (bounds: Bounds, zoom: number, byPerson: boolean) => void;
+  onPinSelect: (id: string) => void;
+  onPinHover: (id: string | null) => void;
+  campuses: readonly MapPlace[];
+  /** The campus searched near, by slug: its name and its 1 and 2 km rings show. */
+  chosenCampus: string | null;
+  stations: readonly MapPlace[];
+  /** Where to look first. */
+  initial: Bounds;
+  /** A place to show, such as a campus just chosen: the map goes there whenever its key changes. */
+  target: { key: string; bounds: Bounds } | null;
+  text: MapViewText;
+}
+
+/** Turns a cluster's price into its label; the adapter doesn't format money itself. */
+export type ShortPrice = (paise: number) => string;
