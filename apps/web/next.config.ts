@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   // The generated API client ships as TypeScript source.
   transpilePackages: ["@pg-platform/api-client"],
+  experimental: {
+    // radix-ui re-exports every primitive from one entry point, and webpack kept them all (about
+    // 60 KB gzipped on every page) for the two this app uses; this imports each one directly.
+    optimizePackageImports: ["radix-ui"],
+  },
   headers() {
     return Promise.resolve([{ source: "/:path*", headers: securityHeaders }]);
   },
