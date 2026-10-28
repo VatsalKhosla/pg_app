@@ -54,6 +54,10 @@ function mapScripts(page: Page): { found: string[]; settled: () => Promise<unkno
 }
 
 test.describe("search", () => {
+  // Highlights change at once, as for anyone who asks for less motion, so axe never reads a
+  // pin's colours halfway through their transition.
+  test.use({ contextOptions: { reducedMotion: "reduce" } });
+
   let aster: Card;
 
   test.beforeAll(async ({ request }) => {
