@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from PIL import Image, ImageDraw, ImageFont
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.core.actor import Actor, Role
 from app.core.flags import FeatureFlags
@@ -70,6 +70,8 @@ if TYPE_CHECKING:
 
 # Every sample's name starts so, which is how a second run knows they're there.
 NAME_PREFIX: Final = "Fictional Sample PG"
+# The advisory lock one run holds while it makes the samples.
+LOCK: Final = "catalog:samples"
 PHOTOS_PER_LISTING: Final = 3
 
 
@@ -246,14 +248,20 @@ class SampleBuilder:
         self._samples = samples
 
     async def build(self) -> list[str]:
-        """The samples, unless they're there already: their slugs."""
-        async with self._sessions() as db, db.begin():
-            if await _samples_exist(db):
+        """The samples, unless they're there already: their slugs.
+
+        One run at a time: a run started meanwhile (by a second browser-test worker, say) waits
+        for this one, then finds the samples there. The lock is held by a transaction of its own,
+        open until the samples are made.
+        """
+        async with self._sessions() as guard, guard.begin():
+            await guard.execute(select(func.pg_advisory_xact_lock(func.hashtextextended(LOCK, 0))))
+            if await _samples_exist(guard):
                 self._say("The sample listings are there already.")
                 return []
-        ops = await self._staff(Role.OPS, "Sample data ops (fictional)")
-        agent = await self._staff(Role.FIELD_AGENT, "Sample data field agent (fictional)")
-        return [await self._listing(sample, ops=ops, agent=agent) for sample in self._samples]
+            ops = await self._staff(Role.OPS, "Sample data ops (fictional)")
+            agent = await self._staff(Role.FIELD_AGENT, "Sample data field agent (fictional)")
+            return [await self._listing(sample, ops=ops, agent=agent) for sample in self._samples]
 
     async def _staff(self, role: Role, name: str) -> Actor:
         async with self._sessions() as db, db.begin():
