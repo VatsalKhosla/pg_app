@@ -34,6 +34,7 @@ def environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.Monke
         "STAFF_GOOGLE_DOMAINS",
         "STAFF_GOOGLE_EMAILS",
         "PRIVACY_NOTICE_VERSION",
+        "REVALIDATE_SECRET",
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("DATABASE_URL", DATABASE_URL)
@@ -54,6 +55,7 @@ def _deployed(environment: pytest.MonkeyPatch, app_env: str = "production") -> p
         "OTP_SENDER": "unavailable",
         "PRIVACY_NOTICE_VERSION": "2027-01",
         "OWNER_AGREEMENT_VERSION": "2027-01",
+        "REVALIDATE_SECRET": "a-revalidation-secret-of-32-chars!!",
     }.items():
         environment.setenv(name, value)
     return environment
@@ -155,6 +157,27 @@ def test_deployed_environments_need_a_turnstile_secret(
     _deployed(environment, app_env).delenv("TURNSTILE_SECRET_KEY")
 
     with pytest.raises(ValidationError, match="TURNSTILE_SECRET_KEY is required"):
+        Settings()
+
+
+@pytest.mark.parametrize("app_env", ["staging", "production"])
+def test_deployed_environments_need_the_revalidation_secret(
+    environment: pytest.MonkeyPatch, app_env: str
+) -> None:
+    _deployed(environment, app_env).delenv("REVALIDATE_SECRET")
+
+    with pytest.raises(ValidationError, match=r"REVALIDATE_SECRET .* is required"):
+        Settings()
+
+
+def test_the_revalidation_secret_is_long_and_empty_means_unset(
+    environment: pytest.MonkeyPatch,
+) -> None:
+    environment.setenv("REVALIDATE_SECRET", "")
+    assert Settings().revalidate_secret is None
+
+    environment.setenv("REVALIDATE_SECRET", "too-short")
+    with pytest.raises(ValidationError, match="at least 32"):
         Settings()
 
 

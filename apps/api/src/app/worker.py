@@ -17,6 +17,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import httpx
 import structlog
 
 from app.config import Settings
@@ -25,6 +26,7 @@ from app.core.db import create_engine, create_sessionmaker
 from app.core.logging import configure_logging
 from app.core.outbox import JobRegistry, OutboxWorker
 from app.core.scheduler import ScheduledJob, Scheduler
+from app.core.web_cache import NoWebCache, SignedWebCache, WebCache
 from app.jobs import SCHEDULES, build_registry
 from app.modules.media.adapters.s3 import S3Storage
 from app.modules.media.service import Buckets
@@ -35,6 +37,15 @@ if TYPE_CHECKING:
 logger = structlog.stdlib.get_logger("app.worker")
 
 DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 5.0
+# Calls to other services give up as the API's own do (backend rules).
+PROVIDER_TIMEOUT = httpx.Timeout(10.0, connect=3.0)
+
+
+def web_cache(settings: Settings, http: httpx.AsyncClient) -> WebCache:
+    """The web app to revalidate (ADR 0032), when it shares a secret with the API."""
+    if settings.revalidate_secret is None:
+        return NoWebCache()
+    return SignedWebCache(http, site_url=settings.site_url, secret=settings.revalidate_secret)
 
 
 async def heartbeat(
@@ -108,17 +119,20 @@ async def _serve_until_signalled(
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
-    await serve(
-        settings,
-        stop=stop,
-        heartbeat_file=heartbeat_file,
-        heartbeat_interval=heartbeat_interval,
-        clock=SystemClock(),
-        registry=build_registry(
-            storage=S3Storage.from_settings(settings), buckets=Buckets.from_settings(settings)
-        ),
-        schedules=SCHEDULES,
-    )
+    async with httpx.AsyncClient(timeout=PROVIDER_TIMEOUT) as http:
+        await serve(
+            settings,
+            stop=stop,
+            heartbeat_file=heartbeat_file,
+            heartbeat_interval=heartbeat_interval,
+            clock=SystemClock(),
+            registry=build_registry(
+                storage=S3Storage.from_settings(settings),
+                buckets=Buckets.from_settings(settings),
+                web_cache=web_cache(settings, http),
+            ),
+            schedules=SCHEDULES,
+        )
 
 
 def _positive_seconds(value: str) -> float:

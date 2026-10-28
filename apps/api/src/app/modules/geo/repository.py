@@ -221,6 +221,22 @@ class GeoRepository:
         campus_id, name, lat, lng = found
         return campus_id, name, Point(lat=lat, lng=lng)
 
+    async def campus_points(self) -> list[tuple[int, str, str, Point]]:
+        """Every campus's internal id, slug, name and location, by name."""
+        rows = await self._db.execute(
+            select(
+                Campus.id,
+                Campus.slug,
+                Campus.name,
+                postgis.lat(Campus.location),
+                postgis.lng(Campus.location),
+            ).order_by(Campus.name)
+        )
+        return [
+            (campus_id, slug, name, Point(lat=lat, lng=lng))
+            for campus_id, slug, name, lat, lng in rows
+        ]
+
     async def campuses_near(
         self, point: Point, *, within_m: float, limit: int
     ) -> list[tuple[str, str, float]]:

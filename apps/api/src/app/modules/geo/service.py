@@ -107,6 +107,13 @@ class GeoLookup:
         campus_id, name, location = found
         return CampusRef(id=campus_id, slug=slug, name=name, location=location)
 
+    async def campus_points(self) -> list[CampusRef]:
+        """Every campus with its location, by name: search counts the PGs near each."""
+        return [
+            CampusRef(id=campus_id, slug=slug, name=name, location=location)
+            for campus_id, slug, name, location in await self._geo.campus_points()
+        ]
+
     async def campuses_near(self, point: Point, *, within_m: float, limit: int) -> list[PlaceNear]:
         """The campuses within reach of a point, nearest first."""
         return [

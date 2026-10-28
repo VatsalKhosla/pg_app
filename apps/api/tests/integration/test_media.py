@@ -25,6 +25,7 @@ from app.core.clock import FrozenClock
 from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
 from app.core.csrf import issue_csrf_token
 from app.core.outbox import OutboxWorker
+from app.core.web_cache import NoWebCache
 from app.jobs import build_registry
 from app.main import create_app
 from app.modules.identity.domain.sessions import SessionKind
@@ -94,7 +95,9 @@ class Uploader:
         worker = OutboxWorker(
             sessionmaker=self.app.state.sessionmaker,
             registry=build_registry(
-                storage=self.app.state.storage, buckets=self.app.state.media_buckets
+                storage=self.app.state.storage,
+                buckets=self.app.state.media_buckets,
+                web_cache=NoWebCache(),
             ),
             clock=self.app.state.clock,
             worker_id="test",

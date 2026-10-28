@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Final
 from app.core.idempotency import IDEMPOTENCY_CLEANUP, delete_expired_keys
 from app.core.outbox import OUTBOX_CLEANUP, JobRegistry, delete_finished_jobs
 from app.core.scheduler import DailyAt, Every, ScheduledJob
+from app.core.web_cache import REVALIDATE, revalidate_handler
 from app.modules.catalog.service import INVENTORY_CHANGED, LISTING_CHANGED, owner_data
 from app.modules.compliance.jobs import (
     BUILD_EXPORT,
@@ -34,11 +35,13 @@ from app.modules.media.jobs import (
 from app.modules.search.jobs import (
     REFRESH,
     REFRESH_ALL,
+    changed_handler,
     refresh_all_handler,
     refresh_handler,
 )
 
 if TYPE_CHECKING:
+    from app.core.web_cache import WebCache
     from app.modules.media.ports import ObjectStorage
     from app.modules.media.service import Buckets
 
@@ -73,8 +76,9 @@ SCHEDULES: Final = (
 )
 
 
-def build_registry(*, storage: ObjectStorage, buckets: Buckets) -> JobRegistry:
-    """Every handler, with what it needs from outside: the object storage media jobs use."""
+def build_registry(*, storage: ObjectStorage, buckets: Buckets, web_cache: WebCache) -> JobRegistry:
+    """Every handler, with what it needs from outside: the object storage media jobs use, and
+    the web app whose cached pages are revalidated."""
     registry = JobRegistry()
     registry.register(OUTBOX_CLEANUP, delete_finished_jobs)
     registry.register(IDEMPOTENCY_CLEANUP, delete_expired_keys)
@@ -83,9 +87,10 @@ def build_registry(*, storage: ObjectStorage, buckets: Buckets) -> JobRegistry:
     registry.register(PROCESS, process_handler(storage, buckets))
     registry.register(DISCARD_UPLOAD, discard_upload_handler(storage, buckets))
     # A listing changed, its rooms and rents included: its search entry and price summaries
-    # follow (steps 3.1 and 3.2).
-    registry.register(INVENTORY_CHANGED, refresh_handler)
-    registry.register(LISTING_CHANGED, refresh_handler)
+    # follow (steps 3.1 and 3.2), and the web app's pages for it (step 3.6).
+    registry.register(INVENTORY_CHANGED, changed_handler)
+    registry.register(LISTING_CHANGED, changed_handler)
     registry.register(REFRESH, refresh_handler)
     registry.register(REFRESH_ALL, refresh_all_handler)
+    registry.register(REVALIDATE, revalidate_handler(web_cache))
     return registry

@@ -1104,6 +1104,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/search/places": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where the live PGs are
+         * @description Each campus with verified live PGs within ``radiusM`` and each locality with some, most
+         *     first: how many, and what their rooms come to this month. For landing pages and links.
+         */
+        get: operations["searchSearchPlaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/search/sitemap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every live PG, for the sitemap
+         * @description Every listing whose page anyone may see, in a stable order, a page at a time, with when
+         *     it last changed. 422 SEARCH_INVALID for a cursor this didn't give.
+         */
+        get: operations["searchSearchSitemap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/media": {
         parameters: {
             query?: never;
@@ -2134,6 +2176,11 @@ export interface components {
             /** Gstin */
             gstin?: string | null;
         };
+        /**
+         * PlaceKind
+         * @enum {string}
+         */
+        PlaceKind: "campus" | "locality";
         /** PlaceNearby */
         PlaceNearby: {
             /** Slug */
@@ -2527,6 +2574,35 @@ export interface components {
             month: string;
         };
         /**
+         * SearchPlace
+         * @description A campus with live PGs within ``radiusM``, or a locality with live PGs in it.
+         */
+        SearchPlace: {
+            kind: components["schemas"]["PlaceKind"];
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Listings */
+            listings: number;
+            /** Minrentpaise */
+            minRentPaise: number;
+            /** Maxrentpaise */
+            maxRentPaise: number;
+        };
+        /** SearchPlaces */
+        SearchPlaces: {
+            /** Items */
+            items: components["schemas"]["SearchPlace"][];
+            /**
+             * Month
+             * Format: date
+             */
+            month: string;
+            /** Radiusm */
+            radiusM: number;
+        };
+        /**
          * SessionInfo
          * @description One browser or device where the account is signed in.
          */
@@ -2571,6 +2647,23 @@ export interface components {
             csrfToken: string;
             /** Newuser */
             newUser: boolean;
+        };
+        /** SitemapListing */
+        SitemapListing: {
+            /** Slug */
+            slug: string;
+            /**
+             * Changedat
+             * Format: date-time
+             */
+            changedAt: string;
+        };
+        /** SitemapPage */
+        SitemapPage: {
+            /** Items */
+            items: components["schemas"]["SitemapListing"][];
+            /** Nextcursor */
+            nextCursor: string | null;
         };
         /**
          * SocietyPermission
@@ -5426,6 +5519,86 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    searchSearchPlaces: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchPlaces"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    searchSearchSitemap: {
+        parameters: {
+            query?: {
+                /** @description The previous page's nextCursor. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitemapPage"];
+                };
             };
             /** @description Client error (RFC 9457 problem details) */
             "4XX": {

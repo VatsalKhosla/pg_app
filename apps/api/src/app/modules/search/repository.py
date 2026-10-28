@@ -4,7 +4,20 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Float, delete, func, insert, literal, or_, select, true, tuple_
+from sqlalchemy import (
+    Float,
+    Text,
+    column,
+    delete,
+    func,
+    insert,
+    literal,
+    or_,
+    select,
+    true,
+    tuple_,
+    values,
+)
 from sqlalchemy.dialects.postgresql import insert as upsert
 
 from app.core import postgis
@@ -118,8 +131,17 @@ class SearchRepository:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
-    async def put(self, property_id: int, entry: SearchEntry, *, refreshed_at: datetime) -> None:
-        values: dict[str, Any] = {
+    async def put(
+        self,
+        property_id: int,
+        entry: SearchEntry,
+        *,
+        refreshed_at: datetime,
+        changed_at: datetime | None = None,
+    ) -> None:
+        """The listing's entry, made or brought up to date; ``changed_at`` only when the catalog
+        said it changed (the nightly refresh keeps the last one)."""
+        row: dict[str, Any] = {
             "public_id": entry.public_id,
             "slug": entry.slug,
             "name": entry.name,
@@ -136,16 +158,99 @@ class SearchRepository:
             "published_at": entry.published_at,
             "refreshed_at": refreshed_at,
         }
+        if changed_at is not None:
+            row["changed_at"] = changed_at
         await self._db.execute(
             upsert(SearchListing)
-            .values(property_id=property_id, **values)
-            .on_conflict_do_update(index_elements=[SearchListing.property_id], set_=values)
+            .values(property_id=property_id, **row)
+            .on_conflict_do_update(index_elements=[SearchListing.property_id], set_=row)
         )
 
     async def remove(self, property_id: int) -> None:
         await self._db.execute(
             delete(SearchListing).where(SearchListing.property_id == property_id)
         )
+
+    async def slug(self, property_id: int) -> str | None:
+        """The listing's slug as search has it, if search has it."""
+        return await self._db.scalar(
+            select(SearchListing.slug).where(SearchListing.property_id == property_id)
+        )
+
+    async def places_by_locality(self, filters: Filters) -> list[PlaceRow]:
+        """Each locality with listings that match: how many, and their rents' range."""
+        matching = _matching_categories(filters)
+        listing = SearchListing
+        rows = await self._db.execute(
+            select(
+                listing.locality_slug,
+                listing.locality_name,
+                func.count(),
+                func.min(matching.c.min_rent),
+                func.max(matching.c.max_rent),
+            )
+            .select_from(listing)
+            .join(matching, true())
+            .where(*_listing_conditions(filters), matching.c.min_rent.is_not(None))
+            .group_by(listing.locality_slug, listing.locality_name)
+        )
+        return [PlaceRow(*row) for row in rows]
+
+    async def places_near(
+        self, campuses: Sequence[tuple[str, str, Point]], filters: Filters, *, radius_m: int
+    ) -> list[PlaceRow]:
+        """Each campus (slug, name, location) with listings that match within ``radius_m``: one
+        query, each campus's reach found through the display points' index."""
+        if not campuses:
+            return []
+        campus = values(
+            column("slug", Text),
+            column("name", Text),
+            column("lat", Float),
+            column("lng", Float),
+            name="campus",
+        ).data([(slug, name, point.lat, point.lng) for slug, name, point in campuses])
+        at = func.geography(func.ST_SetSRID(func.ST_MakePoint(campus.c.lng, campus.c.lat), 4326))
+        matching = _matching_categories(filters)
+        listing = SearchListing
+        rows = await self._db.execute(
+            select(
+                campus.c.slug,
+                campus.c.name,
+                func.count(),
+                func.min(matching.c.min_rent),
+                func.max(matching.c.max_rent),
+            )
+            .select_from(campus)
+            .join(listing, func.ST_DWithin(listing.display_location, at, radius_m))
+            .join(matching, true())
+            .where(*_listing_conditions(filters), matching.c.min_rent.is_not(None))
+            .group_by(campus.c.slug, campus.c.name)
+        )
+        return [PlaceRow(*row) for row in rows]
+
+    async def sitemap(
+        self, *, verified_only: bool, after: uuid.UUID | None, limit: int
+    ) -> list[SitemapRow]:
+        """Listings in public-id order, ``limit + 1`` of them (the extra one says there's more):
+        when each last changed, or was published if it hasn't since."""
+        listing = SearchListing
+        conditions: list[ColumnElement[bool]] = []
+        if verified_only:
+            conditions.append(listing.verified.is_(True))
+        if after is not None:
+            conditions.append(listing.public_id > after)
+        rows = await self._db.execute(
+            select(
+                listing.public_id,
+                listing.slug,
+                func.coalesce(listing.changed_at, listing.published_at),
+            )
+            .where(*conditions)
+            .order_by(listing.public_id)
+            .limit(limit + 1)
+        )
+        return [SitemapRow(*row) for row in rows]
 
     async def search(
         self, filters: Filters, *, order: Order, cursor: Cursor | None, limit: int
@@ -255,6 +360,22 @@ class SearchRepository:
             )
             for public_id, slug, lat, lng, low, high, gender, verified, beds in rows
         ]
+
+
+@dataclass(frozen=True, slots=True)
+class PlaceRow:
+    slug: str
+    name: str
+    listings: int
+    min_rent: int
+    max_rent: int
+
+
+@dataclass(frozen=True, slots=True)
+class SitemapRow:
+    public_id: uuid.UUID
+    slug: str
+    changed_at: datetime
 
 
 @dataclass(frozen=True, slots=True)

@@ -24,6 +24,7 @@ from app.core.clock import FrozenClock
 from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
 from app.core.csrf import issue_csrf_token
 from app.core.outbox import OutboxWorker
+from app.core.web_cache import NoWebCache
 from app.jobs import RETENTION_RULES, build_registry
 from app.main import create_app
 from app.modules.compliance.retention import run_retention
@@ -106,7 +107,7 @@ async def _run_worker(app: FastAPI) -> None:
     """Run every due job, as the worker process would."""
     worker = OutboxWorker(
         sessionmaker=app.state.sessionmaker,
-        registry=build_registry(storage=MemoryStorage(), buckets=BUCKETS),
+        registry=build_registry(storage=MemoryStorage(), buckets=BUCKETS, web_cache=NoWebCache()),
         clock=app.state.clock,
         worker_id="test",
         batch_size=50,

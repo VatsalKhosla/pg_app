@@ -11,9 +11,14 @@ each card's cover. A fixed number of queries, however many listings match.
 
 The map's pins: every live listing in an area that matches the same filters, at most 2,000,
 cached for a minute (step 3.3).
+
+Where the PGs are, and every live one for the sitemap (step 3.6, ADR 0032): the campuses and
+localities with PGs, with how many and their rents' range, and each listing's last change. After a
+catalog event the web app is told which of its pages are out of date.
 """
 
 import hashlib
+import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
@@ -22,6 +27,7 @@ import structlog
 from app.core.calendar import india_date
 from app.core.flags import Flag
 from app.core.outbox import enqueue
+from app.core.web_cache import LISTINGS_TAG, ask_to_revalidate, listing_tag
 from app.modules.catalog.domain.listing import GenderPolicy
 from app.modules.catalog.service import CatalogLookup
 from app.modules.geo.service import GeoLookup
@@ -30,6 +36,7 @@ from app.modules.media.service import MediaLookup
 from app.modules.search.cache import Cached
 from app.modules.search.domain.pins import PIN_CAP, cache_key, snapped
 from app.modules.search.domain.query import (
+    DEFAULT_RADIUS_M,
     Cursor,
     SearchRequest,
     beds_free,
@@ -40,8 +47,15 @@ from app.modules.search.domain.query import (
 )
 from app.modules.search.domain.summaries import CategoryRent, months_from, summarise
 from app.modules.search.errors import SearchInvalidError
-from app.modules.search.repository import Filters, Hit, SearchRepository, SummaryRepository
-from app.modules.search.schemas import MapPin, MapPins
+from app.modules.search.repository import (
+    Filters,
+    Hit,
+    PlaceRow,
+    SearchRepository,
+    SitemapRow,
+    SummaryRepository,
+)
+from app.modules.search.schemas import MapPin, MapPins, PlaceKind
 
 if TYPE_CHECKING:
     from datetime import date
@@ -71,14 +85,21 @@ class SearchIndex:
         self._listings = SearchRepository(db)
         self._summaries = SummaryRepository(db)
 
-    async def refresh(self, property_id: int) -> None:
-        """Work out one listing's search entry and price summaries again, from the catalog now."""
+    async def refresh(self, property_id: int, *, changed: bool = False) -> None:
+        """Work out one listing's search entry and price summaries again, from the catalog now.
+
+        After a catalog event (``changed``) the listing's change time moves on, and the web app
+        is asked to revalidate its pages under the slug it had and the one it has (ADR 0032).
+        """
         now = self._clock.now()
+        before = await self._listings.slug(property_id) if changed else None
         entry = await self._catalog.search_entry(property_id)
         if entry is None:
             await self._listings.remove(property_id)
         else:
-            await self._listings.put(property_id, entry, refreshed_at=now)
+            await self._listings.put(
+                property_id, entry, refreshed_at=now, changed_at=now if changed else None
+            )
         rents = await self._catalog.rents(property_id)
         summaries = summarise(
             [
@@ -95,6 +116,14 @@ class SearchIndex:
             months_from(india_date(now)),
         )
         await self._summaries.replace(property_id, summaries, computed_at=now)
+        if changed:
+            after = None if entry is None else entry.slug
+            slugs = sorted({slug for slug in (before, after) if slug is not None})
+            # A listing the public has never seen (a draft, say) has no pages to revalidate.
+            if slugs:
+                await ask_to_revalidate(
+                    self._db, self._clock, [*map(listing_tag, slugs), LISTINGS_TAG]
+                )
 
     async def refresh_all(self) -> int:
         """Ask for every listing's refresh, one job each; a second run the same day adds
@@ -311,3 +340,84 @@ class Pins:
         cached = Cached(etag=hashlib.sha256(body).hexdigest()[:32], body=body)
         await self._cache.put(key, cached)
         return cached
+
+
+@dataclass(frozen=True, slots=True)
+class Place:
+    kind: PlaceKind
+    row: PlaceRow
+
+
+@dataclass(frozen=True, slots=True)
+class PlaceList:
+    places: list[Place]
+    month: date
+    radius_m: int
+
+
+class Places:
+    """Where the live PGs are (step 3.6): each campus with verified live PGs within search's
+    default radius and each locality with some, with how many and what their rooms come to
+    this month. What landing pages, the sitemap and the home page's links are made from."""
+
+    def __init__(self, db: AsyncSession, clock: Clock) -> None:
+        self._db = db
+        self._clock = clock
+        self._geo = GeoLookup(db)
+        self._search = SearchRepository(db)
+
+    async def places(self) -> PlaceList:
+        month = months_from(india_date(self._clock.now()))[0]
+        # As search shows them: verified only, unless a search asks otherwise.
+        filters = Filters(month=month, verified_only=True)
+        async with self._db.begin():
+            campuses = await self._geo.campus_points()
+            near = await self._search.places_near(
+                [(campus.slug, campus.name, campus.location) for campus in campuses],
+                filters,
+                radius_m=DEFAULT_RADIUS_M,
+            )
+            within = await self._search.places_by_locality(filters)
+
+        def ranked(rows: list[PlaceRow]) -> list[PlaceRow]:
+            return sorted(rows, key=lambda row: (-row.listings, row.name))
+
+        return PlaceList(
+            places=[
+                *(Place(kind=PlaceKind.CAMPUS, row=row) for row in ranked(near)),
+                *(Place(kind=PlaceKind.LOCALITY, row=row) for row in ranked(within)),
+            ],
+            month=month,
+            radius_m=DEFAULT_RADIUS_M,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class SitemapPage:
+    rows: list[SitemapRow]
+    next_cursor: str | None
+
+
+class Sitemap:
+    """Every listing whose page the public may see (step 3.6), a page at a time: verified ones
+    only while verified_only is on, as the listing's page itself decides."""
+
+    def __init__(self, db: AsyncSession, *, flags: FlagReader) -> None:
+        self._db = db
+        self._flags = flags
+        self._search = SearchRepository(db)
+
+    async def page(self, cursor: str | None, *, limit: int) -> SitemapPage:
+        after = None
+        if cursor is not None:
+            try:
+                after = uuid.UUID(cursor)
+            except ValueError:
+                raise SearchInvalidError(["that isn't a cursor the sitemap gave"]) from None
+        verified_only = await self._flags.is_enabled(Flag.VERIFIED_ONLY)
+        async with self._db.begin():
+            rows = await self._search.sitemap(verified_only=verified_only, after=after, limit=limit)
+        page = rows[:limit]
+        return SitemapPage(
+            rows=page, next_cursor=str(page[-1].public_id) if len(rows) > limit else None
+        )

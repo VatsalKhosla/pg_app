@@ -82,6 +82,9 @@ class SearchListing(Model):
     media_ids: Mapped[list[int]] = mapped_column(ARRAY(BigInteger))
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     refreshed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # When the catalog last said the listing changed (the sitemap's lastmod, ADR 0032); the
+    # nightly refresh leaves it. Null: unchanged since search first had it.
+    changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # What text search matches: words (full text) and near misses (trigrams).
     search_text: Mapped[str] = mapped_column(
         Text, Computed("name || ' '::text || locality_name", persisted=True)

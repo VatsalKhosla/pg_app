@@ -1,7 +1,8 @@
 """The search API's shapes (ARCHITECTURE §10.1, §15; ADR 0028)."""
 
 import uuid
-from datetime import date
+from datetime import date, datetime
+from enum import StrEnum
 from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -143,3 +144,52 @@ class MapPins(ApiModel):
     truncated: bool
     # The month the prices are for.
     month: date
+
+
+class PlaceKind(StrEnum):
+    CAMPUS = "campus"
+    LOCALITY = "locality"
+
+
+class SearchPlace(ApiModel):
+    """A campus with live PGs within ``radiusM``, or a locality with live PGs in it."""
+
+    kind: PlaceKind
+    slug: str
+    name: str
+    # How many verified live PGs search finds there.
+    listings: int
+    # What their rooms come to in the month, in paise: the lowest and the highest.
+    min_rent_paise: int
+    max_rent_paise: int
+
+
+class SearchPlaces(ApiModel):
+    items: list[SearchPlace]
+    # The month the prices are for.
+    month: date
+    # How far around a campus counts as near it, as search's own default.
+    radius_m: int
+
+
+SITEMAP_PAGE_SIZE: Final = 1_000
+
+
+class SitemapQuery(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    cursor: str | None = Field(
+        default=None, max_length=64, description="The previous page's nextCursor."
+    )
+    limit: int = Field(default=SITEMAP_PAGE_SIZE, ge=1, le=SITEMAP_PAGE_SIZE)
+
+
+class SitemapListing(ApiModel):
+    slug: str
+    # When the listing last changed, or was published if it hasn't since.
+    changed_at: datetime
+
+
+class SitemapPage(ApiModel):
+    items: list[SitemapListing]
+    next_cursor: str | None

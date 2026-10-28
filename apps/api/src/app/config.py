@@ -88,6 +88,10 @@ class Settings(DatabaseSettings):
     # own, which Google's redirect URI starts with.
     site_url: str = "http://localhost:3000"
     api_url: str = "http://localhost:8000"
+    # Shared with the web app (its REVALIDATE_SECRET): signs the requests that tell it a
+    # listing's pages are out of date (ADR 0032). Unset, nothing is sent and its caches expire on
+    # their own; required once deployed.
+    revalidate_secret: SecretStr | None = Field(default=None, min_length=32)
     # Staff sign-in with Google: the OAuth client of the founders' Google Cloud project. Unset, it
     # answers 503, and staff sign in with a phone code and an authenticator app instead.
     google_client_id: str | None = None
@@ -155,6 +159,7 @@ class Settings(DatabaseSettings):
         "turnstile_secret_key",
         "google_client_id",
         "google_client_secret",
+        "revalidate_secret",
         mode="before",
     )
     @classmethod
@@ -271,6 +276,10 @@ class Settings(DatabaseSettings):
             raise ValueError(msg)
         if self.otp_sender == "console":
             msg = f"OTP_SENDER=console logs sign-in codes; not allowed in {self.app_env}"
+            raise ValueError(msg)
+        if self.revalidate_secret is None:
+            # Without it, a listing's change would wait for the web app's caches to expire.
+            msg = f"REVALIDATE_SECRET (shared with the web app) is required in {self.app_env}"
             raise ValueError(msg)
         return self
 

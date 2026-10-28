@@ -4055,6 +4055,123 @@
         }
       }
     },
+    "/v1/search/places": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Where the live PGs are",
+        "description": "Each campus with verified live PGs within ``radiusM`` and each locality with some, most\nfirst: how many, and what their rooms come to this month. For landing pages and links.",
+        "operationId": "searchSearchPlaces",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchPlaces"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/search/sitemap": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Every live PG, for the sitemap",
+        "description": "Every listing whose page anyone may see, in a stable order, a page at a time, with when\nit last changed. 422 SEARCH_INVALID for a cursor this didn't give.",
+        "operationId": "searchSearchSitemap",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 1000,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitemapPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/media": {
       "post": {
         "tags": [
@@ -7069,6 +7186,14 @@
         "title": "OwnerUpdate",
         "description": "Only the fields sent change; ``gstin: null`` clears it."
       },
+      "PlaceKind": {
+        "type": "string",
+        "enum": [
+          "campus",
+          "locality"
+        ],
+        "title": "PlaceKind"
+      },
       "PlaceNearby": {
         "properties": {
           "slug": {
@@ -8260,6 +8385,73 @@
         ],
         "title": "SearchPage"
       },
+      "SearchPlace": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/PlaceKind"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "listings": {
+            "type": "integer",
+            "title": "Listings"
+          },
+          "minRentPaise": {
+            "type": "integer",
+            "title": "Minrentpaise"
+          },
+          "maxRentPaise": {
+            "type": "integer",
+            "title": "Maxrentpaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "slug",
+          "name",
+          "listings",
+          "minRentPaise",
+          "maxRentPaise"
+        ],
+        "title": "SearchPlace",
+        "description": "A campus with live PGs within ``radiusM``, or a locality with live PGs in it."
+      },
+      "SearchPlaces": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SearchPlace"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "month": {
+            "type": "string",
+            "format": "date",
+            "title": "Month"
+          },
+          "radiusM": {
+            "type": "integer",
+            "title": "Radiusm"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "month",
+          "radiusM"
+        ],
+        "title": "SearchPlaces"
+      },
       "SessionInfo": {
         "properties": {
           "id": {
@@ -8351,6 +8543,55 @@
         ],
         "title": "SignInResult",
         "description": "Signed in, with the session cookie set. Use ``csrfToken`` (also a cookie) from now on."
+      },
+      "SitemapListing": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "changedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Changedat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "changedAt"
+        ],
+        "title": "SitemapListing"
+      },
+      "SitemapPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SitemapListing"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "SitemapPage"
       },
       "SocietyPermission": {
         "type": "string",

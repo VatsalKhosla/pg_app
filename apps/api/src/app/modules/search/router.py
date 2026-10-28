@@ -1,5 +1,5 @@
-"""Search routes (ARCHITECTURE §10.1, §10.2, §15; ADR 0028, 0029): live listings and the map's
-pins, for anyone."""
+"""Search routes (ARCHITECTURE §10.1, §10.2, §15; ADR 0028, 0029, 0032): live listings, the
+map's pins, where the PGs are and every live one for the sitemap, for anyone."""
 
 from datetime import date, timedelta
 from typing import Annotated, Any, Final
@@ -21,10 +21,15 @@ from app.modules.search.schemas import (
     PinsQuery,
     SearchCard,
     SearchPage,
+    SearchPlace,
+    SearchPlaces,
     SearchQuery,
+    SitemapListing,
+    SitemapPage,
+    SitemapQuery,
     StationNearby,
 )
-from app.modules.search.service import Card, Pins, Search
+from app.modules.search.service import Card, Pins, Places, Search, Sitemap
 
 router = APIRouter(prefix="/v1", tags=["search"])
 
@@ -36,6 +41,8 @@ CACHE_CONTROL: Final = "public, max-age=30"
 # The map asks again with every pan: a generous limit, and pins kept a minute (ADR 0029).
 PINS_PER_IP: Final = RateLimit("map-pins-per-ip", limit=1_200, window=timedelta(minutes=10))
 PINS_CACHE_CONTROL: Final = "public, max-age=60"
+# Where the PGs are moves only as listings do; the web app is told when they do (ADR 0032).
+PLACES_CACHE_CONTROL: Final = "public, max-age=300"
 
 
 def _bounds(bbox: str) -> Bounds:
@@ -175,3 +182,48 @@ async def map_pins(
     if {etag, "*"} & _etags(request.headers.get("if-none-match")):
         return Response(status_code=304, headers=headers)
     return Response(content=found.body, media_type="application/json", headers=headers)
+
+
+@router.get(
+    "/search/places",
+    summary="Where the live PGs are",
+    dependencies=[Depends(rate_limited(SEARCHES_PER_IP))],
+)
+async def search_places(response: Response, db: DbSession, clock: ClockDep) -> SearchPlaces:
+    """Each campus with verified live PGs within ``radiusM`` and each locality with some, most
+    first: how many, and what their rooms come to this month. For landing pages and links."""
+    found = await Places(db, clock).places()
+    response.headers["Cache-Control"] = PLACES_CACHE_CONTROL
+    return SearchPlaces(
+        items=[
+            SearchPlace(
+                kind=place.kind,
+                slug=place.row.slug,
+                name=place.row.name,
+                listings=place.row.listings,
+                min_rent_paise=place.row.min_rent,
+                max_rent_paise=place.row.max_rent,
+            )
+            for place in found.places
+        ],
+        month=found.month,
+        radius_m=found.radius_m,
+    )
+
+
+@router.get(
+    "/search/sitemap",
+    summary="Every live PG, for the sitemap",
+    dependencies=[Depends(rate_limited(SEARCHES_PER_IP))],
+)
+async def search_sitemap(
+    query: Annotated[SitemapQuery, Query()], request: Request, response: Response, db: DbSession
+) -> SitemapPage:
+    """Every listing whose page anyone may see, in a stable order, a page at a time, with when
+    it last changed. 422 SEARCH_INVALID for a cursor this didn't give."""
+    found = await Sitemap(db, flags=request.app.state.flags).page(query.cursor, limit=query.limit)
+    response.headers["Cache-Control"] = PLACES_CACHE_CONTROL
+    return SitemapPage(
+        items=[SitemapListing(slug=row.slug, changed_at=row.changed_at) for row in found.rows],
+        next_cursor=found.next_cursor,
+    )
