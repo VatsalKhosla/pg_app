@@ -240,8 +240,18 @@ Start the slow ones in week 1.
   - **Sample PGs:** `make seed` adds six fictional live PGs with generated photos, built through the real services; it refuses anywhere deployed.
   - **Proof:** a browser test checks every amount against the API's listing. `make lighthouse-pg` (mobile) scored performance 90 and 100 in every other category.
 
-- [ ] **3.5 Search + map UI (the showcase).** Split view on desktop; list-first on mobile with a map toggle and draggable bottom sheet; price pins with ranges; clustering; "search as I move the map"; filters in the URL (nuqs); hover sync between cards and pins; campus rings and metro overlay; NCR bounds lock; lazy-loaded map behind the `MapProvider` interface (Google adapter first); skeletons and empty states; keyboard-accessible pins.
+- [x] **3.5 Search + map UI (the showcase).** Split view on desktop; list-first on mobile with a map toggle and draggable bottom sheet; price pins with ranges; clustering; "search as I move the map"; filters in the URL (nuqs); hover sync between cards and pins; campus rings and metro overlay; NCR bounds lock; lazy-loaded map behind the `MapProvider` interface (Google adapter first); skeletons and empty states; keyboard-accessible pins.
   *Done when* Playwright covers filter → pan → select pin → open PG page on mobile and desktop, and the map bundle loads only on the map view.
+  *Note (2026-10-28):*
+  - **The page:** `/search` keeps the search in the URL (nuqs) and renders its first page of results on the server, so a shared link shows them before any script runs. After that the browser asks the API through TanStack Query and cancels requests it no longer needs. A desktop shows the list beside the map. A phone shows the list first, then the map on request, with the list in a bottom sheet that can be dragged or stepped by tapping its handle. The header, the footer and the home page link to it (ADR 0031).
+  - **The map:** `MapView` joins the `MapProvider` interface, with a MapLibre adapter.
+    - Price pins are buttons, and clusters show their count and lowest price.
+    - The chosen campus gets its name and 1 km and 2 km rings; campuses and metro stations are dots. The map is locked to NCR.
+    - Search as I move the map is on to begin with. Cards and pins light up together, and a selected pin opens a preview.
+    - The map's code loads only where the map shows.
+  - **Speed:** `radix-ui` had shipped every primitive on every page. It's now imported member by member, so the home page's client JavaScript fell from 228 KB to 152 KB gzipped, and search ships 197 KB. `make lighthouse-search` (mobile) scored 89 for performance and 100 in every other category.
+  - **Deferred:** a Google adapter (a paid vendor, so the founders' choice) and locality outlines (localities have no boundaries yet).
+  - **Proof:** a browser test runs filter → pan → select pin → open the PG's page on a phone and a desktop. It checks that a phone's list view fetches none of the map's code, and runs axe on the way.
 
 - [ ] **3.6 Landing pages and SEO.** `/pg-near/[campus]`, `/pg-in/[locality]`, JSON-LD, canonical URLs, sitemap, robots, dynamic OG images, on-demand revalidation from the API.
   *Done when* Google's Rich Results Test validates a PG page and the sitemap lists every published PG.
