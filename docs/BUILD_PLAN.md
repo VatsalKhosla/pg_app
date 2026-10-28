@@ -253,8 +253,16 @@ Start the slow ones in week 1.
   - **Deferred:** a Google adapter (a paid vendor, so the founders' choice) and locality outlines (localities have no boundaries yet).
   - **Proof:** a browser test runs filter → pan → select pin → open the PG's page on a phone and a desktop. It checks that a phone's list view fetches none of the map's code, and runs axe on the way.
 
-- [ ] **3.6 Landing pages and SEO.** `/pg-near/[campus]`, `/pg-in/[locality]`, JSON-LD, canonical URLs, sitemap, robots, dynamic OG images, on-demand revalidation from the API.
+- [x] **3.6 Landing pages and SEO.** `/pg-near/[campus]`, `/pg-in/[locality]`, JSON-LD, canonical URLs, sitemap, robots, dynamic OG images, on-demand revalidation from the API.
   *Done when* Google's Rich Results Test validates a PG page and the sitemap lists every published PG.
+  *Note (2026-10-28):*
+  - **Landing pages:** a page for each campus and locality, rendered on the server from `GET /v1/search/places` (where the verified live PGs are, with counts and the month's rents) and search's first page. Each has its PGs, the numbers in words, a way onto the map, the places nearby and four questions answered from live data. A place without PGs says so and is `noindex`. The home page links to the places with the most PGs (ADR 0032).
+  - **Search engines:**
+    - JSON-LD: `LodgingBusiness` with an `Offer` per room on PG pages, with the locality and display point but never the address; `ItemList`, `BreadcrumbList` and `FAQPage` on landing pages; `Organization` on the home page.
+    - Canonical URLs everywhere, Open Graph images drawn from live data, and a sitemap of every PG the public may see, with each listing's last change (`GET /v1/search/sitemap`). robots.txt names it.
+  - **Revalidation:** after every catalog event the worker posts the listing's cache tags to the web app, signed with `REVALIDATE_SECRET`, and the next visit fetches fresh data.
+  - **Proof:** browser tests check the structured data, the sitemap against the API's list, the Open Graph image, and a listing edit showing on its cached page within seconds.
+  - **Deferred:** Google's Rich Results Test itself needs a public URL, so it runs on staging once deployed.
 
 - [ ] **3.7 Visits.** Request with up to three slots; ops scheduling and agent assignment; SMS confirmations and reminders (T−24 h, T−2 h); agent check-in with GPS and time (the visit log); outcome capture; limits and rate limits. The exact address is revealed to the student once a visit is scheduled.
   *Done when* a student books a visit on a phone, the agent checks in, and ops see the visit log.

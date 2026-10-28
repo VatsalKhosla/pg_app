@@ -459,8 +459,11 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 
 ### 10.6 PG page and SEO
 - `/pg/[slug]` (ISR): gallery with "verified photo" labels, video tour, safety checklist summary, room categories with live prices for the chosen month, price calendar, amenities, house rules, deposit and mandatory charges, distance to campuses and metro, owner business name, reviews (later), "Book a visit" and "Reserve a bed" CTAs. Rendered per request with its CSP nonce from listing data cached across visitors (tagged for on-demand revalidation), every charge and the deposit upfront, the safety summary from the last passing visit, and the area as a circle around the display point (ADR 0030).
-- Landing pages: `/pg-near/[campus]`, `/pg-in/[locality]` with real inventory, filters and FAQs.
+- Landing pages: `/pg-near/[campus]`, `/pg-in/[locality]` with real inventory, filters and FAQs. They're rendered on the server from `GET /v1/search/places` (each campus with verified live PGs within 3 km and each locality with some, with the count and the month's rents) and search's first page. A place without PGs says so and is `noindex` (ADR 0032).
 - JSON-LD (`LodgingBusiness` with `Offer` price ranges), canonical URLs, `sitemap.xml`, `robots.txt`, dynamic Open Graph images. The API triggers on-demand revalidation when a listing or its prices change.
+  - The structured data has the locality and the display point, never the address (§10.5).
+  - The sitemap comes from `GET /v1/search/sitemap`, with each listing's last change as `lastmod`.
+  - Revalidation: after each catalog event the worker posts the changed listing's cache tags to the web app's `/api/revalidate`, signed with `REVALIDATE_SECRET` (an HMAC of the time and the body, refused after five minutes), and the next visit fetches the data again (ADR 0032).
 
 ## 11. Visits
 
@@ -530,6 +533,7 @@ Main endpoints (v1):
 ```
 Public   GET  /v1/cities /v1/localities /v1/campuses /v1/campuses/{slug} /v1/metro-stations /v1/amenities
          GET  /v1/search/properties    GET /v1/map/pins
+         GET  /v1/search/places        GET /v1/search/sitemap (ADR 0032)
          GET  /v1/properties/{slug}    GET /v1/properties/{slug}/contact (signed in; ADR 0026)
          GET  /v1/properties/{id}/price-calendar
          POST /v1/quotes               GET /v1/quotes/{id}
