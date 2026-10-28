@@ -14,7 +14,7 @@ from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 # The brand is undecided; it lives only here and in apps/web/src/config/brand.ts (CLAUDE.md).
-BRAND_NAME: Final = "YourBrand"
+BRAND_NAME: Final = "Fix Your Stay"
 
 Environment = Literal["local", "test", "staging", "production"]
 DEPLOYED_ENVIRONMENTS: Final = frozenset({"staging", "production"})
@@ -104,7 +104,7 @@ class Settings(DatabaseSettings):
     # The owner agreement owners accept (ADR 0025): a file in catalog/data/agreements. Changing it
     # asks every owner to accept again. A "draft" one (not yet reviewed by a lawyer) can't go to
     # production.
-    owner_agreement_version: str = Field(default="draft-1", pattern=r"^[a-z0-9][a-z0-9.-]{0,63}$")
+    owner_agreement_version: str = Field(default="draft-2", pattern=r"^[a-z0-9][a-z0-9.-]{0,63}$")
 
     # Object storage (S3; SeaweedFS locally). Uploads and private files go to one bucket; listing
     # media anyone may see go to the other, which the CDN serves when deployed. On AWS the endpoint

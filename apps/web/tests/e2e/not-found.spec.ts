@@ -7,7 +7,7 @@ test("an unknown page answers 404, stays out of search and leads home", async ({
   const response = await page.goto("/no-such-page");
 
   expect(response?.status()).toBe(404);
-  await expect(page).toHaveTitle("Page not found · YourBrand");
+  await expect(page).toHaveTitle("Page not found · Fix Your Stay");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Page not found");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
   expect(await wcagViolations(page)).toEqual([]);

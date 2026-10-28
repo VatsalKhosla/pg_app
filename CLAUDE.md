@@ -4,7 +4,7 @@ An online platform for booking PG (paying guest) beds in Delhi NCR, built by two
 
 **Current focus: the booking system and dynamic pricing.** The map is the showcase feature. Everything else waits its turn in the build plan.
 
-The brand name is undecided. It lives only in `apps/web/src/config/brand.ts` and `BRAND_NAME` in `apps/api/src/app/config.py`; never hardcode it anywhere else.
+The brand name is **Fix Your Stay** (the founders' choice, 2026-10-28). It lives only in `apps/web/src/config/brand.ts` and `BRAND_NAME` in `apps/api/src/app/config.py`; never hardcode it anywhere else.
 
 ## Read before working
 - `docs/PRODUCT_CONTEXT.md`: the business, its rules and why they exist. Read it before touching pricing, booking, payments or anything a student sees about money.

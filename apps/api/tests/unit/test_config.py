@@ -142,9 +142,10 @@ def test_test_settings_ignore_the_environment_and_dot_env(
     assert settings.db_pool_size == 10
 
 
-def test_the_brand_name_is_still_a_placeholder() -> None:
-    # Undecided (CLAUDE.md); change it here and in apps/web/src/config/brand.ts together.
-    assert BRAND_NAME == "YourBrand"
+def test_the_brand_name_is_the_founders_choice() -> None:
+    # Decided by the founders (CLAUDE.md); change it here and in apps/web/src/config/brand.ts
+    # together, with a new owner agreement version (its text names the brand).
+    assert BRAND_NAME == "Fix Your Stay"
 
 
 @pytest.mark.parametrize("app_env", ["staging", "production"])

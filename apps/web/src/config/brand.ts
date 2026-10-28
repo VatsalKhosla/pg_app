@@ -8,7 +8,7 @@
  * background (WCAG 2.2 AA): white on primary is 6.2:1, and the dark-mode pair is 7.4:1.
  */
 export const brand = {
-  name: "YourBrand",
+  name: "Fix Your Stay",
   colors: {
     primary: "#0e6b74",
     primaryForeground: "#ffffff",

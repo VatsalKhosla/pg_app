@@ -89,7 +89,7 @@ def test_an_owner_accepts_the_agreement_they_were_shown_and_ops_see_when_and_fro
     assert (added["agreementVersion"], added["agreementCurrent"]) == (None, False)
     assert found["before"] == added
     # The draft, with the brand filled in, and the hash of exactly that text.
-    assert agreement["version"] == "draft-1"
+    assert agreement["version"] == "draft-2"
     assert agreement["text"].startswith(f"# {BRAND_NAME} owner agreement")
     assert "DRAFT" in agreement["text"]
     assert agreement["documentSha256"] == hashlib.sha256(agreement["text"].encode()).hexdigest()
@@ -99,7 +99,7 @@ def test_an_owner_accepts_the_agreement_they_were_shown_and_ops_see_when_and_fro
         None,
     )
     assert accepted == {
-        "version": "draft-1",
+        "version": "draft-2",
         "documentSha256": agreement["documentSha256"],
         "acceptedAt": NOW.isoformat().replace("+00:00", "Z"),
         "ip": "127.0.0.1",
@@ -112,22 +112,22 @@ def test_an_owner_accepts_the_agreement_they_were_shown_and_ops_see_when_and_fro
     assert (now["accepted"], now["acceptedAt"], now["acceptedVersion"]) == (
         True,
         accepted["acceptedAt"],
-        "draft-1",
+        "draft-2",
     )
     for seen in (found["profile"], found["ops see"]):
-        assert (seen["agreementVersion"], seen["agreementCurrent"]) == ("draft-1", True)
+        assert (seen["agreementVersion"], seen["agreementCurrent"]) == ("draft-2", True)
     assert found["audit"] == [
         {
             "actor": "owner",
-            "details": {"version": "draft-1", "document_sha256": agreement["documentSha256"]},
+            "details": {"version": "draft-2", "document_sha256": agreement["documentSha256"]},
         }
     ]
     # The owner's data export holds the business and the acceptance, IP and browser included.
     exported = found["export"]["owner"]
-    assert (exported["id"], exported["agreementVersion"]) == (added["id"], "draft-1")
+    assert (exported["id"], exported["agreementVersion"]) == (added["id"], "draft-2")
     assert exported["agreementAcceptances"] == [
         {
-            "version": "draft-1",
+            "version": "draft-2",
             "documentSha256": agreement["documentSha256"],
             "acceptedAt": NOW.isoformat(),
             "ipAddress": "127.0.0.1",
@@ -153,11 +153,11 @@ def test_an_agreement_that_changed_is_refused_and_a_new_version_asks_owners_agai
             "/v1/owner/agreement/acceptances",
             json={"version": first["version"], "documentSha256": first["documentSha256"]},
         )
-        # A new version is published: what a deploy with OWNER_AGREEMENT_VERSION=draft-2 does.
+        # A new version is published: what a deploy with OWNER_AGREEMENT_VERSION=draft-3 does.
         ops.app.state.agreements = FixedAgreements(
-            Agreement("draft-1", first["text"]), Agreement("draft-2", "A fictional next draft.")
+            Agreement("draft-2", first["text"]), Agreement("draft-3", "A fictional next draft.")
         )
-        ops.app.state.owner_agreement_version = "draft-2"
+        ops.app.state.owner_agreement_version = "draft-3"
         second = await owner.ok("GET", "/v1/owner/agreement")
         profile = await owner.ok("GET", "/v1/owner/profile")
         old = await owner.call(
@@ -183,19 +183,19 @@ def test_an_agreement_that_changed_is_refused_and_a_new_version_asks_owners_agai
 
     assert found["refused"] == [(409, "AGREEMENT_CHANGED")] * 2
     second = found["second"]
-    assert (second["version"], second["text"]) == ("draft-2", "A fictional next draft.")
+    assert (second["version"], second["text"]) == ("draft-3", "A fictional next draft.")
     assert (second["accepted"], second["acceptedAt"], second["acceptedVersion"]) == (
         False,
         None,
-        "draft-1",
+        "draft-2",
     )
     assert (found["profile"]["agreementVersion"], found["profile"]["agreementCurrent"]) == (
-        "draft-1",
+        "draft-2",
         False,
     )
     # The version the owner accepted before can't be accepted now it isn't current.
     assert found["old"] == (409, "AGREEMENT_CHANGED")
-    assert found["history"] == ["draft-2", "draft-1"]
+    assert found["history"] == ["draft-3", "draft-2"]
 
 
 def test_ops_change_an_owners_business_details(run: Callable[..., Any]) -> None:

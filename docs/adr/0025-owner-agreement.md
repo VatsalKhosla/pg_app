@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-10-27
 - Build step: 2.6 (owner records and agreements)
+- Amended 2026-10-28: the founders named the brand Fix Your Stay. The agreement's text names the brand, so the same draft was published again as `draft-2`, now the current version, and owners accept again. Owners who accepted `draft-1` keep the record of the text they were shown.
 
 ## Context
 

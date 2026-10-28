@@ -159,7 +159,7 @@ These are market observations, **not** official rent bands. Never seed them into
 
 | Decision | Default in code until decided |
 |---|---|
-| Brand name | `YourBrand` placeholder in brand config |
+| Brand name | Decided on 2026-10-28: **Fix Your Stay**, in brand config |
 | GST inclusive or exclusive | `exclusive` |
 | Token amount | ₹2,000 |
 | Late cancellation (< 7 days before move-in): who keeps the token | `refund_full` in v1, because paying a forfeited token to an owner needs Razorpay Route; `forfeit_to_owner` and `split` become available once Route is live |

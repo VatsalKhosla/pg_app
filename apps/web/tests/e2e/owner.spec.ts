@@ -77,7 +77,7 @@ test.describe("owner agreement", () => {
     await expect(owner).toHaveURL(/\/owner$/);
     await expect(owner.getByRole("heading", { name: "Fictional Homes", level: 1 })).toBeVisible();
     await expect(
-      owner.getByText("You've accepted version draft-1 of the owner agreement."),
+      owner.getByText("You've accepted version draft-2 of the owner agreement."),
     ).toBeVisible();
     expect(await wcagViolations(owner)).toEqual([]);
     const browserName = await owner.evaluate(() => navigator.userAgent);
@@ -86,11 +86,11 @@ test.describe("owner agreement", () => {
     // Ops see what was accepted, when, from where and in which browser.
     await page.reload();
     await expect(
-      page.getByText("Accepted the current owner agreement (version draft-1)."),
+      page.getByText("Accepted the current owner agreement (version draft-2)."),
     ).toBeVisible();
     const acceptance = page.getByRole("list", { name: "Acceptances, newest first" });
     await expect(acceptance.getByRole("listitem")).toHaveCount(1);
-    await expect(acceptance).toContainText("draft-1");
+    await expect(acceptance).toContainText("draft-2");
     await expect(acceptance).toContainText(browserName);
     await expect(acceptance).toContainText(/[0-9a-f]{64}/u);
     expect(await wcagViolations(page)).toEqual([]);

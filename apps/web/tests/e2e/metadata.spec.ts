@@ -23,7 +23,7 @@ test("the web app manifest makes the site installable", async ({ request }) => {
   };
 
   expect(response.ok()).toBe(true);
-  expect(manifest).toMatchObject({ name: "YourBrand", start_url: "/", display: "standalone" });
+  expect(manifest).toMatchObject({ name: "Fix Your Stay", start_url: "/", display: "standalone" });
   expect(manifest.icons.map((icon) => `${icon.sizes} ${icon.purpose}`)).toEqual([
     "192x192 any",
     "512x512 any",
