@@ -6,6 +6,7 @@ import type { Bounds, LatLng } from "@/components/map/map-provider";
  */
 
 const METRES_PER_DEGREE = 111_320;
+const EARTH_RADIUS_M = 6_371_008.8;
 // Five decimal places is about a metre: as fine as a map area needs, and short in a URL.
 const BBOX_DECIMALS = 5;
 
@@ -52,4 +53,15 @@ export function parseBbox(text: string | null | undefined): Bounds | null {
   const [west, south, east, north] = values as [number, number, number, number];
   if (west >= east || south >= north) return null;
   return { south, west, north, east };
+}
+
+/** How far apart two points are, in metres, along the ground (haversine). */
+export function metresBetween(a: LatLng, b: LatLng): number {
+  const radians = (degrees: number) => (degrees * Math.PI) / 180;
+  const dLat = radians(b.lat - a.lat);
+  const dLng = radians(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(radians(a.lat)) * Math.cos(radians(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
 }

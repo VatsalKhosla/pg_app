@@ -28,6 +28,8 @@ export async function generateMetadata(): Promise<Metadata> {
     // Keep iOS from turning rents and booking codes into phone links.
     formatDetection: { telephone: false },
     openGraph: { type: "website", siteName: brand.name, locale: locale.replace("-", "_") },
+    // Pages with a picture of their own (opengraph-image) show it large where links are shared.
+    twitter: { card: "summary_large_image" },
     // Staging must never show up in search results.
     robots: publicEnv.appEnv === "staging" ? { index: false, follow: false } : undefined,
   };

@@ -100,3 +100,58 @@ export async function getSearchPage(
   );
   return cached();
 }
+
+export type SearchPlaces = Schemas["SearchPlaces"];
+export type SearchPlace = Schemas["SearchPlace"];
+export type SitemapListing = Schemas["SitemapListing"];
+export type CampusDetail = Schemas["CampusDetail"];
+
+/** Where the PGs are moves only as listings do, and the API says when (ADR 0032). */
+const PLACES_REVALIDATE_SECONDS = 300;
+const SITEMAP_REVALIDATE_SECONDS = 3_600;
+// A sitemap holds 50,000 addresses at most; the API gives 1,000 a page.
+const SITEMAP_MAX_PAGES = 50;
+
+/** The campuses and localities with live PGs, most first, with their counts and rents. */
+export const getSearchPlaces = unstable_cache(
+  async () => unwrap(publicApi().GET("/v1/search/places")),
+  ["search-places"],
+  { revalidate: PLACES_REVALIDATE_SECONDS, tags: ["listings"] },
+);
+
+/** Every listing whose page the public may see, with when it last changed. */
+export const getSitemapListings = unstable_cache(
+  async () => {
+    const api = publicApi();
+    const listings: SitemapListing[] = [];
+    let cursor: string | undefined;
+    for (let page = 0; page < SITEMAP_MAX_PAGES; page += 1) {
+      const found = await unwrap(
+        api.GET("/v1/search/sitemap", { params: { query: { cursor, limit: 1_000 } } }),
+      );
+      listings.push(...found.items);
+      if (found.nextCursor === null) break;
+      cursor = found.nextCursor;
+    }
+    return listings;
+  },
+  ["sitemap-listings"],
+  { revalidate: SITEMAP_REVALIDATE_SECONDS, tags: ["listings"] },
+);
+
+/** A campus with the metro stations and localities near it, or null if there's no such one. */
+export async function getCampus(slug: string): Promise<CampusDetail | null> {
+  const cached = unstable_cache(
+    async () => {
+      try {
+        return await unwrap(publicApi().GET("/v1/campuses/{slug}", { params: { path: { slug } } }));
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return null;
+        throw error;
+      }
+    },
+    ["campus", slug],
+    { revalidate: REFERENCE_REVALIDATE_SECONDS, tags: ["reference"] },
+  );
+  return cached();
+}

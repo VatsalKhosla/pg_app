@@ -12,4 +12,13 @@ export const serverEnv = {
     process.env.API_URL === undefined || process.env.API_URL === ""
       ? publicEnv.apiUrl
       : parseUrl("API_URL", process.env.API_URL, ""),
+  /** Shared with the API, which signs revalidation requests with it; unset, there are none. */
+  revalidateSecret: secret("REVALIDATE_SECRET", process.env.REVALIDATE_SECRET),
 } as const;
+
+/** A secret of at least 32 characters, or undefined when unset; anything shorter is a mistake. */
+function secret(name: string, value: string | undefined): string | undefined {
+  if (value === undefined || value === "") return undefined;
+  if (value.length < 32) throw new Error(`${name} must be at least 32 characters`);
+  return value;
+}

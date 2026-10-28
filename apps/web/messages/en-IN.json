@@ -23,6 +23,12 @@
     "status": "Coming soon",
     "intro": "Find a safe, verified bed near your college or coaching hub. Book a visit, reserve the bed with a small refundable token and move in.",
     "findCta": "Find a PG on the map",
+    "places": {
+      "title": "Find a PG near you",
+      "campuses": "Near a campus",
+      "localities": "In a locality",
+      "place": "{name}: {count, plural, one {# PG} other {# PGs}}"
+    },
     "steps": {
       "title": "How it works",
       "find": {
@@ -334,6 +340,50 @@
       "loading": "Loading the PG…"
     }
   },
+  "Landing": {
+    "breadcrumb": "Breadcrumb",
+    "home": "Home",
+    "search": "Find a PG",
+    "near": {
+      "title": "PGs near {campus}",
+      "description": "{count, plural, one {# verified PG} other {# verified PGs}} within {km} km of {campus}, from {min} a month, with photos, the deposit and every charge shown upfront.",
+      "intro": "{count, plural, one {# verified PG} other {# verified PGs}} within {km} km of {campus}, from {min} to {max} a month per bed in {month}.",
+      "none": "No verified PG within {km} km of {campus} yet.",
+      "noneDescription": "Verified PGs near {campus}, with the deposit and every charge shown upfront.",
+      "faqCount": "How many PGs are there near {campus}?",
+      "faqPrice": "What does a PG near {campus} cost?"
+    },
+    "in": {
+      "title": "PGs in {locality}",
+      "description": "{count, plural, one {# verified PG} other {# verified PGs}} in {locality}, from {min} a month, with photos, the deposit and every charge shown upfront.",
+      "intro": "{count, plural, one {# verified PG} other {# verified PGs}} in {locality}, from {min} to {max} a month per bed in {month}.",
+      "none": "No verified PG in {locality} yet.",
+      "noneDescription": "Verified PGs in {locality}, with the deposit and every charge shown upfront.",
+      "faqCount": "How many PGs are there in {locality}?",
+      "faqPrice": "What does a PG in {locality} cost?"
+    },
+    "noneHint": "We list a PG only once our field agent has visited it. The map shows PGs a little further away.",
+    "map": "See them on the map",
+    "mapAll": "See all {count} on the map",
+    "list": "The PGs",
+    "localities": "Localities nearby",
+    "campuses": "Campuses nearby",
+    "place": "{name}: {count, plural, one {# PG} other {# PGs}}",
+    "faq": {
+      "title": "Questions students and parents ask",
+      "countAnswer": "{count, plural, one {# PG is} other {# PGs are}} listed, each one visited and checked by our field agent before it went live.",
+      "priceAnswer": "From {min} to {max} a month per bed in {month}. Each PG's page shows the deposit and every other charge before you book a visit.",
+      "feeQuestion": "Do students pay {brand} anything?",
+      "feeAnswer": "No. Students and parents never pay us a fee: PG owners pay a one-time placement fee for each student who moves in through us.",
+      "checkQuestion": "What does the field agent check?",
+      "checkAnswer": "The building and its rooms, the ways out in an emergency, fire extinguishers, CCTV and whether a warden is there at night, as each PG's safety summary shows."
+    },
+    "og": {
+      "count": "{count, plural, one {# verified PG} other {# verified PGs}}",
+      "from": "From {min} a month",
+      "alt": "How many verified PGs the page lists, and what they cost a month"
+    }
+  },
   "Pg": {
     "metaDescription": "{gender} PG in {locality}: rooms from {from} a month, deposit and every charge shown upfront.",
     "verified": "Verified by our field agent",
@@ -442,7 +492,9 @@
       "title": "Book a visit to {name}",
       "soon": "Booking a visit opens soon. Until then, this page is where it will be.",
       "back": "Back to the PG"
-    }
+    },
+    "ogAlt": "The PG's name, where it is and what it costs a month",
+    "ogFrom": "From {min} a month"
   },
   "Staff": {
     "signInMetaTitle": "Staff sign-in",

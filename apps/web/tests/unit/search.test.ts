@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { nearestSnap, nextSnap } from "@/components/search/bottom-sheet";
 import { activeFilters } from "@/components/search/filters";
-import { around, bboxParam, enclosing, parseBbox } from "@/lib/search/area";
+import { around, bboxParam, enclosing, metresBetween, parseBbox } from "@/lib/search/area";
 import { priceLabel, shortRupees } from "@/lib/search/labels";
 import { loadSearchParams, pinsQuery, searchQuery } from "@/lib/search/params";
 
@@ -154,6 +154,17 @@ describe("map areas", () => {
     expect(text).toBe("77.10000,28.61235,77.31235,28.70000");
     expect(parseBbox(text)).toEqual({ south: 28.61235, west: 77.1, north: 28.7, east: 77.31235 });
     expect(searchQuery(fromUrl(`bbox=${text}`)).bbox).toBe(text);
+  });
+
+  it("measures along the ground between two points", () => {
+    expect(metresBetween(middle, middle)).toBe(0);
+    // A thousandth of a degree of latitude is about 111 m anywhere.
+    expect(metresBetween(middle, { lat: middle.lat + 0.001, lng: middle.lng })).toBeCloseTo(
+      111.2,
+      0,
+    );
+    const far = { lat: 28.55, lng: 77.3 };
+    expect(metresBetween(middle, far)).toBeCloseTo(metresBetween(far, middle), 6);
   });
 
   it.each([undefined, null, "77.1,28.6,77.3", "77.3,28.6,77.1,28.7", "a,b,c,d"])(

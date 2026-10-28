@@ -15,6 +15,8 @@ export LOG_FORMAT=json
 export DATABASE_URL="postgresql+asyncpg://platform:platform@127.0.0.1:${POSTGRES_PORT:-5432}/$database"
 export REDIS_URL="redis://:platform@127.0.0.1:${VALKEY_PORT:-6379}/1"
 export SECRET_KEY="e2e-only-secret-key-0123456789abcdef"
+# Shared with the tests' web server (apps/web/playwright.config.ts passes the same one to both).
+export REVALIDATE_SECRET="${E2E_REVALIDATE_SECRET:-e2e-only-revalidate-secret-0123456789ab}"
 export SITE_URL="http://127.0.0.1:$web_port"
 export API_URL="http://127.0.0.1:$api_port"
 export CORS_ALLOWED_ORIGINS="$SITE_URL"

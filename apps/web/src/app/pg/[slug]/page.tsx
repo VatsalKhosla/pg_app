@@ -7,10 +7,13 @@ import { Check, ShieldCheck, X } from "lucide-react";
 
 import { LocationMap } from "@/components/map/location-map";
 import { Photo } from "@/components/pg/photo";
+import { JsonLd } from "@/components/seo/json-ld";
 import { buttonVariants } from "@/components/ui/button";
+import { publicEnv } from "@/config/env";
 import { getPublicListing, type PublicListing } from "@/lib/api/public";
 import { formatDistance } from "@/lib/format/distance";
 import { formatINR } from "@/lib/money";
+import { breadcrumbJsonLd, listingJsonLd } from "@/lib/seo/json-ld";
 import { cn } from "@/lib/utils";
 
 type Category = Schemas["PublicCategory"];
@@ -63,17 +66,36 @@ export default async function PgPage({ params }: PageProps<"/pg/[slug]">) {
   const { slug } = await params;
   const listing = await listingFor(slug);
   const t = await getTranslations("Pg");
+  const tLanding = await getTranslations("Landing");
   const visit = `/pg/${slug}/visit` as Route;
+  const absolute = (path: string) => new URL(path, publicEnv.siteUrl).toString();
+  const localityPath = `/pg-in/${listing.locality.slug}`;
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-10 px-4 py-8 sm:py-12">
+      {/* For search engines: the PG with its offers, and where it sits in the site (ADR 0032). */}
+      <JsonLd
+        data={[
+          listingJsonLd(listing, absolute(`/pg/${slug}`)),
+          breadcrumbJsonLd([
+            { name: tLanding("home"), url: absolute("/") },
+            {
+              name: tLanding("in.title", { locality: listing.locality.name }),
+              url: absolute(localityPath),
+            },
+            { name: listing.name, url: absolute(`/pg/${slug}`) },
+          ]),
+        ]}
+      />
       <header className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          {[
-            listing.locality.name,
-            t(`genderShort.${listing.genderPolicy}`),
-            t(`meals.${listing.meals}`),
-          ].join(" · ")}
+          <Link
+            href={localityPath as Route}
+            className="rounded underline underline-offset-4 outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            {listing.locality.name}
+          </Link>
+          {` · ${t(`genderShort.${listing.genderPolicy}`)} · ${t(`meals.${listing.meals}`)}`}
         </p>
         <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
           {listing.name}

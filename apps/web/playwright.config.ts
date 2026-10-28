@@ -8,6 +8,8 @@ import { API_LOG } from "./tests/e2e/api-log";
 const port = Number(process.env.E2E_PORT ?? "3100");
 const apiPort = Number(process.env.E2E_API_PORT ?? "8100");
 const baseURL = `http://127.0.0.1:${String(port)}`;
+// The API signs revalidation requests with it and the web server checks them (ADR 0032).
+const revalidateSecret = "e2e-only-revalidate-secret-0123456789ab";
 const isCI = process.env.CI !== undefined;
 
 export default defineConfig({
@@ -31,11 +33,17 @@ export default defineConfig({
       reuseExistingServer: !isCI,
       // The first run builds the database image and migrates.
       timeout: 300_000,
-      env: { E2E_PORT: String(port), E2E_API_PORT: String(apiPort), E2E_API_LOG: API_LOG },
+      env: {
+        E2E_PORT: String(port),
+        E2E_API_PORT: String(apiPort),
+        E2E_API_LOG: API_LOG,
+        E2E_REVALIDATE_SECRET: revalidateSecret,
+      },
     },
     {
       command: `next start --hostname 127.0.0.1 --port ${String(port)}`,
       url: baseURL,
+      env: { REVALIDATE_SECRET: revalidateSecret },
       reuseExistingServer: !isCI,
       timeout: 60_000,
     },
