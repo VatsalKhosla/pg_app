@@ -300,8 +300,15 @@ Start the slow ones in week 1.
 
 ## Phase 4 — Dynamic pricing engine (**pivot 1**)
 
-- [ ] **4.1 Policies, caps and rent bands.** Tables `fee_policies`, `booking_policies`, `pricing_caps`, `rent_bands` with an admin UI and audit log; seed defaults from PRODUCT_CONTEXT §9 (fee 30% of listed rent, GST 18% exclusive, token ₹2,000, hold 15 min, free cancel 7 days, check window 24 h, confirm deadline 12 h, late cancel `refund_full`, one active hold per user, caps +40% / −30%, rounding ₹50). No official bands seeded.
+- [x] **4.1 Policies, caps and rent bands.** Tables `fee_policies`, `booking_policies`, `pricing_caps`, `rent_bands` with an admin UI and audit log; seed defaults from PRODUCT_CONTEXT §9 (fee 30% of listed rent, GST 18% exclusive, token ₹2,000, hold 15 min, free cancel 7 days, check window 24 h, confirm deadline 12 h, late cancel `refund_full`, one active hold per user, caps +40% / −30%, rounding ₹50). No official bands seeded.
   *Done when* every default is editable by admins only and every change is audited.
+  *Note (2026-10-30):*
+  - **Tables:** `fee_policies`, `booking_policies`, `pricing_caps` and `rent_bands` hold versions in force from a moment until the next. Exclusion constraints keep versions from overlapping, per locality and occupancy for bands.
+  - **Defaults:** PRODUCT_CONTEXT §9's are seeded by a data migration; no band is seeded.
+  - **Admins only:** they change each policy from now on in `/admin/policies` and set or end bands in `/admin/rent-bands`. Every change is audited with before, after and a note.
+  - **Limits:** the founders' rules (a ₹1,000–2,000 token, the fee on the listed rent, `refund_full` until Route) refuse what they don't allow.
+  - **Public pages:** `GET /v1/policies` reads the tables, and a change refreshes the public pages that state them (ADR 0036).
+  - **Proof:** API tests for each change, refusal and two admins at once, plus a browser test of an admin changing a cap and setting and ending a band.
 
 - [ ] **4.2 Pricing engine (pure).** `pricing/domain/engine.py` per ARCHITECTURE §8: rule kinds with typed params, the algorithm, clamping, rounding, fee/GST/token maths, explainable adjustments, `engine_version`. Hypothesis tests for every invariant in §8.8 (≥ 10,000 cases in CI) plus table tests including the worked example.
   *Done when* all invariants hold and branch coverage of the engine is ≥ 95%.
