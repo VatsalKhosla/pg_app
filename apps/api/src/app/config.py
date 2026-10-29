@@ -82,6 +82,9 @@ class Settings(DatabaseSettings):
     # tests only. "unavailable" turns phone sign-in off (503), for a deployed environment until the
     # founders choose the SMS provider (DLT-registered), whose adapter then joins this list.
     otp_sender: Literal["console", "unavailable"] = "console"
+    # Visit confirmations and reminders (ADR 0033). "console" writes them to the worker's log
+    # (local only); "unavailable" sends nothing until the founders choose an SMS provider.
+    text_sender: Literal["console", "unavailable"] = "console"
     # Cloudflare Turnstile's secret key. Unset, every human check passes (local and tests only).
     turnstile_secret_key: SecretStr | None = None
     # The web app's public address, where staff land after signing in with Google, and the API's
@@ -276,6 +279,9 @@ class Settings(DatabaseSettings):
             raise ValueError(msg)
         if self.otp_sender == "console":
             msg = f"OTP_SENDER=console logs sign-in codes; not allowed in {self.app_env}"
+            raise ValueError(msg)
+        if self.text_sender == "console":
+            msg = f"TEXT_SENDER=console writes messages to the log; not allowed in {self.app_env}"
             raise ValueError(msg)
         if self.revalidate_secret is None:
             # Without it, a listing's change would wait for the web app's caches to expire.

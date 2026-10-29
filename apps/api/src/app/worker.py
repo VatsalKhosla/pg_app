@@ -26,6 +26,7 @@ from app.core.db import create_engine, create_sessionmaker
 from app.core.logging import configure_logging
 from app.core.outbox import JobRegistry, OutboxWorker
 from app.core.scheduler import ScheduledJob, Scheduler
+from app.core.texts import ConsoleTexts, NoTexts
 from app.core.web_cache import NoWebCache, SignedWebCache, WebCache
 from app.jobs import SCHEDULES, build_registry
 from app.modules.media.adapters.s3 import S3Storage
@@ -130,6 +131,7 @@ async def _serve_until_signalled(
                 storage=S3Storage.from_settings(settings),
                 buckets=Buckets.from_settings(settings),
                 web_cache=web_cache(settings, http),
+                texts=ConsoleTexts() if settings.text_sender == "console" else NoTexts(),
             ),
             schedules=SCHEDULES,
         )

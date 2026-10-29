@@ -27,6 +27,9 @@ from tests.conftest import NOTICE_VERSION
 # The owner agreement the API runs with in tests: the settings' default.
 AGREEMENT_VERSION: Final = Settings.model_fields["owner_agreement_version"].default
 
+# A time a student may offer, a day after the clock the test runs at: 11 am in India.
+VISIT_START: Final = "2027-07-15T05:30:00Z"
+
 # Who calls: nobody signed in; people signed in by phone (an admin's phone session carries no staff
 # roles); staff in staff sessions.
 CALLERS: Final = (
@@ -53,6 +56,7 @@ PATH_VALUES: Final = frozenset(
         "a_room",
         "a_bed",
         "someone_elses_visit",
+        "someone_elses_student_visit",
         "an_owner",
         "a_live_listing",
     }
@@ -329,6 +333,45 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ),
     ("POST", "/v1/ops/verification-visits/{visit_id}/cancel"): Rule(
         ops_only(200), _reason, path={"visit_id": "someone_elses_visit"}
+    ),
+    # Student visits (ADR 0033): people signed in by phone ask and cancel their own; ops book and
+    # cancel any; field agents run the ones booked for them. The visit is another student's, booked
+    # with another agent, so it doesn't exist for any phone caller or field agent here.
+    ("POST", "/v1/visits"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403),
+        lambda: {"json": {"property": "no-such-pg-for-the-matrix", "starts": [VISIT_START]}},
+    ),
+    ("GET", "/v1/visits"): Rule(signed_in(200, field_agent=403, ops=403, admin=403)),
+    ("POST", "/v1/visits/{visit_id}/cancel"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403),
+        path={"visit_id": "someone_elses_student_visit"},
+    ),
+    ("GET", "/v1/ops/visits"): Rule(ops_only(200)),
+    ("GET", "/v1/ops/visits/{visit_id}"): Rule(
+        ops_only(200), path={"visit_id": "someone_elses_student_visit"}
+    ),
+    # No field agent has the id sent.
+    ("POST", "/v1/ops/visits/{visit_id}/schedule"): Rule(
+        ops_only(422),
+        lambda: {"json": {"at": VISIT_START, "agent": str(uuid.uuid7())}},
+        path={"visit_id": "someone_elses_student_visit"},
+    ),
+    ("POST", "/v1/ops/visits/{visit_id}/cancel"): Rule(
+        ops_only(200), _reason, path={"visit_id": "someone_elses_student_visit"}
+    ),
+    ("GET", "/v1/field/visits"): Rule(signed_in(403, field_agent=200)),
+    ("GET", "/v1/field/visits/{visit_id}"): Rule(
+        signed_in(403, field_agent=404), path={"visit_id": "someone_elses_student_visit"}
+    ),
+    ("POST", "/v1/field/visits/{visit_id}/check-in"): Rule(
+        signed_in(403, field_agent=404),
+        lambda: {"json": {"position": {"lat": 28.68, "lng": 77.2}, "accuracyM": 10}},
+        path={"visit_id": "someone_elses_student_visit"},
+    ),
+    ("POST", "/v1/field/visits/{visit_id}/outcome"): Rule(
+        signed_in(403, field_agent=404),
+        lambda: {"json": {"outcome": "interested"}},
+        path={"visit_id": "someone_elses_student_visit"},
     ),
     # A new listing isn't verified yet, so there is nothing to suspend.
     ("POST", "/v1/ops/properties/{property_id}/verification/suspend"): Rule(

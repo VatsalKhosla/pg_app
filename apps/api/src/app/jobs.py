@@ -39,8 +39,10 @@ from app.modules.search.jobs import (
     refresh_all_handler,
     refresh_handler,
 )
+from app.modules.visits.jobs import TEXT, text_handler
 
 if TYPE_CHECKING:
+    from app.core.texts import Texts
     from app.core.web_cache import WebCache
     from app.modules.media.ports import ObjectStorage
     from app.modules.media.service import Buckets
@@ -76,9 +78,11 @@ SCHEDULES: Final = (
 )
 
 
-def build_registry(*, storage: ObjectStorage, buckets: Buckets, web_cache: WebCache) -> JobRegistry:
-    """Every handler, with what it needs from outside: the object storage media jobs use, and
-    the web app whose cached pages are revalidated."""
+def build_registry(
+    *, storage: ObjectStorage, buckets: Buckets, web_cache: WebCache, texts: Texts
+) -> JobRegistry:
+    """Every handler, with what it needs from outside: the object storage media jobs use, the
+    web app whose cached pages are revalidated, and the texts visits send."""
     registry = JobRegistry()
     registry.register(OUTBOX_CLEANUP, delete_finished_jobs)
     registry.register(IDEMPOTENCY_CLEANUP, delete_expired_keys)
@@ -93,4 +97,5 @@ def build_registry(*, storage: ObjectStorage, buckets: Buckets, web_cache: WebCa
     registry.register(REFRESH, refresh_handler)
     registry.register(REFRESH_ALL, refresh_all_handler)
     registry.register(REVALIDATE, revalidate_handler(web_cache))
+    registry.register(TEXT, text_handler(texts))
     return registry

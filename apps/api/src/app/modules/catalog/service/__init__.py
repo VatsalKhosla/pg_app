@@ -5,7 +5,12 @@ from app.modules.catalog.service.events import INVENTORY_CHANGED, LISTING_CHANGE
 from app.modules.catalog.service.export import owner_data
 from app.modules.catalog.service.inventory import CategoryChanges, CategoryDraft, InventoryService
 from app.modules.catalog.service.listings import ListingService, PropertyChanges, PropertyDraft
-from app.modules.catalog.service.lookup import CatalogLookup, CategoryRent, SearchEntry
+from app.modules.catalog.service.lookup import (
+    CatalogLookup,
+    CategoryRent,
+    SearchEntry,
+    VisitPlace,
+)
 from app.modules.catalog.service.owners import OwnerChanges, OwnerRecord, OwnerService
 from app.modules.catalog.service.public import (
     ContactDetails,
@@ -55,6 +60,7 @@ __all__ = [
     "SearchEntry",
     "Standing",
     "VerificationService",
+    "VisitPlace",
     "VisitReader",
     "VisitView",
     "owner_data",

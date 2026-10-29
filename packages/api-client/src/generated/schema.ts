@@ -1146,6 +1146,201 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your visits
+         * @description Newest first.
+         */
+        get: operations["visitsMyVisits"];
+        put?: never;
+        /**
+         * Ask to visit a PG
+         * @description Up to three times the student could come; ops call to book one. 422 VISIT_INVALID for
+         *     times that don't work, 409 VISIT_EXISTS for a PG they've asked to see already, 409
+         *     VISIT_LIMIT_REACHED with five visits open.
+         */
+        post: operations["visitsRequestVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visits/{visit_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel your visit */
+        post: operations["visitsCancelMyVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every visit
+         * @description Newest first, of one status if asked.
+         */
+        get: operations["visitsOpsVisits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/visits/{visit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A visit, with its log */
+        get: operations["visitsOpsVisit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/visits/{visit_id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Book a visit's time and agent
+         * @description Or change them. The student is texted the time and the address, and reminded.
+         */
+        post: operations["visitsScheduleVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/visits/{visit_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a visit */
+        post: operations["visitsCancelVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/field/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your visits to run
+         * @description From yesterday on, soonest first.
+         */
+        get: operations["visitsFieldVisits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/field/visits/{visit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A visit you're to run */
+        get: operations["visitsFieldVisit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/field/visits/{visit_id}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check in at the building
+         * @description The visit log: the time and where the agent's phone says they are. From two hours
+         *     before the visit (409 CHECK_IN_TOO_EARLY before that).
+         */
+        post: operations["visitsCheckIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/field/visits/{visit_id}/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record how a visit went
+         * @description After checking in (409 CHECK_IN_REQUIRED before).
+         */
+        post: operations["visitsRecordOutcome"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/media": {
         parameters: {
             query?: never;
@@ -1354,6 +1549,11 @@ export interface components {
             /** Items */
             items: components["schemas"]["CampusInfo"][];
         };
+        /**
+         * CancelledBy
+         * @enum {string}
+         */
+        CancelledBy: "student" | "ops";
         /** CategoryCreate */
         CategoryCreate: {
             occupancy: components["schemas"]["Occupancy"];
@@ -2115,6 +2315,12 @@ export interface components {
             code: string;
             consent?: components["schemas"]["ConsentInput"] | null;
         };
+        /**
+         * Outcome
+         * @description How the visit went, as the agent records it.
+         * @enum {string}
+         */
+        Outcome: "interested" | "not_interested" | "student_no_show";
         /** OwnerCreate */
         OwnerCreate: {
             /** Phone */
@@ -2719,6 +2925,72 @@ export interface components {
             /** Code */
             code: string;
         };
+        /** StaffVisit */
+        StaffVisit: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            status: components["schemas"]["StudentVisitStatus"];
+            /** Nextstatuses */
+            nextStatuses: components["schemas"]["StudentVisitStatus"][];
+            property: components["schemas"]["StaffVisitPlace"];
+            student: components["schemas"]["VisitPerson"];
+            /** Preferredstarts */
+            preferredStarts: string[];
+            /**
+             * Requestedat
+             * Format: date-time
+             */
+            requestedAt: string;
+            /** Scheduledat */
+            scheduledAt: string | null;
+            agent: components["schemas"]["VisitPerson"] | null;
+            checkIn: components["schemas"]["VisitCheckIn"] | null;
+            outcome: components["schemas"]["Outcome"] | null;
+            /** Outcomenote */
+            outcomeNote: string;
+            /** Finishedat */
+            finishedAt: string | null;
+            /** Cancelledat */
+            cancelledAt: string | null;
+            cancelledBy: components["schemas"]["CancelledBy"] | null;
+            /** Cancelreason */
+            cancelReason: string;
+        };
+        /** StaffVisitList */
+        StaffVisitList: {
+            /** Items */
+            items: components["schemas"]["StaffVisit"][];
+        };
+        /** StaffVisitPage */
+        StaffVisitPage: {
+            /** Items */
+            items: components["schemas"]["StaffVisit"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /**
+         * StaffVisitPlace
+         * @description The PG with its address and exact point: for staff, who take people there.
+         */
+        StaffVisitPlace: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Locality */
+            locality: string;
+            /** Addressline */
+            addressLine: string;
+            location: components["schemas"]["LatLng"];
+        };
         /** StationDistance */
         StationDistance: {
             station: components["schemas"]["MetroStationInfo"];
@@ -2738,6 +3010,62 @@ export interface components {
         StatusChange: {
             status: components["schemas"]["PropertyStatus"];
         };
+        /**
+         * StudentVisit
+         * @description A visit as the student sees it. The address shows on the PG's page once it's booked.
+         */
+        StudentVisit: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            status: components["schemas"]["StudentVisitStatus"];
+            property: components["schemas"]["StudentVisitPlace"];
+            /** Preferredstarts */
+            preferredStarts: string[];
+            /**
+             * Requestedat
+             * Format: date-time
+             */
+            requestedAt: string;
+            /** Scheduledat */
+            scheduledAt: string | null;
+            /** Agentname */
+            agentName: string | null;
+            /** Checkedin */
+            checkedIn: boolean;
+            outcome: components["schemas"]["Outcome"] | null;
+            /** Cancelledat */
+            cancelledAt: string | null;
+            cancelledBy: components["schemas"]["CancelledBy"] | null;
+        };
+        /** StudentVisitList */
+        StudentVisitList: {
+            /** Items */
+            items: components["schemas"]["StudentVisit"][];
+        };
+        /** StudentVisitPlace */
+        StudentVisitPlace: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Locality */
+            locality: string;
+        };
+        /** StudentVisitRequest */
+        StudentVisitRequest: {
+            /** Property */
+            property: string;
+            /** Starts */
+            starts: string[];
+        };
+        /**
+         * StudentVisitStatus
+         * @enum {string}
+         */
+        StudentVisitStatus: "requested" | "scheduled" | "completed" | "no_show" | "cancelled";
         /**
          * UploadForm
          * @description Post the file here as multipart/form-data: every field, then the file as ``file``.
@@ -2773,6 +3101,34 @@ export interface components {
          * @enum {string}
          */
         VerificationStatus: "unverified" | "scheduled" | "verified" | "rejected" | "suspended";
+        /** VisitCancelRequest */
+        VisitCancelRequest: {
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * VisitCheckIn
+         * @description The visit log: when the agent checked in, where their phone said they were, how sure it
+         *     was, and how far that was from the building.
+         */
+        VisitCheckIn: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            position: components["schemas"]["LatLng"];
+            /** Accuracym */
+            accuracyM: number;
+            /** Distancem */
+            distanceM: number;
+        };
+        /** VisitCheckInRequest */
+        VisitCheckInRequest: {
+            position: components["schemas"]["LatLng"];
+            /** Accuracym */
+            accuracyM: number;
+        };
         /**
          * VisitChecklist
          * @description The agent's answers on site. Every field is required, so nothing is assumed.
@@ -2844,12 +3200,33 @@ export interface components {
             /** Cancelreason */
             cancelReason: string | null;
         };
+        /** VisitOutcomeRequest */
+        VisitOutcomeRequest: {
+            outcome: components["schemas"]["Outcome"];
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /** VisitPage */
         VisitPage: {
             /** Items */
             items: components["schemas"]["VisitInfo"][];
             /** Nextcursor */
             nextCursor: string | null;
+        };
+        /** VisitPerson */
+        VisitPerson: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string | null;
+            /** Phone */
+            phone: string;
         };
         /**
          * VisitPlace
@@ -2879,6 +3256,19 @@ export interface components {
          * @enum {string}
          */
         VisitResult: "passed" | "failed";
+        /** VisitScheduleRequest */
+        VisitScheduleRequest: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Agent
+             * Format: uuid
+             */
+            agent: string;
+        };
         /**
          * VisitStatus
          * @enum {string}
@@ -5598,6 +5988,463 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SitemapPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    visitsMyVisits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentVisitList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    visitsRequestVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudentVisitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentVisit"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    visitsCancelMyVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentVisit"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    visitsOpsVisits: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["StudentVisitStatus"] | null;
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffVisitPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    visitsOpsVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffVisit"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    visitsScheduleVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisitScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffVisit"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    visitsCancelVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisitCancelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffVisit"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    visitsFieldVisits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffVisitList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    visitsFieldVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffVisit"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    visitsCheckIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisitCheckInRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffVisit"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    visitsRecordOutcome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisitOutcomeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffVisit"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

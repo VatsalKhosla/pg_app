@@ -39,6 +39,7 @@ from app.modules.identity.models import (
 )
 from app.modules.media.models import MediaAsset
 from app.modules.search.models import PropertyPriceSummary, SearchListing
+from app.modules.visits.models import Visit
 
 __all__ = [
     "Amenity",
@@ -75,4 +76,5 @@ __all__ = [
     "UserSession",
     "VerificationPhoto",
     "VerificationVisit",
+    "Visit",
 ]

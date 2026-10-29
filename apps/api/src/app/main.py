@@ -24,7 +24,6 @@ from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestCont
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
 from app.modules.catalog.agreements import FileAgreements
-from app.modules.catalog.contact import NobodyYet
 from app.modules.catalog.router import router as catalog_router
 from app.modules.compliance.router import router as compliance_router
 from app.modules.geo.router import router as geo_router
@@ -39,6 +38,8 @@ from app.modules.media.router import router as media_router
 from app.modules.media.service import Buckets
 from app.modules.search.router import router as search_router
 from app.modules.system.router import router as system_router
+from app.modules.visits.contact import VisitContacts
+from app.modules.visits.router import router as visits_router
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -70,6 +71,7 @@ ROUTERS: Final = (
     geo_router,
     catalog_router,
     search_router,
+    visits_router,
     media_router,
 )
 
@@ -91,7 +93,8 @@ def _set_shared_state(app: FastAPI, settings: Settings, agreements: AgreementLib
     app.state.owner_agreement_version = settings.owner_agreement_version
     # Who may see an owner's contact details while hide_owner_contact is on (ADR 0026): visits
     # (step 3.7) and bookings (Phase 5) will say; until then, nobody.
-    app.state.contact_access = NobodyYet()
+    # A visit booked there shows a student the owner's phone and the address (ADR 0026, 0033).
+    app.state.contact_access = VisitContacts()
     app.state.staff_google_domains = settings.staff_google_domains
     app.state.staff_google_emails = settings.staff_google_emails
 

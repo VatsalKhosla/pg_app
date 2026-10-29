@@ -35,6 +35,7 @@ def environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.Monke
         "STAFF_GOOGLE_EMAILS",
         "PRIVACY_NOTICE_VERSION",
         "REVALIDATE_SECRET",
+        "TEXT_SENDER",
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("DATABASE_URL", DATABASE_URL)
@@ -56,6 +57,7 @@ def _deployed(environment: pytest.MonkeyPatch, app_env: str = "production") -> p
         "PRIVACY_NOTICE_VERSION": "2027-01",
         "OWNER_AGREEMENT_VERSION": "2027-01",
         "REVALIDATE_SECRET": "a-revalidation-secret-of-32-chars!!",
+        "TEXT_SENDER": "unavailable",
     }.items():
         environment.setenv(name, value)
     return environment

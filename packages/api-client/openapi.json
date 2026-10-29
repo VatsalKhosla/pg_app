@@ -4172,6 +4172,645 @@
         }
       }
     },
+    "/v1/visits": {
+      "get": {
+        "tags": [
+          "visits"
+        ],
+        "summary": "Your visits",
+        "description": "Newest first.",
+        "operationId": "visitsMyVisits",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentVisitList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "visits"
+        ],
+        "summary": "Ask to visit a PG",
+        "description": "Up to three times the student could come; ops call to book one. 422 VISIT_INVALID for\ntimes that don't work, 409 VISIT_EXISTS for a PG they've asked to see already, 409\nVISIT_LIMIT_REACHED with five visits open.",
+        "operationId": "visitsRequestVisit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentVisitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentVisit"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visits/{visit_id}/cancel": {
+      "post": {
+        "tags": [
+          "visits"
+        ],
+        "summary": "Cancel your visit",
+        "operationId": "visitsCancelMyVisit",
+        "parameters": [
+          {
+            "name": "visit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visit Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentVisit"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/visits": {
+      "get": {
+        "tags": [
+          "visits"
+        ],
+        "summary": "Every visit",
+        "description": "Newest first, of one status if asked.",
+        "operationId": "visitsOpsVisits",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StudentVisitStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVisitPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/visits/{visit_id}": {
+      "get": {
+        "tags": [
+          "visits"
+        ],
+        "summary": "A visit, with its log",
+        "operationId": "visitsOpsVisit",
+        "parameters": [
+          {
+            "name": "visit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visit Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVisit"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/visits/{visit_id}/schedule": {
+      "post": {
+        "tags": [
+          "visits"
+        ],
+        "summary": "Book a visit's time and agent",
+        "description": "Or change them. The student is texted the time and the address, and reminded.",
+        "operationId": "visitsScheduleVisit",
+        "parameters": [
+          {
+            "name": "visit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visit Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitScheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVisit"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/visits/{visit_id}/cancel": {
+      "post": {
+        "tags": [
+          "visits"
+        ],
+        "summary": "Cancel a visit",
+        "operationId": "visitsCancelVisit",
+        "parameters": [
+          {
+            "name": "visit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visit Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitCancelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVisit"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/field/visits": {
+      "get": {
+        "tags": [
+          "visits"
+        ],
+        "summary": "Your visits to run",
+        "description": "From yesterday on, soonest first.",
+        "operationId": "visitsFieldVisits",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVisitList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/field/visits/{visit_id}": {
+      "get": {
+        "tags": [
+          "visits"
+        ],
+        "summary": "A visit you're to run",
+        "operationId": "visitsFieldVisit",
+        "parameters": [
+          {
+            "name": "visit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visit Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVisit"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/field/visits/{visit_id}/check-in": {
+      "post": {
+        "tags": [
+          "visits"
+        ],
+        "summary": "Check in at the building",
+        "description": "The visit log: the time and where the agent's phone says they are. From two hours\nbefore the visit (409 CHECK_IN_TOO_EARLY before that).",
+        "operationId": "visitsCheckIn",
+        "parameters": [
+          {
+            "name": "visit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visit Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitCheckInRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVisit"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/field/visits/{visit_id}/outcome": {
+      "post": {
+        "tags": [
+          "visits"
+        ],
+        "summary": "Record how a visit went",
+        "description": "After checking in (409 CHECK_IN_REQUIRED before).",
+        "operationId": "visitsRecordOutcome",
+        "parameters": [
+          {
+            "name": "visit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visit Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitOutcomeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVisit"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/media": {
       "post": {
         "tags": [
@@ -4743,6 +5382,14 @@
           "items"
         ],
         "title": "CampusList"
+      },
+      "CancelledBy": {
+        "type": "string",
+        "enum": [
+          "student",
+          "ops"
+        ],
+        "title": "CancelledBy"
       },
       "CategoryCreate": {
         "properties": {
@@ -6967,6 +7614,16 @@
         ],
         "title": "OtpVerify"
       },
+      "Outcome": {
+        "type": "string",
+        "enum": [
+          "interested",
+          "not_interested",
+          "student_no_show"
+        ],
+        "title": "Outcome",
+        "description": "How the visit went, as the agent records it."
+      },
       "OwnerCreate": {
         "properties": {
           "phone": {
@@ -8747,6 +9404,236 @@
         "title": "StaffTotpSignIn",
         "description": "A code from the authenticator app, sent after signing in by phone."
       },
+      "StaffVisit": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StudentVisitStatus"
+          },
+          "nextStatuses": {
+            "items": {
+              "$ref": "#/components/schemas/StudentVisitStatus"
+            },
+            "type": "array",
+            "title": "Nextstatuses"
+          },
+          "property": {
+            "$ref": "#/components/schemas/StaffVisitPlace"
+          },
+          "student": {
+            "$ref": "#/components/schemas/VisitPerson"
+          },
+          "preferredStarts": {
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": "array",
+            "title": "Preferredstarts"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Requestedat"
+          },
+          "scheduledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduledat"
+          },
+          "agent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VisitPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checkIn": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VisitCheckIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Outcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcomeNote": {
+            "type": "string",
+            "title": "Outcomenote"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finishedat"
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelledat"
+          },
+          "cancelledBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CancelledBy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancelReason": {
+            "type": "string",
+            "title": "Cancelreason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "nextStatuses",
+          "property",
+          "student",
+          "preferredStarts",
+          "requestedAt",
+          "scheduledAt",
+          "agent",
+          "checkIn",
+          "outcome",
+          "outcomeNote",
+          "finishedAt",
+          "cancelledAt",
+          "cancelledBy",
+          "cancelReason"
+        ],
+        "title": "StaffVisit"
+      },
+      "StaffVisitList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StaffVisit"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "StaffVisitList"
+      },
+      "StaffVisitPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StaffVisit"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "StaffVisitPage"
+      },
+      "StaffVisitPlace": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "locality": {
+            "type": "string",
+            "title": "Locality"
+          },
+          "addressLine": {
+            "type": "string",
+            "title": "Addressline"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LatLng"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "locality",
+          "addressLine",
+          "location"
+        ],
+        "title": "StaffVisitPlace",
+        "description": "The PG with its address and exact point: for staff, who take people there."
+      },
       "StationDistance": {
         "properties": {
           "station": {
@@ -8801,6 +9688,189 @@
           "status"
         ],
         "title": "StatusChange"
+      },
+      "StudentVisit": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StudentVisitStatus"
+          },
+          "property": {
+            "$ref": "#/components/schemas/StudentVisitPlace"
+          },
+          "preferredStarts": {
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": "array",
+            "title": "Preferredstarts"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Requestedat"
+          },
+          "scheduledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduledat"
+          },
+          "agentName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agentname"
+          },
+          "checkedIn": {
+            "type": "boolean",
+            "title": "Checkedin"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Outcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelledat"
+          },
+          "cancelledBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CancelledBy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "property",
+          "preferredStarts",
+          "requestedAt",
+          "scheduledAt",
+          "agentName",
+          "checkedIn",
+          "outcome",
+          "cancelledAt",
+          "cancelledBy"
+        ],
+        "title": "StudentVisit",
+        "description": "A visit as the student sees it. The address shows on the PG's page once it's booked."
+      },
+      "StudentVisitList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StudentVisit"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "StudentVisitList"
+      },
+      "StudentVisitPlace": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "locality": {
+            "type": "string",
+            "title": "Locality"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "locality"
+        ],
+        "title": "StudentVisitPlace"
+      },
+      "StudentVisitRequest": {
+        "properties": {
+          "property": {
+            "type": "string",
+            "maxLength": 80,
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "title": "Property"
+          },
+          "starts": {
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Starts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "property",
+          "starts"
+        ],
+        "title": "StudentVisitRequest"
+      },
+      "StudentVisitStatus": {
+        "type": "string",
+        "enum": [
+          "requested",
+          "scheduled",
+          "completed",
+          "no_show",
+          "cancelled"
+        ],
+        "title": "StudentVisitStatus"
       },
       "UploadForm": {
         "properties": {
@@ -8884,6 +9954,72 @@
           "suspended"
         ],
         "title": "VerificationStatus"
+      },
+      "VisitCancelRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "VisitCancelRequest"
+      },
+      "VisitCheckIn": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "position": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "accuracyM": {
+            "type": "integer",
+            "title": "Accuracym"
+          },
+          "distanceM": {
+            "type": "integer",
+            "title": "Distancem"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "at",
+          "position",
+          "accuracyM",
+          "distanceM"
+        ],
+        "title": "VisitCheckIn",
+        "description": "The visit log: when the agent checked in, where their phone said they were, how sure it\nwas, and how far that was from the building."
+      },
+      "VisitCheckInRequest": {
+        "properties": {
+          "position": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "accuracyM": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Accuracym"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "position",
+          "accuracyM"
+        ],
+        "title": "VisitCheckInRequest"
       },
       "VisitChecklist": {
         "properties": {
@@ -9139,6 +10275,25 @@
         ],
         "title": "VisitInfo"
       },
+      "VisitOutcomeRequest": {
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/Outcome"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outcome"
+        ],
+        "title": "VisitOutcomeRequest"
+      },
       "VisitPage": {
         "properties": {
           "items": {
@@ -9168,6 +10323,38 @@
           "nextCursor"
         ],
         "title": "VisitPage"
+      },
+      "VisitPerson": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "phone"
+        ],
+        "title": "VisitPerson"
       },
       "VisitPlace": {
         "properties": {
@@ -9235,6 +10422,27 @@
           "failed"
         ],
         "title": "VisitResult"
+      },
+      "VisitScheduleRequest": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "agent": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Agent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "at",
+          "agent"
+        ],
+        "title": "VisitScheduleRequest"
       },
       "VisitStatus": {
         "type": "string",

@@ -1,6 +1,6 @@
 """Catalog reads for other modules, inside the caller's transaction (it starts none), so they
 never touch the catalog's tables themselves (ARCHITECTURE §5): search keeps its entries and price
-summaries from what it reads here (steps 3.1 and 3.2)."""
+summaries from what it reads here (steps 3.1 and 3.2), and visits the PGs they're to (step 3.7)."""
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
@@ -20,6 +20,7 @@ from app.modules.geo.service import GeoLookup
 
 if TYPE_CHECKING:
     import uuid
+    from collections.abc import Collection
     from datetime import datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,6 +61,22 @@ class SearchEntry:
     # The first few photos and videos, in page order; the card's cover is the first one ready.
     media_ids: tuple[int, ...]
     published_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class VisitPlace:
+    """A PG as visits need it. The address and exact point are for staff, and for a student
+    once a visit is booked: the visits module decides who sees them (ADR 0026, 0033)."""
+
+    id: int
+    public_id: uuid.UUID
+    slug: str
+    name: str
+    locality: str
+    address_line: str
+    exact: Point
+    # Whether the public may see it now, as its page decides.
+    public: bool
 
 
 class CatalogLookup:
@@ -109,6 +126,38 @@ class CatalogLookup:
             media_ids=tuple(media[:COVER_CANDIDATES]),
             published_at=found.published_at,
         )
+
+    async def visit_place(self, slug: str, *, verified_only: bool) -> VisitPlace | None:
+        """The PG with this slug, whether or not the public may see it now."""
+        found = await self._catalog.property_by_slug(slug)
+        if found is None:
+            return None
+        return (await self.visit_places([found.id], verified_only=verified_only))[found.id]
+
+    async def visit_places(
+        self, ids: Collection[int], *, verified_only: bool
+    ) -> dict[int, VisitPlace]:
+        """PGs by internal id: three queries, however many."""
+        found = await self._catalog.properties_by_id(ids)
+        exact = await self._catalog.exact_points(found.keys())
+        localities = await self._geo.localities({row.locality_id for row in found.values()})
+        return {
+            row.id: VisitPlace(
+                id=row.id,
+                public_id=row.public_id,
+                slug=row.slug,
+                name=row.name,
+                locality=localities[row.locality_id].name,
+                address_line=row.address_line,
+                exact=exact[row.id],
+                public=is_public(
+                    PropertyStatus(row.status),
+                    VerificationStatus(row.verification_status),
+                    verified_only=verified_only,
+                ),
+            )
+            for row in found.values()
+        }
 
     async def property_ids(self, *, after: int | None, limit: int) -> list[int]:
         """Every property's internal id, a page at a time (``after`` the last one seen)."""

@@ -25,6 +25,7 @@ from app.core.clock import FrozenClock
 from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
 from app.core.csrf import issue_csrf_token
 from app.core.outbox import OutboxWorker
+from app.core.texts import NoTexts
 from app.core.web_cache import NoWebCache
 from app.jobs import build_registry
 from app.main import create_app
@@ -98,6 +99,7 @@ class Uploader:
                 storage=self.app.state.storage,
                 buckets=self.app.state.media_buckets,
                 web_cache=NoWebCache(),
+                texts=NoTexts(),
             ),
             clock=self.app.state.clock,
             worker_id="test",

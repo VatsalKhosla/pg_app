@@ -8,13 +8,13 @@ import asyncio
 import secrets
 import uuid
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Final
 
 import httpx
 import pytest
 from fastapi import FastAPI
-from sqlalchemy import update
+from sqlalchemy import select, update
 
 from app.config import Settings
 from app.core.actor import Actor, Role
@@ -54,6 +54,8 @@ from app.modules.identity.service import SessionService
 from app.modules.media.domain.assets import AssetStatus, Moderation, Purpose, Visibility
 from app.modules.media.models import MediaAsset
 from app.modules.media.repository import MediaRepository
+from app.modules.visits.domain.visits import StudentVisitStatus
+from app.modules.visits.models import Visit
 from tests.authorization import CALLERS, MATRIX
 from tests.conftest import TEST_SECRET_KEY
 
@@ -244,6 +246,31 @@ async def _someone_elses_visit(app: FastAPI) -> str:
     return str(visit.public_id)
 
 
+async def _someone_elses_student_visit(app: FastAPI) -> str:
+    """A student's visit to a live listing, booked with a field agent: neither is the caller."""
+    slug = await _live_listing(app)
+    student_id = await _add_user(app, Role.STUDENT)
+    agent_id = await _add_user(app, Role.FIELD_AGENT)
+    ops = await _ops(app)
+    now = app.state.clock.now()
+    async with app.state.sessionmaker() as db, db.begin():
+        property_id = await db.scalar(select(Property.id).where(Property.slug == slug))
+        assert property_id is not None
+        visit = Visit(
+            property_id=property_id,
+            student_id=student_id,
+            status=StudentVisitStatus.SCHEDULED,
+            preferred_starts=[now + timedelta(days=1)],
+            requested_at=now,
+            scheduled_at=now + timedelta(days=1),
+            scheduled_by=ops.user_id,
+            agent_id=agent_id,
+        )
+        db.add(visit)
+        await db.flush()
+        return str(visit.public_id)
+
+
 async def _path_value(app: FastAPI, kind: str) -> str:
     match kind:
         case "someone_elses_session":
@@ -262,6 +289,8 @@ async def _path_value(app: FastAPI, kind: str) -> str:
             value = await _part_of_a_listing(app, kind)
         case "someone_elses_visit":
             value = await _someone_elses_visit(app)
+        case "someone_elses_student_visit":
+            value = await _someone_elses_student_visit(app)
         case "an_owner":
             value = str((await _add_owner(app)).owner.public_id)
         case "a_live_listing":
