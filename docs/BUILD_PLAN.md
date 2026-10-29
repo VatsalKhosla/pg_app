@@ -317,8 +317,14 @@ Start the slow ones in week 1.
   - **Proof:** the worked example and every edge by hand, plus every §8.8 invariant as a Hypothesis property (10,000 cases each in CI).
   - **Coverage gate:** `make coverage-money`, now in `make check` and CI, holds the pricing domain at 95% branch coverage; it stands at 99.7%.
 
-- [ ] **4.3 Rule sets and versioning.** Draft → active → archived; activation is atomic, creates an immutable version and is audited; validation (overlapping seasons, band conflicts, impossible bounds) returns readable errors.
+- [x] **4.3 Rule sets and versioning.** Draft → active → archived; activation is atomic, creates an immutable version and is audited; validation (overlapping seasons, band conflicts, impossible bounds) returns readable errors.
   *Done when* activating a new version never changes existing quotes or bookings (tested).
+  *Note (2026-10-30):*
+  - **Sets:** each PG has at most one draft and one active set. A draft starts as a copy of the set in force, and only a draft's rules change.
+  - **Activation:** it checks the set, then archives the set in force and activates the draft in one transaction, audited (ADR 0038).
+  - **Checks:** overlapping seasons or overrides for a category, overrides outside the band, bounds that leave no rent, and rules for room categories the PG doesn't have. Each is a readable `RULE_SET_INVALID` problem, shown on the draft before activation too.
+  - **Immutability:** database triggers refuse any change to a set once it has been in force.
+  - **Proof:** a set's prices are the same before and after the next version goes in, its rules read back unchanged, and the database refuses edits behind the API's back. Step 4.4 adds the same check on stored quotes.
 
 - [ ] **4.4 Quotes API.** `POST /v1/quotes` and `GET /v1/quotes/{id}`: occupancy from real allocations (HELD excluded), persisted breakdown, 30-minute expiry, inputs hash, human explanation string. Rate-limited.
   *Done when* the quote's numbers equal the engine's for the same inputs, and expired quotes are refused by later steps.
