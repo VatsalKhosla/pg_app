@@ -130,7 +130,7 @@ check-client: ## Fail if packages/api-client is out of date with the API
 ##@ Quality
 
 .PHONY: check
-check: lint typecheck test-api test-web check-client ## Lint, typecheck, test everything and check the API client is current (run before finishing any step)
+check: lint typecheck test-api coverage-money test-web check-client ## Lint, typecheck, test everything, check the money code's coverage and that the API client is current (run before finishing any step)
 
 .PHONY: lint
 lint: lint-api lint-web ## Lint and check formatting and the layer rules (ruff, import-linter, eslint, prettier)
@@ -177,6 +177,13 @@ test-api: ## Run all API tests, unit and integration (integration tests need Doc
 .PHONY: test-api-unit
 test-api-unit: ## Run the API unit tests only (no Docker needed)
 	$(API) pytest -m "not integration"
+
+.PHONY: coverage-money
+coverage-money: ## Fail below 95% branch coverage of the money code's pure domain: pricing for now (ADR 0037)
+	@# Coverage needs every branch, not 10,000 cases: the test run already did those.
+	HYPOTHESIS_PROFILE=dev $(API) pytest -q -p no:cacheprovider tests/unit/test_pricing_engine.py \
+		tests/unit/test_pricing_policies.py --cov=app.modules.pricing.domain --cov-branch \
+		--cov-report=term-missing --cov-fail-under=95
 
 .PHONY: test-web
 test-web: ## Run the web unit and component tests (Vitest)

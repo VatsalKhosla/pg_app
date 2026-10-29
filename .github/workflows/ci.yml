@@ -54,6 +54,10 @@ jobs:
         run: |
           set -o pipefail
           make test-api 2>&1 | tee "$RUNNER_TEMP/test-api.log"
+      # Pricing (and, as they come, booking, payments and the ledger) keep at least 95% branch
+      # coverage of their pure domain code (CLAUDE.md, ADR 0037).
+      - name: Branch coverage of the money code
+        run: make coverage-money
       # Each failed test as an annotation, which the checks API shows without the job's log; the
       # log's end when no test is named (a crash, a collection error).
       - name: Annotate failed tests
