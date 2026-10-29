@@ -1443,6 +1443,129 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ops/properties/{property_id}/rule-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A PG's pricing rule sets
+         * @description Ops and admins: every version, newest first: at most one draft and one active.
+         */
+        get: operations["pricingRuleSets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/properties/{property_id}/rule-sets/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a draft rule set
+         * @description Ops and admins: the PG's draft, a copy of its set in force if it has to be made. Its
+         *     ``problems`` say what would stop it being activated. Audited.
+         */
+        post: operations["pricingStartDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/rule-sets/{rule_set_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A rule set with its rules */
+        get: operations["pricingRuleSet"];
+        put?: never;
+        post?: never;
+        /**
+         * Discard a draft
+         * @description Ops and admins: a draft only; sets that were in force are kept. Audited.
+         */
+        delete: operations["pricingDiscard"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/rule-sets/{rule_set_id}/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a rule to a draft
+         * @description Ops and admins: a rule at the end of the draft. 422 RULE_SET_INVALID for one that can't
+         *     be; 409 INVALID_TRANSITION for a set that isn't a draft. Audited.
+         */
+        post: operations["pricingAddRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change a draft's rule */
+        put: operations["pricingReplaceRule"];
+        post?: never;
+        /** Remove a draft's rule */
+        delete: operations["pricingRemoveRule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/rule-sets/{rule_set_id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Put a draft in force
+         * @description Ops and admins: the draft goes into force and the set before it is archived, in one
+         *     step. Nothing priced before moves (rule 5). 422 RULE_SET_INVALID names every problem.
+         *     Audited.
+         */
+        post: operations["pricingActivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visits": {
         parameters: {
             query?: never;
@@ -2209,6 +2332,18 @@ export interface components {
          * @enum {string}
          */
         DataRequestStatus: "received" | "ready" | "expired" | "completed" | "rejected";
+        /** EarlyBirdRuleParams */
+        EarlyBirdRuleParams: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "early_bird";
+            /** Mindaysbefore */
+            minDaysBefore: number;
+            /** Bps */
+            bps: number;
+        };
         /**
          * FeeBasis
          * @enum {string}
@@ -2410,6 +2545,20 @@ export interface components {
          * @enum {string}
          */
         KycStatus: "not_started" | "pending" | "verified" | "rejected";
+        /** LastMinuteRuleParams */
+        LastMinuteRuleParams: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "last_minute";
+            /** Maxdaysbefore */
+            maxDaysBefore: number;
+            /** Maxoccupancybps */
+            maxOccupancyBps: number;
+            /** Bps */
+            bps: number;
+        };
         /** LatLng */
         LatLng: {
             /** Lat */
@@ -2424,6 +2573,19 @@ export interface components {
          * @enum {string}
          */
         LateCancelPolicy: "refund_full" | "forfeit_to_owner" | "split";
+        /**
+         * LengthOfStayRuleParams
+         * @description A discount from the highest tier the stay reaches.
+         */
+        LengthOfStayRuleParams: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "length_of_stay";
+            /** Tiers */
+            tiers: components["schemas"]["StayRuleTier"][];
+        };
         /**
          * LicenceStatus
          * @enum {string}
@@ -2850,6 +3012,26 @@ export interface components {
          * @enum {string}
          */
         Occupancy: "single" | "double" | "triple" | "quad";
+        /**
+         * OccupancyRuleParams
+         * @description A premium from the highest tier the category's occupancy reaches.
+         */
+        OccupancyRuleParams: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "occupancy";
+            /** Tiers */
+            tiers: components["schemas"]["OccupancyRuleTier"][];
+        };
+        /** OccupancyRuleTier */
+        OccupancyRuleTier: {
+            /** Minoccupancybps */
+            minOccupancyBps: number;
+            /** Bps */
+            bps: number;
+        };
         /** OneTimeCharge */
         OneTimeCharge: {
             /**
@@ -2916,6 +3098,29 @@ export interface components {
          * @enum {string}
          */
         Outcome: "interested" | "not_interested" | "student_no_show";
+        /**
+         * OverrideRuleParams
+         * @description A fixed monthly rent for move-ins from ``start`` to ``end``, both included.
+         */
+        OverrideRuleParams: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "override";
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Rentpaise */
+            rentPaise: number;
+        };
         /** OwnerCreate */
         OwnerCreate: {
             /** Phone */
@@ -3053,6 +3258,39 @@ export interface components {
             maxDiscountBps: number;
             /** Roundingsteppaise */
             roundingStepPaise: number;
+        };
+        /** PricingRuleInfo */
+        PricingRuleInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Position */
+            position: number;
+            kind: components["schemas"]["RuleKind"];
+            /** Label */
+            label: string;
+            /** Params */
+            params: components["schemas"]["SeasonRuleParams"] | components["schemas"]["OccupancyRuleParams"] | components["schemas"]["EarlyBirdRuleParams"] | components["schemas"]["LastMinuteRuleParams"] | components["schemas"]["LengthOfStayRuleParams"] | components["schemas"]["OverrideRuleParams"];
+            /** Roomcategories */
+            roomCategories: components["schemas"]["RuleCategory"][] | null;
+            /** Enabled */
+            enabled: boolean;
+        };
+        /** PricingRuleInput */
+        PricingRuleInput: {
+            /** Label */
+            label: string;
+            /** Params */
+            params: components["schemas"]["SeasonRuleParams"] | components["schemas"]["OccupancyRuleParams"] | components["schemas"]["EarlyBirdRuleParams"] | components["schemas"]["LastMinuteRuleParams"] | components["schemas"]["LengthOfStayRuleParams"] | components["schemas"]["OverrideRuleParams"];
+            /** Roomcategories */
+            roomCategories?: string[] | null;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
         };
         /**
          * PrivacyNoticeInfo
@@ -3448,6 +3686,92 @@ export interface components {
             /** Beds */
             beds: components["schemas"]["BedInfo"][];
         };
+        /** RuleCategory */
+        RuleCategory: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
+        };
+        /**
+         * RuleKind
+         * @enum {string}
+         */
+        RuleKind: "season" | "occupancy" | "early_bird" | "last_minute" | "length_of_stay" | "override";
+        /** RuleSetActivation */
+        RuleSetActivation: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** RuleSetInfo */
+        RuleSetInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Version */
+            version: number;
+            status: components["schemas"]["RuleSetStatus"];
+            property: components["schemas"]["RuleSetProperty"];
+            /** Activatedat */
+            activatedAt: string | null;
+            activatedBy: components["schemas"]["Changer"] | null;
+            /** Archivedat */
+            archivedAt: string | null;
+            /** Note */
+            note: string;
+            /** Rules */
+            rules: components["schemas"]["PricingRuleInfo"][];
+            /** Problems */
+            problems: string[];
+        };
+        /** RuleSetList */
+        RuleSetList: {
+            property: components["schemas"]["RuleSetProperty"];
+            /** Items */
+            items: components["schemas"]["RuleSetSummaryInfo"][];
+        };
+        /** RuleSetProperty */
+        RuleSetProperty: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * RuleSetStatus
+         * @enum {string}
+         */
+        RuleSetStatus: "draft" | "active" | "archived";
+        /** RuleSetSummaryInfo */
+        RuleSetSummaryInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Version */
+            version: number;
+            status: components["schemas"]["RuleSetStatus"];
+            /** Activatedat */
+            activatedAt: string | null;
+            /** Archivedat */
+            archivedAt: string | null;
+            /** Note */
+            note: string;
+            /** Rules */
+            rules: number;
+        };
         /**
          * SafetySummary
          * @description What the field agent found on their last visit that passed the building (ADR 0024).
@@ -3538,6 +3862,24 @@ export interface components {
             month: string;
             /** Radiusm */
             radiusM: number;
+        };
+        /**
+         * SeasonRuleParams
+         * @description Up or down by ``bps`` for move-ins from ``start`` to ``end`` (MM-DD, both included); may
+         *     wrap the year.
+         */
+        SeasonRuleParams: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "season";
+            /** Start */
+            start: string;
+            /** End */
+            end: string;
+            /** Bps */
+            bps: number;
         };
         /**
          * SessionInfo
@@ -3786,6 +4128,13 @@ export interface components {
         /** StatusChange */
         StatusChange: {
             status: components["schemas"]["PropertyStatus"];
+        };
+        /** StayRuleTier */
+        StayRuleTier: {
+            /** Minmonths */
+            minMonths: number;
+            /** Bps */
+            bps: number;
         };
         /**
          * StudentVisit
@@ -7385,6 +7734,336 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RentBandInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingRuleSets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingStartDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingRuleSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingDiscard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingAddRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricingRuleInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingReplaceRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricingRuleInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingRemoveRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingActivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleSetActivation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetInfo"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

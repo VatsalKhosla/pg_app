@@ -16,6 +16,7 @@ from app.core.web_cache import POLICIES_TAG, ask_to_revalidate
 from app.modules.geo.service import GeoLookup, LocalityRef
 from app.modules.identity.service import Account, Accounts
 from app.modules.pricing.domain.policies import (
+    BandSource,
     BookingPolicy,
     FeeBasis,
     FeePolicy,
@@ -110,6 +111,15 @@ def pricing_caps(row: PricingCapsVersion) -> PricingCaps:
         max_premium_bps=BasisPoints(row.max_premium_bps),
         max_discount_bps=BasisPoints(row.max_discount_bps),
         rounding_step_paise=Paise(row.rounding_step_paise),
+    )
+
+
+def band_of(row: RentBandRow) -> RentBand:
+    return RentBand(
+        min_rent_paise=Paise(row.min_rent_paise),
+        max_rent_paise=Paise(row.max_rent_paise),
+        source=BandSource(row.source),
+        reference=row.reference,
     )
 
 

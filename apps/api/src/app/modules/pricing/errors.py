@@ -27,3 +27,15 @@ class PricingConfigError(AppError):
     status = 503
     code = "PRICING_CONFIG_ERROR"
     title = "Pricing isn't set up"
+
+
+class RuleSetInvalidError(AppError):
+    """A rule, or a set, that can't go into force: the detail names every problem."""
+
+    status = 422
+    code = "RULE_SET_INVALID"
+    title = "Those pricing rules don't work"
+
+    def __init__(self, problems: Sequence[str]) -> None:
+        super().__init__("; ".join(problems))
+        self.problems = list(problems)

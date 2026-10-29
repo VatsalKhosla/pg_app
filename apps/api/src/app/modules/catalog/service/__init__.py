@@ -8,6 +8,8 @@ from app.modules.catalog.service.listings import ListingService, PropertyChanges
 from app.modules.catalog.service.lookup import (
     CatalogLookup,
     CategoryRent,
+    PricedCategory,
+    PricedProperty,
     SearchEntry,
     VisitPlace,
 )
@@ -50,6 +52,8 @@ __all__ = [
     "OwnerChanges",
     "OwnerRecord",
     "OwnerService",
+    "PricedCategory",
+    "PricedProperty",
     "PropertyChanges",
     "PropertyDraft",
     "PublicCatalog",

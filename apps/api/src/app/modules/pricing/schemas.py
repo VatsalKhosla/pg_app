@@ -2,13 +2,14 @@
 points (rule 12): the web app formats them and never works money out itself."""
 
 import uuid
-from datetime import datetime
-from typing import Annotated
+from datetime import date, datetime
+from typing import Annotated, Literal
 
 from pydantic import Field, StringConstraints
 
 from app.core.schemas import ApiModel
 from app.modules.catalog.domain.rooms import Occupancy
+from app.modules.pricing.domain.engine import LABEL_MAX_LENGTH, RuleKind
 from app.modules.pricing.domain.policies import (
     NOTE_MAX_LENGTH,
     REFERENCE_MAX_LENGTH,
@@ -17,6 +18,7 @@ from app.modules.pricing.domain.policies import (
     GstMode,
     LateCancelPolicy,
 )
+from app.modules.pricing.domain.rule_sets import RuleSetStatus
 
 
 class PlacementFeeTerms(ApiModel):
@@ -182,4 +184,141 @@ class RentBandList(ApiModel):
 
 
 class RentBandEnd(ApiModel):
+    note: Note = ""
+
+
+# Rule sets (ADR 0038).
+
+MonthDayText = Annotated[str, StringConstraints(pattern=r"^\d{2}-\d{2}$")]
+RuleBps = Annotated[int, Field(ge=-10_000, le=10_000)]
+
+
+class SeasonRuleParams(ApiModel):
+    """Up or down by ``bps`` for move-ins from ``start`` to ``end`` (MM-DD, both included); may
+    wrap the year."""
+
+    kind: Literal["season"]
+    start: MonthDayText
+    end: MonthDayText
+    bps: RuleBps
+
+
+class OccupancyRuleTier(ApiModel):
+    min_occupancy_bps: int = Field(ge=0, le=10_000)
+    bps: RuleBps
+
+
+class OccupancyRuleParams(ApiModel):
+    """A premium from the highest tier the category's occupancy reaches."""
+
+    kind: Literal["occupancy"]
+    tiers: list[OccupancyRuleTier] = Field(min_length=1, max_length=5)
+
+
+class EarlyBirdRuleParams(ApiModel):
+    kind: Literal["early_bird"]
+    min_days_before: int = Field(ge=0, le=365)
+    bps: RuleBps
+
+
+class LastMinuteRuleParams(ApiModel):
+    kind: Literal["last_minute"]
+    max_days_before: int = Field(ge=0, le=365)
+    max_occupancy_bps: int = Field(ge=0, le=10_000)
+    bps: RuleBps
+
+
+class StayRuleTier(ApiModel):
+    min_months: int = Field(ge=1, le=36)
+    bps: RuleBps
+
+
+class LengthOfStayRuleParams(ApiModel):
+    """A discount from the highest tier the stay reaches."""
+
+    kind: Literal["length_of_stay"]
+    tiers: list[StayRuleTier] = Field(min_length=1, max_length=5)
+
+
+class OverrideRuleParams(ApiModel):
+    """A fixed monthly rent for move-ins from ``start`` to ``end``, both included."""
+
+    kind: Literal["override"]
+    start: date
+    end: date
+    rent_paise: Amount
+
+
+RuleParamsBody = Annotated[
+    SeasonRuleParams
+    | OccupancyRuleParams
+    | EarlyBirdRuleParams
+    | LastMinuteRuleParams
+    | LengthOfStayRuleParams
+    | OverrideRuleParams,
+    Field(discriminator="kind"),
+]
+
+
+class PricingRuleInput(ApiModel):
+    # What students see, such as "Peak season".
+    label: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=LABEL_MAX_LENGTH)
+    ]
+    params: RuleParamsBody
+    # The PG's room categories it's for; null for all of them.
+    room_categories: list[uuid.UUID] | None = Field(default=None, max_length=20)
+    enabled: bool = True
+
+
+class RuleCategory(ApiModel):
+    id: uuid.UUID
+    label: str
+
+
+class PricingRuleInfo(ApiModel):
+    id: uuid.UUID
+    position: int
+    kind: RuleKind
+    label: str
+    params: RuleParamsBody
+    room_categories: list[RuleCategory] | None
+    enabled: bool
+
+
+class RuleSetProperty(ApiModel):
+    id: uuid.UUID
+    name: str
+
+
+class RuleSetInfo(ApiModel):
+    id: uuid.UUID
+    version: int
+    status: RuleSetStatus
+    property: RuleSetProperty
+    activated_at: datetime | None
+    activated_by: Changer | None
+    archived_at: datetime | None
+    note: str
+    rules: list[PricingRuleInfo]
+    # What stops a draft going into force, in words; empty when it may.
+    problems: list[str]
+
+
+class RuleSetSummaryInfo(ApiModel):
+    id: uuid.UUID
+    version: int
+    status: RuleSetStatus
+    activated_at: datetime | None
+    archived_at: datetime | None
+    note: str
+    rules: int
+
+
+class RuleSetList(ApiModel):
+    property: RuleSetProperty
+    items: list[RuleSetSummaryInfo]
+
+
+class RuleSetActivation(ApiModel):
     note: Note = ""

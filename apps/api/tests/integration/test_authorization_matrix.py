@@ -62,6 +62,9 @@ from app.modules.identity.service import SessionService
 from app.modules.media.domain.assets import AssetStatus, Moderation, Purpose, Visibility
 from app.modules.media.models import MediaAsset
 from app.modules.media.repository import MediaRepository
+from app.modules.pricing.domain.engine import RuleKind
+from app.modules.pricing.domain.rule_sets import RuleSetStatus
+from app.modules.pricing.models import PricingRuleRow, PricingRuleSet
 from app.modules.visits.domain.visits import StudentVisitStatus
 from app.modules.visits.models import Visit
 from tests.authorization import CALLERS, MATRIX
@@ -298,6 +301,27 @@ async def _someone_elses_grievance(app: FastAPI) -> str:
         return grievance.ticket_number
 
 
+async def _a_draft(app: FastAPI, kind: str) -> str:
+    """A fresh listing's draft rule set, or the one rule in it."""
+    listing = uuid.UUID(await _part_of_a_listing(app, "a_listing"))
+    async with app.state.sessionmaker() as db, db.begin():
+        property_id = await db.scalar(select(Property.id).where(Property.public_id == listing))
+        assert property_id is not None
+        draft = PricingRuleSet(property_id=property_id, version=1, status=RuleSetStatus.DRAFT)
+        db.add(draft)
+        await db.flush()
+        rule = PricingRuleRow(
+            rule_set_id=draft.id,
+            position=0,
+            kind=RuleKind.EARLY_BIRD,
+            label="Early-bird",
+            params={"min_days_before": 30, "bps": -500},
+        )
+        db.add(rule)
+        await db.flush()
+        return str(draft.public_id if kind == "a_draft_rule_set" else rule.public_id)
+
+
 # Path values that need nothing made first.
 _FIXED: Final[dict[str, Callable[[], str]]] = {
     "an_optional_purpose": lambda: "marketing",
@@ -326,6 +350,8 @@ async def _path_value(app: FastAPI, kind: str) -> str:
             value = await _someone_elses_student_visit(app)
         case "someone_elses_grievance":
             value = await _someone_elses_grievance(app)
+        case "a_draft_rule_set" | "a_draft_rule":
+            value = await _a_draft(app, kind)
         case "an_owner":
             value = str((await _add_owner(app)).owner.public_id)
         case "a_live_listing":

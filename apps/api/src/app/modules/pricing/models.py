@@ -8,14 +8,25 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Final
 
-from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Index, Integer, Text, Uuid
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Text,
+    Uuid,
+)
 from sqlalchemy import text as sql
-from sqlalchemy.dialects.postgresql import ExcludeConstraint
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, ExcludeConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Model
 from app.core.ids import new_public_id
 from app.modules.catalog.domain.rooms import Occupancy
+from app.modules.pricing.domain.engine import LABEL_MAX_LENGTH, RuleKind
 from app.modules.pricing.domain.policies import (
     MAX_RENT,
     NOTE_MAX_LENGTH,
@@ -25,6 +36,7 @@ from app.modules.pricing.domain.policies import (
     GstMode,
     LateCancelPolicy,
 )
+from app.modules.pricing.domain.rule_sets import RuleSetStatus
 
 if TYPE_CHECKING:
     from enum import StrEnum
@@ -169,4 +181,76 @@ class RentBand(PolicyVersion):
             name="ex_rent_bands_in_force",
         ),
         Index("ix_rent_bands_locality_id", "locality_id"),
+    )
+
+
+class PricingRuleSet(Model):
+    """One version of a PG's pricing rules (ADR 0038): a draft while it's edited, then active,
+    then archived. Only a draft's rules may change; the database refuses anything else."""
+
+    __tablename__ = "pricing_rule_sets"
+
+    public_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, default=new_public_id)
+    property_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("properties.id"))
+    version: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(Text)
+    created_by: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL")
+    )
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    activated_by: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL")
+    )
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Why it was activated, for the history.
+    note: Mapped[str] = mapped_column(Text, server_default="")
+
+    __table_args__ = (
+        CheckConstraint(_one_of("status", RuleSetStatus), name="status"),
+        CheckConstraint("version > 0", name="version"),
+        CheckConstraint("(status = 'draft') = (activated_at IS NULL)", name="activated"),
+        CheckConstraint("(status = 'archived') = (archived_at IS NOT NULL)", name="archived"),
+        CheckConstraint(f"char_length(note) <= {NOTE_MAX_LENGTH}", name="note_length"),
+        Index("uq_pricing_rule_sets_property_id_version", "property_id", "version", unique=True),
+        # One set in force, and one being edited, per PG.
+        Index(
+            "uq_pricing_rule_sets_property_id_active",
+            "property_id",
+            unique=True,
+            postgresql_where=sql("status = 'active'"),
+        ),
+        Index(
+            "uq_pricing_rule_sets_property_id_draft",
+            "property_id",
+            unique=True,
+            postgresql_where=sql("status = 'draft'"),
+        ),
+    )
+
+
+class PricingRuleRow(Model):
+    """One rule of a set, in the set's order. Its parameters are JSON, as the domain writes them
+    (pricing/domain/rule_sets.py)."""
+
+    __tablename__ = "pricing_rules"
+
+    public_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, default=new_public_id)
+    rule_set_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("pricing_rule_sets.id", ondelete="CASCADE")
+    )
+    position: Mapped[int] = mapped_column(Integer)
+    kind: Mapped[str] = mapped_column(Text)
+    label: Mapped[str] = mapped_column(Text)
+    # The room categories it's for; NULL for all of the PG's.
+    room_category_ids: Mapped[list[int] | None] = mapped_column(ARRAY(BigInteger))
+    params: Mapped[dict[str, object]] = mapped_column(JSONB)
+    enabled: Mapped[bool] = mapped_column(Boolean, server_default=sql("true"))
+
+    __table_args__ = (
+        CheckConstraint(_one_of("kind", RuleKind), name="kind"),
+        CheckConstraint(
+            f"char_length(btrim(label)) BETWEEN 1 AND {LABEL_MAX_LENGTH}", name="label"
+        ),
+        CheckConstraint("position >= 0", name="position"),
+        Index("uq_pricing_rules_rule_set_id_position", "rule_set_id", "position", unique=True),
     )

@@ -14,7 +14,7 @@ from app.modules.catalog.domain.listing import (
     VerificationStatus,
     is_public,
 )
-from app.modules.catalog.domain.rooms import Occupancy
+from app.modules.catalog.domain.rooms import CategoryStatus, Occupancy
 from app.modules.catalog.repository import CatalogRepository
 from app.modules.geo.service import GeoLookup
 
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.core.geometry import Point
+    from app.modules.catalog.models import Property
     from app.modules.geo.service import LocalityRef
 
 # A card shows the first of a listing's photos that is ready: a few to choose from is plenty.
@@ -42,6 +43,31 @@ class CategoryRent:
     occupancy: Occupancy
     ac: bool
     attached_bath: bool
+
+
+@dataclass(frozen=True, slots=True)
+class PricedCategory:
+    """A room category as pricing needs it: its listed rent and the owner's bounds."""
+
+    id: int
+    public_id: uuid.UUID
+    label: str
+    occupancy: Occupancy
+    base_rent: Paise
+    owner_min: Paise | None
+    owner_max: Paise | None
+    active: bool
+
+
+@dataclass(frozen=True, slots=True)
+class PricedProperty:
+    """A PG as pricing needs it: where it is, for its rent bands, and its room categories."""
+
+    id: int
+    public_id: uuid.UUID
+    name: str
+    locality_id: int
+    categories: tuple[PricedCategory, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,6 +122,40 @@ class CatalogLookup:
             )
             for row in await self._catalog.category_rents(property_id)
         ]
+
+    async def priced_property(self, public_id: uuid.UUID) -> PricedProperty | None:
+        """A PG with every room category it has, for its pricing rules (ADR 0038)."""
+        found = await self._catalog.property(public_id)
+        return None if found is None else await self._priced(found)
+
+    async def priced_property_by_id(self, property_id: int) -> PricedProperty | None:
+        found = (await self._catalog.properties_by_id([property_id])).get(property_id)
+        return None if found is None else await self._priced(found)
+
+    async def _priced(self, found: Property) -> PricedProperty:
+        return PricedProperty(
+            id=found.id,
+            public_id=found.public_id,
+            name=found.name,
+            locality_id=found.locality_id,
+            categories=tuple(
+                PricedCategory(
+                    id=row.id,
+                    public_id=row.public_id,
+                    label=row.label,
+                    occupancy=Occupancy(row.occupancy),
+                    base_rent=Paise(row.base_rent_paise),
+                    owner_min=None
+                    if row.owner_min_rent_paise is None
+                    else Paise(row.owner_min_rent_paise),
+                    owner_max=None
+                    if row.owner_max_rent_paise is None
+                    else Paise(row.owner_max_rent_paise),
+                    active=row.status == CategoryStatus.ACTIVE,
+                )
+                for row in await self._catalog.categories(found.id)
+            ),
+        )
 
     async def search_entry(self, property_id: int) -> SearchEntry | None:
         """The listing as search shows it, or None when the public can't find it: not

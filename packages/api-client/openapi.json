@@ -5004,6 +5004,454 @@
         }
       }
     },
+    "/v1/ops/properties/{property_id}/rule-sets": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "A PG's pricing rule sets",
+        "description": "Ops and admins: every version, newest first: at most one draft and one active.",
+        "operationId": "pricingRuleSets",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleSetList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/properties/{property_id}/rule-sets/draft": {
+      "post": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Start a draft rule set",
+        "description": "Ops and admins: the PG's draft, a copy of its set in force if it has to be made. Its\n``problems`` say what would stop it being activated. Audited.",
+        "operationId": "pricingStartDraft",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleSetInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/rule-sets/{rule_set_id}": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "A rule set with its rules",
+        "operationId": "pricingRuleSet",
+        "parameters": [
+          {
+            "name": "rule_set_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Set Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleSetInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Discard a draft",
+        "description": "Ops and admins: a draft only; sets that were in force are kept. Audited.",
+        "operationId": "pricingDiscard",
+        "parameters": [
+          {
+            "name": "rule_set_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Set Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/rule-sets/{rule_set_id}/rules": {
+      "post": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Add a rule to a draft",
+        "description": "Ops and admins: a rule at the end of the draft. 422 RULE_SET_INVALID for one that can't\nbe; 409 INVALID_TRANSITION for a set that isn't a draft. Audited.",
+        "operationId": "pricingAddRule",
+        "parameters": [
+          {
+            "name": "rule_set_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Set Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PricingRuleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleSetInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/rules/{rule_id}": {
+      "put": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Change a draft's rule",
+        "operationId": "pricingReplaceRule",
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PricingRuleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleSetInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Remove a draft's rule",
+        "operationId": "pricingRemoveRule",
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleSetInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/rule-sets/{rule_set_id}/activate": {
+      "post": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Put a draft in force",
+        "description": "Ops and admins: the draft goes into force and the set before it is archived, in one\nstep. Nothing priced before moves (rule 5). 422 RULE_SET_INVALID names every problem.\nAudited.",
+        "operationId": "pricingActivate",
+        "parameters": [
+          {
+            "name": "rule_set_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Set Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleSetActivation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleSetInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/visits": {
       "get": {
         "tags": [
@@ -7296,6 +7744,35 @@
         ],
         "title": "DataRequestStatus"
       },
+      "EarlyBirdRuleParams": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "early_bird",
+            "title": "Kind"
+          },
+          "minDaysBefore": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 0.0,
+            "title": "Mindaysbefore"
+          },
+          "bps": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Bps"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "minDaysBefore",
+          "bps"
+        ],
+        "title": "EarlyBirdRuleParams"
+      },
       "FeeBasis": {
         "type": "string",
         "enum": [
@@ -7742,6 +8219,42 @@
         ],
         "title": "KycStatus"
       },
+      "LastMinuteRuleParams": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "last_minute",
+            "title": "Kind"
+          },
+          "maxDaysBefore": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 0.0,
+            "title": "Maxdaysbefore"
+          },
+          "maxOccupancyBps": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Maxoccupancybps"
+          },
+          "bps": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Bps"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "maxDaysBefore",
+          "maxOccupancyBps",
+          "bps"
+        ],
+        "title": "LastMinuteRuleParams"
+      },
       "LatLng": {
         "properties": {
           "lat": {
@@ -7774,6 +8287,32 @@
         ],
         "title": "LateCancelPolicy",
         "description": "Who keeps the token when a student cancels later than the free-cancellation days before\nmoving in."
+      },
+      "LengthOfStayRuleParams": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "length_of_stay",
+            "title": "Kind"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/StayRuleTier"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Tiers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "tiers"
+        ],
+        "title": "LengthOfStayRuleParams",
+        "description": "A discount from the highest tier the stay reaches."
       },
       "LicenceStatus": {
         "type": "string",
@@ -9055,6 +9594,55 @@
         ],
         "title": "Occupancy"
       },
+      "OccupancyRuleParams": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "occupancy",
+            "title": "Kind"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/OccupancyRuleTier"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Tiers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "tiers"
+        ],
+        "title": "OccupancyRuleParams",
+        "description": "A premium from the highest tier the category's occupancy reaches."
+      },
+      "OccupancyRuleTier": {
+        "properties": {
+          "minOccupancyBps": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Minoccupancybps"
+          },
+          "bps": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Bps"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "minOccupancyBps",
+          "bps"
+        ],
+        "title": "OccupancyRuleTier"
+      },
       "OneTimeCharge": {
         "properties": {
           "type": {
@@ -9189,6 +9777,41 @@
         ],
         "title": "Outcome",
         "description": "How the visit went, as the agent records it."
+      },
+      "OverrideRuleParams": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "override",
+            "title": "Kind"
+          },
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date",
+            "title": "End"
+          },
+          "rentPaise": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 0.0,
+            "title": "Rentpaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "start",
+          "end",
+          "rentPaise"
+        ],
+        "title": "OverrideRuleParams",
+        "description": "A fixed monthly rent for move-ins from ``start`` to ``end``, both included."
       },
       "OwnerCreate": {
         "properties": {
@@ -9603,6 +10226,162 @@
           "roundingStepPaise"
         ],
         "title": "PricingCapsVersionInfo"
+      },
+      "PricingRuleInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RuleKind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "params": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SeasonRuleParams"
+              },
+              {
+                "$ref": "#/components/schemas/OccupancyRuleParams"
+              },
+              {
+                "$ref": "#/components/schemas/EarlyBirdRuleParams"
+              },
+              {
+                "$ref": "#/components/schemas/LastMinuteRuleParams"
+              },
+              {
+                "$ref": "#/components/schemas/LengthOfStayRuleParams"
+              },
+              {
+                "$ref": "#/components/schemas/OverrideRuleParams"
+              }
+            ],
+            "title": "Params",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "early_bird": "#/components/schemas/EarlyBirdRuleParams",
+                "last_minute": "#/components/schemas/LastMinuteRuleParams",
+                "length_of_stay": "#/components/schemas/LengthOfStayRuleParams",
+                "occupancy": "#/components/schemas/OccupancyRuleParams",
+                "override": "#/components/schemas/OverrideRuleParams",
+                "season": "#/components/schemas/SeasonRuleParams"
+              }
+            }
+          },
+          "roomCategories": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RuleCategory"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roomcategories"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "position",
+          "kind",
+          "label",
+          "params",
+          "roomCategories",
+          "enabled"
+        ],
+        "title": "PricingRuleInfo"
+      },
+      "PricingRuleInput": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "params": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SeasonRuleParams"
+              },
+              {
+                "$ref": "#/components/schemas/OccupancyRuleParams"
+              },
+              {
+                "$ref": "#/components/schemas/EarlyBirdRuleParams"
+              },
+              {
+                "$ref": "#/components/schemas/LastMinuteRuleParams"
+              },
+              {
+                "$ref": "#/components/schemas/LengthOfStayRuleParams"
+              },
+              {
+                "$ref": "#/components/schemas/OverrideRuleParams"
+              }
+            ],
+            "title": "Params",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "early_bird": "#/components/schemas/EarlyBirdRuleParams",
+                "last_minute": "#/components/schemas/LastMinuteRuleParams",
+                "length_of_stay": "#/components/schemas/LengthOfStayRuleParams",
+                "occupancy": "#/components/schemas/OccupancyRuleParams",
+                "override": "#/components/schemas/OverrideRuleParams",
+                "season": "#/components/schemas/SeasonRuleParams"
+              }
+            }
+          },
+          "roomCategories": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array",
+                "maxItems": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roomcategories"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label",
+          "params"
+        ],
+        "title": "PricingRuleInput"
       },
       "PrivacyNoticeInfo": {
         "properties": {
@@ -10769,6 +11548,247 @@
         ],
         "title": "RoomInfo"
       },
+      "RuleCategory": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "RuleCategory"
+      },
+      "RuleKind": {
+        "type": "string",
+        "enum": [
+          "season",
+          "occupancy",
+          "early_bird",
+          "last_minute",
+          "length_of_stay",
+          "override"
+        ],
+        "title": "RuleKind"
+      },
+      "RuleSetActivation": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RuleSetActivation"
+      },
+      "RuleSetInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RuleSetStatus"
+          },
+          "property": {
+            "$ref": "#/components/schemas/RuleSetProperty"
+          },
+          "activatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activatedat"
+          },
+          "activatedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Changer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archivedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archivedat"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/PricingRuleInfo"
+            },
+            "type": "array",
+            "title": "Rules"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "status",
+          "property",
+          "activatedAt",
+          "activatedBy",
+          "archivedAt",
+          "note",
+          "rules",
+          "problems"
+        ],
+        "title": "RuleSetInfo"
+      },
+      "RuleSetList": {
+        "properties": {
+          "property": {
+            "$ref": "#/components/schemas/RuleSetProperty"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RuleSetSummaryInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "property",
+          "items"
+        ],
+        "title": "RuleSetList"
+      },
+      "RuleSetProperty": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RuleSetProperty"
+      },
+      "RuleSetStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "active",
+          "archived"
+        ],
+        "title": "RuleSetStatus"
+      },
+      "RuleSetSummaryInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RuleSetStatus"
+          },
+          "activatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activatedat"
+          },
+          "archivedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archivedat"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "rules": {
+            "type": "integer",
+            "title": "Rules"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "status",
+          "activatedAt",
+          "archivedAt",
+          "note",
+          "rules"
+        ],
+        "title": "RuleSetSummaryInfo"
+      },
       "SafetySummary": {
         "properties": {
           "verifiedOn": {
@@ -11013,6 +12033,41 @@
           "radiusM"
         ],
         "title": "SearchPlaces"
+      },
+      "SeasonRuleParams": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "season",
+            "title": "Kind"
+          },
+          "start": {
+            "type": "string",
+            "pattern": "^\\d{2}-\\d{2}$",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^\\d{2}-\\d{2}$",
+            "title": "End"
+          },
+          "bps": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Bps"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "start",
+          "end",
+          "bps"
+        ],
+        "title": "SeasonRuleParams",
+        "description": "Up or down by ``bps`` for move-ins from ``start`` to ``end`` (MM-DD, both included); may\nwrap the year."
       },
       "SessionInfo": {
         "properties": {
@@ -11726,6 +12781,29 @@
           "status"
         ],
         "title": "StatusChange"
+      },
+      "StayRuleTier": {
+        "properties": {
+          "minMonths": {
+            "type": "integer",
+            "maximum": 36.0,
+            "minimum": 1.0,
+            "title": "Minmonths"
+          },
+          "bps": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Bps"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "minMonths",
+          "bps"
+        ],
+        "title": "StayRuleTier"
       },
       "StudentVisit": {
         "properties": {

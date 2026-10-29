@@ -59,6 +59,8 @@ PATH_VALUES: Final = frozenset(
         "someone_elses_student_visit",
         "someone_elses_grievance",
         "a_missing_rent_band",
+        "a_draft_rule_set",
+        "a_draft_rule",
         "an_owner",
         "a_live_listing",
     }
@@ -167,6 +169,15 @@ BOOKING_IN_FORCE: Final = {
     "maxAdvanceDays": 120,
 }
 CAPS_IN_FORCE: Final = {"maxPremiumBps": 4000, "maxDiscountBps": 3000, "roundingStepPaise": 5000}
+
+
+def _a_rule() -> dict[str, Any]:
+    return {
+        "json": {
+            "label": "Long stay",
+            "params": {"kind": "length_of_stay", "tiers": [{"minMonths": 6, "bps": -300}]},
+        }
+    }
 
 
 def _complaint() -> dict[str, Any]:
@@ -413,6 +424,29 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ),
     ("POST", "/v1/admin/rent-bands/{band_id}/end"): Rule(
         signed_in(403, admin=404), lambda: {"json": {}}, path={"band_id": "a_missing_rent_band"}
+    ),
+    # A PG's pricing rule sets (ADR 0038): ops and admins, on a fresh listing's own draft.
+    ("GET", "/v1/ops/properties/{property_id}/rule-sets"): Rule(
+        ops_only(200), path={"property_id": "a_listing"}
+    ),
+    ("POST", "/v1/ops/properties/{property_id}/rule-sets/draft"): Rule(
+        ops_only(200), path={"property_id": "a_listing"}
+    ),
+    ("GET", "/v1/ops/rule-sets/{rule_set_id}"): Rule(
+        ops_only(200), path={"rule_set_id": "a_draft_rule_set"}
+    ),
+    ("POST", "/v1/ops/rule-sets/{rule_set_id}/rules"): Rule(
+        ops_only(201), _a_rule, path={"rule_set_id": "a_draft_rule_set"}
+    ),
+    ("PUT", "/v1/ops/rules/{rule_id}"): Rule(
+        ops_only(200), _a_rule, path={"rule_id": "a_draft_rule"}
+    ),
+    ("DELETE", "/v1/ops/rules/{rule_id}"): Rule(ops_only(200), path={"rule_id": "a_draft_rule"}),
+    ("POST", "/v1/ops/rule-sets/{rule_set_id}/activate"): Rule(
+        ops_only(200), lambda: {"json": {}}, path={"rule_set_id": "a_draft_rule_set"}
+    ),
+    ("DELETE", "/v1/ops/rule-sets/{rule_set_id}"): Rule(
+        ops_only(204), path={"rule_set_id": "a_draft_rule_set"}
     ),
     # Student visits (ADR 0033): people signed in by phone ask and cancel their own; ops book and
     # cancel any; field agents run the ones booked for them. The visit is another student's, booked

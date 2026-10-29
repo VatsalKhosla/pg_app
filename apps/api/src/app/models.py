@@ -42,6 +42,8 @@ from app.modules.pricing.models import (
     BookingPolicyVersion,
     FeePolicyVersion,
     PricingCapsVersion,
+    PricingRuleRow,
+    PricingRuleSet,
     RentBand,
 )
 from app.modules.search.models import PropertyPriceSummary, SearchListing
@@ -72,6 +74,8 @@ __all__ = [
     "Owner",
     "OwnerAgreement",
     "PricingCapsVersion",
+    "PricingRuleRow",
+    "PricingRuleSet",
     "Property",
     "PropertyAmenity",
     "PropertyMedia",
