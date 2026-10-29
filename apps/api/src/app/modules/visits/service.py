@@ -346,3 +346,51 @@ class VisitTexts:
         if template != CANCELLED:
             values["address"] = f"{place.address_line}, {place.locality}"
         return student.phone_e164, values
+
+
+def _moment(value: datetime | None) -> str | None:
+    return None if value is None else value.isoformat()
+
+
+async def visits_part(db: AsyncSession, user_id: int) -> dict[str, object]:
+    """The visits module's part of a person's data export: the visits they asked for and, for a
+    field agent, the check-ins they made with where they were."""
+    visits = VisitRepository(db)
+    asked = await visits.of_student(user_id, limit=None)
+    checked_in = await visits.checked_in_by(user_id)
+    places = await CatalogLookup(db).visit_places(
+        {visit.property_id for visit in [*asked, *checked_in]}, verified_only=False
+    )
+    positions = await visits.positions([visit.id for visit in checked_in])
+    part: dict[str, object] = {}
+    if asked:
+        part["visits"] = [
+            {
+                "id": str(visit.public_id),
+                "pg": places[visit.property_id].name,
+                "status": visit.status,
+                "preferredStarts": [start.isoformat() for start in visit.preferred_starts],
+                "requestedAt": visit.requested_at.isoformat(),
+                "scheduledAt": _moment(visit.scheduled_at),
+                "cancelledAt": _moment(visit.cancelled_at),
+                "cancelledBy": visit.cancelled_by,
+                "cancelReason": visit.cancel_reason,
+                "outcome": visit.outcome,
+                "outcomeNote": visit.outcome_note,
+            }
+            for visit in asked
+        ]
+    if checked_in:
+        part["visitCheckIns"] = [
+            {
+                "visit": str(visit.public_id),
+                "pg": places[visit.property_id].name,
+                "checkedInAt": _moment(visit.checked_in_at),
+                "position": None
+                if (position := positions.get(visit.id)) is None
+                else {"lat": position.lat, "lng": position.lng},
+                "accuracyM": visit.check_in_accuracy_m,
+            }
+            for visit in checked_in
+        ]
+    return part

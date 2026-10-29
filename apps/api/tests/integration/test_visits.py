@@ -14,11 +14,13 @@ from sqlalchemy import select
 from app.config import Settings
 from app.core.actor import Role
 from app.core.calendar import INDIA
+from app.jobs import EXPORTERS
 from app.modules.catalog.models import Property
 from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.service import SessionService
 from app.modules.visits.domain.visits import StudentVisitStatus
 from app.modules.visits.models import Visit
+from app.modules.visits.service import visits_part
 from tests.integration.test_search import _category, _publish, _token
 from tests.jobs import RecordedTexts, run_due_jobs
 from tests.staff_api import NOW, Staff, run_as_staff, sign_in, spot
@@ -151,6 +153,9 @@ def test_a_student_asks_ops_book_the_agent_checks_in_and_ops_see_the_log(  # noq
             "phone"
         ]
         seen["slug"] = slug
+        async with ops.app.state.sessionmaker() as db, db.begin():
+            seen["student's export"] = await visits_part(db, student.user_id)
+            seen["agent's export"] = await visits_part(db, agent.user_id)
         return seen
 
     seen = run(scenario)
@@ -195,6 +200,23 @@ def test_a_student_asks_ops_book_the_agent_checks_in_and_ops_see_the_log(  # noq
         "name": f"Vasant PG {token}",
         "locality": "Kamla Nagar",
     }
+    # A person's data export (DPDP) holds the visits they asked for, and an agent's the
+    # check-ins they made.
+    assert visits_part in EXPORTERS
+    [exported] = seen["student's export"]["visits"]
+    assert (exported["id"], exported["status"], exported["outcome"]) == (
+        asked["id"],
+        "completed",
+        "interested",
+    )
+    assert exported["preferredStarts"] == [
+        start.astimezone(UTC).isoformat() for start in (at, india(17, 17, 30))
+    ]
+    assert "visitCheckIns" not in seen["student's export"]
+    [made] = seen["agent's export"]["visitCheckIns"]
+    assert (made["visit"], made["pg"], made["accuracyM"]) == (asked["id"], f"Vasant PG {token}", 12)
+    assert set(made["position"]) == {"lat", "lng"}
+    assert "visits" not in seen["agent's export"]
 
 
 def test_limits_and_who_may_do_what(run: Callable[..., Any]) -> None:

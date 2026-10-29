@@ -56,13 +56,19 @@ class VisitRepository:
             )
         )
 
-    async def of_student(self, student_id: int, *, limit: int) -> list[Visit]:
-        """A student's visits, newest first."""
+    async def of_student(self, student_id: int, *, limit: int | None) -> list[Visit]:
+        """A student's visits, newest first; all of them without a ``limit``."""
+        query = select(Visit).where(Visit.student_id == student_id)
+        found = await self._db.scalars(query.order_by(Visit.public_id.desc()).limit(limit))
+        return list(found)
+
+    async def checked_in_by(self, agent_id: int) -> list[Visit]:
+        """The visits an agent checked in at, oldest first. A visit's agent can't change once
+        they've checked in, so these are the check-ins they made."""
         found = await self._db.scalars(
             select(Visit)
-            .where(Visit.student_id == student_id)
-            .order_by(Visit.public_id.desc())
-            .limit(limit)
+            .where(Visit.agent_id == agent_id, Visit.checked_in_at.is_not(None))
+            .order_by(Visit.checked_in_at)
         )
         return list(found)
 

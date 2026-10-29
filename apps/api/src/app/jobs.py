@@ -40,6 +40,7 @@ from app.modules.search.jobs import (
     refresh_handler,
 )
 from app.modules.visits.jobs import TEXT, text_handler
+from app.modules.visits.service import visits_part
 
 if TYPE_CHECKING:
     from app.core.texts import Texts
@@ -49,7 +50,7 @@ if TYPE_CHECKING:
 
 # A person's data export (DPDP): one part from every module that holds personal data. A module
 # that starts keeping personal data adds its part here.
-EXPORTERS: Final = (personal_data, owner_data, data_requests_part)
+EXPORTERS: Final = (personal_data, owner_data, data_requests_part, visits_part)
 
 # The retention schedule (DPDP: no longer than needed). A module that starts keeping personal data
 # adds its rule here; periods still to be decided by the founders are noted in ADR 0018.
