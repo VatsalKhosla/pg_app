@@ -167,3 +167,31 @@ export const getPolicies = unstable_cache(
   ["policies"],
   { revalidate: POLICIES_REVALIDATE_SECONDS, tags: ["policies"] },
 );
+
+export type PriceCalendar = Schemas["PriceCalendar"];
+
+/** The calendar moves only with rules, policies and bookings: the API caches it five minutes. */
+const CALENDAR_REVALIDATE_SECONDS = 300;
+
+/**
+ * What each of a PG's rooms costs a month for a move-in each week, as quotes say (ADR 0040), or
+ * null if the public can't see the PG. Cached like the listing, and revalidated with it and with
+ * the policies.
+ */
+export async function getPriceCalendar(slug: string): Promise<PriceCalendar | null> {
+  const cached = unstable_cache(
+    async () => {
+      try {
+        return await unwrap(
+          publicApi().GET("/v1/properties/{slug}/price-calendar", { params: { path: { slug } } }),
+        );
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return null;
+        throw error;
+      }
+    },
+    ["price-calendar", slug],
+    { revalidate: CALENDAR_REVALIDATE_SECONDS, tags: ["listings", listingTag(slug), "policies"] },
+  );
+  return cached();
+}

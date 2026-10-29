@@ -39,9 +39,17 @@ function images(listing: PublicListing): string[] {
     .slice(0, MAX_IMAGES);
 }
 
-/** A PG as a lodging business, with an offer for each room category's rent a month. */
-export function listingJsonLd(listing: PublicListing, url: string): Thing {
-  const rents = listing.categories.map((category) => category.baseRentPaise);
+/**
+ * A PG as a lodging business, with an offer for each room category's rent a month: the rent a
+ * quote would say now when the page has it (ADR 0040), else the listed one.
+ */
+export function listingJsonLd(
+  listing: PublicListing,
+  url: string,
+  rentOf: (category: PublicListing["categories"][number]) => number = (category) =>
+    category.baseRentPaise,
+): Thing {
+  const rents = listing.categories.map(rentOf);
   const low = Math.min(...rents);
   const high = Math.max(...rents);
   return {
@@ -75,7 +83,7 @@ export function listingJsonLd(listing: PublicListing, url: string): Thing {
       name: category.label,
       priceSpecification: {
         "@type": "UnitPriceSpecification",
-        price: rupeesText(category.baseRentPaise),
+        price: rupeesText(rentOf(category)),
         priceCurrency: "INR",
         // A bed, each month.
         referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "MON" },

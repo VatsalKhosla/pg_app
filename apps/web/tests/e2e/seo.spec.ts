@@ -133,8 +133,25 @@ test.describe("search engines", () => {
     await expect(
       page.getByText(new RegExp(`^${String(there.listings)} verified PGs? in Kamla Nagar`)),
     ).toBeVisible();
+    // The count and the cards come from two caches, each up to 30 seconds old: another test
+    // may publish a PG here between them, so wait for the page to agree with itself.
     const cards = page.getByRole("region", { name: "The PGs" }).getByRole("listitem");
-    expect(await cards.count()).toBe(Math.min(there.listings, 12));
+    await expect
+      .poll(
+        async () => {
+          const said = /^(\d+) verified PGs?/u.exec(
+            (await page
+              .getByText(/verified PGs? in Kamla Nagar/u)
+              .first()
+              .textContent()) ?? "",
+          );
+          const agreed = (await cards.count()) === Math.min(Number(said?.[1] ?? -1), 12);
+          if (!agreed) await page.reload();
+          return agreed;
+        },
+        { timeout: 45_000, intervals: [2_000] },
+      )
+      .toBe(true);
     const nearby = page.getByRole("region", { name: "Campuses nearby" });
     await expect(nearby.getByRole("link", { name: /^Hindu College: \d+ PGs?$/ })).toBeVisible();
     expect(await wcagViolations(page)).toEqual([]);

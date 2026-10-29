@@ -463,7 +463,12 @@
       "oneTime": "{label}: {amount}, once",
       "noCharges": "No other charges.",
       "totals": "Other charges come to about {monthly} a month, and {once} once.",
-      "none": "No rooms are open right now."
+      "none": "No rooms are open right now.",
+      "fixedForStay": "Price fixed for your whole stay",
+      "headlineNote": "Moving in this week, for an {months}-month stay.",
+      "moveInBy": "Move in by {date}: {amount}",
+      "fromDate": "from {date}: {amount}",
+      "bedsLeft": "{count, plural, one {Only # bed left} other {Only # beds left}}"
     },
     "safety": {
       "title": "Safety",
@@ -539,7 +544,35 @@
       }
     },
     "ogAlt": "The PG's name, where it is and what it costs a month",
-    "ogFrom": "From {min} a month"
+    "ogFrom": "From {min} a month",
+    "quote": {
+      "title": "Check your price",
+      "intro": "Pick a room, the day you'd move in and how long you'd stay. The rent we show is fixed for your whole stay.",
+      "room": "Room",
+      "chooseRoom": "Choose a room",
+      "moveIn": "Move-in date",
+      "stay": "How long you'd stay",
+      "months": "{count, plural, one {# month} other {# months}}",
+      "submit": "Show my price",
+      "checking": "Checking…",
+      "needRoom": "Choose a room.",
+      "needDate": "Choose the day you'd move in.",
+      "monthly": "{amount} a month, fixed for your whole stay",
+      "token": "Token to reserve: {amount}, which counts toward your first month's rent",
+      "dueAtMoveIn": "Due when you move in: {amount}",
+      "deposit": "Security deposit: {amount}",
+      "charges": "Other charges: about {monthly} a month, and {once} once",
+      "noCharges": "No other charges.",
+      "validUntil": "This price holds until {time}.",
+      "bookingSoon": "Reserving a bed online opens soon. Until then, book a visit to see it.",
+      "errors": {
+        "generic": "We couldn't work out the price. Please try again.",
+        "QUOTE_INVALID": "We can't price that:",
+        "RATE_LIMITED": "That's a lot of prices at once. Please wait a minute.",
+        "PRICING_CONFIG_ERROR": "This room can't be priced right now; our team has been told.",
+        "API_UNREACHABLE": "We couldn't reach our servers. Check your connection and try again."
+      }
+    }
   },
   "Staff": {
     "signInMetaTitle": "Staff sign-in",

@@ -104,6 +104,73 @@ test.describe("PG page", () => {
   });
 });
 
+interface Calendar {
+  stayMonths: number;
+  rooms: {
+    label: string;
+    bedsFree: number;
+    weeks: { moveIn: string; monthlyRentPaise: number }[];
+  }[];
+}
+
+test.describe("a PG page's prices", () => {
+  test("are a quote's, and beds are scarce only when they are (step 4.5)", async ({
+    page,
+    request,
+  }) => {
+    await page.route("https://tile.openstreetmap.org/**", (route) =>
+      route.fulfill({ contentType: "image/png", body: BLANK_TILE }),
+    );
+    const calendar = (await (
+      await request.get(`${API}/v1/properties/${SLUG}/price-calendar`)
+    ).json()) as Calendar;
+
+    await page.goto(`/pg/${SLUG}`);
+
+    const rooms = page.getByRole("region", { name: "Rooms and prices" });
+    expect(calendar.rooms.length).toBeGreaterThan(0);
+    for (const room of calendar.rooms) {
+      const card = rooms.getByRole("listitem").filter({
+        has: page.getByRole("heading", { name: room.label, exact: true }),
+      });
+      const soonest = room.weeks[0];
+      if (soonest === undefined) throw new Error(`${room.label} has no price in the calendar`);
+      // The price is the calendar's, which is what a quote says (ADR 0040), fixed for the stay.
+      await expect(
+        card.getByText(`${formatINR(soonest.monthlyRentPaise)} a month`, { exact: true }),
+      ).toBeVisible();
+      await expect(card.getByText("Price fixed for your whole stay")).toBeVisible();
+      // "Only N left" only from real free beds, 3 or fewer.
+      const scarce = card.getByText(/^Only \d+ beds? left$/u);
+      if (room.bedsFree >= 1 && room.bedsFree <= 3) {
+        await expect(scarce).toHaveText(
+          `Only ${String(room.bedsFree)} bed${room.bedsFree === 1 ? "" : "s"} left`,
+        );
+      } else {
+        await expect(scarce).toHaveCount(0);
+      }
+      // A change of price only where the calendar shows one.
+      const prices = new Set(room.weeks.map((week) => week.monthlyRentPaise));
+      await expect(card.getByText(/^Move in by /u)).toHaveCount(prices.size > 1 ? 1 : 0);
+    }
+
+    // The checker's price is a quote's, for today and the calendar's stay, with its breakdown.
+    const checker = page.getByRole("region", { name: "Check your price" });
+    const first = calendar.rooms[0];
+    if (first?.weeks[0] === undefined) throw new Error("no room to check");
+    await checker.getByLabel("Room").selectOption({ label: first.label });
+    await checker.getByRole("button", { name: "Show my price" }).click();
+    await expect(
+      checker.getByText(
+        `${formatINR(first.weeks[0].monthlyRentPaise)} a month, fixed for your whole stay`,
+      ),
+    ).toBeVisible();
+    await expect(checker.getByText(/^Base ₹/u)).toBeVisible();
+    await expect(checker.getByText(/^Token to reserve: ₹2,000/u)).toBeVisible();
+    expect(await wcagViolations(page)).toEqual([]);
+  });
+});
+
 test.describe("a PG the public can't see", () => {
   // The browser reports the 404 answer as a console error, by design.
   test.use({ expectedConsoleErrors: [/status of 404/] });

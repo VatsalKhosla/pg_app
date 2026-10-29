@@ -11,9 +11,16 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { buttonVariants } from "@/components/ui/button";
 import { TrackView } from "@/components/system/track-view";
 import { publicEnv } from "@/config/env";
-import { getPublicListing, type PublicListing } from "@/lib/api/public";
+import { QuoteChecker } from "@/components/pg/quote-checker";
+import {
+  getPriceCalendar,
+  getPublicListing,
+  type PriceCalendar,
+  type PublicListing,
+} from "@/lib/api/public";
 import { formatDistance } from "@/lib/format/distance";
 import { formatINR } from "@/lib/money";
+import { priceStretches, scarceBeds } from "@/lib/pricing/calendar";
 import { breadcrumbJsonLd, listingJsonLd } from "@/lib/seo/json-ld";
 import { cn } from "@/lib/utils";
 
@@ -66,6 +73,9 @@ export async function generateMetadata({ params }: PageProps<"/pg/[slug]">): Pro
 export default async function PgPage({ params }: PageProps<"/pg/[slug]">) {
   const { slug } = await params;
   const listing = await listingFor(slug);
+  // Without the calendar (the API briefly away), the listed rents show, with no price claims.
+  const calendar = await getPriceCalendar(slug).catch(() => null);
+  const rentOf = currentRent(calendar);
   const t = await getTranslations("Pg");
   const tLanding = await getTranslations("Landing");
   const visit = `/pg/${slug}/visit` as Route;
@@ -78,7 +88,7 @@ export default async function PgPage({ params }: PageProps<"/pg/[slug]">) {
       {/* For search engines: the PG with its offers, and where it sits in the site (ADR 0032). */}
       <JsonLd
         data={[
-          listingJsonLd(listing, absolute(`/pg/${slug}`)),
+          listingJsonLd(listing, absolute(`/pg/${slug}`), rentOf),
           breadcrumbJsonLd([
             { name: tLanding("home"), url: absolute("/") },
             {
@@ -121,7 +131,10 @@ export default async function PgPage({ params }: PageProps<"/pg/[slug]">) {
       </header>
 
       <Gallery listing={listing} />
-      <Rooms categories={listing.categories} />
+      <Rooms categories={listing.categories} calendar={calendar} />
+      {listing.categories.length === 0 ? null : (
+        <CheckPrice categories={listing.categories} stay={calendar?.stayMonths ?? DEFAULT_STAY} />
+      )}
       <Safety listing={listing} />
 
       <div className="grid gap-10 md:grid-cols-2">
@@ -235,8 +248,32 @@ async function Gallery({ listing }: { listing: PublicListing }) {
   );
 }
 
-async function Rooms({ categories }: { categories: Category[] }) {
+/** The rent a quote would say now for a category: its calendar's first week, else the listed. */
+function currentRent(calendar: PriceCalendar | null): (category: Category) => number {
+  const soonest = new Map(
+    (calendar?.rooms ?? []).flatMap((room) =>
+      room.weeks[0] === undefined ? [] : [[room.roomCategory, room.weeks[0].monthlyRentPaise]],
+    ),
+  );
+  return (category) => soonest.get(category.id) ?? category.baseRentPaise;
+}
+
+async function Rooms({
+  categories,
+  calendar,
+}: {
+  categories: Category[];
+  calendar: PriceCalendar | null;
+}) {
   const t = await getTranslations("Pg.rooms");
+  const format = await getFormatter();
+  const rentOf = currentRent(calendar);
+  const day = (iso: string) =>
+    format.dateTime(new Date(`${iso}T00:00:00+05:30`), {
+      day: "numeric",
+      month: "short",
+      timeZone: "Asia/Kolkata",
+    });
   return (
     <section aria-labelledby="rooms-title" className="space-y-4">
       <div className="space-y-1">
@@ -264,9 +301,12 @@ async function Rooms({ categories }: { categories: Category[] }) {
                     .join(" · ")}
                 </p>
               </div>
-              <p className="text-2xl font-bold">
-                {t("rent", { amount: formatINR(category.baseRentPaise) })}
-              </p>
+              <RoomPrice
+                rent={rentOf(category)}
+                room={calendar?.rooms.find((room) => room.roomCategory === category.id)}
+                stay={calendar?.stayMonths}
+                day={day}
+              />
               <p>{t("deposit", { amount: formatINR(category.securityDepositPaise) })}</p>
               <div className="space-y-1 text-sm">
                 <p className="font-medium">{t("charges")}</p>
@@ -292,6 +332,109 @@ async function Rooms({ categories }: { categories: Category[] }) {
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+const DEFAULT_STAY = 11;
+const STAYS = [1, 3, 6, 9, 11, 12, 18, 24] as const;
+
+/**
+ * A room's price as a quote would say it now, fixed for the stay; where the calendar shows the
+ * price changing, when; and scarcity, only from its free beds (CLAUDE.md rule 7, ADR 0040).
+ */
+async function RoomPrice({
+  rent,
+  room,
+  stay,
+  day,
+}: {
+  rent: number;
+  room: PriceCalendar["rooms"][number] | undefined;
+  stay: number | undefined;
+  day: (iso: string) => string;
+}) {
+  const t = await getTranslations("Pg.rooms");
+  const stretches = room === undefined ? [] : priceStretches(room.weeks);
+  const changes =
+    stretches.length < 2
+      ? null
+      : stretches
+          .map((stretch, index) =>
+            index === 0
+              ? t("moveInBy", {
+                  date: day(stretch.last),
+                  amount: formatINR(stretch.monthlyRentPaise),
+                })
+              : t("fromDate", {
+                  date: day(stretch.first),
+                  amount: formatINR(stretch.monthlyRentPaise),
+                }),
+          )
+          .join(" · ");
+  const scarce = room === undefined ? null : scarceBeds(room.bedsFree);
+  return (
+    <div className="space-y-2">
+      <p className="text-2xl font-bold">{t("rent", { amount: formatINR(rent) })}</p>
+      {room === undefined || stay === undefined ? null : (
+        <p className="text-sm text-muted-foreground">{t("headlineNote", { months: stay })}</p>
+      )}
+      <p className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium">
+        <Check aria-hidden="true" className="size-4" />
+        {t("fixedForStay")}
+      </p>
+      {changes === null ? null : <p className="text-sm">{changes}</p>}
+      {scarce === null ? null : (
+        <p className="text-sm font-semibold">{t("bedsLeft", { count: scarce })}</p>
+      )}
+    </div>
+  );
+}
+
+/** A student's own price for a room, move-in and stay: a quote, with its full breakdown. */
+async function CheckPrice({ categories, stay }: { categories: Category[]; stay: number }) {
+  const t = await getTranslations("Pg.quote");
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
+  const errors = [
+    "generic",
+    "QUOTE_INVALID",
+    "RATE_LIMITED",
+    "PRICING_CONFIG_ERROR",
+    "API_UNREACHABLE",
+  ] as const;
+  return (
+    <section aria-labelledby="quote-title" className="space-y-4">
+      <div className="space-y-1">
+        <h2 id="quote-title" className="text-xl font-semibold">
+          {t("title")}
+        </h2>
+        <p className="text-sm text-muted-foreground">{t("intro")}</p>
+      </div>
+      <QuoteChecker
+        rooms={categories.map((category) => ({ id: category.id, label: category.label }))}
+        stays={STAYS.map((months) => ({ value: months, label: t("months", { count: months }) }))}
+        defaultStay={stay}
+        today={today}
+        text={{
+          room: t("room"),
+          chooseRoom: t("chooseRoom"),
+          moveIn: t("moveIn"),
+          stay: t("stay"),
+          submit: t("submit"),
+          checking: t("checking"),
+          needRoom: t("needRoom"),
+          needDate: t("needDate"),
+          monthly: t.raw("monthly") as string,
+          token: t.raw("token") as string,
+          dueAtMoveIn: t.raw("dueAtMoveIn") as string,
+          deposit: t.raw("deposit") as string,
+          charges: t.raw("charges") as string,
+          noCharges: t("noCharges"),
+          validUntil: t.raw("validUntil") as string,
+          bookingSoon: t("bookingSoon"),
+          errors: Object.fromEntries(errors.map((code) => [code, t(`errors.${code}`)])),
+        }}
+      />
     </section>
   );
 }
