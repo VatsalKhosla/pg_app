@@ -45,12 +45,14 @@ const BLANK_TILE = Buffer.from(
   "base64",
 );
 
-test.describe("PG page", () => {
-  test.beforeAll(async () => {
-    // Once is enough: a second run finds them there and adds nothing.
-    await manage(["catalog", "samples"]);
-  });
+// Every test here but the last reads the samples, and fully parallel tests may run in any
+// order, each in any worker. Once per worker is enough: a second run finds them there and adds
+// nothing.
+test.beforeAll(async () => {
+  await manage(["catalog", "samples"]);
+});
 
+test.describe("PG page", () => {
   test("shows every room's rent, deposit and charges upfront, safety and where it is", async ({
     page,
     request,
