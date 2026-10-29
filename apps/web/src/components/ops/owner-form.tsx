@@ -11,7 +11,7 @@ import { showFieldErrors } from "@/lib/forms/field-errors";
 import { z } from "@/lib/forms/zod";
 import { type Owner, updateOwner } from "@/lib/ops/client";
 
-import { Field, FormOutcome } from "./fields";
+import { Field, FormOutcome } from "@/components/ui/fields";
 import { GSTIN_MAX, NAME_MAX } from "./owner-picker";
 import { useOpsProblem } from "./problems";
 import { useRefresh } from "./use-refresh";

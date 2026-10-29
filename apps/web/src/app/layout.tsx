@@ -10,9 +10,14 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { brand, brandStyle } from "@/config/brand";
 import { publicEnv } from "@/config/env";
+import { assertReadyFor } from "@/config/launch";
 
 // Self-hosted at build time by next/font: no request to Google from the browser, no layout shift.
 const sans = Inter({ subsets: ["latin"], display: "swap", variable: "--font-sans-face" });
+
+// No placeholder for a company fact, and no unreviewed legal text, in production (ADR 0034): a
+// production build fails here, as every page it prerenders loads this layout.
+assertReadyFor(publicEnv.appEnv);
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();

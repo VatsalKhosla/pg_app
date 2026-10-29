@@ -10,7 +10,7 @@ import { showFieldErrors } from "@/lib/forms/field-errors";
 import { z } from "@/lib/forms/zod";
 import { type Listing, updateListing } from "@/lib/ops/client";
 
-import { FormOutcome } from "./fields";
+import { FormOutcome } from "@/components/ui/fields";
 import {
   changedDetails,
   type DetailsValues,

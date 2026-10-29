@@ -11,7 +11,11 @@
     "footerNavigation": "Footer",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "menuTitle": "Menu"
+    "menuTitle": "Menu",
+    "footerCompany": "Company",
+    "footerPolicies": "Policies",
+    "footerExplore": "Explore",
+    "copyright": "© {year} {brand}"
   },
   "Navigation": {
     "search": "Find a PG",
@@ -564,16 +568,6 @@
     "opsConsole": "Ops console",
     "fieldVisits": "My verification visits"
   },
-  "Privacy": {
-    "metaTitle": "Privacy notice",
-    "title": "Privacy notice",
-    "draft": "Draft: this notice is still being written, and a lawyer will review it before launch.",
-    "version": "Version {version}",
-    "purposes": "What you agree to when you create an account",
-    "account": "Your account (needed): your mobile number and the details you give, to sign you in and to arrange visits, bookings and payments for you.",
-    "marketing": "Offers and news (optional): messages about PGs and offers, by SMS, WhatsApp or email, only if you choose them.",
-    "rights": "You can download a copy of your data, withdraw optional consent, or ask for your account's deletion from your account page."
-  },
   "Ops": {
     "metaTitle": "Ops",
     "nav": {
@@ -582,7 +576,8 @@
       "newListing": "New listing",
       "owners": "Owners",
       "staffHome": "Staff tools",
-      "visits": "Visits"
+      "visits": "Visits",
+      "grievances": "Grievances"
     },
     "listings": {
       "title": "Listings",
@@ -1029,6 +1024,41 @@
         "note": "Agent's note: {note}",
         "failed": "That didn't work: {detail}"
       }
+    },
+    "grievances": {
+      "metaTitle": "Grievances",
+      "title": "Grievances",
+      "intro": "Every complaint, oldest first. Acknowledge each within 48 hours and resolve it within a month.",
+      "statusFilter": "Show grievances that are",
+      "all": "All",
+      "none": "No grievances here.",
+      "late": "Late",
+      "receivedOn": "Received {when}",
+      "acknowledgeBy": "Acknowledge by {when}",
+      "resolveBy": "Resolve by {when}",
+      "signedIn": "Signed in",
+      "signedOut": "Signed out",
+      "noName": "No name given",
+      "more": "More",
+      "complainant": "Who complained",
+      "contactPhone": "Phone: {phone}",
+      "contactEmail": "Email: {email}",
+      "about": "About: {reference}",
+      "detailsTitle": "What happened",
+      "logTitle": "What's been done",
+      "acknowledgedOn": "Acknowledged {when}",
+      "resolvedOn": "Resolved {when}",
+      "replyTitle": "Reply to them",
+      "replyHint": "They see this: that it's being looked at, by whom, and anything more you need from them.",
+      "acknowledge": "Acknowledge",
+      "resolutionTitle": "Resolve it",
+      "resolutionHint": "They see this: what was done about it.",
+      "resolve": "Resolve",
+      "saving": "Saving…",
+      "needText": "Write something for them.",
+      "errors": {
+        "generic": "That didn't work. Please try again."
+      }
     }
   },
   "Field": {
@@ -1170,6 +1200,174 @@
         "done": "Done: {outcome}.",
         "failed": "That didn't work: {detail}"
       }
+    }
+  },
+  "Trust": {
+    "pages": {
+      "about": "About us",
+      "contact": "Contact us",
+      "pricing": "Pricing",
+      "tokenProtection": "How your token is protected",
+      "terms": "Terms of use",
+      "privacy": "Privacy notice",
+      "refunds": "Refund and cancellation policy",
+      "grievances": "Grievances"
+    },
+    "draft": "DRAFT — needs lawyer review. This text isn't final, and it may change before we launch.",
+    "version": "Version {version}, written {updated}",
+    "placeholder": "[To be added by the founders: {fact}]",
+    "facts": {
+      "legalName": "the company's registered name",
+      "registeredAddress": "the registered office's address",
+      "supportPhone": "the phone number a person answers",
+      "supportHours": "when the phone is answered",
+      "supportEmail": "the email address for help",
+      "founder": "the founders' names, roles and photos",
+      "grievanceOfficer": "the grievance officer's name, designation and contact details"
+    },
+    "lateCancel": {
+      "refund_full": "for now, your token is still refunded in full.",
+      "forfeit_to_owner": "the owner keeps your token, as the PG's page says before you book.",
+      "split": "part of your token is refunded and the owner keeps the rest, as the PG's page says before you book."
+    }
+  },
+  "About": {
+    "title": "About {brand}",
+    "description": "Who we are, and how we help students find a safe, verified PG bed in Delhi NCR.",
+    "intro": "We help students find a safe, verified PG bed near their college in Delhi NCR, and move in without the usual risks.",
+    "whyTitle": "Why we started",
+    "why": "Finding a PG is hard on students and parents. Brokers ask for large advances to \"arrange a room\"; photos often look nothing like the room; some deposits are never returned. We think booking a bed should be safer than that, and cost students nothing.",
+    "differentTitle": "How we work",
+    "verified": "We visit every PG ourselves before we list it, and check its safety: the exits, fire extinguishers, the building's condition and who looks after it.",
+    "honest": "Prices are honest: the full monthly rent, the deposit and every charge you must pay, shown before you book. No fake countdowns, no made-up scarcity.",
+    "free": "Students pay nothing to use us. Owners pay a one-time fee when we find them a tenant.",
+    "token": "When booking opens, your token is small, refundable and protected until you've moved in and checked the room.",
+    "teamTitle": "Who we are",
+    "registered": "{brand} is run by {legalName}.",
+    "contact": "Questions? Contact us"
+  },
+  "Contact": {
+    "title": "Contact us",
+    "description": "Call or write to {brand}: a person answers.",
+    "intro": "A person answers: no bots, no call centre script.",
+    "phoneTitle": "Phone",
+    "hours": "Answered {hours}.",
+    "emailTitle": "Email",
+    "officeTitle": "Registered office",
+    "visitsTitle": "Your visits",
+    "visits": "See, change or cancel the visits you've asked for on your visits page.",
+    "visitsLink": "Your visits",
+    "complaintsTitle": "Complaints",
+    "complaints": "Something went wrong? Our grievance officer acknowledges every complaint within 48 hours.",
+    "complaintsLink": "Make a complaint"
+  },
+  "Pricing": {
+    "title": "Pricing",
+    "description": "Students pay nothing to use {brand}. Owners pay a one-time placement fee when we find them a tenant.",
+    "intro": "Students pay nothing to use {brand}. Owners pay only when we find them a tenant.",
+    "studentsTitle": "For students and parents: free",
+    "noFee": "No booking fee, no convenience fee, no service fee: not now, not ever.",
+    "visitsFree": "Visits are free, with our field agent there to meet you.",
+    "token": "When booking opens, you'll reserve a bed with a refundable token of {token}. It counts toward your first month's rent, so it isn't an extra cost.",
+    "upfront": "Every PG's page shows the full monthly rent, the deposit and every charge you must pay, before you book.",
+    "ownersTitle": "For PG owners: one fee per tenant placed",
+    "fee": "{rate} of one month's listed rent for the room, once for each tenant we place with you.",
+    "gstExclusive": "GST at {gst} is added to the fee.",
+    "gstInclusive": "The fee includes GST at {gst}.",
+    "listedRent": "The fee is always worked out on your listed rent, never on a higher seasonal price: any rise in price is all yours.",
+    "noListingFee": "Listing, verification and visits cost you nothing.",
+    "tokenLink": "How your token is protected"
+  },
+  "TokenProtection": {
+    "title": "How your token is protected",
+    "description": "A small, refundable token that counts toward your rent, held until you've moved in and checked the room.",
+    "intro": "Your token is small, refundable, and it counts toward your rent.",
+    "soon": "Reserving a bed opens soon. Until then, you can book a visit to any PG we list.",
+    "smallTitle": "A small token, not an advance",
+    "small": "You reserve a bed with {token}, never more. It counts toward your first month's rent. Never pay a broker a large advance to \"arrange a room\".",
+    "heldTitle": "No money moves until you've moved in",
+    "held": "We hold your token until you've moved in and had {checkHours} hours to check the room.",
+    "notAsShownTitle": "Not as shown? Your money back the same day",
+    "notAsShown": "If the room isn't as shown, tell us within those {checkHours} hours: your token is released or refunded the same day, and we'll help you find another verified bed.",
+    "cancelTitle": "Free cancellation",
+    "cancel": "Cancel for free up to {freeCancelDays} days before you move in, and get your whole token back.",
+    "confirmTitle": "If the owner doesn't confirm",
+    "confirm": "The owner confirms your reservation within {confirmHours} hours. If they don't, your token is refunded in full.",
+    "safeTitle": "Paid safely",
+    "safe": "You pay through an RBI-authorised payment gateway, to our registered company: never to a personal UPI ID. Owners are paid through the gateway's own settlement, never from a pool of other people's money.",
+    "throughUsTitle": "Only when you pay through us",
+    "throughUs": "These protections cover money paid through {brand}. Money paid to an owner or a broker directly is outside them.",
+    "policyLink": "Refund and cancellation policy"
+  },
+  "Legal": {
+    "termsDescription": "The terms for using {brand}.",
+    "privacyDescription": "How {brand} collects, uses and protects your personal data.",
+    "refundsDescription": "When and how {brand} refunds a token, and how cancelling works."
+  },
+  "Grievances": {
+    "title": "Grievances",
+    "description": "Complain to {brand}'s grievance officer: acknowledged within 48 hours, resolved within a month.",
+    "intro": "Tell us what went wrong. Our grievance officer acknowledges every complaint within 48 hours and resolves it within a month.",
+    "officerTitle": "Our grievance officer",
+    "officerEmail": "Email: <email></email>",
+    "officerPhone": "Phone: <phone></phone>",
+    "formTitle": "Make a complaint",
+    "signedOut": "You don't need an account: tell us your name and how to reach you.",
+    "signedIn": "We'll text you at the number on your account as your complaint moves, and show the replies here.",
+    "category": "What it's about",
+    "chooseCategory": "Choose one",
+    "categories": {
+      "listing": "A PG's details, photos or price",
+      "visit": "A visit",
+      "booking": "A booking, token or refund",
+      "owner": "An owner or a PG's staff",
+      "staff": "Our staff",
+      "privacy": "My personal data",
+      "account": "My account",
+      "other": "Something else"
+    },
+    "reference": "Which PG, visit or booking (optional)",
+    "referenceHint": "A PG's name, or a booking code.",
+    "details": "What happened",
+    "detailsHint": "What went wrong, when, and what you'd like us to do. Up to 2,000 characters.",
+    "name": "Your name",
+    "phone": "Mobile number",
+    "email": "Email address",
+    "contactHint": "A mobile number or an email address, so the grievance officer can reply.",
+    "humanCheck": "One quick check that you're not a bot:",
+    "submit": "Send complaint",
+    "submitting": "Sending…",
+    "needCategory": "Choose what it's about.",
+    "needDetails": "Tell us what happened.",
+    "tooLong": "That's more than 2,000 characters.",
+    "needName": "Enter your name.",
+    "needContact": "Enter a mobile number or an email address.",
+    "badPhone": "Enter a 10-digit Indian mobile number.",
+    "badEmail": "Enter an email address such as name@example.com.",
+    "receivedTitle": "We've received your complaint",
+    "ticket": "Your ticket number is {ticket}. Keep it: quote it if you call or write.",
+    "deadlines": "The grievance officer will reply by {acknowledgeBy} and resolve it by {resolveBy}.",
+    "another": "Make another complaint",
+    "mineTitle": "Your complaints",
+    "none": "You haven't made a complaint.",
+    "status": {
+      "received": "Received",
+      "acknowledged": "Being looked at",
+      "resolved": "Resolved"
+    },
+    "receivedOn": "Received {when}",
+    "dueBy": "Resolved by {when}",
+    "reply": "The grievance officer's reply: {reply}",
+    "resolution": "What we did: {resolution}",
+    "dataBoard": "For your personal data, if you aren't satisfied with our answer you can also complain to the Data Protection Board of India.",
+    "errors": {
+      "generic": "Your complaint didn't go. Please try again.",
+      "RATE_LIMITED": "Too many complaints from here. Please wait an hour, or call us.",
+      "HUMAN_CHECK_FAILED": "The check that you're not a bot didn't pass. Please try again.",
+      "CSRF_TOKEN_INVALID": "Your session changed in another tab. Please try again.",
+      "API_UNREACHABLE": "We couldn't reach our servers. Check your connection and try again.",
+      "API_TIMEOUT": "That took too long. Please try again.",
+      "SERVICE_UNAVAILABLE": "Complaints can't be sent right now. Please try again later, or call us."
     }
   }
 }

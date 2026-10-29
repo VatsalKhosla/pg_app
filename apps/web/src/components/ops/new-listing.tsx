@@ -12,7 +12,7 @@ import { showFieldErrors } from "@/lib/forms/field-errors";
 import { z } from "@/lib/forms/zod";
 import { createListing, type Owner } from "@/lib/ops/client";
 
-import { FormOutcome } from "./fields";
+import { FormOutcome } from "@/components/ui/fields";
 import {
   type CityChoice,
   type DetailsValues,

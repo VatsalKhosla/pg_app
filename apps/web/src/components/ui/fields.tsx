@@ -4,8 +4,8 @@ import type { UseFormRegisterReturn } from "react-hook-form";
 import { cn } from "@/lib/utils";
 
 /**
- * Form controls for the ops console: a label, the control, a hint and the field's error, wired
- * together for screen readers (aria-describedby, aria-invalid).
+ * Form controls: a label, the control, a hint and the field's error, wired together for screen
+ * readers (aria-describedby, aria-invalid).
  */
 
 export interface ControlProps {

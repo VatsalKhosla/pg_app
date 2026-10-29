@@ -16,7 +16,7 @@ import {
   PRECISIONS,
   SOCIETY_PERMISSIONS,
 } from "./choices";
-import { Checkbox, Choices, Field, Select, Textarea } from "./fields";
+import { Checkbox, Choices, Field, Select, Textarea } from "@/components/ui/fields";
 import { formatCoordinate, parseCoordinate, PinField, pinOf } from "./pin-field";
 
 /**

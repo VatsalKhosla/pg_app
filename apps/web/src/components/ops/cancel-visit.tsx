@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { z } from "@/lib/forms/zod";
 import { cancelVisit } from "@/lib/ops/client";
 
-import { Field, FormOutcome, Textarea } from "./fields";
+import { Field, FormOutcome, Textarea } from "@/components/ui/fields";
 import { useOpsProblem } from "./problems";
 import { useRefresh } from "./use-refresh";
 

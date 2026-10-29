@@ -15,7 +15,7 @@ import { formatINR } from "@/lib/money";
 import { addBed, addRoom, type Listing, setBedStatus, updateCategory } from "@/lib/ops/client";
 
 import { CategoryForm } from "./category-form";
-import { Field, FormOutcome, Select } from "./fields";
+import { Field, FormOutcome, Select } from "@/components/ui/fields";
 import { useOpsProblem } from "./problems";
 import { useRefresh } from "./use-refresh";
 

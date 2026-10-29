@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { upload } from "@/lib/media/client";
 import { type Listing, setMedia } from "@/lib/ops/client";
 
-import { FormOutcome } from "./fields";
+import { FormOutcome } from "@/components/ui/fields";
 import { useOpsProblem } from "./problems";
 import { useRefresh } from "./use-refresh";
 

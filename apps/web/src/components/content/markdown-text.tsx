@@ -1,17 +1,30 @@
+import type { Route } from "next";
+import Link from "next/link";
 import type * as React from "react";
 
-import { type Block, parseAgreement, type Span } from "@/lib/agreement/markdown";
+import { type Block, parseMarkdown, type Span } from "@/lib/content/markdown";
 
 function Spans({ content }: { content: Span[] }) {
-  return content.map((span, index) =>
-    span.strong ? (
+  return content.map((span, index) => {
+    if (span.href !== undefined) {
+      return (
+        <Link
+          key={index}
+          href={span.href as Route}
+          className="font-medium text-primary underline underline-offset-4"
+        >
+          {span.text}
+        </Link>
+      );
+    }
+    return span.strong ? (
       <strong key={index} className="font-semibold">
         {span.text}
       </strong>
     ) : (
       <span key={index}>{span.text}</span>
-    ),
-  );
+    );
+  });
 }
 
 const HEADINGS = {
@@ -23,7 +36,7 @@ const HEADINGS = {
 function BlockView({ block }: { block: Block }) {
   switch (block.kind) {
     case "heading": {
-      // The page's own heading is the h1: the agreement's headings sit one level below it.
+      // The page's own heading is the h1: the text's headings sit one level below it.
       const { tag: Tag, className } = HEADINGS[(block.level + 1) as 2 | 3 | 4];
       return (
         <Tag className={className}>
@@ -50,11 +63,11 @@ function BlockView({ block }: { block: Block }) {
   }
 }
 
-/** The owner agreement's text, as the API gives it (Markdown), laid out to read. */
-export function AgreementText({ text, ...props }: { text: string } & React.ComponentProps<"div">) {
+/** A long text in Markdown (the owner agreement, a legal page), laid out to read. */
+export function MarkdownText({ text, ...props }: { text: string } & React.ComponentProps<"div">) {
   return (
     <div className="space-y-4" {...props}>
-      {parseAgreement(text).map((block, index) => (
+      {parseMarkdown(text).map((block, index) => (
         <BlockView key={index} block={block} />
       ))}
     </div>

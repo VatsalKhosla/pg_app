@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { AcceptAgreement } from "@/components/owner/accept-agreement";
-import { AgreementText } from "@/components/owner/agreement-text";
+import { MarkdownText } from "@/components/content/markdown-text";
 import { NotSetUp } from "@/components/owner/not-set-up";
 import { OWNER_AGREEMENT_PATH, OWNER_HOME_PATH } from "@/lib/auth/routes";
 import { requireOwner } from "@/lib/auth/session";
@@ -61,7 +61,7 @@ export default async function OwnerAgreementPage({ searchParams }: PageProps<"/o
         <p className="rounded-lg border border-destructive/40 p-4 text-sm">{t("draft")}</p>
       ) : null}
 
-      <AgreementText text={agreement.text} />
+      <MarkdownText text={agreement.text} />
 
       <section aria-labelledby="accept-title" className="space-y-4 rounded-lg border p-4">
         <h2 id="accept-title" className="text-lg font-semibold">

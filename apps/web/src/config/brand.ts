@@ -1,7 +1,7 @@
 /**
- * The only place the brand lives (CLAUDE.md): its name and colours. The founders haven't chosen a
- * name yet, so this stays a placeholder until they do. Copy, including the tagline, lives in the
- * message files so it can be translated.
+ * The only place the brand lives (CLAUDE.md): its name, which the founders chose on 2026-10-28,
+ * and its colours. Copy, including the tagline, lives in the message files so it can be
+ * translated; facts about the company behind it live in company.ts.
  *
  * Colours reach the CSS through `brandStyle` (custom properties on <html>), so components only use
  * the design tokens in globals.css. Each foreground keeps at least 4.5:1 contrast with its

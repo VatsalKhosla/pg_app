@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { type Listing, setStatus } from "@/lib/ops/client";
 
 import type { ListingStatus } from "./choices";
-import { FormOutcome } from "./fields";
+import { FormOutcome } from "@/components/ui/fields";
 import { useOpsProblem } from "./problems";
 import { useRefresh } from "./use-refresh";
 

@@ -3,7 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { type Block, parseAgreement, spans } from "@/lib/agreement/markdown";
+import { legalDocuments } from "@/content/legal";
+import { type Block, blanksIn, fillBlanks, parseMarkdown, spans } from "@/lib/content/markdown";
 
 // The agreement's versions, as the API serves them (ADR 0025).
 const AGREEMENTS = path.resolve(process.cwd(), "../api/src/app/modules/catalog/data/agreements");
@@ -17,9 +18,9 @@ function texts(blocks: Block[]): string[] {
   );
 }
 
-describe("parseAgreement", () => {
+describe("parseMarkdown", () => {
   it("reads headings, paragraphs and lists", () => {
-    const blocks = parseAgreement(
+    const blocks = parseMarkdown(
       "# The agreement\n\nOne paragraph\nover two lines.\n\n## 1. Fees\n\n- One fee\n- **Only** once\n\nAfter the list.\n",
     );
 
@@ -45,17 +46,17 @@ describe("parseAgreement", () => {
   });
 
   it("ends a list where a paragraph starts without a blank line", () => {
-    expect(parseAgreement("- One\nThen text").map((block) => block.kind)).toEqual([
+    expect(parseMarkdown("- One\nThen text").map((block) => block.kind)).toEqual([
       "list",
       "paragraph",
     ]);
   });
 
   it("shows anything else exactly as written, markup included", () => {
-    expect(texts(parseAgreement("A <b>tag</b> and **an unmatched star"))).toEqual([
+    expect(texts(parseMarkdown("A <b>tag</b> and **an unmatched star"))).toEqual([
       "A <b>tag</b> and **an unmatched star",
     ]);
-    expect(texts(parseAgreement("#### Too deep\n\n1. Numbered"))).toEqual([
+    expect(texts(parseMarkdown("#### Too deep\n\n1. Numbered"))).toEqual([
       "#### Too deep",
       "1. Numbered",
     ]);
@@ -69,13 +70,61 @@ describe("spans", () => {
       { text: " for discussion", strong: false },
     ]);
   });
+
+  it("links to this site's own pages, and shows any other link as written", () => {
+    expect(spans("See our [grievances page](/grievances), **today**.")).toEqual([
+      { text: "See our ", strong: false },
+      { text: "grievances page", strong: false, href: "/grievances" },
+      { text: ", ", strong: false },
+      { text: "today", strong: true },
+      { text: ".", strong: false },
+    ]);
+    for (const text of [
+      "[elsewhere](https://example.com)",
+      "[another site](//example.com)",
+      "[a script](javascript:alert(1))",
+    ]) {
+      expect(spans(text)).toEqual([{ text, strong: false }]);
+    }
+  });
+});
+
+describe("blanks", () => {
+  it("fills the ones it has values for and leaves the rest as written", () => {
+    expect(fillBlanks("{brand} by {legalName}, {unknown}", { brand: "B", legalName: "L" })).toBe(
+      "B by L, {unknown}",
+    );
+    expect(blanksIn("{a} and {b} and {a}")).toEqual(new Set(["a", "b"]));
+  });
+});
+
+describe("every legal text", () => {
+  // What the legal pages fill in (src/lib/content/legal.ts).
+  const KNOWN = new Set([
+    "brand",
+    "legalName",
+    "address",
+    "supportEmail",
+    "token",
+    "freeCancelDays",
+    "lateCancel",
+    "confirmHours",
+    "checkHours",
+  ]);
+
+  it.each(Object.entries(legalDocuments))("%s uses only known blanks and Markdown", (_, doc) => {
+    expect([...blanksIn(doc.text)].filter((blank) => !KNOWN.has(blank))).toEqual([]);
+    const blocks = parseMarkdown(doc.text);
+    for (const text of texts(blocks)) expect(text).not.toMatch(/\*\*|^#|\]\(/u);
+    expect(doc.version).toMatch(/^draft-\d+$|^\d{4}-\d{2}$/u);
+  });
 });
 
 describe("every version of the agreement on file", () => {
   const versions = readdirSync(AGREEMENTS).filter((name) => name.endsWith(".md"));
 
   it.each(versions)("%s uses only the Markdown the owner area shows", (name) => {
-    const blocks = parseAgreement(readFileSync(path.join(AGREEMENTS, name), "utf8"));
+    const blocks = parseMarkdown(readFileSync(path.join(AGREEMENTS, name), "utf8"));
 
     expect(blocks[0]).toMatchObject({ kind: "heading", level: 1 });
     // Nothing left over from Markdown the parser doesn't know: no stars or hashes shown, and no

@@ -25,7 +25,7 @@ import {
 } from "./category-values";
 
 import { CHARGE_KINDS, CHARGE_TYPES, OCCUPANCIES } from "./choices";
-import { Checkbox, Choices, Field, FormOutcome, Select } from "./fields";
+import { Checkbox, Choices, Field, FormOutcome, Select } from "@/components/ui/fields";
 import { useOpsProblem } from "./problems";
 import { useRefresh } from "./use-refresh";
 

@@ -8,7 +8,7 @@ import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { SOCIETY_PERMISSIONS } from "@/components/ops/choices";
-import { Checkbox, Choices, Field, FormOutcome, Textarea } from "@/components/ops/fields";
+import { Checkbox, Choices, Field, FormOutcome, Textarea } from "@/components/ui/fields";
 import { useOpsProblem } from "@/components/ops/problems";
 import { useRefresh } from "@/components/ops/use-refresh";
 import { Button } from "@/components/ui/button";

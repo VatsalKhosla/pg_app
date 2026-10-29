@@ -22,6 +22,7 @@ export const OWNER_AGREEMENT_PATH = "/owner/agreement" satisfies Route;
 export const VISITS_PATH = "/visits" satisfies Route;
 export const OPS_VISITS_PATH = "/ops/visits" satisfies Route;
 export const FIELD_STUDENT_VISITS_PATH = "/field/student-visits" satisfies Route;
+export const OPS_GRIEVANCES_PATH = "/ops/grievances" satisfies Route;
 
 /** Areas only for signed-in people, and where each sends people who aren't. */
 const PROTECTED_AREAS: readonly { prefix: Route; signIn: Route }[] = [

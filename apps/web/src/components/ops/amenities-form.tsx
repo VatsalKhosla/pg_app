@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { z } from "@/lib/forms/zod";
 import { type Listing, setAmenities } from "@/lib/ops/client";
 
-import { Checkbox, FormOutcome } from "./fields";
+import { Checkbox, FormOutcome } from "@/components/ui/fields";
 import { useOpsProblem } from "./problems";
 import { useRefresh } from "./use-refresh";
 

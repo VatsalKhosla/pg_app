@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { z } from "@/lib/forms/zod";
 import { bookVisit, type Listing, suspendVerification } from "@/lib/ops/client";
 
-import { Field, FormOutcome, Select, Textarea } from "./fields";
+import { Field, FormOutcome, Select, Textarea } from "@/components/ui/fields";
 import { useOpsProblem } from "./problems";
 import { useRefresh } from "./use-refresh";
 

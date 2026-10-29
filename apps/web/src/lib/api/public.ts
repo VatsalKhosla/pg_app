@@ -155,3 +155,15 @@ export async function getCampus(slug: string): Promise<CampusDetail | null> {
   );
   return cached();
 }
+
+export type PublicPolicies = Schemas["PublicPolicies"];
+
+/** The fee and booking terms change rarely, and only when an admin changes them (step 4.1). */
+const POLICIES_REVALIDATE_SECONDS = 300;
+
+/** The fee and booking terms in force, for the pages that explain them (step 3.8). */
+export const getPolicies = unstable_cache(
+  async () => unwrap(publicApi().GET("/v1/policies")),
+  ["policies"],
+  { revalidate: POLICIES_REVALIDATE_SECONDS, tags: ["policies"] },
+);

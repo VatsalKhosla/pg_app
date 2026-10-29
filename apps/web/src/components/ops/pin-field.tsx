@@ -10,7 +10,7 @@ import { hasMap, PinPicker } from "@/components/map/pin-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import { Field } from "./fields";
+import { Field } from "@/components/ui/fields";
 
 /** A typed latitude or longitude, or null when it isn't a number in decimal degrees. */
 export function parseCoordinate(text: string): number | null {

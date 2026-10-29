@@ -11,7 +11,7 @@ import { showFieldErrors } from "@/lib/forms/field-errors";
 import { z } from "@/lib/forms/zod";
 import { addOwner, findOwners, type Owner } from "@/lib/ops/client";
 
-import { Field, FormOutcome } from "./fields";
+import { Field, FormOutcome } from "@/components/ui/fields";
 import { useOpsProblem } from "./problems";
 
 /** The API's limits for owners (apps/api/src/app/modules/catalog/domain/owners.py). */
