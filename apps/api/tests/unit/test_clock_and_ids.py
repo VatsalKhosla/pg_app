@@ -9,9 +9,12 @@ from app.core.calendar import india_date
 from app.core.clock import FrozenClock, SystemClock, today_in_india
 from app.core.ids import (
     BOOKING_CODE_PATTERN,
+    TICKET_NUMBER_PATTERN,
     new_booking_code,
     new_public_id,
+    new_ticket_number,
     normalize_booking_code,
+    normalize_ticket_number,
 )
 
 # ---------------------------------------------------------------------------------------------
@@ -93,3 +96,20 @@ def test_things_that_cannot_be_booking_codes_are_rejected(typed: str) -> None:
 @given(st.builds(new_booking_code))
 def test_new_codes_are_already_canonical(code: str) -> None:
     assert normalize_booking_code(code) == code
+
+
+def test_grievance_ticket_numbers_are_codes_of_their_own() -> None:
+    numbers = {new_ticket_number() for _ in range(2_000)}
+
+    assert all(TICKET_NUMBER_PATTERN.fullmatch(number) for number in numbers)
+    assert len(numbers) == 2_000
+    assert normalize_ticket_number("gr 4m8q 2t7k") == "GR-4M8Q2T7K"
+    assert normalize_ticket_number("4M8Q2T7K") == "GR-4M8Q2T7K"
+    # A booking code isn't a ticket number, nor the other way round.
+    assert normalize_ticket_number("BK-4M8Q2T7K") is None
+    assert normalize_booking_code("GR-4M8Q2T7K") is None
+
+
+@given(st.builds(new_ticket_number))
+def test_new_ticket_numbers_are_already_canonical(number: str) -> None:
+    assert normalize_ticket_number(number) == number

@@ -36,6 +36,7 @@ from app.modules.identity.router import router as identity_router
 from app.modules.media.adapters.s3 import S3Storage
 from app.modules.media.router import router as media_router
 from app.modules.media.service import Buckets
+from app.modules.pricing.router import router as pricing_router
 from app.modules.search.router import router as search_router
 from app.modules.system.router import router as system_router
 from app.modules.visits.contact import VisitContacts
@@ -71,6 +72,7 @@ ROUTERS: Final = (
     geo_router,
     catalog_router,
     search_router,
+    pricing_router,
     visits_router,
     media_router,
 )

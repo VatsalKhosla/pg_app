@@ -19,3 +19,9 @@ def india_date(moment: datetime) -> date:
         msg = "moment must be timezone-aware"
         raise ValueError(msg)
     return moment.astimezone(INDIA).date()
+
+
+def spoken_date(moment: datetime) -> str:
+    """The day in India, as a text message says it: "Sat 31 Oct"."""
+    local = moment.astimezone(INDIA)
+    return f"{local:%a} {local.day} {local:%b}"

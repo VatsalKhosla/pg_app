@@ -21,6 +21,7 @@ from app.core.actor import Actor, Role
 from app.core.clock import FrozenClock
 from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
 from app.core.csrf import issue_csrf_token
+from app.core.ids import new_ticket_number
 from app.core.money import Paise
 from app.main import create_app
 from app.modules.catalog.domain.listing import (
@@ -44,7 +45,14 @@ from app.modules.catalog.service import (
     PropertyDraft,
     VerificationService,
 )
+from app.modules.compliance.domain.grievances import (
+    GrievanceCategory,
+    GrievanceStatus,
+    acknowledge_by,
+    resolve_by,
+)
 from app.modules.compliance.domain.requests import EXPORT_TTL, DataRequestKind, DataRequestStatus
+from app.modules.compliance.models import Grievance
 from app.modules.compliance.repository import DataExportRepository, DataRequestRepository
 from app.modules.geo.reference import read_reference_data
 from app.modules.geo.service import GeoReferenceLoader
@@ -271,6 +279,25 @@ async def _someone_elses_student_visit(app: FastAPI) -> str:
         return str(visit.public_id)
 
 
+async def _someone_elses_grievance(app: FastAPI) -> str:
+    """A complaint someone made signed out, just received."""
+    now = app.state.clock.now()
+    async with app.state.sessionmaker() as db, db.begin():
+        grievance = Grievance(
+            ticket_number=new_ticket_number(),
+            name="A fictional complainant",
+            email="someone@example.com",
+            category=GrievanceCategory.OTHER,
+            details="A fictional complaint.",
+            status=GrievanceStatus.RECEIVED,
+            received_at=now,
+            acknowledge_by=acknowledge_by(now),
+            resolve_by=resolve_by(now),
+        )
+        db.add(grievance)
+        return grievance.ticket_number
+
+
 async def _path_value(app: FastAPI, kind: str) -> str:
     match kind:
         case "someone_elses_session":
@@ -291,6 +318,8 @@ async def _path_value(app: FastAPI, kind: str) -> str:
             value = await _someone_elses_visit(app)
         case "someone_elses_student_visit":
             value = await _someone_elses_student_visit(app)
+        case "someone_elses_grievance":
+            value = await _someone_elses_grievance(app)
         case "an_owner":
             value = str((await _add_owner(app)).owner.public_id)
         case "a_live_listing":

@@ -50,6 +50,11 @@ def iso(moment: datetime) -> str:
     return moment.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
+def _about(texts: RecordedTexts, token: str) -> list[tuple[str, str, dict[str, str]]]:
+    """The texts sent about this test's PG: the outbox is shared with other tests' jobs."""
+    return [sent for sent in texts.sent if sent[2].get("pg", "").endswith(token)]
+
+
 async def _listing(ops: Staff, token: str, name: str = "Vasant") -> dict[str, Any]:
     return await _publish(
         ops,
@@ -105,7 +110,7 @@ def test_a_student_asks_ops_book_the_agent_checks_in_and_ops_see_the_log(  # noq
         seen["booked"] = booked
         seen["shown"] = (await student.call("GET", contact)).status_code
         await run_due_jobs(ops.app, texts=texts)
-        seen["texted now"] = list(texts.sent)
+        seen["texted now"] = _about(texts, token)
         # The day before, then two hours before: the reminders.
         clock.set(at - timedelta(hours=24))
         await run_due_jobs(ops.app, texts=texts)
@@ -121,7 +126,7 @@ def test_a_student_asks_ops_book_the_agent_checks_in_and_ops_see_the_log(  # noq
         clock.set(at - timedelta(minutes=10))
         agent, other, ops = await _again(agent), await _again(other), await _again(ops)
         await run_due_jobs(ops.app, texts=texts)
-        seen["texts"] = list(texts.sent)
+        seen["texts"] = _about(texts, token)
         seen["agent's list"] = await agent.ok("GET", "/v1/field/visits")
         seen["no outcome yet"] = (
             await agent.call(
@@ -337,7 +342,7 @@ def test_a_student_cancels_their_own_and_ops_cancel_a_booked_one_with_a_text(
             "cancelled": cancelled,
             "dropped": dropped,
             "twice": twice.json()["code"],
-            "texts": [template for _, template, _ in texts.sent],
+            "texts": [template for _, template, _ in _about(texts, token)],
         }
 
     seen = run(scenario)

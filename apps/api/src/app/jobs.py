@@ -15,12 +15,14 @@ from app.core.web_cache import REVALIDATE, revalidate_handler
 from app.modules.catalog.service import INVENTORY_CHANGED, LISTING_CHANGED, owner_data
 from app.modules.compliance.jobs import (
     BUILD_EXPORT,
+    GRIEVANCE_TEXT,
     RETENTION,
     build_export_handler,
+    grievance_text_handler,
     retention_handler,
 )
 from app.modules.compliance.retention import RetentionRule
-from app.modules.compliance.service import data_requests_part, expire_exports
+from app.modules.compliance.service import data_requests_part, expire_exports, grievances_part
 from app.modules.identity.service import (
     delete_finished_sessions,
     delete_old_challenges,
@@ -50,7 +52,7 @@ if TYPE_CHECKING:
 
 # A person's data export (DPDP): one part from every module that holds personal data. A module
 # that starts keeping personal data adds its part here.
-EXPORTERS: Final = (personal_data, owner_data, data_requests_part, visits_part)
+EXPORTERS: Final = (personal_data, owner_data, data_requests_part, visits_part, grievances_part)
 
 # The retention schedule (DPDP: no longer than needed). A module that starts keeping personal data
 # adds its rule here; periods still to be decided by the founders are noted in ADR 0018.
@@ -83,7 +85,7 @@ def build_registry(
     *, storage: ObjectStorage, buckets: Buckets, web_cache: WebCache, texts: Texts
 ) -> JobRegistry:
     """Every handler, with what it needs from outside: the object storage media jobs use, the
-    web app whose cached pages are revalidated, and the texts visits send."""
+    web app whose cached pages are revalidated, and the texts visits and grievances send."""
     registry = JobRegistry()
     registry.register(OUTBOX_CLEANUP, delete_finished_jobs)
     registry.register(IDEMPOTENCY_CLEANUP, delete_expired_keys)
@@ -99,4 +101,5 @@ def build_registry(
     registry.register(REFRESH_ALL, refresh_all_handler)
     registry.register(REVALIDATE, revalidate_handler(web_cache))
     registry.register(TEXT, text_handler(texts))
+    registry.register(GRIEVANCE_TEXT, grievance_text_handler(texts))
     return registry

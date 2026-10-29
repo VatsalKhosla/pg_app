@@ -1249,6 +1249,370 @@
         }
       }
     },
+    "/v1/grievances": {
+      "post": {
+        "tags": [
+          "compliance"
+        ],
+        "summary": "Complain to the grievance officer",
+        "description": "Anyone may complain and gets a ticket number. Signed out, a name and a phone number or\nemail address are needed, with a human check token (400 HUMAN_CHECK_FAILED); signed in, the\naccount's phone is the contact and is texted as the complaint moves. Acknowledged within 48\nhours and resolved within a month (the E-Commerce Rules).",
+        "operationId": "complianceComplain",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrievanceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrievanceReceipt"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/grievances": {
+      "get": {
+        "tags": [
+          "compliance"
+        ],
+        "summary": "My complaints and their replies",
+        "description": "The complaints made while signed in to this account, newest first.",
+        "operationId": "complianceMyGrievances",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyGrievanceList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/grievances": {
+      "get": {
+        "tags": [
+          "compliance"
+        ],
+        "summary": "The grievance queue",
+        "description": "Ops and admins, in a staff session: every grievance, oldest first (the order they fall\ndue), optionally only those in one status. ``late`` marks a missed deadline.",
+        "operationId": "complianceGrievanceQueue",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GrievanceStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffGrievancePage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/grievances/{ticket_number}": {
+      "get": {
+        "tags": [
+          "compliance"
+        ],
+        "summary": "A grievance",
+        "description": "Ops and admins: one grievance by its ticket number, typed any way (case, spaces).",
+        "operationId": "complianceGrievance",
+        "parameters": [
+          {
+            "name": "ticket_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticket Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffGrievance"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/grievances/{ticket_number}/acknowledge": {
+      "post": {
+        "tags": [
+          "compliance"
+        ],
+        "summary": "Acknowledge a grievance",
+        "description": "Ops and admins: reply to the person (they see it). Audited. 409 INVALID_TRANSITION once\nacknowledged.",
+        "operationId": "complianceAcknowledgeGrievance",
+        "parameters": [
+          {
+            "name": "ticket_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticket Number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrievanceAcknowledgement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffGrievance"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/grievances/{ticket_number}/resolve": {
+      "post": {
+        "tags": [
+          "compliance"
+        ],
+        "summary": "Resolve a grievance",
+        "description": "Ops and admins: say what was done (the person sees it), acknowledging it too if it\nwasn't yet. Audited. 409 INVALID_TRANSITION once resolved.",
+        "operationId": "complianceResolveGrievance",
+        "parameters": [
+          {
+            "name": "ticket_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticket Number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrievanceResolution"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffGrievance"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/cities": {
       "get": {
         "tags": [
@@ -4172,6 +4536,48 @@
         }
       }
     },
+    "/v1/policies": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "The fee and booking terms in force",
+        "description": "What owners pay and what students can rely on: the placement fee, the token, holds,\ncancellation and the check window. Public.",
+        "operationId": "pricingPolicies",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPolicies"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/visits": {
       "get": {
         "tags": [
@@ -5272,6 +5678,45 @@
         "title": "BedsFree",
         "description": "How many beds are free that month, roughly: real inventory (CLAUDE.md rule 7), without\nhanding out exact counts."
       },
+      "BookingTerms": {
+        "properties": {
+          "tokenPaise": {
+            "type": "integer",
+            "title": "Tokenpaise"
+          },
+          "holdMinutes": {
+            "type": "integer",
+            "title": "Holdminutes"
+          },
+          "freeCancelDays": {
+            "type": "integer",
+            "title": "Freecanceldays"
+          },
+          "checkWindowHours": {
+            "type": "integer",
+            "title": "Checkwindowhours"
+          },
+          "confirmDeadlineHours": {
+            "type": "integer",
+            "title": "Confirmdeadlinehours"
+          },
+          "lateCancelPolicy": {
+            "$ref": "#/components/schemas/LateCancelPolicy"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tokenPaise",
+          "holdMinutes",
+          "freeCancelDays",
+          "checkWindowHours",
+          "confirmDeadlineHours",
+          "lateCancelPolicy"
+        ],
+        "title": "BookingTerms",
+        "description": "What a student relies on when they reserve a bed."
+      },
       "CampusDetail": {
         "properties": {
           "slug": {
@@ -5820,6 +6265,58 @@
         ],
         "title": "CityList"
       },
+      "Complainant": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "account": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "phone",
+          "email",
+          "account"
+        ],
+        "title": "Complainant",
+        "description": "Who complained and how to answer them. ``account`` is set when they were signed in."
+      },
       "Condition": {
         "type": "string",
         "enum": [
@@ -6128,6 +6625,13 @@
         ],
         "title": "DataRequestStatus"
       },
+      "FeeBasis": {
+        "type": "string",
+        "enum": [
+          "listed_rent"
+        ],
+        "title": "FeeBasis"
+      },
       "FieldAgentList": {
         "properties": {
           "items": {
@@ -6204,6 +6708,178 @@
           "coed"
         ],
         "title": "GenderPolicy"
+      },
+      "GrievanceAcknowledgement": {
+        "properties": {
+          "reply": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reply"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reply"
+        ],
+        "title": "GrievanceAcknowledgement",
+        "description": "The grievance officer's reply, which the person sees: that it's being looked at, by whom,\nand anything more they need."
+      },
+      "GrievanceCategory": {
+        "type": "string",
+        "enum": [
+          "listing",
+          "visit",
+          "booking",
+          "owner",
+          "staff",
+          "privacy",
+          "account",
+          "other"
+        ],
+        "title": "GrievanceCategory"
+      },
+      "GrievanceCreate": {
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/GrievanceCategory"
+          },
+          "details": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Details"
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Reference",
+            "default": ""
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 254
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "humanCheckToken": {
+            "type": "string",
+            "maxLength": 2048,
+            "title": "Humanchecktoken",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "category",
+          "details"
+        ],
+        "title": "GrievanceCreate",
+        "description": "A complaint to the grievance officer. Signed in, the account says who it's from (its phone\nis the contact); signed out, a name and a phone number or email address are needed, and a\nhuman check token."
+      },
+      "GrievanceReceipt": {
+        "properties": {
+          "ticketNumber": {
+            "type": "string",
+            "title": "Ticketnumber"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GrievanceStatus"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Receivedat"
+          },
+          "acknowledgeBy": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Acknowledgeby"
+          },
+          "resolveBy": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Resolveby"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ticketNumber",
+          "status",
+          "receivedAt",
+          "acknowledgeBy",
+          "resolveBy"
+        ],
+        "title": "GrievanceReceipt",
+        "description": "What the person keeps: the ticket number, and when to expect an answer."
+      },
+      "GrievanceResolution": {
+        "properties": {
+          "resolution": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Resolution"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "resolution"
+        ],
+        "title": "GrievanceResolution",
+        "description": "What was done about it, which the person sees."
+      },
+      "GrievanceStatus": {
+        "type": "string",
+        "enum": [
+          "received",
+          "acknowledged",
+          "resolved"
+        ],
+        "title": "GrievanceStatus"
+      },
+      "GstMode": {
+        "type": "string",
+        "enum": [
+          "exclusive",
+          "inclusive"
+        ],
+        "title": "GstMode"
       },
       "Health": {
         "properties": {
@@ -6311,6 +6987,16 @@
           "lng"
         ],
         "title": "LatLng"
+      },
+      "LateCancelPolicy": {
+        "type": "string",
+        "enum": [
+          "refund_full",
+          "forfeit_to_owner",
+          "split"
+        ],
+        "title": "LateCancelPolicy",
+        "description": "Who keeps the token when a student cancels less than the free-cancellation days before\nmoving in."
       },
       "LicenceStatus": {
         "type": "string",
@@ -7461,6 +8147,109 @@
         ],
         "title": "MonthlyCharge"
       },
+      "MyGrievance": {
+        "properties": {
+          "ticketNumber": {
+            "type": "string",
+            "title": "Ticketnumber"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GrievanceStatus"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Receivedat"
+          },
+          "acknowledgeBy": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Acknowledgeby"
+          },
+          "resolveBy": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Resolveby"
+          },
+          "category": {
+            "$ref": "#/components/schemas/GrievanceCategory"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "details": {
+            "type": "string",
+            "title": "Details"
+          },
+          "acknowledgedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acknowledgedat"
+          },
+          "reply": {
+            "type": "string",
+            "title": "Reply"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedat"
+          },
+          "resolution": {
+            "type": "string",
+            "title": "Resolution"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ticketNumber",
+          "status",
+          "receivedAt",
+          "acknowledgeBy",
+          "resolveBy",
+          "category",
+          "reference",
+          "details",
+          "acknowledgedAt",
+          "reply",
+          "resolvedAt",
+          "resolution"
+        ],
+        "title": "MyGrievance"
+      },
+      "MyGrievanceList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MyGrievance"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "MyGrievanceList"
+      },
       "NoticePurpose": {
         "properties": {
           "purpose": {
@@ -7874,6 +8663,34 @@
           "distanceM"
         ],
         "title": "PlaceNearby"
+      },
+      "PlacementFeeTerms": {
+        "properties": {
+          "rateBps": {
+            "type": "integer",
+            "title": "Ratebps"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/FeeBasis"
+          },
+          "gstRateBps": {
+            "type": "integer",
+            "title": "Gstratebps"
+          },
+          "gstMode": {
+            "$ref": "#/components/schemas/GstMode"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rateBps",
+          "basis",
+          "gstRateBps",
+          "gstMode"
+        ],
+        "title": "PlacementFeeTerms",
+        "description": "What an owner pays, once per tenant placed: ``rateBps`` of ``basis``, with GST at\n``gstRateBps`` added (``exclusive``) or included (``inclusive``)."
       },
       "PrivacyNoticeInfo": {
         "properties": {
@@ -8458,6 +9275,24 @@
           "renditions"
         ],
         "title": "PublicMedia"
+      },
+      "PublicPolicies": {
+        "properties": {
+          "placementFee": {
+            "$ref": "#/components/schemas/PlacementFeeTerms"
+          },
+          "booking": {
+            "$ref": "#/components/schemas/BookingTerms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "placementFee",
+          "booking"
+        ],
+        "title": "PublicPolicies",
+        "description": "The terms in force, as the Pricing and token pages explain them. Students never pay a\nplatform fee (rule 1), so there is no student fee to state."
       },
       "Purpose": {
         "type": "string",
@@ -9269,6 +10104,139 @@
           "newest"
         ],
         "title": "Sort"
+      },
+      "StaffGrievance": {
+        "properties": {
+          "ticketNumber": {
+            "type": "string",
+            "title": "Ticketnumber"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GrievanceStatus"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Receivedat"
+          },
+          "acknowledgeBy": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Acknowledgeby"
+          },
+          "resolveBy": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Resolveby"
+          },
+          "category": {
+            "$ref": "#/components/schemas/GrievanceCategory"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "details": {
+            "type": "string",
+            "title": "Details"
+          },
+          "acknowledgedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acknowledgedat"
+          },
+          "reply": {
+            "type": "string",
+            "title": "Reply"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedat"
+          },
+          "resolution": {
+            "type": "string",
+            "title": "Resolution"
+          },
+          "complainant": {
+            "$ref": "#/components/schemas/Complainant"
+          },
+          "late": {
+            "type": "boolean",
+            "title": "Late"
+          },
+          "nextStatuses": {
+            "items": {
+              "$ref": "#/components/schemas/GrievanceStatus"
+            },
+            "type": "array",
+            "title": "Nextstatuses"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ticketNumber",
+          "status",
+          "receivedAt",
+          "acknowledgeBy",
+          "resolveBy",
+          "category",
+          "reference",
+          "details",
+          "acknowledgedAt",
+          "reply",
+          "resolvedAt",
+          "resolution",
+          "complainant",
+          "late",
+          "nextStatuses"
+        ],
+        "title": "StaffGrievance"
+      },
+      "StaffGrievancePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StaffGrievance"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "StaffGrievancePage"
       },
       "StaffMember": {
         "properties": {

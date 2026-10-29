@@ -19,7 +19,7 @@ from app.modules.catalog.models import (
     VerificationPhoto,
     VerificationVisit,
 )
-from app.modules.compliance.models import DataExport, DataRequest
+from app.modules.compliance.models import DataExport, DataRequest, Grievance
 from app.modules.geo.models import (
     Campus,
     City,
@@ -52,6 +52,7 @@ __all__ = [
     "DataExport",
     "DataRequest",
     "FeatureFlag",
+    "Grievance",
     "IdempotencyRecord",
     "Locality",
     "MediaAsset",

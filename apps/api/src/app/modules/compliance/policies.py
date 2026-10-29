@@ -17,3 +17,8 @@ def can_see_data_request(actor: Actor, *, owner_id: int) -> bool:
 def can_review_data_requests(actor: Actor) -> bool:
     """The queue is for ops and admins, in a staff session."""
     return actor.has_role(Role.OPS) or actor.has_role(Role.ADMIN)
+
+
+def can_handle_grievances(actor: Actor) -> bool:
+    """The grievance officer and their team: ops and admins, in a staff session."""
+    return actor.has_role(Role.OPS) or actor.has_role(Role.ADMIN)

@@ -435,6 +435,132 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/grievances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complain to the grievance officer
+         * @description Anyone may complain and gets a ticket number. Signed out, a name and a phone number or
+         *     email address are needed, with a human check token (400 HUMAN_CHECK_FAILED); signed in, the
+         *     account's phone is the contact and is texted as the complaint moves. Acknowledged within 48
+         *     hours and resolved within a month (the E-Commerce Rules).
+         */
+        post: operations["complianceComplain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/grievances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My complaints and their replies
+         * @description The complaints made while signed in to this account, newest first.
+         */
+        get: operations["complianceMyGrievances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/grievances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The grievance queue
+         * @description Ops and admins, in a staff session: every grievance, oldest first (the order they fall
+         *     due), optionally only those in one status. ``late`` marks a missed deadline.
+         */
+        get: operations["complianceGrievanceQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/grievances/{ticket_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A grievance
+         * @description Ops and admins: one grievance by its ticket number, typed any way (case, spaces).
+         */
+        get: operations["complianceGrievance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/grievances/{ticket_number}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Acknowledge a grievance
+         * @description Ops and admins: reply to the person (they see it). Audited. 409 INVALID_TRANSITION once
+         *     acknowledged.
+         */
+        post: operations["complianceAcknowledgeGrievance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/grievances/{ticket_number}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a grievance
+         * @description Ops and admins: say what was done (the person sees it), acknowledging it too if it
+         *     wasn't yet. Audited. 409 INVALID_TRANSITION once resolved.
+         */
+        post: operations["complianceResolveGrievance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cities": {
         parameters: {
             query?: never;
@@ -1146,6 +1272,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The fee and booking terms in force
+         * @description What owners pay and what students can rely on: the placement fee, the token, holds,
+         *     cancellation and the check window. Public.
+         */
+        get: operations["pricingPolicies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visits": {
         parameters: {
             query?: never;
@@ -1518,6 +1665,23 @@ export interface components {
          * @enum {string}
          */
         BedsFree: "none" | "few" | "some" | "many";
+        /**
+         * BookingTerms
+         * @description What a student relies on when they reserve a bed.
+         */
+        BookingTerms: {
+            /** Tokenpaise */
+            tokenPaise: number;
+            /** Holdminutes */
+            holdMinutes: number;
+            /** Freecanceldays */
+            freeCancelDays: number;
+            /** Checkwindowhours */
+            checkWindowHours: number;
+            /** Confirmdeadlinehours */
+            confirmDeadlineHours: number;
+            lateCancelPolicy: components["schemas"]["LateCancelPolicy"];
+        };
         /** CampusDetail */
         CampusDetail: {
             /** Slug */
@@ -1673,6 +1837,20 @@ export interface components {
             items: components["schemas"]["CityInfo"][];
         };
         /**
+         * Complainant
+         * @description Who complained and how to answer them. ``account`` is set when they were signed in.
+         */
+        Complainant: {
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string | null;
+            /** Email */
+            email: string | null;
+            /** Account */
+            account: string | null;
+        };
+        /**
          * Condition
          * @description The building as a whole, as the agent sees it.
          * @enum {string}
@@ -1790,6 +1968,11 @@ export interface components {
          * @enum {string}
          */
         DataRequestStatus: "received" | "ready" | "expired" | "completed" | "rejected";
+        /**
+         * FeeBasis
+         * @enum {string}
+         */
+        FeeBasis: "listed_rent";
         /** FieldAgentList */
         FieldAgentList: {
             /** Items */
@@ -1820,6 +2003,89 @@ export interface components {
          * @enum {string}
          */
         GenderPolicy: "boys" | "girls" | "coed";
+        /**
+         * GrievanceAcknowledgement
+         * @description The grievance officer's reply, which the person sees: that it's being looked at, by whom,
+         *     and anything more they need.
+         */
+        GrievanceAcknowledgement: {
+            /** Reply */
+            reply: string;
+        };
+        /**
+         * GrievanceCategory
+         * @enum {string}
+         */
+        GrievanceCategory: "listing" | "visit" | "booking" | "owner" | "staff" | "privacy" | "account" | "other";
+        /**
+         * GrievanceCreate
+         * @description A complaint to the grievance officer. Signed in, the account says who it's from (its phone
+         *     is the contact); signed out, a name and a phone number or email address are needed, and a
+         *     human check token.
+         */
+        GrievanceCreate: {
+            category: components["schemas"]["GrievanceCategory"];
+            /** Details */
+            details: string;
+            /**
+             * Reference
+             * @default
+             */
+            reference: string;
+            /** Name */
+            name?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Email */
+            email?: string | null;
+            /**
+             * Humanchecktoken
+             * @default
+             */
+            humanCheckToken: string;
+        };
+        /**
+         * GrievanceReceipt
+         * @description What the person keeps: the ticket number, and when to expect an answer.
+         */
+        GrievanceReceipt: {
+            /** Ticketnumber */
+            ticketNumber: string;
+            status: components["schemas"]["GrievanceStatus"];
+            /**
+             * Receivedat
+             * Format: date-time
+             */
+            receivedAt: string;
+            /**
+             * Acknowledgeby
+             * Format: date-time
+             */
+            acknowledgeBy: string;
+            /**
+             * Resolveby
+             * Format: date-time
+             */
+            resolveBy: string;
+        };
+        /**
+         * GrievanceResolution
+         * @description What was done about it, which the person sees.
+         */
+        GrievanceResolution: {
+            /** Resolution */
+            resolution: string;
+        };
+        /**
+         * GrievanceStatus
+         * @enum {string}
+         */
+        GrievanceStatus: "received" | "acknowledged" | "resolved";
+        /**
+         * GstMode
+         * @enum {string}
+         */
+        GstMode: "exclusive" | "inclusive";
         /**
          * Health
          * @description Liveness: the process is up and serving requests.
@@ -1868,6 +2134,13 @@ export interface components {
             /** Lng */
             lng: number;
         };
+        /**
+         * LateCancelPolicy
+         * @description Who keeps the token when a student cancels less than the free-cancellation days before
+         *     moving in.
+         * @enum {string}
+         */
+        LateCancelPolicy: "refund_full" | "forfeit_to_owner" | "split";
         /**
          * LicenceStatus
          * @enum {string}
@@ -2244,6 +2517,45 @@ export interface components {
             /** Amountpaise */
             amountPaise: number;
         };
+        /** MyGrievance */
+        MyGrievance: {
+            /** Ticketnumber */
+            ticketNumber: string;
+            status: components["schemas"]["GrievanceStatus"];
+            /**
+             * Receivedat
+             * Format: date-time
+             */
+            receivedAt: string;
+            /**
+             * Acknowledgeby
+             * Format: date-time
+             */
+            acknowledgeBy: string;
+            /**
+             * Resolveby
+             * Format: date-time
+             */
+            resolveBy: string;
+            category: components["schemas"]["GrievanceCategory"];
+            /** Reference */
+            reference: string;
+            /** Details */
+            details: string;
+            /** Acknowledgedat */
+            acknowledgedAt: string | null;
+            /** Reply */
+            reply: string;
+            /** Resolvedat */
+            resolvedAt: string | null;
+            /** Resolution */
+            resolution: string;
+        };
+        /** MyGrievanceList */
+        MyGrievanceList: {
+            /** Items */
+            items: components["schemas"]["MyGrievance"][];
+        };
         /** NoticePurpose */
         NoticePurpose: {
             purpose: components["schemas"]["ConsentPurpose"];
@@ -2395,6 +2707,19 @@ export interface components {
             name: string;
             /** Distancem */
             distanceM: number;
+        };
+        /**
+         * PlacementFeeTerms
+         * @description What an owner pays, once per tenant placed: ``rateBps`` of ``basis``, with GST at
+         *     ``gstRateBps`` added (``exclusive``) or included (``inclusive``).
+         */
+        PlacementFeeTerms: {
+            /** Ratebps */
+            rateBps: number;
+            basis: components["schemas"]["FeeBasis"];
+            /** Gstratebps */
+            gstRateBps: number;
+            gstMode: components["schemas"]["GstMode"];
         };
         /**
          * PrivacyNoticeInfo
@@ -2578,6 +2903,15 @@ export interface components {
             verifiedCapture: boolean;
             /** Renditions */
             renditions: components["schemas"]["Rendition"][];
+        };
+        /**
+         * PublicPolicies
+         * @description The terms in force, as the Pricing and token pages explain them. Students never pay a
+         *     platform fee (rule 1), so there is no student fee to state.
+         */
+        PublicPolicies: {
+            placementFee: components["schemas"]["PlacementFeeTerms"];
+            booking: components["schemas"]["BookingTerms"];
         };
         /**
          * Purpose
@@ -2881,6 +3215,52 @@ export interface components {
          * @enum {string}
          */
         Sort: "recommended" | "price_asc" | "price_desc" | "distance" | "newest";
+        /** StaffGrievance */
+        StaffGrievance: {
+            /** Ticketnumber */
+            ticketNumber: string;
+            status: components["schemas"]["GrievanceStatus"];
+            /**
+             * Receivedat
+             * Format: date-time
+             */
+            receivedAt: string;
+            /**
+             * Acknowledgeby
+             * Format: date-time
+             */
+            acknowledgeBy: string;
+            /**
+             * Resolveby
+             * Format: date-time
+             */
+            resolveBy: string;
+            category: components["schemas"]["GrievanceCategory"];
+            /** Reference */
+            reference: string;
+            /** Details */
+            details: string;
+            /** Acknowledgedat */
+            acknowledgedAt: string | null;
+            /** Reply */
+            reply: string;
+            /** Resolvedat */
+            resolvedAt: string | null;
+            /** Resolution */
+            resolution: string;
+            complainant: components["schemas"]["Complainant"];
+            /** Late */
+            late: boolean;
+            /** Nextstatuses */
+            nextStatuses: components["schemas"]["GrievanceStatus"][];
+        };
+        /** StaffGrievancePage */
+        StaffGrievancePage: {
+            /** Items */
+            items: components["schemas"]["StaffGrievance"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
         /** StaffMember */
         StaffMember: {
             /**
@@ -4229,6 +4609,257 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueuedDataRequest"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    complianceComplain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrievanceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrievanceReceipt"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    complianceMyGrievances: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyGrievanceList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    complianceGrievanceQueue: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["GrievanceStatus"] | null;
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffGrievancePage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    complianceGrievance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffGrievance"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    complianceAcknowledgeGrievance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrievanceAcknowledgement"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffGrievance"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    complianceResolveGrievance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrievanceResolution"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffGrievance"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */
@@ -5988,6 +6619,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SitemapPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPolicies"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

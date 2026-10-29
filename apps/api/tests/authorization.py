@@ -57,6 +57,7 @@ PATH_VALUES: Final = frozenset(
         "a_bed",
         "someone_elses_visit",
         "someone_elses_student_visit",
+        "someone_elses_grievance",
         "an_owner",
         "a_live_listing",
     }
@@ -149,6 +150,19 @@ def _visit_report() -> dict[str, Any]:
 
 def _reason() -> dict[str, Any]:
     return {"json": {"reason": "A fictional reason"}}
+
+
+def _complaint() -> dict[str, Any]:
+    # Signed in, the account is the contact and the name and phone sent are ignored.
+    return {
+        "json": {
+            "category": "other",
+            "details": "Checking who may complain.",
+            "name": "A fictional complainant",
+            "phone": _new_mobile(),
+            "humanCheckToken": "token",
+        }
+    }
 
 
 @dataclass(frozen=True)
@@ -334,6 +348,26 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("POST", "/v1/ops/verification-visits/{visit_id}/cancel"): Rule(
         ops_only(200), _reason, path={"visit_id": "someone_elses_visit"}
     ),
+    # Grievances (ADR 0034): anyone complains, signed in or not; the grievance officer's team
+    # (ops and admins) works the queue. The grievance is a fresh one from someone else.
+    ("POST", "/v1/grievances"): Rule(everyone(201), _complaint),
+    ("GET", "/v1/me/grievances"): Rule(signed_in(200)),
+    ("GET", "/v1/ops/grievances"): Rule(signed_in(403, ops=200, admin=200)),
+    ("GET", "/v1/ops/grievances/{ticket_number}"): Rule(
+        signed_in(403, ops=200, admin=200), path={"ticket_number": "someone_elses_grievance"}
+    ),
+    ("POST", "/v1/ops/grievances/{ticket_number}/acknowledge"): Rule(
+        signed_in(403, ops=200, admin=200),
+        lambda: {"json": {"reply": "Checking who may reply."}},
+        path={"ticket_number": "someone_elses_grievance"},
+    ),
+    ("POST", "/v1/ops/grievances/{ticket_number}/resolve"): Rule(
+        signed_in(403, ops=200, admin=200),
+        lambda: {"json": {"resolution": "Checking who may resolve grievances."}},
+        path={"ticket_number": "someone_elses_grievance"},
+    ),
+    # The fee and booking terms in force, for the public pages (ADR 0034).
+    ("GET", "/v1/policies"): Rule(everyone(200)),
     # Student visits (ADR 0033): people signed in by phone ask and cancel their own; ops book and
     # cancel any; field agents run the ones booked for them. The visit is another student's, booked
     # with another agent, so it doesn't exist for any phone caller or field agent here.

@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from app.core.ids import new_public_id
 from app.modules.compliance.domain.requests import DataRequestKind, DataRequestStatus
-from app.modules.compliance.models import OPEN_REQUEST, DataExport, DataRequest
+from app.modules.compliance.models import OPEN_REQUEST, DataExport, DataRequest, Grievance
 
 if TYPE_CHECKING:
     import uuid
@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.modules.compliance.domain.grievances import GrievanceStatus
 
 
 class DataRequestRepository:
@@ -128,3 +130,41 @@ class DataExportRepository:
             delete(DataExport).where(DataExport.data_request_id.in_(ids)).returning(DataExport.id)
         )
         return len(deleted.all())
+
+
+class GrievanceRepository:
+    def __init__(self, db: AsyncSession) -> None:
+        self._db = db
+
+    def add(self, grievance: Grievance) -> None:
+        self._db.add(grievance)
+
+    async def by_ticket(self, ticket_number: str, *, lock: bool = False) -> Grievance | None:
+        query = select(Grievance).where(Grievance.ticket_number == ticket_number)
+        return await self._db.scalar(query.with_for_update() if lock else query)
+
+    async def ticket_taken(self, ticket_number: str) -> bool:
+        found = await self._db.scalar(
+            select(Grievance.id).where(Grievance.ticket_number == ticket_number)
+        )
+        return found is not None
+
+    async def of_user(self, user_id: int) -> list[Grievance]:
+        """A person's grievances, newest first."""
+        rows = await self._db.scalars(
+            select(Grievance)
+            .where(Grievance.user_id == user_id)
+            .order_by(Grievance.public_id.desc())
+        )
+        return list(rows)
+
+    async def page(
+        self, *, status: GrievanceStatus | None, after: uuid.UUID | None, limit: int
+    ) -> list[Grievance]:
+        """Grievances oldest first (the order they're due in), ``limit + 1`` at most."""
+        query = select(Grievance).order_by(Grievance.public_id).limit(limit + 1)
+        if status is not None:
+            query = query.where(Grievance.status == status)
+        if after is not None:
+            query = query.where(Grievance.public_id > after)
+        return list(await self._db.scalars(query))
