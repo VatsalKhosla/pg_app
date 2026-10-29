@@ -7,10 +7,12 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { ErrorTextProvider } from "@/components/layout/error-text";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { Analytics } from "@/components/system/analytics";
 import { SiteHeader } from "@/components/layout/site-header";
 import { brand, brandStyle } from "@/config/brand";
 import { publicEnv } from "@/config/env";
 import { assertReadyFor } from "@/config/launch";
+import { serverEnv } from "@/config/server-env";
 
 // Self-hosted at build time by next/font: no request to Google from the browser, no layout shift.
 const sans = Inter({ subsets: ["latin"], display: "swap", variable: "--font-sans-face" });
@@ -81,6 +83,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           </ErrorTextProvider>
         </main>
         <SiteFooter />
+        {/* Analytics only where the server collects them (ADR 0035). */}
+        {serverEnv.posthog === undefined ? null : <Analytics />}
       </body>
     </html>
   );

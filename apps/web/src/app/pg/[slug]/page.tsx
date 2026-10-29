@@ -9,6 +9,7 @@ import { LocationMap } from "@/components/map/location-map";
 import { Photo } from "@/components/pg/photo";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buttonVariants } from "@/components/ui/button";
+import { TrackView } from "@/components/system/track-view";
 import { publicEnv } from "@/config/env";
 import { getPublicListing, type PublicListing } from "@/lib/api/public";
 import { formatDistance } from "@/lib/format/distance";
@@ -73,6 +74,7 @@ export default async function PgPage({ params }: PageProps<"/pg/[slug]">) {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-10 px-4 py-8 sm:py-12">
+      <TrackView event="pg_viewed" properties={{ slug }} />
       {/* For search engines: the PG with its offers, and where it sits in the site (ADR 0032). */}
       <JsonLd
         data={[

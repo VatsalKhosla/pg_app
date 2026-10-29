@@ -17,6 +17,7 @@ export const privacy: LegalDocument = {
 - **Your complaints**: what you tell our grievance officer, and their replies.
 - **Sign-in records**: the IP address and browser you signed in from, to keep your account safe.
 - **Your location**, only if you ask for PGs near you: your browser shares it for that search, and we don't keep it with your account.
+- **How the site is used**: the kind of searches made (where, and how many filters, never the words typed), the PGs opened, the visits asked for and how they went, and how fast pages load. These go under a random id that lasts only while your browser tab is open and is never your name or number. If your browser asks sites not to track it (Do Not Track or Global Privacy Control), we don't. [Whether this needs your consent is to be confirmed with our lawyer.]
 
 ## 3. Why we use it
 
@@ -27,14 +28,14 @@ export const privacy: LegalDocument = {
 
 - **The owner of a PG** you visit or reserve, only what's needed to arrange it.
 - **Our staff**, only those who need it for their work. Every look at sensitive details is logged.
-- **Companies that work for us**: for hosting, text messages, error reports (with phone numbers and other identifying details removed) and, when booking opens, payments. They may use your data only to do that work for us.
+- **Companies that work for us**: for hosting, text messages, error reports and site analytics (both with phone numbers and other identifying details removed) and, when booking opens, payments. They may use your data only to do that work for us.
 - **Authorities**, when the law requires it.
 
 We never sell your personal data.
 
 ## 5. Where and how long we keep it
 
-Our database is in India (Mumbai). Some companies that work for us, such as for error reports, may handle data elsewhere, as the law allows. We keep your data while your account is open, and then only as long as the law requires:
+Our database is in India (Mumbai). Some companies that work for us, such as for error reports and site analytics, may handle data elsewhere, as the law allows. We keep your data while your account is open, and then only as long as the law requires:
 
 - sign-in codes, for 7 days;
 - sign-in records, for 30 days after the session ends;

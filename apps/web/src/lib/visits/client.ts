@@ -13,9 +13,19 @@ export type StudentVisit = Schemas["StudentVisit"];
 export type StaffVisit = Schemas["StaffVisit"];
 export type Outcome = Schemas["VisitOutcomeRequest"]["outcome"];
 
-export function requestVisit(property: string, starts: string[]): Promise<StudentVisit> {
+/** `analyticsId` is the tab's anonymous id, if it reports analytics (ADR 0035). */
+export function requestVisit(
+  property: string,
+  starts: string[],
+  analyticsId?: string,
+): Promise<StudentVisit> {
   return withCsrf((headers) =>
-    unwrap(browserApi.POST("/v1/visits", { body: { property, starts }, headers })),
+    unwrap(
+      browserApi.POST("/v1/visits", {
+        body: { property, starts, ...(analyticsId === undefined ? {} : { analyticsId }) },
+        headers,
+      }),
+    ),
   );
 }
 

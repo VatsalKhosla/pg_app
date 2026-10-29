@@ -13,10 +13,29 @@ afterEach(() => {
 });
 
 describe("track", () => {
-  it("drops events until a transport is set", () => {
-    expect(() => {
-      track("pg_viewed", { slug: "sample-pg" });
-    }).not.toThrow();
+  it("keeps the first events for the transport, which may start after them", () => {
+    track("pg_viewed", { slug: "sample-pg" });
+    const captured: AnalyticsEvent[] = [];
+    setAnalyticsTransport({
+      capture: (event) => {
+        captured.push(event);
+      },
+    });
+
+    expect(captured).toEqual(["pg_viewed"]);
+  });
+
+  it("drops them once told there is no transport", () => {
+    track("pg_viewed", { slug: "sample-pg" });
+    setAnalyticsTransport(null);
+    const captured: AnalyticsEvent[] = [];
+    setAnalyticsTransport({
+      capture: (event) => {
+        captured.push(event);
+      },
+    });
+
+    expect(captured).toEqual([]);
   });
 
   it("masks phone numbers before an event reaches the transport", () => {

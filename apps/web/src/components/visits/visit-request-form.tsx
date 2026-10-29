@@ -7,6 +7,8 @@ import { useForm } from "react-hook-form";
 
 import { problemMessage } from "@/components/auth/problem-message";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
+import { analyticsId } from "@/lib/analytics-beacon";
 import { ApiError } from "@/lib/api/errors";
 import { VISITS_PATH } from "@/lib/auth/routes";
 import { z } from "@/lib/forms/zod";
@@ -89,7 +91,8 @@ export function VisitRequestForm({
       .filter(({ day, time }) => day !== "" && time !== "")
       .map(({ day, time }) => visitStart(day, time));
     try {
-      await requestVisit(slug, starts);
+      await requestVisit(slug, starts, analyticsId());
+      track("visit_requested", { slug, times: starts.length });
       router.push(VISITS_PATH);
       router.refresh();
     } catch (error) {

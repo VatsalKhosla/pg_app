@@ -5,7 +5,7 @@ import { List, Map as MapIcon, SlidersHorizontal } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useQueryStates } from "nuqs";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   type Bounds,
@@ -19,6 +19,8 @@ import { formatINR } from "@/lib/money";
 import { around, bboxParam, enclosing, parseBbox } from "@/lib/search/area";
 import { mapPins, searchListings, type SearchPage } from "@/lib/search/client";
 import { priceLabel, shortRupees } from "@/lib/search/labels";
+import { track } from "@/lib/analytics";
+import { searchProperties } from "@/lib/search/analytics";
 import { pinsQuery, searchParsers, searchQuery } from "@/lib/search/params";
 import { cn } from "@/lib/utils";
 
@@ -115,6 +117,17 @@ export function SearchExperience({
     () => results.data?.pages.flatMap((page) => page.items) ?? [],
     [results.data],
   );
+
+  // The funnel's first step (step 3.9): once for each search whose first page has come.
+  const firstPage = results.data?.pages[0];
+  const reported = useRef<string | null>(null);
+  useEffect(() => {
+    if (firstPage === undefined || results.isPlaceholderData) return;
+    const key = JSON.stringify(query);
+    if (reported.current === key) return;
+    reported.current = key;
+    track("search_performed", searchProperties(query, firstPage.items.length));
+  }, [firstPage, query, results.isPlaceholderData]);
 
   // Where the map goes: the campus or locality chosen. A map area is where the map already is.
   const campus = campuses.find((place) => place.slug === query.campus);

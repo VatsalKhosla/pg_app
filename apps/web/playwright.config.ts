@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 import { API_LOG } from "./tests/e2e/api-log";
+import { POSTHOG_KEY, POSTHOG_PORT, POSTHOG_URL } from "./tests/e2e/posthog";
 
 // Browser tests against a production build (`make e2e` builds first) and the real API, started
 // by scripts/e2e-api.sh on its own database, so signing in runs end to end. They run on a phone
@@ -38,12 +39,24 @@ export default defineConfig({
         E2E_API_PORT: String(apiPort),
         E2E_API_LOG: API_LOG,
         E2E_REVALIDATE_SECRET: revalidateSecret,
+        E2E_POSTHOG_PORT: String(POSTHOG_PORT),
       },
+    },
+    {
+      // PostHog's stand-in: where the web server and the API's worker send the funnel (ADR 0035).
+      command: "node tests/e2e/fake-posthog.mjs",
+      url: `${POSTHOG_URL}/healthz`,
+      env: { E2E_POSTHOG_PORT: String(POSTHOG_PORT) },
+      reuseExistingServer: !isCI,
     },
     {
       command: `next start --hostname 127.0.0.1 --port ${String(port)}`,
       url: baseURL,
-      env: { REVALIDATE_SECRET: revalidateSecret },
+      env: {
+        REVALIDATE_SECRET: revalidateSecret,
+        POSTHOG_PROJECT_KEY: POSTHOG_KEY,
+        POSTHOG_HOST: POSTHOG_URL,
+      },
       reuseExistingServer: !isCI,
       timeout: 60_000,
     },

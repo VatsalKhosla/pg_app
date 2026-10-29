@@ -30,6 +30,10 @@ export STAFF_GOOGLE_EMAILS=
 export PRIVACY_NOTICE_VERSION=draft-1
 export OWNER_AGREEMENT_VERSION=draft-2
 export SENTRY_DSN=
+# PostHog's stand-in (apps/web/tests/e2e/fake-posthog.mjs), where the worker sends the funnel's
+# server-side steps.
+export POSTHOG_PROJECT_KEY=phc_e2e
+export POSTHOG_HOST="http://127.0.0.1:${E2E_POSTHOG_PORT:-8200}"
 export OTEL_EXPORTER_OTLP_ENDPOINT=
 # Local SeaweedFS with its development identity (infra/seaweedfs/s3.json), in buckets of its own.
 export S3_ENDPOINT_URL="http://127.0.0.1:${S3_PORT:-8333}"

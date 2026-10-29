@@ -4,12 +4,14 @@ import path from "node:path";
 import { devices, type Page } from "@playwright/test";
 
 import { expect, test, wcagViolations } from "./fixtures";
+import { eventsOf } from "./posthog";
 import { codeSentTo, logLength, newMobile } from "./sign-in-codes";
 import { manage, newStaff, signInAsStaff } from "./staff";
 
 // A visit end to end (BUILD_PLAN 3.7), on phones, against the real API and its worker: a student
-// asks to visit a sample PG, ops book a time with a field agent, the agent checks in at the
-// building and says how it went, and ops see the visit log.
+// finds a sample PG and asks to visit it, ops book a time with a field agent, the agent checks in
+// at the building and says how it went, and ops see the visit log. Along the way the booking
+// funnel reaches PostHog's stand-in as one anonymous journey (BUILD_PLAN 3.9).
 
 const ASTER = "fictional-sample-pg-aster-kamla-nagar";
 const PHONE = devices["Pixel 7"];
@@ -40,9 +42,16 @@ function indiaLocal(moment: Date): string {
   return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
 }
 
-/** A new student signs up on their phone: the code, consent (nothing ticked), their name. */
+/** A new student finds the PG by searching, then signs up on their phone to ask for a visit:
+ * the code, consent (nothing ticked), their name. */
 async function signUpAsStudent(page: Page, name: string) {
-  await page.goto(`/pg/${ASTER}/visit`);
+  await page.goto("/search?locality=kamla-nagar");
+  await page
+    .getByRole("link", { name: /Fictional Sample PG Aster/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/pg/${ASTER}$`));
+  await page.getByRole("link", { name: "Book a visit" }).first().click();
   await expect(page).toHaveURL(/\/sign-in\?next=/);
   const mobile = newMobile();
   await page.getByLabel("Mobile number", { exact: true }).fill(mobile);
@@ -149,6 +158,28 @@ test.describe("a visit", () => {
     await expect(log.getByText(/^Agent checked in at .+ from the building/)).toBeVisible();
     await expect(log.getByText(/: Interested$/)).toBeVisible();
     await expect(log.getByText("Agent's note: Liked the double room.")).toBeVisible();
+
+    // The funnel, as PostHog will have it: one anonymous journey from search to the visit done,
+    // the last step reported by the API under the id the student's tab asked with.
+    const journey = await page.evaluate(() => sessionStorage.getItem("analytics-id"));
+    expect(journey).not.toBeNull();
+    await expect
+      .poll(
+        async () =>
+          [...new Set((await eventsOf(journey ?? "")).map((event) => event.event))].filter(
+            (event) => event !== "web_vital",
+          ),
+        { timeout: 30_000 },
+      )
+      .toEqual(["search_performed", "pg_viewed", "visit_requested", "visit_completed"]);
+    const events = await eventsOf(journey ?? "");
+    for (const event of events) {
+      expect(event.properties).toMatchObject({
+        $process_person_profile: false,
+        $geoip_disable: true,
+      });
+      expect(JSON.stringify(event.properties)).not.toContain(student);
+    }
 
     await opsContext.close();
     await agentContext.close();
