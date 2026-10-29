@@ -353,7 +353,7 @@ Worked example (₹10,000 base, July move-in, +15% season, −5% early-bird, 11-
 - The response includes a human explanation: "Base ₹10,000 · Peak season +15% · Early-bird −5% · 11-month stay −7% = ₹10,300/month, fixed for your stay".
 
 ### 8.5 Price calendar and honest urgency
-- `GET /v1/properties/{id}/price-calendar?category=…&from=…&weeks=12` runs the engine for weekly move-in dates and returns rent per week (cached five minutes).
+- `GET /v1/properties/{slug}/price-calendar?from=…&weeks=12&stay=11` runs the engine for weekly move-in dates and returns each room's rent per week and its free beds (cached five minutes; ADR 0040).
 - The PG page shows "Move in by 15 Jun: ₹9,500 · from 1 Jul: ₹11,000". Text like "price rises on 1 Jul" is allowed only because the calendar proves it.
 - "Only N beds left" appears only when real availability for the chosen dates is ≤ 3.
 - No countdown timers except the real hold expiry during checkout.
@@ -537,7 +537,7 @@ Public   GET  /v1/cities /v1/localities /v1/campuses /v1/campuses/{slug} /v1/met
          GET  /v1/search/properties    GET /v1/map/pins
          GET  /v1/search/places        GET /v1/search/sitemap (ADR 0032)
          GET  /v1/properties/{slug}    GET /v1/properties/{slug}/contact (signed in; ADR 0026)
-         GET  /v1/properties/{id}/price-calendar
+         GET  /v1/properties/{slug}/price-calendar   (ADR 0040)
          POST /v1/quotes               GET /v1/quotes/{id}   (ADR 0039)
 Auth     POST /v1/auth/otp/request     POST /v1/auth/otp/verify   GET /v1/auth/csrf
          POST /v1/auth/logout   POST /v1/auth/logout-everywhere

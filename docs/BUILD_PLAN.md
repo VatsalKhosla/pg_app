@@ -335,8 +335,12 @@ Start the slow ones in week 1.
   - **Occupancy:** behind a `BedsTaken` port, zero until Phase 5's allocations exist.
   - **Proof:** a test rebuilds the inputs from the database, and the engine gives the stored numbers and digest. A new rule version leaves an old quote unchanged.
 
-- [ ] **4.5 Price calendar and honest urgency.** Calendar endpoint (weekly move-ins, 12 weeks, cached) and UI on the PG page ("Move in by 15 Jun: ₹9,500 · from 1 Jul: ₹11,000"); "only N beds left" only from real availability (N ≤ 3); a "price fixed for your whole stay" badge; quotes show the full breakdown.
+- [x] **4.5 Price calendar and honest urgency.** Calendar endpoint (weekly move-ins, 12 weeks, cached) and UI on the PG page ("Move in by 15 Jun: ₹9,500 · from 1 Jul: ₹11,000"); "only N beds left" only from real availability (N ≤ 3); a "price fixed for your whole stay" badge; quotes show the full breakdown.
   *Done when* tests prove every urgency message is backed by data, and the PG page shows quote-consistent prices.
+  *Note (2026-10-30):*
+  - **Calendar:** `GET /v1/properties/{slug}/price-calendar` gives each room's rent for 12 weekly move-ins (to the booking horizon) as a quote would say, with its free beds. It's cached five minutes (ADR 0040).
+  - **PG page:** it reads only that calendar: the soonest rent with a "price fixed for your whole stay" badge, "Move in by …: ₹A · from …: ₹B" only where the calendar changes, and "Only N beds left" only for 1 to 3 free beds. "Check your price" shows a quote's full breakdown.
+  - **Proof:** each calendar week equals a quote (API test); changes and scarcity come only from the data (unit tests); the page shows exactly the calendar's numbers, and the checker a quote's (browser test).
 
 - [ ] **4.6 Pricing editor (ops first).** Rule list, add/edit forms per kind, live preview (pick a move-in date and stay → breakdown), 12-week price chart, band and median shown, activate with confirmation. Owners get the same editor in Phase 7.
   *Done when* ops can set a July peak rule and an early-bird rule and see both in preview, on the calendar and on the map.
