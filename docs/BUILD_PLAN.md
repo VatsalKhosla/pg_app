@@ -38,7 +38,8 @@ Start the slow ones in week 1.
 - [ ] Google Maps Platform project, API keys restricted by HTTP referrer and API, billing budget alerts.
 - [ ] Accounts: GitHub, Vercel, AWS (Mumbai), Cloudflare, Sentry, PostHog, an email sender (SES or Resend). Google Workspace for staff sign-in.
 - [ ] GitHub repository settings (docs/ci.md): the branch ruleset for `main` with the required checks, secret scanning with push protection, Dependabot alerts, and the free Renovate GitHub App for dependency updates.
-- [ ] Lawyer: Terms, Privacy notice (DPDP), Refund & Cancellation policy, owner agreement (30% fee, 90-day introduction clause, token set-off), E-Commerce Rules seller-disclosure question (hiding owner contacts), grievance officer.
+- [ ] Lawyer: Terms, Privacy notice (DPDP), Refund & Cancellation policy, owner agreement (30% fee, 90-day introduction clause, token set-off), E-Commerce Rules seller-disclosure question (hiding owner contacts), grievance officer. The drafts are in `apps/web/src/content/legal`, with the open questions in brackets.
+- [ ] The facts the trust pages state (`apps/web/src/config/company.ts`): the registered name and office address, the phone line a person answers and its hours, the help email, the founders' names, roles and photos, and the grievance officer's name, designation and contact details. A production build waits for them (ADR 0034).
 - [ ] CA: GST registration, invoice format, whether the 30% includes GST, accounting for tokens and set-off.
 - [ ] Field work for Gate 1: map every PG within 2 km of the first micro-market, sign owners, collect photos and verification data.
 
@@ -274,8 +275,16 @@ Start the slow ones in week 1.
   - **Deferred:** the SMS provider is the founders' choice. Until then texts go to the log locally and are off when deployed.
   - **Proof:** a browser test on phones: a student signs up and asks, ops book it with an agent, the agent checks in by GPS and records the outcome, and ops see the log.
 
-- [ ] **3.8 Trust and legal pages.** About (founders' names and faces), Contact (a phone line staffed by a person), Pricing ("students pay nothing; owners pay a one-time 30% placement fee"), Terms, Privacy notice, Refund & Cancellation policy, Grievance officer with a ticket form (acknowledge ≤ 48 h, resolve ≤ 1 month), "How your token is protected". Mark legal texts **DRAFT — needs lawyer review**.
+- [x] **3.8 Trust and legal pages.** About (founders' names and faces), Contact (a phone line staffed by a person), Pricing ("students pay nothing; owners pay a one-time 30% placement fee"), Terms, Privacy notice, Refund & Cancellation policy, Grievance officer with a ticket form (acknowledge ≤ 48 h, resolve ≤ 1 month), "How your token is protected". Mark legal texts **DRAFT — needs lawyer review**.
   *Done when* every page is linked from the footer and the grievance form issues a ticket number.
+  *Note (2026-10-29):*
+  - **Pages:** About, Contact, Pricing, How your token is protected, Terms, Privacy notice, Refund and cancellation policy, and Grievances, all in the footer's Company and Policies groups.
+  - **Placeholders:** facts only the founders can give (names and photos, the registered name and address, the phone line, the grievance officer) show as visible placeholders from `src/config/company.ts`. Those pages stay out of search engines meanwhile.
+  - **Legal texts** are DRAFTs, with their open legal questions in brackets.
+  - **Live figures:** fee rates, the token and the cancellation terms come from the API's new `GET /v1/policies`, never from the pages.
+  - **Complaints:** anyone may complain (signed out, with the human check) and gets a `GR-` ticket number. Ops acknowledge within 48 hours and resolve within a month in `/ops/grievances`, with late ones marked; signed-in complainants are texted and see the replies.
+  - **Launch guard:** a production build refuses placeholders and drafts (ADR 0034).
+  - **Proof:** browser tests follow every footer link with axe checks, and take a complaint from the form to its ticket number, then through ops acknowledging and resolving it.
 
 - [ ] **3.9 Analytics and install.** Funnel events (search → PG view → visit request → visit done → reservation), PII-masked; PWA installability; web-vitals reporting.
   *Done when* the funnel shows in PostHog from a staging run and the site installs on Android Chrome.

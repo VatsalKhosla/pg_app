@@ -233,7 +233,7 @@ This constraint is the double-booking guarantee. Never work around it.
 - `owner_invoices` (owner_id, booking_id, invoice_number unique per financial year, fee_paise, gst_paise, total_paise, token_applied_paise, balance_due_paise, status: `draft | issued | paid | void`, issued_at, pdf_key).
 
 **Platform**
-- `outbox_jobs`, `idempotency_keys`, `audit_logs` (append-only; the app's DB role has no UPDATE/DELETE on it), `feature_flags`, `notifications`, `grievances` (ticket number, acknowledged_at, resolved_at), `data_requests` (public_id, user_id, kind `export | deletion`, status `received | ready | expired | completed | rejected`, requested_at, resolved_at, expires_at, resolved_by, note; one open request per kind and person), `data_exports` (data_request_id, content: the export's JSON until it expires).
+- `outbox_jobs`, `idempotency_keys`, `audit_logs` (append-only; the app's DB role has no UPDATE/DELETE on it), `feature_flags`, `notifications`, `grievances` (ticket_number `GR-…`, user_id when signed in, name, phone or email, category, details, status `received | acknowledged | resolved`, acknowledge_by (48 h), resolve_by (a calendar month), acknowledged_at, reply, resolved_at, resolution; ADR 0034), `data_requests` (public_id, user_id, kind `export | deletion`, status `received | ready | expired | completed | rejected`, requested_at, resolved_at, expires_at, resolved_by, note; one open request per kind and person), `data_exports` (data_request_id, content: the export's JSON until it expires).
 
 **Indexes to create from day one**: GiST on `properties.location` and `display_location`; GiST exclusion index above; trigram GIN on `properties.name` and `localities.name`; btree on every FK; partial index on `bookings (status, hold_expires_at) WHERE status = 'HELD'`; `outbox_jobs (status, run_at)`; BRIN on `booking_events.created_at` and `audit_logs.created_at`.
 
@@ -562,8 +562,11 @@ Field    GET /v1/field/visits   GET /v1/field/visits/{id}   POST /v1/field/visit
          /v1/ops/disputes… /v1/ops/refunds… /v1/ops/reconciliation
 Admin    /v1/admin/staff /v1/admin/rent-bands /v1/admin/policies /v1/admin/flags /v1/admin/audit-logs
 Media    POST /v1/media   POST /v1/media/{id}/uploaded   GET /v1/media/{id}
-Compliance POST /v1/grievances   POST/GET /v1/me/data-requests   GET /v1/me/data-requests/{id}/file
+Compliance POST /v1/grievances   GET /v1/me/grievances   (ADR 0034)
+         POST/GET /v1/me/data-requests   GET /v1/me/data-requests/{id}/file
          GET /v1/ops/data-requests   POST /v1/ops/data-requests/{id}/resolve
+         GET /v1/ops/grievances   GET /v1/ops/grievances/{ticket}   POST …/{ticket}/acknowledge | /resolve
+Pricing  GET /v1/policies   (the fee and booking terms in force; ADR 0034)
 ```
 
 ## 16. Frontend architecture
