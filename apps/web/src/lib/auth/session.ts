@@ -96,6 +96,18 @@ export async function requireOps(here: Route): Promise<Me> {
   return me;
 }
 
+/** Whether the person may change policies and rent bands (admins only, ADR 0036). */
+export function isAdmin(me: Me): boolean {
+  return me.roles.includes("admin");
+}
+
+/** An admin in a staff session; other staff go to the staff home (the API refuses them anyway). */
+export async function requireAdmin(here: Route): Promise<Me> {
+  const me = await requireStaff(here);
+  if (!isAdmin(me)) redirect(STAFF_HOME_PATH);
+  return me;
+}
+
 /**
  * A field agent, or ops or an admin, in a staff session: the field screens' people. The API shows
  * an agent only the visits booked for them, and ops all of them.

@@ -23,6 +23,9 @@ export const VISITS_PATH = "/visits" satisfies Route;
 export const OPS_VISITS_PATH = "/ops/visits" satisfies Route;
 export const FIELD_STUDENT_VISITS_PATH = "/field/student-visits" satisfies Route;
 export const OPS_GRIEVANCES_PATH = "/ops/grievances" satisfies Route;
+export const ADMIN_HOME_PATH = "/admin" satisfies Route;
+export const ADMIN_POLICIES_PATH = "/admin/policies" satisfies Route;
+export const ADMIN_RENT_BANDS_PATH = "/admin/rent-bands" satisfies Route;
 
 /** Areas only for signed-in people, and where each sends people who aren't. */
 const PROTECTED_AREAS: readonly { prefix: Route; signIn: Route }[] = [
@@ -33,6 +36,7 @@ const PROTECTED_AREAS: readonly { prefix: Route; signIn: Route }[] = [
   { prefix: STAFF_HOME_PATH, signIn: STAFF_SIGN_IN_PATH },
   { prefix: OPS_HOME_PATH, signIn: STAFF_SIGN_IN_PATH },
   { prefix: FIELD_HOME_PATH, signIn: STAFF_SIGN_IN_PATH },
+  { prefix: ADMIN_HOME_PATH, signIn: STAFF_SIGN_IN_PATH },
 ];
 const SIGN_IN_PATHS: readonly string[] = [SIGN_IN_PATH, STAFF_SIGN_IN_PATH];
 

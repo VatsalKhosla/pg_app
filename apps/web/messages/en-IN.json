@@ -566,7 +566,8 @@
     "comingSoon": "Your roles don't open any tools yet.",
     "tools": "Your tools",
     "opsConsole": "Ops console",
-    "fieldVisits": "My verification visits"
+    "fieldVisits": "My verification visits",
+    "adminConsole": "Policies and rent bands"
   },
   "Ops": {
     "metaTitle": "Ops",
@@ -1368,6 +1369,122 @@
       "API_UNREACHABLE": "We couldn't reach our servers. Check your connection and try again.",
       "API_TIMEOUT": "That took too long. Please try again.",
       "SERVICE_UNAVAILABLE": "Complaints can't be sent right now. Please try again later, or call us."
+    }
+  },
+  "Admin": {
+    "metaTitle": "Admin",
+    "nav": {
+      "label": "Admin",
+      "policies": "Policies",
+      "rentBands": "Rent bands",
+      "staffHome": "Staff tools"
+    },
+    "policies": {
+      "metaTitle": "Policies",
+      "title": "Policies",
+      "intro": "The fee owners pay, the terms students rely on, and the caps on dynamic prices. A change applies from now on: quotes and bookings already made keep theirs.",
+      "inForce": "In force since {since}, set by {by}.",
+      "seeded": "the starting defaults",
+      "someone": "an admin whose account has gone",
+      "note": "Why it's changing (optional)",
+      "save": "Apply from now",
+      "saving": "Applying…",
+      "saved": "Applied: in force from now.",
+      "historyTitle": "Recent versions",
+      "historyFrom": "From {from}",
+      "historyTo": "to {to}",
+      "historyNow": "to now",
+      "fee": {
+        "title": "Placement fee",
+        "rate": "Fee, as a % of the listed monthly rent",
+        "rateHint": "Charged once to the owner for each tenant placed, always on the listed rent, never a seasonal price.",
+        "gstRate": "GST rate, %",
+        "gstMode": "GST",
+        "exclusive": "Added to the fee",
+        "inclusive": "Included in the fee",
+        "summary": "{rate} of the listed rent, GST {gst} {mode}",
+        "summaryExclusive": "added",
+        "summaryInclusive": "included"
+      },
+      "booking": {
+        "title": "Booking terms",
+        "token": "Token, ₹",
+        "tokenHint": "From ₹1,000 to ₹2,000; it counts toward the first month's rent.",
+        "holdMinutes": "A bed's hold while the student pays, minutes",
+        "freeCancelDays": "Free cancellation up to, days before moving in",
+        "checkWindowHours": "Time to check the room after moving in, hours",
+        "confirmDeadlineHours": "Owner's time to confirm, hours",
+        "noShowDays": "Days after the move-in date before a no-show",
+        "lateCancelPolicy": "After the free cancellation days",
+        "refund_full": "Refund the token in full",
+        "forfeit_to_owner": "The owner keeps the token (needs Razorpay Route)",
+        "split": "Split the token (needs Razorpay Route)",
+        "maxActiveHolds": "Holds one person may have at once",
+        "maxAdvanceDays": "How far ahead a move-in may be booked, days",
+        "summary": "Token {token} · free cancellation up to {days} days before"
+      },
+      "caps": {
+        "title": "Caps on dynamic prices",
+        "premium": "Highest premium, % above the listed rent",
+        "discount": "Highest discount, % below the listed rent",
+        "roundingStep": "Prices round to, ₹",
+        "summary": "+{premium} / −{discount}, rounded to {step}"
+      }
+    },
+    "bands": {
+      "metaTitle": "Rent bands",
+      "title": "Rent bands",
+      "intro": "The rents a locality allows for each occupancy: dynamic prices stay inside them. Setting a band ends the one in force for that locality and occupancy.",
+      "none": "No band is in force.",
+      "showEnded": "Show ended bands too",
+      "hideEnded": "Show only bands in force",
+      "range": "{min} to {max} a month",
+      "official": "Official",
+      "internal": "Internal",
+      "since": "Since {since}",
+      "until": "Ended {until}",
+      "by": "Set by {by}",
+      "end": "End this band",
+      "ending": "Ending…",
+      "setTitle": "Set a band",
+      "locality": "Locality",
+      "chooseLocality": "Choose a locality",
+      "occupancy": "Occupancy",
+      "chooseOccupancy": "Choose one",
+      "occupancies": {
+        "single": "Single",
+        "double": "Double",
+        "triple": "Triple",
+        "quad": "Four sharing"
+      },
+      "min": "Lowest monthly rent, ₹",
+      "max": "Highest monthly rent, ₹",
+      "source": "Source",
+      "sources": {
+        "internal": "Internal: set by us from the market",
+        "official": "Official: set by the authorities"
+      },
+      "reference": "Reference",
+      "referenceHint": "For an official band, the notification it comes from (its number or link).",
+      "note": "Why (optional)",
+      "save": "Set from now",
+      "saving": "Setting…",
+      "saved": "Set: in force from now."
+    },
+    "validation": {
+      "required": "Fill this in.",
+      "choose": "Choose one.",
+      "whole": "Enter a whole number.",
+      "percent": "Enter a percentage, such as 30 or 18.5.",
+      "amount": "Enter an amount in rupees, such as 2000.",
+      "tooLong": "That's too long."
+    },
+    "errors": {
+      "generic": "That didn't work. Please try again.",
+      "POLICY_INVALID": "That doesn't work:",
+      "INVALID_TRANSITION": "It changed a moment ago: reload the page and try again.",
+      "CSRF_TOKEN_INVALID": "Your session changed in another tab. Please try again.",
+      "FORBIDDEN": "Only admins can change these."
     }
   }
 }

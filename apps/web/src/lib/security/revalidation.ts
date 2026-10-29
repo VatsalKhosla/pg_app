@@ -12,8 +12,9 @@ import { z } from "@/lib/forms/zod";
 
 export const MAX_AGE_SECONDS = 300;
 export const MAX_BODY_BYTES = 4_096;
-// The tags the API may name: one listing's, and everything that lists them.
-const TAG = /^(listings|listing:[a-z0-9]+(-[a-z0-9]+)*)$/u;
+// The tags the API may name: one listing's, everything that lists them, and the policies'
+// pages (ADR 0036).
+const TAG = /^(listings|policies|listing:[a-z0-9]+(-[a-z0-9]+)*)$/u;
 
 export const revalidationBody = z
   .object({ tags: z.array(z.string().max(256).regex(TAG)).min(1).max(20) })

@@ -4,8 +4,13 @@ import { getTranslations } from "next-intl/server";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { buttonVariants } from "@/components/ui/button";
-import { FIELD_VISITS_PATH, OPS_LISTINGS_PATH, STAFF_HOME_PATH } from "@/lib/auth/routes";
-import { isOps, requireStaff } from "@/lib/auth/session";
+import {
+  ADMIN_POLICIES_PATH,
+  FIELD_VISITS_PATH,
+  OPS_LISTINGS_PATH,
+  STAFF_HOME_PATH,
+} from "@/lib/auth/routes";
+import { isAdmin, isOps, requireStaff } from "@/lib/auth/session";
 
 const ROLES = ["field_agent", "ops", "admin"] as const;
 
@@ -25,6 +30,7 @@ export default async function StaffHomePage() {
   if (me.roles.includes("field_agent")) {
     tools.push({ href: FIELD_VISITS_PATH, label: t("fieldVisits") });
   }
+  if (isAdmin(me)) tools.push({ href: ADMIN_POLICIES_PATH, label: t("adminConsole") });
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-8 px-4 py-10 sm:py-16">
