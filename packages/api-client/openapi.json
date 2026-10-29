@@ -10819,6 +10819,18 @@
             "maxItems": 3,
             "minItems": 1,
             "title": "Starts"
+          },
+          "analyticsId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analyticsid"
           }
         },
         "additionalProperties": false,

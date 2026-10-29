@@ -3440,6 +3440,8 @@ export interface components {
             property: string;
             /** Starts */
             starts: string[];
+            /** Analyticsid */
+            analyticsId?: string | null;
         };
         /**
          * StudentVisitStatus

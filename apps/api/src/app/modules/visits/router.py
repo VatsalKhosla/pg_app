@@ -132,7 +132,9 @@ async def request_visit(
     if not can_request_visits(actor):
         raise ForbiddenError
     await enforce(request.app.state.rate_limiter, REQUESTS_PER_USER, f"user:{actor.user_id}")
-    view = await _service(request, db, clock).request(actor, body.property, body.starts)
+    view = await _service(request, db, clock).request(
+        actor, body.property, body.starts, analytics_id=body.analytics_id
+    )
     return _student(view)
 
 

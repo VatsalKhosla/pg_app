@@ -36,6 +36,8 @@ def environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.Monke
         "PRIVACY_NOTICE_VERSION",
         "REVALIDATE_SECRET",
         "TEXT_SENDER",
+        "POSTHOG_PROJECT_KEY",
+        "POSTHOG_HOST",
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("DATABASE_URL", DATABASE_URL)

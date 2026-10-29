@@ -5,6 +5,7 @@ from datetime import datetime
 
 from fastapi import FastAPI
 
+from app.core.analytics import Analytics, AnalyticsEvent, NoAnalytics
 from app.core.outbox import OutboxWorker
 from app.core.texts import ConsoleTexts, Texts
 from app.core.web_cache import WebCache
@@ -22,6 +23,16 @@ class RecordedWebCache:
         self.tags.append(list(tags))
 
 
+class RecordedAnalytics:
+    """Analytics events, as a test sees them, in order."""
+
+    def __init__(self) -> None:
+        self.captured: list[AnalyticsEvent] = []
+
+    async def capture(self, event: AnalyticsEvent) -> None:
+        self.captured.append(event)
+
+
 class RecordedTexts:
     """Text messages, as a test sees them: who, which template and its blanks, in order."""
 
@@ -33,7 +44,11 @@ class RecordedTexts:
 
 
 async def run_due_jobs(
-    app: FastAPI, *, web_cache: WebCache | None = None, texts: Texts | None = None
+    app: FastAPI,
+    *,
+    web_cache: WebCache | None = None,
+    texts: Texts | None = None,
+    analytics: Analytics | None = None,
 ) -> None:
     """Every job that's due at the app's clock, until none is left."""
     worker = OutboxWorker(
@@ -43,6 +58,7 @@ async def run_due_jobs(
             buckets=BUCKETS,
             web_cache=web_cache or RecordedWebCache(),
             texts=texts or ConsoleTexts(),
+            analytics=analytics or NoAnalytics(),
         ),
         clock=app.state.clock,
         worker_id="test",

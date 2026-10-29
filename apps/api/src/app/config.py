@@ -85,6 +85,11 @@ class Settings(DatabaseSettings):
     # Visit confirmations and reminders (ADR 0033). "console" writes them to the worker's log
     # (local only); "unavailable" sends nothing until the founders choose an SMS provider.
     text_sender: Literal["console", "unavailable"] = "console"
+    # Product analytics (ADR 0035): the PostHog project's key and its ingestion host, such as
+    # https://eu.i.posthog.com. The founders choose the account and its region; until both are
+    # set, the funnel's server-side steps aren't sent.
+    posthog_project_key: SecretStr | None = None
+    posthog_host: str | None = None
     # Cloudflare Turnstile's secret key. Unset, every human check passes (local and tests only).
     turnstile_secret_key: SecretStr | None = None
     # The web app's public address, where staff land after signing in with Google, and the API's
@@ -163,6 +168,8 @@ class Settings(DatabaseSettings):
         "google_client_id",
         "google_client_secret",
         "revalidate_secret",
+        "posthog_project_key",
+        "posthog_host",
         mode="before",
     )
     @classmethod
@@ -180,17 +187,12 @@ class Settings(DatabaseSettings):
     @field_validator("site_url", "api_url")
     @classmethod
     def _base_url(cls, value: str) -> str:
-        parts = urlsplit(value)
-        if (
-            parts.scheme not in {"http", "https"}
-            or not parts.hostname
-            or parts.path not in {"", "/"}
-            or parts.query
-            or parts.fragment
-        ):
-            msg = "must be an http(s) address without a path, such as https://www.example.com"
-            raise ValueError(msg)
-        return value.rstrip("/")
+        return _http_base(value)
+
+    @field_validator("posthog_host")
+    @classmethod
+    def _optional_base_url(cls, value: str | None) -> str | None:
+        return None if value is None else _http_base(value)
 
     @field_validator("media_public_base_url")
     @classmethod
@@ -331,3 +333,19 @@ class Settings(DatabaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()
+
+
+def _http_base(value: str) -> str:
+    """An http(s) address without a path, such as https://www.example.com, without its last
+    slash."""
+    parts = urlsplit(value)
+    if (
+        parts.scheme not in {"http", "https"}
+        or not parts.hostname
+        or parts.path not in {"", "/"}
+        or parts.query
+        or parts.fragment
+    ):
+        msg = "must be an http(s) address without a path, such as https://www.example.com"
+        raise ValueError(msg)
+    return value.rstrip("/")

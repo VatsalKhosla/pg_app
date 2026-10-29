@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Final
 
 from app.config import BRAND_NAME
-from app.core import audit
+from app.core import analytics, audit
 from app.core.actor import Role
 from app.core.calendar import INDIA
 from app.core.errors import InvalidTransitionError, NotFoundError
@@ -55,6 +55,8 @@ if TYPE_CHECKING:
     from app.core.geometry import Point
 
 TEXT: Final = "visits.text"
+# The funnel's step when a visit happened (ADR 0035), as the web app names its steps.
+VISIT_COMPLETED: Final = "visit_completed"
 # A student's own list, and an agent's: plenty for a season.
 LIST_LIMIT: Final = 100
 # An agent's list starts with the visits of the day before, which they may still be finishing.
@@ -90,7 +92,14 @@ class VisitService:
 
     # Students.
 
-    async def request(self, actor: Actor, slug: str, starts: Sequence[datetime]) -> VisitView:
+    async def request(
+        self,
+        actor: Actor,
+        slug: str,
+        starts: Sequence[datetime],
+        *,
+        analytics_id: uuid.UUID | None = None,
+    ) -> VisitView:
         now = self._clock.now()
         if problems := start_problems(starts, now=now):
             raise VisitInvalidError(problems)
@@ -112,6 +121,7 @@ class VisitService:
                     status=StudentVisitStatus.REQUESTED,
                     preferred_starts=sorted(starts),
                     requested_at=now,
+                    analytics_id=analytics_id,
                 )
             )
             await self._audit(
@@ -244,6 +254,16 @@ class VisitService:
             visit.outcome, visit.outcome_note = outcome, note
             visit.finished_at = self._clock.now()
             await self._audit(actor, "visits.finished", visit, outcome=outcome)
+            if visit.analytics_id is not None:
+                # The funnel's "visit done", under the id the student's browser asked with.
+                await analytics.record(
+                    self._db,
+                    clock=self._clock,
+                    name=VISIT_COMPLETED,
+                    distinct_id=visit.analytics_id,
+                    properties={"outcome": outcome},
+                    dedupe_key=f"{VISIT_COMPLETED}:{visit.public_id}",
+                )
             return (await self._views([visit]))[0]
 
     # Shared.
@@ -377,6 +397,7 @@ async def visits_part(db: AsyncSession, user_id: int) -> dict[str, object]:
                 "cancelReason": visit.cancel_reason,
                 "outcome": visit.outcome,
                 "outcomeNote": visit.outcome_note,
+                "analyticsId": None if visit.analytics_id is None else str(visit.analytics_id),
             }
             for visit in asked
         ]

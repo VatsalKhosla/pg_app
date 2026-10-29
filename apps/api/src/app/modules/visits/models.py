@@ -39,6 +39,9 @@ class Visit(Model):
     student_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
     status: Mapped[str] = mapped_column(Text)
     preferred_starts: Mapped[list[datetime]] = mapped_column(ARRAY(DateTime(timezone=True)))
+    # The student's browser's anonymous analytics id when they asked, if it reports analytics:
+    # the visit's later steps are reported under it (ADR 0035).
+    analytics_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
     requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     scheduled_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))

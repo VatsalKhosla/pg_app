@@ -21,6 +21,7 @@ import httpx
 import structlog
 
 from app.config import Settings
+from app.core.analytics import Analytics, NoAnalytics, PostHogAnalytics
 from app.core.clock import Clock, SystemClock
 from app.core.db import create_engine, create_sessionmaker
 from app.core.logging import configure_logging
@@ -40,6 +41,15 @@ logger = structlog.stdlib.get_logger("app.worker")
 DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 5.0
 # Calls to other services give up as the API's own do (backend rules).
 PROVIDER_TIMEOUT = httpx.Timeout(10.0, connect=3.0)
+
+
+def analytics(settings: Settings, http: httpx.AsyncClient) -> Analytics:
+    """PostHog once the founders' project is set up (ADR 0035); until then, nothing is sent."""
+    if settings.posthog_project_key is None or settings.posthog_host is None:
+        return NoAnalytics()
+    return PostHogAnalytics(
+        http, host=settings.posthog_host, project_key=settings.posthog_project_key
+    )
 
 
 def web_cache(settings: Settings, http: httpx.AsyncClient) -> WebCache:
@@ -132,6 +142,7 @@ async def _serve_until_signalled(
                 buckets=Buckets.from_settings(settings),
                 web_cache=web_cache(settings, http),
                 texts=ConsoleTexts() if settings.text_sender == "console" else NoTexts(),
+                analytics=analytics(settings, http),
             ),
             schedules=SCHEDULES,
         )

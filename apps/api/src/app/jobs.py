@@ -8,6 +8,7 @@ person's data export holds, and the retention schedule.
 from datetime import time, timedelta
 from typing import TYPE_CHECKING, Final
 
+from app.core.analytics import ANALYTICS_CAPTURE, capture_handler
 from app.core.idempotency import IDEMPOTENCY_CLEANUP, delete_expired_keys
 from app.core.outbox import OUTBOX_CLEANUP, JobRegistry, delete_finished_jobs
 from app.core.scheduler import DailyAt, Every, ScheduledJob
@@ -45,6 +46,7 @@ from app.modules.visits.jobs import TEXT, text_handler
 from app.modules.visits.service import visits_part
 
 if TYPE_CHECKING:
+    from app.core.analytics import Analytics
     from app.core.texts import Texts
     from app.core.web_cache import WebCache
     from app.modules.media.ports import ObjectStorage
@@ -82,10 +84,16 @@ SCHEDULES: Final = (
 
 
 def build_registry(
-    *, storage: ObjectStorage, buckets: Buckets, web_cache: WebCache, texts: Texts
+    *,
+    storage: ObjectStorage,
+    buckets: Buckets,
+    web_cache: WebCache,
+    texts: Texts,
+    analytics: Analytics,
 ) -> JobRegistry:
     """Every handler, with what it needs from outside: the object storage media jobs use, the
-    web app whose cached pages are revalidated, and the texts visits and grievances send."""
+    web app whose cached pages are revalidated, the texts visits and grievances send, and where
+    the funnel's server-side steps go."""
     registry = JobRegistry()
     registry.register(OUTBOX_CLEANUP, delete_finished_jobs)
     registry.register(IDEMPOTENCY_CLEANUP, delete_expired_keys)
@@ -102,4 +110,5 @@ def build_registry(
     registry.register(REVALIDATE, revalidate_handler(web_cache))
     registry.register(TEXT, text_handler(texts))
     registry.register(GRIEVANCE_TEXT, grievance_text_handler(texts))
+    registry.register(ANALYTICS_CAPTURE, capture_handler(analytics))
     return registry

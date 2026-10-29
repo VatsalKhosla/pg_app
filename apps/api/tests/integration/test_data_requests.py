@@ -19,6 +19,7 @@ from sqlalchemy import select
 
 from app.config import Settings
 from app.core.actor import Role
+from app.core.analytics import NoAnalytics
 from app.core.audit import AuditLog
 from app.core.clock import FrozenClock
 from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
@@ -109,7 +110,11 @@ async def _run_worker(app: FastAPI) -> None:
     worker = OutboxWorker(
         sessionmaker=app.state.sessionmaker,
         registry=build_registry(
-            storage=MemoryStorage(), buckets=BUCKETS, web_cache=NoWebCache(), texts=NoTexts()
+            storage=MemoryStorage(),
+            buckets=BUCKETS,
+            web_cache=NoWebCache(),
+            texts=NoTexts(),
+            analytics=NoAnalytics(),
         ),
         clock=app.state.clock,
         worker_id="test",

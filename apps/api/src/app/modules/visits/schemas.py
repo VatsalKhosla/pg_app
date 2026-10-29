@@ -24,6 +24,9 @@ class StudentVisitRequest(ApiModel):
     property: str = Field(pattern=SLUG, max_length=80)
     # Up to three times the student could come, each the start of a half-hour visit.
     starts: list[AwareDatetime] = Field(min_length=1, max_length=MAX_PREFERRED_STARTS)
+    # The browser's anonymous analytics id, if it reports analytics, so the visit's later
+    # steps join the same funnel (ADR 0035). Never the account's.
+    analytics_id: uuid.UUID | None = None
 
 
 class StudentVisitPlace(ApiModel):

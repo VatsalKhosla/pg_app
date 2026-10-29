@@ -21,6 +21,7 @@ from PIL import Image
 
 from app.config import Settings
 from app.core.actor import Role
+from app.core.analytics import NoAnalytics
 from app.core.clock import FrozenClock
 from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
 from app.core.csrf import issue_csrf_token
@@ -100,6 +101,7 @@ class Uploader:
                 buckets=self.app.state.media_buckets,
                 web_cache=NoWebCache(),
                 texts=NoTexts(),
+                analytics=NoAnalytics(),
             ),
             clock=self.app.state.clock,
             worker_id="test",

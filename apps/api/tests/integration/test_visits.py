@@ -22,12 +22,14 @@ from app.modules.visits.domain.visits import StudentVisitStatus
 from app.modules.visits.models import Visit
 from app.modules.visits.service import visits_part
 from tests.integration.test_search import _category, _publish, _token
-from tests.jobs import RecordedTexts, run_due_jobs
+from tests.jobs import RecordedAnalytics, RecordedTexts, run_due_jobs
 from tests.staff_api import NOW, Staff, run_as_staff, sign_in, spot
 
 pytestmark = pytest.mark.integration
 
 VISITS = "/v1/visits"
+# The anonymous analytics id of the student's browser.
+BROWSER = uuid.uuid4()
 
 
 @pytest.fixture
@@ -98,7 +100,13 @@ def test_a_student_asks_ops_book_the_agent_checks_in_and_ops_see_the_log(  # noq
         contact = f"/v1/properties/{slug}/contact"
         seen: dict[str, Any] = {"hidden": (await student.call("GET", contact)).status_code}
         asked = await student.ok(
-            "POST", VISITS, json={"property": slug, "starts": [iso(at), iso(india(17, 17, 30))]}
+            "POST",
+            VISITS,
+            json={
+                "property": slug,
+                "starts": [iso(at), iso(india(17, 17, 30))],
+                "analyticsId": str(BROWSER),
+            },
         )
         seen["asked"] = asked
         seen["ops waiting"] = await ops.ok("GET", "/v1/ops/visits", params={"status": "requested"})
@@ -152,6 +160,13 @@ def test_a_student_asks_ops_book_the_agent_checks_in_and_ops_see_the_log(  # noq
             f"/v1/field/visits/{asked['id']}/outcome",
             json={"outcome": "interested", "note": "Liked the double room; will decide by Friday."},
         )
+        recorded = RecordedAnalytics()
+        await run_due_jobs(ops.app, analytics=recorded)
+        seen["analytics"] = [
+            (event.name, event.properties)
+            for event in recorded.captured
+            if event.distinct_id == str(BROWSER)
+        ]
         seen["log"] = await ops.ok("GET", f"/v1/ops/visits/{asked['id']}")
         seen["mine"] = await student.ok("GET", VISITS)
         seen["student phone"] = (await ops.ok("GET", f"/v1/ops/visits/{asked['id']}"))["student"][
@@ -196,6 +211,8 @@ def test_a_student_asks_ops_book_the_agent_checks_in_and_ops_see_the_log(  # noq
     assert check_in["accuracyM"] == 12
     assert 25 <= check_in["distanceM"] <= 35
     assert seen["done"]["status"] == "completed"
+    # The funnel's "visit done", under the id the student's browser asked with (ADR 0035).
+    assert seen["analytics"] == [("visit_completed", {"outcome": "interested"})]
     assert seen["log"]["outcome"] == "interested"
     assert seen["log"]["outcomeNote"].startswith("Liked the double room")
     [mine] = [item for item in seen["mine"]["items"] if item["id"] == asked["id"]]

@@ -7,6 +7,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from app.core.analytics import NoAnalytics
 from app.core.outbox import FIRST_RETRY_DELAY, MAX_RETRY_DELAY, JobRegistry, retry_delay
 from app.core.scheduler import DailyAt, Every, ScheduledJob, dedupe_key
 from app.core.texts import NoTexts
@@ -54,7 +55,11 @@ def test_a_job_kind_can_have_only_one_handler() -> None:
 
 def test_every_schedule_has_a_registered_handler() -> None:
     kinds = build_registry(
-        storage=MemoryStorage(), buckets=BUCKETS, web_cache=NoWebCache(), texts=NoTexts()
+        storage=MemoryStorage(),
+        buckets=BUCKETS,
+        web_cache=NoWebCache(),
+        texts=NoTexts(),
+        analytics=NoAnalytics(),
     ).kinds
 
     assert {job.kind for job in SCHEDULES} <= kinds
