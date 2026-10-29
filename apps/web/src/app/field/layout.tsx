@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 
 import { OpsNav } from "@/components/ops/ops-nav";
-import { FIELD_VISITS_PATH, STAFF_HOME_PATH } from "@/lib/auth/routes";
+import { FIELD_STUDENT_VISITS_PATH, FIELD_VISITS_PATH, STAFF_HOME_PATH } from "@/lib/auth/routes";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Field");
@@ -27,6 +27,7 @@ export default async function FieldLayout({ children }: LayoutProps<"/field">) {
           label={t("label")}
           links={[
             { href: FIELD_VISITS_PATH, label: t("visits"), exact: true },
+            { href: FIELD_STUDENT_VISITS_PATH, label: t("studentVisits") },
             { href: STAFF_HOME_PATH, label: t("staffHome"), exact: true },
           ]}
         />

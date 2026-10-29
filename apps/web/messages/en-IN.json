@@ -193,7 +193,8 @@
     "messagesTitle": "Messages from us",
     "marketing": "Send me offers and news by SMS, WhatsApp or email.",
     "marketingSaved": "Saved.",
-    "marketingFailed": "That didn't save. Please try again."
+    "marketingFailed": "That didn't save. Please try again.",
+    "visits": "Your visits"
   },
   "Owner": {
     "metaTitle": "Owner area",
@@ -384,6 +385,30 @@
       "alt": "How many verified PGs the page lists, and what they cost a month"
     }
   },
+  "Visits": {
+    "metaTitle": "Your visits",
+    "title": "Your visits",
+    "intro": "The PGs you've asked to see. Once a visit is booked, the PG's address is here, and our field agent meets you there.",
+    "none": "You haven't asked to visit a PG yet.",
+    "find": "Find a PG",
+    "status": {
+      "requested": "Asked for: we'll call you to book a time",
+      "scheduled": "Booked",
+      "completed": "Done",
+      "no_show": "Missed",
+      "cancelled": "Cancelled"
+    },
+    "offered": "Times you offered",
+    "booked": "Booked for {when}",
+    "agent": "Our field agent: {name}",
+    "address": "Address",
+    "ownerPhone": "Owner's phone",
+    "cancel": "Cancel this visit",
+    "cancelling": "Cancelling…",
+    "cancelledByStudent": "You cancelled this visit.",
+    "cancelledByOps": "We cancelled this visit.",
+    "failed": "That didn't work. Please try again."
+  },
   "Pg": {
     "metaDescription": "{gender} PG in {locality}: rooms from {from} a month, deposit and every charge shown upfront.",
     "verified": "Verified by our field agent",
@@ -489,9 +514,25 @@
     },
     "visit": {
       "metaTitle": "Book a visit",
-      "title": "Book a visit to {name}",
-      "soon": "Booking a visit opens soon. Until then, this page is where it will be.",
-      "back": "Back to the PG"
+      "title": "Visit {name}",
+      "intro": "Pick up to three times you could come. We'll call you to book one, and our field agent will meet you at the PG. Visits are free.",
+      "slot": "Time {number}",
+      "optional": "(if you like)",
+      "day": "Day",
+      "time": "Time",
+      "chooseDay": "Choose a day",
+      "chooseTime": "Choose a time",
+      "needOne": "Choose a day and a time for your first choice.",
+      "needBoth": "Choose both a day and a time, or neither.",
+      "submit": "Ask for a visit",
+      "submitting": "Sending…",
+      "back": "Back to the PG",
+      "errors": {
+        "VISIT_EXISTS": "You've asked to visit this PG already: it's in your visits.",
+        "VISIT_LIMIT_REACHED": "You have five visits open: cancel one before asking for another.",
+        "RATE_LIMITED": "Too many tries. Please try again later.",
+        "generic": "That didn't work. Please try again."
+      }
     },
     "ogAlt": "The PG's name, where it is and what it costs a month",
     "ogFrom": "From {min} a month"
@@ -540,7 +581,8 @@
       "listings": "Listings",
       "newListing": "New listing",
       "owners": "Owners",
-      "staffHome": "Staff tools"
+      "staffHome": "Staff tools",
+      "visits": "Visits"
     },
     "listings": {
       "title": "Listings",
@@ -931,6 +973,62 @@
       "keep": "Keep it",
       "cancelledBecause": "Cancelled: {reason}",
       "report": "The report"
+    },
+    "studentVisits": {
+      "metaTitle": "Visits",
+      "title": "Students' visits",
+      "intro": "Visits students asked for: book a time and an agent, and see each visit's log.",
+      "filter": "Show",
+      "all": "All",
+      "none": "No visits here.",
+      "status": {
+        "requested": "Asked for",
+        "scheduled": "Booked",
+        "completed": "Done",
+        "no_show": "Student didn't come",
+        "cancelled": "Cancelled"
+      },
+      "offered": "Times offered",
+      "booked": "Booked for {when} with {agent}",
+      "student": "Student",
+      "pg": "PG",
+      "open": "Open",
+      "outcome": {
+        "interested": "Interested",
+        "not_interested": "Not interested",
+        "student_no_show": "Student didn't come"
+      },
+      "detail": {
+        "metaTitle": "Visit",
+        "requestedAt": "Asked for {when}",
+        "call": "Call {phone}",
+        "schedule": "Book a time",
+        "reschedule": "Change the time or agent",
+        "time": "Time",
+        "customTime": "Another time",
+        "customTimeField": "Date and time, in India",
+        "agent": "Field agent",
+        "chooseAgent": "Choose an agent",
+        "noAgents": "There are no field agents yet.",
+        "save": "Book the visit",
+        "saving": "Booking…",
+        "texted": "The student gets a text with the time and the address, and reminders the day before and two hours before.",
+        "cancel": "Cancel the visit",
+        "reason": "Why",
+        "cancelling": "Cancelling…",
+        "log": "Visit log",
+        "logRequested": "Asked for, with {count, plural, one {# time} other {# times}} offered",
+        "logScheduled": "Booked for {when}",
+        "logCheckedIn": "Agent checked in at {when}, {distance} from the building (phone accurate to {accuracy})",
+        "logFinished": "Recorded at {when}: {outcome}",
+        "logCancelled": "Cancelled at {when} by {by}",
+        "by": {
+          "student": "the student",
+          "ops": "ops"
+        },
+        "note": "Agent's note: {note}",
+        "failed": "That didn't work: {detail}"
+      }
     }
   },
   "Field": {
@@ -938,7 +1036,8 @@
     "nav": {
       "label": "Field visits",
       "visits": "My visits",
-      "staffHome": "Staff tools"
+      "staffHome": "Staff tools",
+      "studentVisits": "Student visits"
     },
     "visits": {
       "title": "Verification visits",
@@ -1038,6 +1137,39 @@
       "years": "{years} years",
       "none": "None seen",
       "noLicence": "None shown"
+    },
+    "studentVisits": {
+      "metaTitle": "Student visits",
+      "title": "Student visits",
+      "intro": "Visits booked for you: meet the student at the PG, check in when you're there, then say how it went.",
+      "none": "No student visits booked for you.",
+      "when": "{when}",
+      "status": {
+        "scheduled": "Booked",
+        "completed": "Done",
+        "no_show": "Student didn't come"
+      },
+      "detail": {
+        "metaTitle": "Student visit",
+        "where": "Where",
+        "directions": "Directions",
+        "student": "Student",
+        "call": "Call {name}",
+        "checkIn": "Check in at the building",
+        "locating": "Finding where you are…",
+        "noLocation": "Your phone couldn't say where you are. Allow location for this site, then try again.",
+        "checkedIn": "Checked in at {when}, {distance} from the building.",
+        "tooEarly": "It's too early: you can check in from two hours before the visit.",
+        "outcome": "How did it go?",
+        "interested": "Interested",
+        "not_interested": "Not interested",
+        "student_no_show": "The student didn't come",
+        "note": "Note for ops (optional)",
+        "save": "Save",
+        "saving": "Saving…",
+        "done": "Done: {outcome}.",
+        "failed": "That didn't work: {detail}"
+      }
     }
   }
 }

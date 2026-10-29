@@ -96,8 +96,11 @@ test.describe("PG page", () => {
     await expect(where.locator(".maplibregl-canvas")).toBeVisible();
     expect(await wcagViolations(page)).toEqual([]);
 
+    // Booking a visit needs signing in first, and comes back to it (step 3.7).
     await page.getByRole("link", { name: "Book a visit" }).first().click();
-    await expect(page.getByText(/^Booking a visit opens soon/)).toBeVisible();
+    await expect(page).toHaveURL(
+      new RegExp(`/sign-in\\?next=${encodeURIComponent(`/pg/${SLUG}/visit`)}$`),
+    );
   });
 });
 

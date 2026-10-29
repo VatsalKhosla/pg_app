@@ -19,12 +19,16 @@ export const FIELD_VISITS_PATH = "/field/visits" satisfies Route;
 export const OPS_OWNERS_PATH = "/ops/owners" satisfies Route;
 export const OWNER_HOME_PATH = "/owner" satisfies Route;
 export const OWNER_AGREEMENT_PATH = "/owner/agreement" satisfies Route;
+export const VISITS_PATH = "/visits" satisfies Route;
+export const OPS_VISITS_PATH = "/ops/visits" satisfies Route;
+export const FIELD_STUDENT_VISITS_PATH = "/field/student-visits" satisfies Route;
 
 /** Areas only for signed-in people, and where each sends people who aren't. */
 const PROTECTED_AREAS: readonly { prefix: Route; signIn: Route }[] = [
   { prefix: ACCOUNT_PATH, signIn: SIGN_IN_PATH },
   // Owners sign in by phone, like students.
   { prefix: OWNER_HOME_PATH, signIn: SIGN_IN_PATH },
+  { prefix: VISITS_PATH, signIn: SIGN_IN_PATH },
   { prefix: STAFF_HOME_PATH, signIn: STAFF_SIGN_IN_PATH },
   { prefix: OPS_HOME_PATH, signIn: STAFF_SIGN_IN_PATH },
   { prefix: FIELD_HOME_PATH, signIn: STAFF_SIGN_IN_PATH },
