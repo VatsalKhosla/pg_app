@@ -130,6 +130,10 @@ def test_caps_out_of_range_say_why(change: dict[str, object], problem: str) -> N
             {"source": BandSource.OFFICIAL, "reference": "  "},
             "an official band needs its reference: the notification it comes from",
         ),
+        (
+            {"reference": "x" * 301},
+            "the reference must be at most 300 characters",
+        ),
     ],
 )
 def test_bands_that_dont_work_say_why(change: dict[str, object], problem: str) -> None:
