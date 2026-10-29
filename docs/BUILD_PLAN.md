@@ -264,8 +264,15 @@ Start the slow ones in week 1.
   - **Proof:** browser tests check the structured data, the sitemap against the API's list, the Open Graph image, and a listing edit showing on its cached page within seconds.
   - **Deferred:** Google's Rich Results Test itself needs a public URL, so it runs on staging once deployed.
 
-- [ ] **3.7 Visits.** Request with up to three slots; ops scheduling and agent assignment; SMS confirmations and reminders (T−24 h, T−2 h); agent check-in with GPS and time (the visit log); outcome capture; limits and rate limits. The exact address is revealed to the student once a visit is scheduled.
+- [x] **3.7 Visits.** Request with up to three slots; ops scheduling and agent assignment; SMS confirmations and reminders (T−24 h, T−2 h); agent check-in with GPS and time (the visit log); outcome capture; limits and rate limits. The exact address is revealed to the student once a visit is scheduled.
   *Done when* a student books a visit on a phone, the agent checks in, and ops see the visit log.
+  *Note (2026-10-29):*
+  - **Students** ask for a visit at up to three times (on the hour or half past, 9 am to 7 pm, from 3 hours to 2 weeks ahead) and see and cancel their visits. There are at most 5 open at once, one per PG, and 10 requests a day.
+  - **Ops** book one of those times or another, with a field agent. The student is texted, and reminded 24 hours and 2 hours before, through the outbox; a cancelled or rebooked visit's old texts don't go.
+  - **Field agents** check in from their phone at the building: the server's time, the position, its accuracy and the distance from the exact point make the visit log. They then record how it went.
+  - **The address:** a booked visit lets the student see the address and the owner's phone, through the audited contact endpoint (ADR 0033).
+  - **Deferred:** the SMS provider is the founders' choice. Until then texts go to the log locally and are off when deployed.
+  - **Proof:** a browser test on phones: a student signs up and asks, ops book it with an agent, the agent checks in by GPS and records the outcome, and ops see the log.
 
 - [ ] **3.8 Trust and legal pages.** About (founders' names and faces), Contact (a phone line staffed by a person), Pricing ("students pay nothing; owners pay a one-time 30% placement fee"), Terms, Privacy notice, Refund & Cancellation policy, Grievance officer with a ticket form (acknowledge ≤ 48 h, resolve ≤ 1 month), "How your token is protected". Mark legal texts **DRAFT — needs lawyer review**.
   *Done when* every page is linked from the footer and the grievance form issues a ticket number.
