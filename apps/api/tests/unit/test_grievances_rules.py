@@ -1,6 +1,5 @@
 """Grievances' rules (step 3.8, ADR 0034), without a database: the deadlines the E-Commerce Rules
-set, the moves a grievance may make, lateness and the texts' wording; and the policies the public
-pages explain."""
+set, the moves a grievance may make, lateness and the texts' wording."""
 
 import re
 from datetime import UTC, datetime, timedelta
@@ -16,14 +15,6 @@ from app.modules.compliance.domain.grievances import (
     resolve_by,
 )
 from app.modules.compliance.texts import TEMPLATES
-from app.modules.pricing.domain.policies import (
-    DEFAULT_BOOKING_POLICY,
-    DEFAULT_FEE_POLICY,
-    MAX_TOKEN,
-    FeeBasis,
-    GstMode,
-    LateCancelPolicy,
-)
 
 
 def india(year: int, month: int, day: int, hour: int = 11, minute: int = 0) -> datetime:
@@ -89,15 +80,3 @@ def test_a_texts_date_is_said_in_india() -> None:
     assert spoken_date(india(2027, 7, 17)) == "Sat 17 Jul"
     # 8 pm in UTC on Friday is already Saturday in India.
     assert spoken_date(datetime(2027, 7, 16, 20, 0, tzinfo=UTC)) == "Sat 17 Jul"
-
-
-def test_the_policies_in_force_keep_the_founders_rules() -> None:
-    # Rule 2 and 3: 30% of the listed rent, with GST at 18% on top until the founders decide.
-    fee = DEFAULT_FEE_POLICY
-    assert (fee.rate_bps, fee.basis, fee.gst_rate_bps) == (3_000, FeeBasis.LISTED_RENT, 1_800)
-    assert fee.gst_mode is GstMode.EXCLUSIVE
-    # Rule 8 and 9: a token of at most ₹2,000; free cancellation up to 7 days before moving in.
-    booking = DEFAULT_BOOKING_POLICY
-    assert booking.token_paise <= MAX_TOKEN == 200_000
-    assert (booking.free_cancel_days, booking.check_window_hours) == (7, 24)
-    assert booking.late_cancel_policy is LateCancelPolicy.REFUND_FULL

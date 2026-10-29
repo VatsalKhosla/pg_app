@@ -4578,6 +4578,432 @@
         }
       }
     },
+    "/v1/admin/policies": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "The policies in force, for admins",
+        "description": "Admins, in a staff session: each policy's version in force, since when and by whom.",
+        "operationId": "pricingAdminPolicies",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPolicies"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/policies/history": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "The policies' latest versions",
+        "description": "Admins: each policy's last 20 versions, newest first.",
+        "operationId": "pricingPolicyHistory",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyHistory"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/policies/fee": {
+      "post": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Change the placement fee",
+        "description": "Admins: the fee from now on; quotes and bookings made before keep theirs (rule 5).\nAudited. 422 POLICY_INVALID names what's wrong.",
+        "operationId": "pricingChangeFee",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeePolicyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeePolicyVersionInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/policies/booking": {
+      "post": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Change the booking terms",
+        "description": "Admins: the token, hold, cancellation and check-window terms from now on. A token stays\nfrom ₹1,000 to ₹2,000 (rule 8). Audited. 422 POLICY_INVALID names what's wrong.",
+        "operationId": "pricingChangeBooking",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingPolicyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingPolicyVersionInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/policies/caps": {
+      "post": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Change the caps on dynamic prices",
+        "description": "Admins: how far dynamic prices may move from the listed rent, and their rounding step,\nfrom now on (rule 6). Audited. 422 POLICY_INVALID names what's wrong.",
+        "operationId": "pricingChangeCaps",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PricingCapsInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingCapsVersionInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/rent-bands": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Rent bands",
+        "description": "Admins: the bands in force, newest first (with ``ended``, past ones too), for one\nlocality if asked.",
+        "operationId": "pricingRentBands",
+        "parameters": [
+          {
+            "name": "locality",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80,
+                  "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Locality"
+            }
+          },
+          {
+            "name": "ended",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Ended"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentBandList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Set a rent band",
+        "description": "Admins: a locality's band for one occupancy from now on, ending the one in force (rule\n6). Audited. 422 POLICY_INVALID names what's wrong.",
+        "operationId": "pricingSetRentBand",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RentBandInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentBandInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/rent-bands/{band_id}/end": {
+      "post": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "End a rent band",
+        "description": "Admins: no band for its locality and occupancy from now. Audited. 409\nINVALID_TRANSITION for one already ended.",
+        "operationId": "pricingEndRentBand",
+        "parameters": [
+          {
+            "name": "band_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Band Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RentBandEnd"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentBandInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/visits": {
       "get": {
         "tags": [
@@ -5461,6 +5887,28 @@
         ],
         "title": "AcceptanceList"
       },
+      "AdminPolicies": {
+        "properties": {
+          "fee": {
+            "$ref": "#/components/schemas/FeePolicyVersionInfo"
+          },
+          "booking": {
+            "$ref": "#/components/schemas/BookingPolicyVersionInfo"
+          },
+          "caps": {
+            "$ref": "#/components/schemas/PricingCapsVersionInfo"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fee",
+          "booking",
+          "caps"
+        ],
+        "title": "AdminPolicies",
+        "description": "Each policy's version in force."
+      },
       "AgentInfo": {
         "properties": {
           "id": {
@@ -5607,6 +6055,33 @@
         ],
         "title": "AssetStatus"
       },
+      "BandLocality": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "BandLocality"
+      },
+      "BandSource": {
+        "type": "string",
+        "enum": [
+          "official",
+          "internal"
+        ],
+        "title": "BandSource"
+      },
       "BedCreate": {
         "properties": {
           "label": {
@@ -5677,6 +6152,175 @@
         ],
         "title": "BedsFree",
         "description": "How many beds are free that month, roughly: real inventory (CLAUDE.md rule 7), without\nhanding out exact counts."
+      },
+      "BookingPolicyInput": {
+        "properties": {
+          "tokenPaise": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 0.0,
+            "title": "Tokenpaise"
+          },
+          "holdMinutes": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Holdminutes"
+          },
+          "freeCancelDays": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Freecanceldays"
+          },
+          "checkWindowHours": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Checkwindowhours"
+          },
+          "confirmDeadlineHours": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Confirmdeadlinehours"
+          },
+          "noShowDays": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Noshowdays"
+          },
+          "lateCancelPolicy": {
+            "$ref": "#/components/schemas/LateCancelPolicy"
+          },
+          "maxActiveHoldsPerUser": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Maxactiveholdsperuser"
+          },
+          "maxAdvanceDays": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Maxadvancedays"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tokenPaise",
+          "holdMinutes",
+          "freeCancelDays",
+          "checkWindowHours",
+          "confirmDeadlineHours",
+          "noShowDays",
+          "lateCancelPolicy",
+          "maxActiveHoldsPerUser",
+          "maxAdvanceDays"
+        ],
+        "title": "BookingPolicyInput"
+      },
+      "BookingPolicyVersionInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Effectivefrom"
+          },
+          "effectiveTo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effectiveto"
+          },
+          "changedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Changer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "tokenPaise": {
+            "type": "integer",
+            "title": "Tokenpaise"
+          },
+          "holdMinutes": {
+            "type": "integer",
+            "title": "Holdminutes"
+          },
+          "freeCancelDays": {
+            "type": "integer",
+            "title": "Freecanceldays"
+          },
+          "checkWindowHours": {
+            "type": "integer",
+            "title": "Checkwindowhours"
+          },
+          "confirmDeadlineHours": {
+            "type": "integer",
+            "title": "Confirmdeadlinehours"
+          },
+          "noShowDays": {
+            "type": "integer",
+            "title": "Noshowdays"
+          },
+          "lateCancelPolicy": {
+            "$ref": "#/components/schemas/LateCancelPolicy"
+          },
+          "maxActiveHoldsPerUser": {
+            "type": "integer",
+            "title": "Maxactiveholdsperuser"
+          },
+          "maxAdvanceDays": {
+            "type": "integer",
+            "title": "Maxadvancedays"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "effectiveFrom",
+          "effectiveTo",
+          "changedBy",
+          "note",
+          "tokenPaise",
+          "holdMinutes",
+          "freeCancelDays",
+          "checkWindowHours",
+          "confirmDeadlineHours",
+          "noShowDays",
+          "lateCancelPolicy",
+          "maxActiveHoldsPerUser",
+          "maxAdvanceDays"
+        ],
+        "title": "BookingPolicyVersionInfo"
       },
       "BookingTerms": {
         "properties": {
@@ -6211,6 +6855,33 @@
         "title": "CategoryUpdate",
         "description": "Only the fields sent change; null clears the owner's minimum or maximum."
       },
+      "Changer": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Changer"
+      },
       "ChargeKind": {
         "type": "string",
         "enum": [
@@ -6632,6 +7303,112 @@
         ],
         "title": "FeeBasis"
       },
+      "FeePolicyInput": {
+        "properties": {
+          "rateBps": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Ratebps"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/FeeBasis",
+            "default": "listed_rent"
+          },
+          "gstRateBps": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Gstratebps"
+          },
+          "gstMode": {
+            "$ref": "#/components/schemas/GstMode"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rateBps",
+          "gstRateBps",
+          "gstMode"
+        ],
+        "title": "FeePolicyInput",
+        "description": "The next fee policy, in force from now. Why it changed goes in ``note``."
+      },
+      "FeePolicyVersionInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Effectivefrom"
+          },
+          "effectiveTo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effectiveto"
+          },
+          "changedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Changer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "rateBps": {
+            "type": "integer",
+            "title": "Ratebps"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/FeeBasis"
+          },
+          "gstRateBps": {
+            "type": "integer",
+            "title": "Gstratebps"
+          },
+          "gstMode": {
+            "$ref": "#/components/schemas/GstMode"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "effectiveFrom",
+          "effectiveTo",
+          "changedBy",
+          "note",
+          "rateBps",
+          "basis",
+          "gstRateBps",
+          "gstMode"
+        ],
+        "title": "FeePolicyVersionInfo"
+      },
       "FieldAgentList": {
         "properties": {
           "items": {
@@ -6996,7 +7773,7 @@
           "split"
         ],
         "title": "LateCancelPolicy",
-        "description": "Who keeps the token when a student cancels less than the free-cancellation days before\nmoving in."
+        "description": "Who keeps the token when a student cancels later than the free-cancellation days before\nmoving in."
       },
       "LicenceStatus": {
         "type": "string",
@@ -8692,6 +9469,141 @@
         "title": "PlacementFeeTerms",
         "description": "What an owner pays, once per tenant placed: ``rateBps`` of ``basis``, with GST at\n``gstRateBps`` added (``exclusive``) or included (``inclusive``)."
       },
+      "PolicyHistory": {
+        "properties": {
+          "fee": {
+            "items": {
+              "$ref": "#/components/schemas/FeePolicyVersionInfo"
+            },
+            "type": "array",
+            "title": "Fee"
+          },
+          "booking": {
+            "items": {
+              "$ref": "#/components/schemas/BookingPolicyVersionInfo"
+            },
+            "type": "array",
+            "title": "Booking"
+          },
+          "caps": {
+            "items": {
+              "$ref": "#/components/schemas/PricingCapsVersionInfo"
+            },
+            "type": "array",
+            "title": "Caps"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fee",
+          "booking",
+          "caps"
+        ],
+        "title": "PolicyHistory",
+        "description": "Each policy's latest versions, newest first."
+      },
+      "PricingCapsInput": {
+        "properties": {
+          "maxPremiumBps": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Maxpremiumbps"
+          },
+          "maxDiscountBps": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Maxdiscountbps"
+          },
+          "roundingStepPaise": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 0.0,
+            "title": "Roundingsteppaise"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "maxPremiumBps",
+          "maxDiscountBps",
+          "roundingStepPaise"
+        ],
+        "title": "PricingCapsInput"
+      },
+      "PricingCapsVersionInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Effectivefrom"
+          },
+          "effectiveTo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effectiveto"
+          },
+          "changedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Changer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "maxPremiumBps": {
+            "type": "integer",
+            "title": "Maxpremiumbps"
+          },
+          "maxDiscountBps": {
+            "type": "integer",
+            "title": "Maxdiscountbps"
+          },
+          "roundingStepPaise": {
+            "type": "integer",
+            "title": "Roundingsteppaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "effectiveFrom",
+          "effectiveTo",
+          "changedBy",
+          "note",
+          "maxPremiumBps",
+          "maxDiscountBps",
+          "roundingStepPaise"
+        ],
+        "title": "PricingCapsVersionInfo"
+      },
       "PrivacyNoticeInfo": {
         "properties": {
           "version": {
@@ -9529,6 +10441,164 @@
           "bytes"
         ],
         "title": "RenditionInfo"
+      },
+      "RentBandEnd": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RentBandEnd"
+      },
+      "RentBandInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Effectivefrom"
+          },
+          "effectiveTo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effectiveto"
+          },
+          "changedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Changer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "locality": {
+            "$ref": "#/components/schemas/BandLocality"
+          },
+          "occupancy": {
+            "$ref": "#/components/schemas/Occupancy"
+          },
+          "minRentPaise": {
+            "type": "integer",
+            "title": "Minrentpaise"
+          },
+          "maxRentPaise": {
+            "type": "integer",
+            "title": "Maxrentpaise"
+          },
+          "source": {
+            "$ref": "#/components/schemas/BandSource"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "effectiveFrom",
+          "effectiveTo",
+          "changedBy",
+          "note",
+          "locality",
+          "occupancy",
+          "minRentPaise",
+          "maxRentPaise",
+          "source",
+          "reference"
+        ],
+        "title": "RentBandInfo"
+      },
+      "RentBandInput": {
+        "properties": {
+          "locality": {
+            "type": "string",
+            "maxLength": 80,
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "title": "Locality"
+          },
+          "occupancy": {
+            "$ref": "#/components/schemas/Occupancy"
+          },
+          "minRentPaise": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 0.0,
+            "title": "Minrentpaise"
+          },
+          "maxRentPaise": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 0.0,
+            "title": "Maxrentpaise"
+          },
+          "source": {
+            "$ref": "#/components/schemas/BandSource"
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Reference",
+            "default": ""
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "locality",
+          "occupancy",
+          "minRentPaise",
+          "maxRentPaise",
+          "source"
+        ],
+        "title": "RentBandInput",
+        "description": "A band for one locality and occupancy, in force from now; the one before ends."
+      },
+      "RentBandList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RentBandInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "RentBandList"
       },
       "ReportSubmit": {
         "properties": {

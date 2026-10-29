@@ -58,6 +58,7 @@ PATH_VALUES: Final = frozenset(
         "someone_elses_visit",
         "someone_elses_student_visit",
         "someone_elses_grievance",
+        "a_missing_rent_band",
         "an_owner",
         "a_live_listing",
     }
@@ -150,6 +151,22 @@ def _visit_report() -> dict[str, Any]:
 
 def _reason() -> dict[str, Any]:
     return {"json": {"reason": "A fictional reason"}}
+
+
+# The defaults in force: sending them again changes nothing (422), yet shows who may.
+FEE_IN_FORCE: Final = {"rateBps": 3000, "gstRateBps": 1800, "gstMode": "exclusive"}
+BOOKING_IN_FORCE: Final = {
+    "tokenPaise": 200000,
+    "holdMinutes": 15,
+    "freeCancelDays": 7,
+    "checkWindowHours": 24,
+    "confirmDeadlineHours": 12,
+    "noShowDays": 3,
+    "lateCancelPolicy": "refund_full",
+    "maxActiveHoldsPerUser": 1,
+    "maxAdvanceDays": 120,
+}
+CAPS_IN_FORCE: Final = {"maxPremiumBps": 4000, "maxDiscountBps": 3000, "roundingStepPaise": 5000}
 
 
 def _complaint() -> dict[str, Any]:
@@ -368,6 +385,35 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ),
     # The fee and booking terms in force, for the public pages (ADR 0034).
     ("GET", "/v1/policies"): Rule(everyone(200)),
+    # Policies, caps and rent bands (ADR 0036): admins' alone. No call here changes them: the
+    # policies sent are those in force (422), the locality doesn't exist (422), nor the band.
+    ("GET", "/v1/admin/policies"): Rule(signed_in(403, admin=200)),
+    ("GET", "/v1/admin/policies/history"): Rule(signed_in(403, admin=200)),
+    ("POST", "/v1/admin/policies/fee"): Rule(
+        signed_in(403, admin=422), lambda: {"json": FEE_IN_FORCE}
+    ),
+    ("POST", "/v1/admin/policies/booking"): Rule(
+        signed_in(403, admin=422), lambda: {"json": BOOKING_IN_FORCE}
+    ),
+    ("POST", "/v1/admin/policies/caps"): Rule(
+        signed_in(403, admin=422), lambda: {"json": CAPS_IN_FORCE}
+    ),
+    ("GET", "/v1/admin/rent-bands"): Rule(signed_in(403, admin=200)),
+    ("POST", "/v1/admin/rent-bands"): Rule(
+        signed_in(403, admin=422),
+        lambda: {
+            "json": {
+                "locality": "no-such-locality-for-the-matrix",
+                "occupancy": "double",
+                "minRentPaise": 800000,
+                "maxRentPaise": 1400000,
+                "source": "internal",
+            }
+        },
+    ),
+    ("POST", "/v1/admin/rent-bands/{band_id}/end"): Rule(
+        signed_in(403, admin=404), lambda: {"json": {}}, path={"band_id": "a_missing_rent_band"}
+    ),
     # Student visits (ADR 0033): people signed in by phone ask and cancel their own; ops book and
     # cancel any; field agents run the ones booked for them. The visit is another student's, booked
     # with another agent, so it doesn't exist for any phone caller or field agent here.

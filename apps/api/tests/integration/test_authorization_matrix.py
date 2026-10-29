@@ -298,7 +298,17 @@ async def _someone_elses_grievance(app: FastAPI) -> str:
         return grievance.ticket_number
 
 
+# Path values that need nothing made first.
+_FIXED: Final[dict[str, Callable[[], str]]] = {
+    "an_optional_purpose": lambda: "marketing",
+    "a_campus": lambda: read_reference_data().campuses[0].slug,
+    "a_missing_rent_band": lambda: str(uuid.uuid7()),
+}
+
+
 async def _path_value(app: FastAPI, kind: str) -> str:
+    if (fixed := _FIXED.get(kind)) is not None:
+        return fixed()
     match kind:
         case "someone_elses_session":
             user_id = await _add_user(app, Role.STUDENT)
@@ -306,10 +316,6 @@ async def _path_value(app: FastAPI, kind: str) -> str:
         case "someone_elses_export" | "someone_elses_deletion_request":
             wanted = DataRequestKind.EXPORT if kind.endswith("export") else DataRequestKind.DELETION
             value = await _someone_elses_request(app, wanted)
-        case "an_optional_purpose":
-            value = "marketing"
-        case "a_campus":
-            value = read_reference_data().campuses[0].slug
         case "someone_elses_media":
             value = await _someone_elses_media(app)
         case "a_listing" | "a_room_category" | "a_room" | "a_bed":

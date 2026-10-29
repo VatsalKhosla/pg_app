@@ -1293,6 +1293,156 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The policies in force, for admins
+         * @description Admins, in a staff session: each policy's version in force, since when and by whom.
+         */
+        get: operations["pricingAdminPolicies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/policies/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The policies' latest versions
+         * @description Admins: each policy's last 20 versions, newest first.
+         */
+        get: operations["pricingPolicyHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/policies/fee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change the placement fee
+         * @description Admins: the fee from now on; quotes and bookings made before keep theirs (rule 5).
+         *     Audited. 422 POLICY_INVALID names what's wrong.
+         */
+        post: operations["pricingChangeFee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/policies/booking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change the booking terms
+         * @description Admins: the token, hold, cancellation and check-window terms from now on. A token stays
+         *     from ₹1,000 to ₹2,000 (rule 8). Audited. 422 POLICY_INVALID names what's wrong.
+         */
+        post: operations["pricingChangeBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/policies/caps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change the caps on dynamic prices
+         * @description Admins: how far dynamic prices may move from the listed rent, and their rounding step,
+         *     from now on (rule 6). Audited. 422 POLICY_INVALID names what's wrong.
+         */
+        post: operations["pricingChangeCaps"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/rent-bands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rent bands
+         * @description Admins: the bands in force, newest first (with ``ended``, past ones too), for one
+         *     locality if asked.
+         */
+        get: operations["pricingRentBands"];
+        put?: never;
+        /**
+         * Set a rent band
+         * @description Admins: a locality's band for one occupancy from now on, ending the one in force (rule
+         *     6). Audited. 422 POLICY_INVALID names what's wrong.
+         */
+        post: operations["pricingSetRentBand"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/rent-bands/{band_id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End a rent band
+         * @description Admins: no band for its locality and occupancy from now. Audited. 409
+         *     INVALID_TRANSITION for one already ended.
+         */
+        post: operations["pricingEndRentBand"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visits": {
         parameters: {
             query?: never;
@@ -1586,6 +1736,15 @@ export interface components {
             /** Items */
             items: components["schemas"]["AcceptanceInfo"][];
         };
+        /**
+         * AdminPolicies
+         * @description Each policy's version in force.
+         */
+        AdminPolicies: {
+            fee: components["schemas"]["FeePolicyVersionInfo"];
+            booking: components["schemas"]["BookingPolicyVersionInfo"];
+            caps: components["schemas"]["PricingCapsVersionInfo"];
+        };
         /** AgentInfo */
         AgentInfo: {
             /**
@@ -1633,6 +1792,18 @@ export interface components {
          * @enum {string}
          */
         AssetStatus: "awaiting_upload" | "processing" | "ready" | "rejected";
+        /** BandLocality */
+        BandLocality: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * BandSource
+         * @enum {string}
+         */
+        BandSource: "official" | "internal";
         /** BedCreate */
         BedCreate: {
             /** Label */
@@ -1665,6 +1836,66 @@ export interface components {
          * @enum {string}
          */
         BedsFree: "none" | "few" | "some" | "many";
+        /** BookingPolicyInput */
+        BookingPolicyInput: {
+            /** Tokenpaise */
+            tokenPaise: number;
+            /** Holdminutes */
+            holdMinutes: number;
+            /** Freecanceldays */
+            freeCancelDays: number;
+            /** Checkwindowhours */
+            checkWindowHours: number;
+            /** Confirmdeadlinehours */
+            confirmDeadlineHours: number;
+            /** Noshowdays */
+            noShowDays: number;
+            lateCancelPolicy: components["schemas"]["LateCancelPolicy"];
+            /** Maxactiveholdsperuser */
+            maxActiveHoldsPerUser: number;
+            /** Maxadvancedays */
+            maxAdvanceDays: number;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** BookingPolicyVersionInfo */
+        BookingPolicyVersionInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Effectivefrom
+             * Format: date-time
+             */
+            effectiveFrom: string;
+            /** Effectiveto */
+            effectiveTo: string | null;
+            changedBy: components["schemas"]["Changer"] | null;
+            /** Note */
+            note: string;
+            /** Tokenpaise */
+            tokenPaise: number;
+            /** Holdminutes */
+            holdMinutes: number;
+            /** Freecanceldays */
+            freeCancelDays: number;
+            /** Checkwindowhours */
+            checkWindowHours: number;
+            /** Confirmdeadlinehours */
+            confirmDeadlineHours: number;
+            /** Noshowdays */
+            noShowDays: number;
+            lateCancelPolicy: components["schemas"]["LateCancelPolicy"];
+            /** Maxactiveholdsperuser */
+            maxActiveHoldsPerUser: number;
+            /** Maxadvancedays */
+            maxAdvanceDays: number;
+        };
         /**
          * BookingTerms
          * @description What a student relies on when they reserve a bed.
@@ -1817,6 +2048,16 @@ export interface components {
             /** Mandatorycharges */
             mandatoryCharges?: (components["schemas"]["MonthlyCharge"] | components["schemas"]["MeteredCharge"] | components["schemas"]["OneTimeCharge"])[] | null;
             status?: components["schemas"]["CategoryStatus"] | null;
+        };
+        /** Changer */
+        Changer: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string | null;
         };
         /**
          * ChargeKind
@@ -1973,6 +2214,48 @@ export interface components {
          * @enum {string}
          */
         FeeBasis: "listed_rent";
+        /**
+         * FeePolicyInput
+         * @description The next fee policy, in force from now. Why it changed goes in ``note``.
+         */
+        FeePolicyInput: {
+            /** Ratebps */
+            rateBps: number;
+            /** @default listed_rent */
+            basis: components["schemas"]["FeeBasis"];
+            /** Gstratebps */
+            gstRateBps: number;
+            gstMode: components["schemas"]["GstMode"];
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** FeePolicyVersionInfo */
+        FeePolicyVersionInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Effectivefrom
+             * Format: date-time
+             */
+            effectiveFrom: string;
+            /** Effectiveto */
+            effectiveTo: string | null;
+            changedBy: components["schemas"]["Changer"] | null;
+            /** Note */
+            note: string;
+            /** Ratebps */
+            rateBps: number;
+            basis: components["schemas"]["FeeBasis"];
+            /** Gstratebps */
+            gstRateBps: number;
+            gstMode: components["schemas"]["GstMode"];
+        };
         /** FieldAgentList */
         FieldAgentList: {
             /** Items */
@@ -2136,7 +2419,7 @@ export interface components {
         };
         /**
          * LateCancelPolicy
-         * @description Who keeps the token when a student cancels less than the free-cancellation days before
+         * @description Who keeps the token when a student cancels later than the free-cancellation days before
          *     moving in.
          * @enum {string}
          */
@@ -2722,6 +3005,56 @@ export interface components {
             gstMode: components["schemas"]["GstMode"];
         };
         /**
+         * PolicyHistory
+         * @description Each policy's latest versions, newest first.
+         */
+        PolicyHistory: {
+            /** Fee */
+            fee: components["schemas"]["FeePolicyVersionInfo"][];
+            /** Booking */
+            booking: components["schemas"]["BookingPolicyVersionInfo"][];
+            /** Caps */
+            caps: components["schemas"]["PricingCapsVersionInfo"][];
+        };
+        /** PricingCapsInput */
+        PricingCapsInput: {
+            /** Maxpremiumbps */
+            maxPremiumBps: number;
+            /** Maxdiscountbps */
+            maxDiscountBps: number;
+            /** Roundingsteppaise */
+            roundingStepPaise: number;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** PricingCapsVersionInfo */
+        PricingCapsVersionInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Effectivefrom
+             * Format: date-time
+             */
+            effectiveFrom: string;
+            /** Effectiveto */
+            effectiveTo: string | null;
+            changedBy: components["schemas"]["Changer"] | null;
+            /** Note */
+            note: string;
+            /** Maxpremiumbps */
+            maxPremiumBps: number;
+            /** Maxdiscountbps */
+            maxDiscountBps: number;
+            /** Roundingsteppaise */
+            roundingStepPaise: number;
+        };
+        /**
          * PrivacyNoticeInfo
          * @description The current privacy notice: its version, which consent must name, and its purposes. The
          *     notice's text is the web app's.
@@ -2987,6 +3320,70 @@ export interface components {
             height: number | null;
             /** Bytes */
             bytes: number;
+        };
+        /** RentBandEnd */
+        RentBandEnd: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** RentBandInfo */
+        RentBandInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Effectivefrom
+             * Format: date-time
+             */
+            effectiveFrom: string;
+            /** Effectiveto */
+            effectiveTo: string | null;
+            changedBy: components["schemas"]["Changer"] | null;
+            /** Note */
+            note: string;
+            locality: components["schemas"]["BandLocality"];
+            occupancy: components["schemas"]["Occupancy"];
+            /** Minrentpaise */
+            minRentPaise: number;
+            /** Maxrentpaise */
+            maxRentPaise: number;
+            source: components["schemas"]["BandSource"];
+            /** Reference */
+            reference: string;
+        };
+        /**
+         * RentBandInput
+         * @description A band for one locality and occupancy, in force from now; the one before ends.
+         */
+        RentBandInput: {
+            /** Locality */
+            locality: string;
+            occupancy: components["schemas"]["Occupancy"];
+            /** Minrentpaise */
+            minRentPaise: number;
+            /** Maxrentpaise */
+            maxRentPaise: number;
+            source: components["schemas"]["BandSource"];
+            /**
+             * Reference
+             * @default
+             */
+            reference: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** RentBandList */
+        RentBandList: {
+            /** Items */
+            items: components["schemas"]["RentBandInfo"][];
         };
         /** ReportSubmit */
         ReportSubmit: {
@@ -6659,6 +7056,335 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicPolicies"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingAdminPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPolicies"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingPolicyHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyHistory"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingChangeFee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeePolicyInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeePolicyVersionInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingChangeBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingPolicyInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingPolicyVersionInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingChangeCaps: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricingCapsInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingCapsVersionInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingRentBands: {
+        parameters: {
+            query?: {
+                locality?: string | null;
+                ended?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentBandList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingSetRentBand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RentBandInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentBandInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingEndRentBand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                band_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RentBandEnd"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentBandInfo"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

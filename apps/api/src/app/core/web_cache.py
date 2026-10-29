@@ -33,9 +33,11 @@ if TYPE_CHECKING:
     from app.core.outbox import JobContext, JobHandler, JobPayload
 
 REVALIDATE: Final = "web.revalidate"
-# The tags the web app knows: one listing's, everything that lists them.
+# The tags the web app knows: one listing's, everything that lists them, and the pages that
+# state the fee and booking policies (ADR 0036).
 LISTINGS_TAG: Final = "listings"
-_TAG: Final = re.compile(r"^(listings|listing:[a-z0-9]+(-[a-z0-9]+)*)$")
+POLICIES_TAG: Final = "policies"
+_TAG: Final = re.compile(r"^(listings|policies|listing:[a-z0-9]+(-[a-z0-9]+)*)$")
 _PATH: Final = "/api/revalidate"
 
 logger = structlog.stdlib.get_logger(__name__)

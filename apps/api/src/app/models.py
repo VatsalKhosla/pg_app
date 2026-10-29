@@ -38,6 +38,12 @@ from app.modules.identity.models import (
     UserSession,
 )
 from app.modules.media.models import MediaAsset
+from app.modules.pricing.models import (
+    BookingPolicyVersion,
+    FeePolicyVersion,
+    PricingCapsVersion,
+    RentBand,
+)
 from app.modules.search.models import PropertyPriceSummary, SearchListing
 from app.modules.visits.models import Visit
 
@@ -46,12 +52,14 @@ __all__ = [
     "AuditLog",
     "Base",
     "Bed",
+    "BookingPolicyVersion",
     "Campus",
     "City",
     "Consent",
     "DataExport",
     "DataRequest",
     "FeatureFlag",
+    "FeePolicyVersion",
     "Grievance",
     "IdempotencyRecord",
     "Locality",
@@ -63,10 +71,12 @@ __all__ = [
     "OutboxJob",
     "Owner",
     "OwnerAgreement",
+    "PricingCapsVersion",
     "Property",
     "PropertyAmenity",
     "PropertyMedia",
     "PropertyPriceSummary",
+    "RentBand",
     "Room",
     "RoomCategory",
     "SearchListing",
