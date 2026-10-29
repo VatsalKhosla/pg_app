@@ -310,8 +310,12 @@ Start the slow ones in week 1.
   - **Public pages:** `GET /v1/policies` reads the tables, and a change refreshes the public pages that state them (ADR 0036).
   - **Proof:** API tests for each change, refusal and two admins at once, plus a browser test of an admin changing a cap and setting and ending a band.
 
-- [ ] **4.2 Pricing engine (pure).** `pricing/domain/engine.py` per ARCHITECTURE §8: rule kinds with typed params, the algorithm, clamping, rounding, fee/GST/token maths, explainable adjustments, `engine_version`. Hypothesis tests for every invariant in §8.8 (≥ 10,000 cases in CI) plus table tests including the worked example.
+- [x] **4.2 Pricing engine (pure).** `pricing/domain/engine.py` per ARCHITECTURE §8: rule kinds with typed params, the algorithm, clamping, rounding, fee/GST/token maths, explainable adjustments, `engine_version`. Hypothesis tests for every invariant in §8.8 (≥ 10,000 cases in CI) plus table tests including the worked example.
   *Done when* all invariants hold and branch coverage of the engine is ≥ 95%.
+  *Note (2026-10-30):*
+  - **Engine:** `quote(context)` is pure and typed. It handles the six rule kinds (with their own checks), caps, owner and band bounds (impossible ones refused), rounding kept inside the bounds, the fee on the listed rent only, both GST modes, the token and an explanation of each adjustment and clamp (ADR 0037).
+  - **Proof:** the worked example and every edge by hand, plus every §8.8 invariant as a Hypothesis property (10,000 cases each in CI).
+  - **Coverage gate:** `make coverage-money`, now in `make check` and CI, holds the pricing domain at 95% branch coverage; it stands at 99.7%.
 
 - [ ] **4.3 Rule sets and versioning.** Draft → active → archived; activation is atomic, creates an immutable version and is audited; validation (overlapping seasons, band conflicts, impossible bounds) returns readable errors.
   *Done when* activating a new version never changes existing quotes or bookings (tested).
