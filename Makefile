@@ -183,6 +183,7 @@ coverage-money: ## Fail below 95% branch coverage of the money code's pure domai
 	@# Coverage needs every branch, not 10,000 cases: the test run already did those.
 	HYPOTHESIS_PROFILE=dev $(API) pytest -q -p no:cacheprovider tests/unit/test_pricing_engine.py \
 		tests/unit/test_pricing_policies.py tests/unit/test_pricing_rule_sets.py \
+		tests/unit/test_pricing_quotes.py \
 		--cov=app.modules.pricing.domain --cov-branch \
 		--cov-report=term-missing --cov-fail-under=95
 

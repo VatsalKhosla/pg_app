@@ -5004,6 +5004,112 @@
         }
       }
     },
+    "/v1/quotes": {
+      "post": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Price a room for a move-in and a stay",
+        "description": "Anyone, for a room in a PG the public may see: the monthly rent, fixed for the whole\nstay, with how it was worked out, the token, the deposit and the mandatory charges. It\nstands for 30 minutes. 422 QUOTE_INVALID for a move-in or stay that can't be quoted; 404\nfor a room the public can't see; 30 a minute per address.",
+        "operationId": "pricingCreateQuote",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/quotes/{quote_id}": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "A quote",
+        "description": "Anyone with its id: a quote holds no personal data. ``expired`` once its 30 minutes are\nup.",
+        "operationId": "pricingGetQuote",
+        "parameters": [
+          {
+            "name": "quote_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Quote Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/ops/properties/{property_id}/rule-sets": {
       "get": {
         "tags": [
@@ -7383,6 +7489,18 @@
           "items"
         ],
         "title": "CityList"
+      },
+      "ClampKind": {
+        "type": "string",
+        "enum": [
+          "premium_cap",
+          "discount_cap",
+          "owner_min",
+          "owner_max",
+          "band_min",
+          "band_max"
+        ],
+        "title": "ClampKind"
       },
       "Complainant": {
         "properties": {
@@ -11072,6 +11190,311 @@
           "requester"
         ],
         "title": "QueuedDataRequest"
+      },
+      "QuoteAdjustment": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/RuleKind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "bps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bps"
+          },
+          "rentPaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rentpaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "label",
+          "bps",
+          "rentPaise"
+        ],
+        "title": "QuoteAdjustment",
+        "description": "A rule that moved the rent: by ``bps``, or for an override, to ``rentPaise``."
+      },
+      "QuoteCharge": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "metered",
+              "one_time"
+            ],
+            "title": "Type"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "amountPaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amountpaise"
+          },
+          "ratePaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratepaise"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "monthlyEstimatePaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthlyestimatepaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "kind",
+          "label"
+        ],
+        "title": "QuoteCharge",
+        "description": "A mandatory charge as it stood: monthly or one-time (``amountPaise``), or metered\n(``ratePaise`` per ``unit``, about ``monthlyEstimatePaise`` a month)."
+      },
+      "QuoteClamp": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ClampKind"
+          },
+          "asked": {
+            "type": "integer",
+            "title": "Asked"
+          },
+          "allowed": {
+            "type": "integer",
+            "title": "Allowed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "asked",
+          "allowed"
+        ],
+        "title": "QuoteClamp",
+        "description": "A limit that held the price back: what was asked for, and what was allowed."
+      },
+      "QuoteInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "place": {
+            "$ref": "#/components/schemas/QuotePlace"
+          },
+          "moveIn": {
+            "type": "string",
+            "format": "date",
+            "title": "Movein"
+          },
+          "stayMonths": {
+            "type": "integer",
+            "title": "Staymonths"
+          },
+          "baseRentPaise": {
+            "type": "integer",
+            "title": "Baserentpaise"
+          },
+          "monthlyRentPaise": {
+            "type": "integer",
+            "title": "Monthlyrentpaise"
+          },
+          "adjustments": {
+            "items": {
+              "$ref": "#/components/schemas/QuoteAdjustment"
+            },
+            "type": "array",
+            "title": "Adjustments"
+          },
+          "clamps": {
+            "items": {
+              "$ref": "#/components/schemas/QuoteClamp"
+            },
+            "type": "array",
+            "title": "Clamps"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "tokenPaise": {
+            "type": "integer",
+            "title": "Tokenpaise"
+          },
+          "dueAtMoveInPaise": {
+            "type": "integer",
+            "title": "Dueatmoveinpaise"
+          },
+          "depositPaise": {
+            "type": "integer",
+            "title": "Depositpaise"
+          },
+          "charges": {
+            "items": {
+              "$ref": "#/components/schemas/QuoteCharge"
+            },
+            "type": "array",
+            "title": "Charges"
+          },
+          "monthlyChargesPaise": {
+            "type": "integer",
+            "title": "Monthlychargespaise"
+          },
+          "oneTimeChargesPaise": {
+            "type": "integer",
+            "title": "Onetimechargespaise"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expiresat"
+          },
+          "expired": {
+            "type": "boolean",
+            "title": "Expired"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "place",
+          "moveIn",
+          "stayMonths",
+          "baseRentPaise",
+          "monthlyRentPaise",
+          "adjustments",
+          "clamps",
+          "explanation",
+          "tokenPaise",
+          "dueAtMoveInPaise",
+          "depositPaise",
+          "charges",
+          "monthlyChargesPaise",
+          "oneTimeChargesPaise",
+          "expiresAt",
+          "expired"
+        ],
+        "title": "QuoteInfo",
+        "description": "A quote, as the student sees it: the rent for every month of the stay with how it was\nworked out, the token and what's due at move-in, and the deposit and every mandatory charge\nbeside it (rule 7). It stands until ``expiresAt``."
+      },
+      "QuotePlace": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "roomCategory": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Roomcategory"
+          },
+          "roomCategoryLabel": {
+            "type": "string",
+            "title": "Roomcategorylabel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "roomCategory",
+          "roomCategoryLabel"
+        ],
+        "title": "QuotePlace"
+      },
+      "QuoteRequest": {
+        "properties": {
+          "roomCategory": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Roomcategory"
+          },
+          "moveIn": {
+            "type": "string",
+            "format": "date",
+            "title": "Movein"
+          },
+          "stayMonths": {
+            "type": "integer",
+            "maximum": 36.0,
+            "minimum": 1.0,
+            "title": "Staymonths"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "roomCategory",
+          "moveIn",
+          "stayMonths"
+        ],
+        "title": "QuoteRequest"
       },
       "Readiness": {
         "properties": {

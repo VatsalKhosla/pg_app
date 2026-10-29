@@ -15,7 +15,7 @@ from app.modules.catalog.domain.listing import (
     is_public,
 )
 from app.modules.catalog.domain.rooms import CategoryStatus, Occupancy
-from app.modules.catalog.repository import CatalogRepository
+from app.modules.catalog.repository import CatalogRepository, charges_from_json
 from app.modules.geo.service import GeoLookup
 
 if TYPE_CHECKING:
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.core.geometry import Point
+    from app.modules.catalog.domain.charges import MandatoryCharge
     from app.modules.catalog.models import Property
     from app.modules.geo.service import LocalityRef
 
@@ -57,6 +58,9 @@ class PricedCategory:
     owner_min: Paise | None
     owner_max: Paise | None
     active: bool
+    # What a quote shows beside the rent (rule 7): the deposit and every mandatory charge.
+    security_deposit: Paise
+    charges: tuple[MandatoryCharge, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,7 +70,10 @@ class PricedProperty:
     id: int
     public_id: uuid.UUID
     name: str
+    slug: str
     locality_id: int
+    # Whether the public may see it now, as its page decides (verified-only or not).
+    public: bool
     categories: tuple[PricedCategory, ...]
 
 
@@ -123,21 +130,43 @@ class CatalogLookup:
             for row in await self._catalog.category_rents(property_id)
         ]
 
-    async def priced_property(self, public_id: uuid.UUID) -> PricedProperty | None:
-        """A PG with every room category it has, for its pricing rules (ADR 0038)."""
+    async def priced_property(
+        self, public_id: uuid.UUID, *, verified_only: bool = False
+    ) -> PricedProperty | None:
+        """A PG with every room category it has, for its pricing rules and quotes (ADR 0038)."""
         found = await self._catalog.property(public_id)
-        return None if found is None else await self._priced(found)
+        return None if found is None else await self._priced(found, verified_only=verified_only)
 
-    async def priced_property_by_id(self, property_id: int) -> PricedProperty | None:
+    async def priced_property_by_id(
+        self, property_id: int, *, verified_only: bool = False
+    ) -> PricedProperty | None:
         found = (await self._catalog.properties_by_id([property_id])).get(property_id)
-        return None if found is None else await self._priced(found)
+        return None if found is None else await self._priced(found, verified_only=verified_only)
 
-    async def _priced(self, found: Property) -> PricedProperty:
+    async def priced_category(
+        self, public_id: uuid.UUID, *, verified_only: bool
+    ) -> tuple[PricedProperty, PricedCategory] | None:
+        """A room category with its PG, for a quote."""
+        category = await self._catalog.category(public_id)
+        if category is None:
+            return None
+        place = await self.priced_property_by_id(category.property_id, verified_only=verified_only)
+        assert place is not None  # noqa: S101 - a category's PG exists (foreign key)
+        found = next(item for item in place.categories if item.id == category.id)
+        return place, found
+
+    async def _priced(self, found: Property, *, verified_only: bool) -> PricedProperty:
         return PricedProperty(
             id=found.id,
             public_id=found.public_id,
             name=found.name,
+            slug=found.slug,
             locality_id=found.locality_id,
+            public=is_public(
+                PropertyStatus(found.status),
+                VerificationStatus(found.verification_status),
+                verified_only=verified_only,
+            ),
             categories=tuple(
                 PricedCategory(
                     id=row.id,
@@ -152,6 +181,8 @@ class CatalogLookup:
                     if row.owner_max_rent_paise is None
                     else Paise(row.owner_max_rent_paise),
                     active=row.status == CategoryStatus.ACTIVE,
+                    security_deposit=Paise(row.security_deposit_paise),
+                    charges=charges_from_json(row.mandatory_charges),
                 )
                 for row in await self._catalog.categories(found.id)
             ),

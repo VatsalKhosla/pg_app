@@ -9,7 +9,7 @@ from pydantic import Field, StringConstraints
 
 from app.core.schemas import ApiModel
 from app.modules.catalog.domain.rooms import Occupancy
-from app.modules.pricing.domain.engine import LABEL_MAX_LENGTH, RuleKind
+from app.modules.pricing.domain.engine import LABEL_MAX_LENGTH, ClampKind, RuleKind
 from app.modules.pricing.domain.policies import (
     NOTE_MAX_LENGTH,
     REFERENCE_MAX_LENGTH,
@@ -322,3 +322,74 @@ class RuleSetList(ApiModel):
 
 class RuleSetActivation(ApiModel):
     note: Note = ""
+
+
+# Quotes (ADR 0039).
+
+
+class QuoteRequest(ApiModel):
+    room_category: uuid.UUID
+    move_in: date
+    stay_months: int = Field(ge=1, le=36)
+
+
+class QuoteAdjustment(ApiModel):
+    """A rule that moved the rent: by ``bps``, or for an override, to ``rentPaise``."""
+
+    kind: RuleKind
+    label: str
+    bps: int | None
+    rent_paise: int | None
+
+
+class QuoteClamp(ApiModel):
+    """A limit that held the price back: what was asked for, and what was allowed."""
+
+    kind: ClampKind
+    asked: int
+    allowed: int
+
+
+class QuoteCharge(ApiModel):
+    """A mandatory charge as it stood: monthly or one-time (``amountPaise``), or metered
+    (``ratePaise`` per ``unit``, about ``monthlyEstimatePaise`` a month)."""
+
+    type: Literal["monthly", "metered", "one_time"]
+    kind: str
+    label: str
+    amount_paise: int | None = None
+    rate_paise: int | None = None
+    unit: str | None = None
+    monthly_estimate_paise: int | None = None
+
+
+class QuotePlace(ApiModel):
+    slug: str
+    name: str
+    room_category: uuid.UUID
+    room_category_label: str
+
+
+class QuoteInfo(ApiModel):
+    """A quote, as the student sees it: the rent for every month of the stay with how it was
+    worked out, the token and what's due at move-in, and the deposit and every mandatory charge
+    beside it (rule 7). It stands until ``expiresAt``."""
+
+    id: uuid.UUID
+    place: QuotePlace
+    move_in: date
+    stay_months: int
+    base_rent_paise: int
+    monthly_rent_paise: int
+    adjustments: list[QuoteAdjustment]
+    clamps: list[QuoteClamp]
+    # "Base ₹10,000 · Peak season +15% … = ₹11,500/month, fixed for your stay".
+    explanation: str
+    token_paise: int
+    due_at_move_in_paise: int
+    deposit_paise: int
+    charges: list[QuoteCharge]
+    monthly_charges_paise: int
+    one_time_charges_paise: int
+    expires_at: datetime
+    expired: bool

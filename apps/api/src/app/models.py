@@ -41,6 +41,7 @@ from app.modules.media.models import MediaAsset
 from app.modules.pricing.models import (
     BookingPolicyVersion,
     FeePolicyVersion,
+    PriceQuote,
     PricingCapsVersion,
     PricingRuleRow,
     PricingRuleSet,
@@ -73,6 +74,7 @@ __all__ = [
     "OutboxJob",
     "Owner",
     "OwnerAgreement",
+    "PriceQuote",
     "PricingCapsVersion",
     "PricingRuleRow",
     "PricingRuleSet",

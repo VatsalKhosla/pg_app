@@ -1443,6 +1443,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Price a room for a move-in and a stay
+         * @description Anyone, for a room in a PG the public may see: the monthly rent, fixed for the whole
+         *     stay, with how it was worked out, the token, the deposit and the mandatory charges. It
+         *     stands for 30 minutes. 422 QUOTE_INVALID for a move-in or stay that can't be quoted; 404
+         *     for a room the public can't see; 30 a minute per address.
+         */
+        post: operations["pricingCreateQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/quotes/{quote_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A quote
+         * @description Anyone with its id: a quote holds no personal data. ``expired`` once its 30 minutes are
+         *     up.
+         */
+        get: operations["pricingGetQuote"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ops/properties/{property_id}/rule-sets": {
         parameters: {
             query?: never;
@@ -2200,6 +2244,11 @@ export interface components {
             /** Items */
             items: components["schemas"]["CityInfo"][];
         };
+        /**
+         * ClampKind
+         * @enum {string}
+         */
+        ClampKind: "premium_cap" | "discount_cap" | "owner_min" | "owner_max" | "band_min" | "band_max";
         /**
          * Complainant
          * @description Who complained and how to answer them. ``account`` is set when they were signed in.
@@ -3510,6 +3559,133 @@ export interface components {
             /** Note */
             note: string | null;
             requester: components["schemas"]["Requester"] | null;
+        };
+        /**
+         * QuoteAdjustment
+         * @description A rule that moved the rent: by ``bps``, or for an override, to ``rentPaise``.
+         */
+        QuoteAdjustment: {
+            kind: components["schemas"]["RuleKind"];
+            /** Label */
+            label: string;
+            /** Bps */
+            bps: number | null;
+            /** Rentpaise */
+            rentPaise: number | null;
+        };
+        /**
+         * QuoteCharge
+         * @description A mandatory charge as it stood: monthly or one-time (``amountPaise``), or metered
+         *     (``ratePaise`` per ``unit``, about ``monthlyEstimatePaise`` a month).
+         */
+        QuoteCharge: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "monthly" | "metered" | "one_time";
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Amountpaise */
+            amountPaise?: number | null;
+            /** Ratepaise */
+            ratePaise?: number | null;
+            /** Unit */
+            unit?: string | null;
+            /** Monthlyestimatepaise */
+            monthlyEstimatePaise?: number | null;
+        };
+        /**
+         * QuoteClamp
+         * @description A limit that held the price back: what was asked for, and what was allowed.
+         */
+        QuoteClamp: {
+            kind: components["schemas"]["ClampKind"];
+            /** Asked */
+            asked: number;
+            /** Allowed */
+            allowed: number;
+        };
+        /**
+         * QuoteInfo
+         * @description A quote, as the student sees it: the rent for every month of the stay with how it was
+         *     worked out, the token and what's due at move-in, and the deposit and every mandatory charge
+         *     beside it (rule 7). It stands until ``expiresAt``.
+         */
+        QuoteInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            place: components["schemas"]["QuotePlace"];
+            /**
+             * Movein
+             * Format: date
+             */
+            moveIn: string;
+            /** Staymonths */
+            stayMonths: number;
+            /** Baserentpaise */
+            baseRentPaise: number;
+            /** Monthlyrentpaise */
+            monthlyRentPaise: number;
+            /** Adjustments */
+            adjustments: components["schemas"]["QuoteAdjustment"][];
+            /** Clamps */
+            clamps: components["schemas"]["QuoteClamp"][];
+            /** Explanation */
+            explanation: string;
+            /** Tokenpaise */
+            tokenPaise: number;
+            /** Dueatmoveinpaise */
+            dueAtMoveInPaise: number;
+            /** Depositpaise */
+            depositPaise: number;
+            /** Charges */
+            charges: components["schemas"]["QuoteCharge"][];
+            /** Monthlychargespaise */
+            monthlyChargesPaise: number;
+            /** Onetimechargespaise */
+            oneTimeChargesPaise: number;
+            /**
+             * Expiresat
+             * Format: date-time
+             */
+            expiresAt: string;
+            /** Expired */
+            expired: boolean;
+        };
+        /** QuotePlace */
+        QuotePlace: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /**
+             * Roomcategory
+             * Format: uuid
+             */
+            roomCategory: string;
+            /** Roomcategorylabel */
+            roomCategoryLabel: string;
+        };
+        /** QuoteRequest */
+        QuoteRequest: {
+            /**
+             * Roomcategory
+             * Format: uuid
+             */
+            roomCategory: string;
+            /**
+             * Movein
+             * Format: date
+             */
+            moveIn: string;
+            /** Staymonths */
+            stayMonths: number;
         };
         /**
          * Readiness
@@ -7734,6 +7910,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RentBandInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingCreateQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuoteInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingGetQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quote_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuoteInfo"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

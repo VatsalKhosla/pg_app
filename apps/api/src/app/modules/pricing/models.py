@@ -5,13 +5,14 @@ constraints keep any two from overlapping, so at any moment exactly one is in fo
 """
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Final
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -23,7 +24,7 @@ from sqlalchemy import text as sql
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, ExcludeConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db import Model
+from app.core.db import AppendOnlyModel, Model
 from app.core.ids import new_public_id
 from app.modules.catalog.domain.rooms import Occupancy
 from app.modules.pricing.domain.engine import LABEL_MAX_LENGTH, RuleKind
@@ -253,4 +254,67 @@ class PricingRuleRow(Model):
         ),
         CheckConstraint("position >= 0", name="position"),
         Index("uq_pricing_rules_rule_set_id_position", "rule_set_id", "position", unique=True),
+    )
+
+
+class PriceQuote(AppendOnlyModel):
+    """A quote (ADR 0039): the engine's answer for a room category, move-in and stay, with all
+    it was worked out from. Never changed once made (a trigger refuses it): a booking copies its
+    money, and the rent stays fixed for the stay (rule 5)."""
+
+    __tablename__ = "price_quotes"
+
+    public_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, default=new_public_id)
+    # Who asked, when signed in.
+    user_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL")
+    )
+    property_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("properties.id"))
+    room_category_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("room_categories.id"))
+    move_in: Mapped[date] = mapped_column(Date)
+    stay_months: Mapped[int] = mapped_column(Integer)
+    # The day in India the quote was made, as the engine took it.
+    quoted_on: Mapped[date] = mapped_column(Date)
+    occupancy_bps: Mapped[int] = mapped_column(Integer)
+    base_rent_paise: Mapped[int] = mapped_column(BigInteger)
+    monthly_rent_paise: Mapped[int] = mapped_column(BigInteger)
+    premium_bps: Mapped[int] = mapped_column(Integer)
+    discount_bps: Mapped[int] = mapped_column(Integer)
+    adjustments: Mapped[list[dict[str, object]]] = mapped_column(JSONB)
+    clamps: Mapped[list[dict[str, object]]] = mapped_column(JSONB)
+    fee_paise: Mapped[int] = mapped_column(BigInteger)
+    gst_paise: Mapped[int] = mapped_column(BigInteger)
+    owner_fee_total_paise: Mapped[int] = mapped_column(BigInteger)
+    token_paise: Mapped[int] = mapped_column(BigInteger)
+    due_at_move_in_paise: Mapped[int] = mapped_column(BigInteger)
+    deposit_paise: Mapped[int] = mapped_column(BigInteger)
+    # The category's mandatory charges as they stood, and what they come to.
+    mandatory_charges: Mapped[list[dict[str, object]]] = mapped_column(JSONB)
+    monthly_charges_paise: Mapped[int] = mapped_column(BigInteger)
+    one_time_charges_paise: Mapped[int] = mapped_column(BigInteger)
+    explanation: Mapped[str] = mapped_column(Text)
+    # What priced it: the PG's rule set (none before its first), the policies, the band.
+    rule_set_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("pricing_rule_sets.id"))
+    fee_policy_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("fee_policies.id"))
+    booking_policy_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("booking_policies.id"))
+    pricing_caps_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("pricing_caps.id"))
+    rent_band_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("rent_bands.id"))
+    engine_version: Mapped[str] = mapped_column(Text)
+    inputs_sha256: Mapped[str] = mapped_column(Text)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        CheckConstraint(
+            "base_rent_paise > 0 AND monthly_rent_paise > 0 AND fee_paise >= 0 AND gst_paise >= 0"
+            " AND owner_fee_total_paise >= 0 AND token_paise >= 0 AND deposit_paise >= 0"
+            " AND monthly_charges_paise >= 0 AND one_time_charges_paise >= 0",
+            name="amounts",
+        ),
+        CheckConstraint(
+            "token_paise + due_at_move_in_paise = monthly_rent_paise", name="token_and_rest"
+        ),
+        CheckConstraint("stay_months > 0 AND move_in >= quoted_on", name="stay"),
+        CheckConstraint("inputs_sha256 ~ '^[0-9a-f]{64}$'", name="inputs_sha256"),
+        Index("ix_price_quotes_room_category_id", "room_category_id"),
+        Index("ix_price_quotes_expires_at", "expires_at"),
     )

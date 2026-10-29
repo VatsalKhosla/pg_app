@@ -61,6 +61,7 @@ PATH_VALUES: Final = frozenset(
         "a_missing_rent_band",
         "a_draft_rule_set",
         "a_draft_rule",
+        "a_missing_quote",
         "an_owner",
         "a_live_listing",
     }
@@ -425,6 +426,14 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("POST", "/v1/admin/rent-bands/{band_id}/end"): Rule(
         signed_in(403, admin=404), lambda: {"json": {}}, path={"band_id": "a_missing_rent_band"}
     ),
+    # Quotes (ADR 0039): anyone may ask, and read one by its id. No room has the id sent.
+    ("POST", "/v1/quotes"): Rule(
+        everyone(404),
+        lambda: {
+            "json": {"roomCategory": str(uuid.uuid7()), "moveIn": "2027-08-20", "stayMonths": 11}
+        },
+    ),
+    ("GET", "/v1/quotes/{quote_id}"): Rule(everyone(404), path={"quote_id": "a_missing_quote"}),
     # A PG's pricing rule sets (ADR 0038): ops and admins, on a fresh listing's own draft.
     ("GET", "/v1/ops/properties/{property_id}/rule-sets"): Rule(
         ops_only(200), path={"property_id": "a_listing"}

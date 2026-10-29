@@ -4,7 +4,13 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import func, or_, select
 
-from app.modules.pricing.models import PolicyVersion, PricingRuleRow, PricingRuleSet, RentBand
+from app.modules.pricing.models import (
+    PolicyVersion,
+    PriceQuote,
+    PricingRuleRow,
+    PricingRuleSet,
+    RentBand,
+)
 
 if TYPE_CHECKING:
     import uuid
@@ -147,3 +153,14 @@ class RuleSetRepository:
 
     async def delete(self, row: PricingRuleSet | PricingRuleRow) -> None:
         await self._db.delete(row)
+
+
+class QuoteRepository:
+    def __init__(self, db: AsyncSession) -> None:
+        self._db = db
+
+    def add(self, quote: PriceQuote) -> None:
+        self._db.add(quote)
+
+    async def get(self, public_id: uuid.UUID) -> PriceQuote | None:
+        return await self._db.scalar(select(PriceQuote).where(PriceQuote.public_id == public_id))

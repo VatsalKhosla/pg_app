@@ -58,3 +58,9 @@ def format_inr(paise: int) -> str:
         digits = ",".join(groups)
     sign = "-" if paise < 0 else ""
     return f"{sign}₹{digits}.{paise_part:02d}"
+
+
+def format_rupees(paise: int) -> str:
+    """Rupees as people read them: ``₹10,300`` when whole, ``₹10,300.50`` otherwise."""
+    text = format_inr(paise)
+    return text.removesuffix(".00")

@@ -39,3 +39,23 @@ class RuleSetInvalidError(AppError):
     def __init__(self, problems: Sequence[str]) -> None:
         super().__init__("; ".join(problems))
         self.problems = list(problems)
+
+
+class QuoteInvalidError(AppError):
+    """A move-in or stay that can't be quoted: the detail names every problem."""
+
+    status = 422
+    code = "QUOTE_INVALID"
+    title = "That can't be quoted"
+
+    def __init__(self, problems: Sequence[str]) -> None:
+        super().__init__("; ".join(problems))
+        self.problems = list(problems)
+
+
+class QuoteExpiredError(AppError):
+    """A quote past its 30 minutes: what it says may no longer hold, so a new one is needed."""
+
+    status = 409
+    code = "QUOTE_EXPIRED"
+    title = "That quote has expired"

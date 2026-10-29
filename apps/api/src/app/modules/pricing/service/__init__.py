@@ -11,6 +11,7 @@ from app.modules.pricing.service.policies import (
     fee_policy,
     pricing_caps,
 )
+from app.modules.pricing.service.quotes import QuoteService, QuoteView
 from app.modules.pricing.service.rule_sets import (
     RuleDraft,
     RuleSetService,
@@ -24,6 +25,8 @@ __all__ = [
     "BandView",
     "Policies",
     "PolicyService",
+    "QuoteService",
+    "QuoteView",
     "RentBandService",
     "RuleDraft",
     "RuleSetService",
