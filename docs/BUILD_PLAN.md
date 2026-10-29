@@ -286,8 +286,15 @@ Start the slow ones in week 1.
   - **Launch guard:** a production build refuses placeholders and drafts (ADR 0034).
   - **Proof:** browser tests follow every footer link with axe checks, and take a complaint from the form to its ticket number, then through ops acknowledging and resolving it.
 
-- [ ] **3.9 Analytics and install.** Funnel events (search → PG view → visit request → visit done → reservation), PII-masked; PWA installability; web-vitals reporting.
+- [x] **3.9 Analytics and install.** Funnel events (search → PG view → visit request → visit done → reservation), PII-masked; PWA installability; web-vitals reporting.
   *Done when* the funnel shows in PostHog from a staging run and the site installs on Android Chrome.
+  *Note (2026-10-29):*
+  - **Browser events:** searches, PG views and visit requests, plus each page's web vitals, go to the site's own `/api/events`. It passes them on to PostHog personless and without the visitor's IP, after strict checks.
+  - **What they carry:** a random id that lasts only while the tab is open, never a name, number, typed words or map coordinates. Do Not Track and Global Privacy Control turn them off.
+  - **Later steps:** "visit done" comes from the API, under the id the student's tab asked with; "reservation" joins with booking (Phase 5).
+  - **Install:** the manifest already meets Chrome's install criteria; a browser test asks Chromium.
+  - **Deferred:** the founders' PostHog account, its region and the staging run, and the lawyer's view on consent (ADR 0035).
+  - **Proof:** a browser test sees one anonymous journey from search to visit done arrive, in order, at a stand-in PostHog.
 
 **Milestone A check**: a student can find a verified PG on the map, see honest prices, and book a visit from a phone; ops can create and verify listings and run visits; security baseline (headers, CSRF, rate limits, authorization matrix) passes. Ship to production and tell the founders.
 

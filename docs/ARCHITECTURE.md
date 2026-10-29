@@ -79,7 +79,7 @@ flowchart LR
 | Web testing | Vitest, Testing Library, MSW, Playwright, axe-core, Lighthouse CI | Unit to E2E, accessibility and performance budgets |
 | Maps | Google Maps Platform via `@vis.gl/react-google-maps` behind a `MapProvider` interface; MapLibre GL + Ola Maps as the alternative adapter | See section 10 |
 | Payments | Razorpay behind a `PaymentGateway` port | Orders, refunds, UPI one-time mandates, Route split settlement |
-| Monitoring | Sentry (web + API), OpenTelemetry traces, structured JSON logs (structlog), product analytics (PostHog, PII masked) | |
+| Monitoring | Sentry (web + API), OpenTelemetry traces, structured JSON logs (structlog), product analytics (PostHog, PII masked: personless events through the web server's `/api/events` and the API's outbox; ADR 0035) | |
 | Hosting | Vercel (web, Mumbai functions region); AWS ap-south-1 Mumbai for API/worker (ECS Fargate), RDS PostgreSQL, Redis, S3 + CloudFront; Cloudflare DNS/WAF/Turnstile; Terraform | Low latency for Delhi users, managed services |
 
 Use current stable versions and pin them. Verify third-party APIs against official docs at integration time.
@@ -567,6 +567,7 @@ Compliance POST /v1/grievances   GET /v1/me/grievances   (ADR 0034)
          GET /v1/ops/data-requests   POST /v1/ops/data-requests/{id}/resolve
          GET /v1/ops/grievances   GET /v1/ops/grievances/{ticket}   POST …/{ticket}/acknowledge | /resolve
 Pricing  GET /v1/policies   (the fee and booking terms in force; ADR 0034)
+Web      POST /api/events (the web server's own: browser analytics passed on to PostHog; ADR 0035)
 ```
 
 ## 16. Frontend architecture
