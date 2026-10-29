@@ -1487,6 +1487,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/properties/{slug}/price-calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What each room costs for a move-in each week
+         * @description Anyone, for a PG the public may see: each room's rent for a move-in each week from
+         *     ``from`` (today at the earliest), 12 weeks by default, up to the booking horizon, as a quote
+         *     would say for a ``stay``-month stay; and its free beds. Cached five minutes.
+         */
+        get: operations["pricingPriceCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ops/properties/{property_id}/rule-sets": {
         parameters: {
             query?: never;
@@ -2079,6 +2101,30 @@ export interface components {
             /** Confirmdeadlinehours */
             confirmDeadlineHours: number;
             lateCancelPolicy: components["schemas"]["LateCancelPolicy"];
+        };
+        /** CalendarRoomInfo */
+        CalendarRoomInfo: {
+            /**
+             * Roomcategory
+             * Format: uuid
+             */
+            roomCategory: string;
+            /** Label */
+            label: string;
+            /** Bedsfree */
+            bedsFree: number;
+            /** Weeks */
+            weeks: components["schemas"]["CalendarWeekInfo"][];
+        };
+        /** CalendarWeekInfo */
+        CalendarWeekInfo: {
+            /**
+             * Movein
+             * Format: date
+             */
+            moveIn: string;
+            /** Monthlyrentpaise */
+            monthlyRentPaise: number;
         };
         /** CampusDetail */
         CampusDetail: {
@@ -3270,6 +3316,19 @@ export interface components {
             /** Caps */
             caps: components["schemas"]["PricingCapsVersionInfo"][];
         };
+        /**
+         * PriceCalendar
+         * @description What each room costs a month for a move-in each week, as quotes say (ARCHITECTURE §8.5):
+         *     the only data the PG page's price changes and urgency may come from.
+         */
+        PriceCalendar: {
+            /** Slug */
+            slug: string;
+            /** Staymonths */
+            stayMonths: number;
+            /** Rooms */
+            rooms: components["schemas"]["CalendarRoomInfo"][];
+        };
         /** PricingCapsInput */
         PricingCapsInput: {
             /** Maxpremiumbps */
@@ -3574,30 +3633,6 @@ export interface components {
             rentPaise: number | null;
         };
         /**
-         * QuoteCharge
-         * @description A mandatory charge as it stood: monthly or one-time (``amountPaise``), or metered
-         *     (``ratePaise`` per ``unit``, about ``monthlyEstimatePaise`` a month).
-         */
-        QuoteCharge: {
-            /**
-             * Type
-             * @enum {string}
-             */
-            type: "monthly" | "metered" | "one_time";
-            /** Kind */
-            kind: string;
-            /** Label */
-            label: string;
-            /** Amountpaise */
-            amountPaise?: number | null;
-            /** Ratepaise */
-            ratePaise?: number | null;
-            /** Unit */
-            unit?: string | null;
-            /** Monthlyestimatepaise */
-            monthlyEstimatePaise?: number | null;
-        };
-        /**
          * QuoteClamp
          * @description A limit that held the price back: what was asked for, and what was allowed.
          */
@@ -3645,7 +3680,7 @@ export interface components {
             /** Depositpaise */
             depositPaise: number;
             /** Charges */
-            charges: components["schemas"]["QuoteCharge"][];
+            charges: (components["schemas"]["MonthlyCharge"] | components["schemas"]["MeteredCharge"] | components["schemas"]["OneTimeCharge"])[];
             /** Monthlychargespaise */
             monthlyChargesPaise: number;
             /** Onetimechargespaise */
@@ -7992,6 +8027,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuoteInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingPriceCalendar: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                weeks?: number;
+                stay?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceCalendar"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

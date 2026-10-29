@@ -9,6 +9,7 @@ from pydantic import Field, StringConstraints
 
 from app.core.schemas import ApiModel
 from app.modules.catalog.domain.rooms import Occupancy
+from app.modules.catalog.schemas import Charge
 from app.modules.pricing.domain.engine import LABEL_MAX_LENGTH, ClampKind, RuleKind
 from app.modules.pricing.domain.policies import (
     NOTE_MAX_LENGTH,
@@ -350,19 +351,6 @@ class QuoteClamp(ApiModel):
     allowed: int
 
 
-class QuoteCharge(ApiModel):
-    """A mandatory charge as it stood: monthly or one-time (``amountPaise``), or metered
-    (``ratePaise`` per ``unit``, about ``monthlyEstimatePaise`` a month)."""
-
-    type: Literal["monthly", "metered", "one_time"]
-    kind: str
-    label: str
-    amount_paise: int | None = None
-    rate_paise: int | None = None
-    unit: str | None = None
-    monthly_estimate_paise: int | None = None
-
-
 class QuotePlace(ApiModel):
     slug: str
     name: str
@@ -388,8 +376,36 @@ class QuoteInfo(ApiModel):
     token_paise: int
     due_at_move_in_paise: int
     deposit_paise: int
-    charges: list[QuoteCharge]
+    # The catalog's own shape for charges, as the PG's page shows them.
+    charges: list[Charge]
     monthly_charges_paise: int
     one_time_charges_paise: int
     expires_at: datetime
     expired: bool
+
+
+# The price calendar (ADR 0040).
+
+
+class CalendarWeekInfo(ApiModel):
+    move_in: date
+    # What a quote for that move-in says now: the rent for every month of the stay.
+    monthly_rent_paise: int
+
+
+class CalendarRoomInfo(ApiModel):
+    room_category: uuid.UUID
+    label: str
+    # Free beds, from real inventory: what "only N beds left" may say, and nothing else.
+    beds_free: int
+    # Each week's move-in, earliest first; empty when the room can't be priced right now.
+    weeks: list[CalendarWeekInfo]
+
+
+class PriceCalendar(ApiModel):
+    """What each room costs a month for a move-in each week, as quotes say (ARCHITECTURE §8.5):
+    the only data the PG page's price changes and urgency may come from."""
+
+    slug: str
+    stay_months: int
+    rooms: list[CalendarRoomInfo]

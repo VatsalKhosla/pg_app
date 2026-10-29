@@ -5110,6 +5110,102 @@
         }
       }
     },
+    "/v1/properties/{slug}/price-calendar": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "What each room costs for a move-in each week",
+        "description": "Anyone, for a PG the public may see: each room's rent for a move-in each week from\n``from`` (today at the earliest), 12 weeks by default, up to the booking horizon, as a quote\nwould say for a ``stay``-month stay; and its free beds. Cached five minutes.",
+        "operationId": "pricingPriceCalendar",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "weeks",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "default": 12,
+              "title": "Weeks"
+            }
+          },
+          {
+            "name": "stay",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 36,
+              "minimum": 1,
+              "default": 11,
+              "title": "Stay"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceCalendar"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/ops/properties/{property_id}/rule-sets": {
       "get": {
         "tags": [
@@ -6914,6 +7010,59 @@
         ],
         "title": "BookingTerms",
         "description": "What a student relies on when they reserve a bed."
+      },
+      "CalendarRoomInfo": {
+        "properties": {
+          "roomCategory": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Roomcategory"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "bedsFree": {
+            "type": "integer",
+            "title": "Bedsfree"
+          },
+          "weeks": {
+            "items": {
+              "$ref": "#/components/schemas/CalendarWeekInfo"
+            },
+            "type": "array",
+            "title": "Weeks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "roomCategory",
+          "label",
+          "bedsFree",
+          "weeks"
+        ],
+        "title": "CalendarRoomInfo"
+      },
+      "CalendarWeekInfo": {
+        "properties": {
+          "moveIn": {
+            "type": "string",
+            "format": "date",
+            "title": "Movein"
+          },
+          "monthlyRentPaise": {
+            "type": "integer",
+            "title": "Monthlyrentpaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "moveIn",
+          "monthlyRentPaise"
+        ],
+        "title": "CalendarWeekInfo"
       },
       "CampusDetail": {
         "properties": {
@@ -10244,6 +10393,34 @@
         "title": "PolicyHistory",
         "description": "Each policy's latest versions, newest first."
       },
+      "PriceCalendar": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "stayMonths": {
+            "type": "integer",
+            "title": "Staymonths"
+          },
+          "rooms": {
+            "items": {
+              "$ref": "#/components/schemas/CalendarRoomInfo"
+            },
+            "type": "array",
+            "title": "Rooms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "stayMonths",
+          "rooms"
+        ],
+        "title": "PriceCalendar",
+        "description": "What each room costs a month for a move-in each week, as quotes say (ARCHITECTURE §8.5):\nthe only data the PG page's price changes and urgency may come from."
+      },
       "PricingCapsInput": {
         "properties": {
           "maxPremiumBps": {
@@ -11234,80 +11411,6 @@
         "title": "QuoteAdjustment",
         "description": "A rule that moved the rent: by ``bps``, or for an override, to ``rentPaise``."
       },
-      "QuoteCharge": {
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "monthly",
-              "metered",
-              "one_time"
-            ],
-            "title": "Type"
-          },
-          "kind": {
-            "type": "string",
-            "title": "Kind"
-          },
-          "label": {
-            "type": "string",
-            "title": "Label"
-          },
-          "amountPaise": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amountpaise"
-          },
-          "ratePaise": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ratepaise"
-          },
-          "unit": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Unit"
-          },
-          "monthlyEstimatePaise": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Monthlyestimatepaise"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "type",
-          "kind",
-          "label"
-        ],
-        "title": "QuoteCharge",
-        "description": "A mandatory charge as it stood: monthly or one-time (``amountPaise``), or metered\n(``ratePaise`` per ``unit``, about ``monthlyEstimatePaise`` a month)."
-      },
       "QuoteClamp": {
         "properties": {
           "kind": {
@@ -11391,7 +11494,25 @@
           },
           "charges": {
             "items": {
-              "$ref": "#/components/schemas/QuoteCharge"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/MonthlyCharge"
+                },
+                {
+                  "$ref": "#/components/schemas/MeteredCharge"
+                },
+                {
+                  "$ref": "#/components/schemas/OneTimeCharge"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "metered": "#/components/schemas/MeteredCharge",
+                  "monthly": "#/components/schemas/MonthlyCharge",
+                  "oneTime": "#/components/schemas/OneTimeCharge"
+                }
+              }
             },
             "type": "array",
             "title": "Charges"

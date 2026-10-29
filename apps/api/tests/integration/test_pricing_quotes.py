@@ -282,3 +282,71 @@ def test_quotes_are_rate_limited_per_address(run: Callable[..., Any]) -> None:
     statuses = run(scenario)
 
     assert statuses == [201] * 30 + [429]
+
+
+def test_the_calendar_says_what_a_quote_would_week_by_week(run: Callable[..., Any]) -> None:
+    async def scenario(ops: Staff) -> dict[str, Any]:
+        app = ops.app
+        listing = await _publish(
+            ops,
+            name=f"Calendar PG {_token()}",
+            at=spot(420),
+            categories=[_category("double", 10_000, beds=2), _category("single", 15_000, beds=1)],
+        )
+        # Peak season from 1 August: the price changes partway through the twelve weeks.
+        await _rules(
+            ops,
+            listing,
+            {
+                "label": "Peak season",
+                "params": {"kind": "season", "start": "08-01", "end": "08-31", "bps": 1500},
+            },
+        )
+        path = f"/v1/properties/{listing['slug']}/price-calendar"
+        seen: dict[str, Any] = {"calendar": await ops.ok("GET", path)}
+        seen["cache"] = (await ops.call("GET", path)).headers.get("cache-control")
+        double = next(
+            room for room in seen["calendar"]["rooms"] if room["label"] == "Double sharing"
+        )
+        seen["quotes"] = [
+            (
+                await _anyone(
+                    app,
+                    {
+                        "roomCategory": double["roomCategory"],
+                        "moveIn": week["moveIn"],
+                        "stayMonths": 11,
+                    },
+                    ip="203.0.113.22",
+                )
+            ).json()["monthlyRentPaise"]
+            for week in double["weeks"]
+        ]
+        seen["later"] = await ops.ok("GET", path, params={"from": "2027-10-25", "weeks": 12})
+        return seen
+
+    seen = run(scenario)
+
+    calendar = seen["calendar"]
+    assert calendar["stayMonths"] == 11
+    assert seen["cache"] == "public, max-age=300"
+    double = next(room for room in calendar["rooms"] if room["label"] == "Double sharing")
+    single = next(room for room in calendar["rooms"] if room["label"] == "Single sharing")
+    # Weekly from today, 14 July 2027 in India.
+    assert [week["moveIn"] for week in double["weeks"]][:3] == [
+        "2027-07-14",
+        "2027-07-21",
+        "2027-07-28",
+    ]
+    assert len(double["weeks"]) == 12
+    # Each week's rent is what a quote for that move-in says: ₹10,000, then ₹11,500 in August.
+    assert [week["monthlyRentPaise"] for week in double["weeks"]] == seen["quotes"]
+    assert {week["monthlyRentPaise"] for week in double["weeks"]} == {1_000_000, 1_150_000}
+    # Free beds from real inventory.
+    assert (double["bedsFree"], single["bedsFree"]) == (2, 1)
+    # Never past the booking horizon: 120 days from 14 July is 11 November.
+    assert [week["moveIn"] for week in seen["later"]["rooms"][0]["weeks"]] == [
+        "2027-10-25",
+        "2027-11-01",
+        "2027-11-08",
+    ]

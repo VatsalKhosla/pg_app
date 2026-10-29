@@ -143,6 +143,19 @@ class CatalogLookup:
         found = (await self._catalog.properties_by_id([property_id])).get(property_id)
         return None if found is None else await self._priced(found, verified_only=verified_only)
 
+    async def priced_property_by_slug(
+        self, slug: str, *, verified_only: bool
+    ) -> PricedProperty | None:
+        found = await self._catalog.property_by_slug(slug)
+        return None if found is None else await self._priced(found, verified_only=verified_only)
+
+    async def beds(self, property_id: int) -> dict[int, int]:
+        """Each room category's active beds, by its internal id."""
+        return {
+            row.category_id: row.active_beds
+            for row in await self._catalog.category_rents(property_id)
+        }
+
     async def priced_category(
         self, public_id: uuid.UUID, *, verified_only: bool
     ) -> tuple[PricedProperty, PricedCategory] | None:

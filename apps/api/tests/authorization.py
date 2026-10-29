@@ -434,6 +434,10 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
         },
     ),
     ("GET", "/v1/quotes/{quote_id}"): Rule(everyone(404), path={"quote_id": "a_missing_quote"}),
+    # The price calendar (ADR 0040): anyone, for a PG the public may see.
+    ("GET", "/v1/properties/{slug}/price-calendar"): Rule(
+        everyone(200), path={"slug": "a_live_listing"}
+    ),
     # A PG's pricing rule sets (ADR 0038): ops and admins, on a fresh listing's own draft.
     ("GET", "/v1/ops/properties/{property_id}/rule-sets"): Rule(
         ops_only(200), path={"property_id": "a_listing"}
