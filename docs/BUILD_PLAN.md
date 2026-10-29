@@ -326,8 +326,14 @@ Start the slow ones in week 1.
   - **Immutability:** database triggers refuse any change to a set once it has been in force.
   - **Proof:** a set's prices are the same before and after the next version goes in, its rules read back unchanged, and the database refuses edits behind the API's back. Step 4.4 adds the same check on stored quotes.
 
-- [ ] **4.4 Quotes API.** `POST /v1/quotes` and `GET /v1/quotes/{id}`: occupancy from real allocations (HELD excluded), persisted breakdown, 30-minute expiry, inputs hash, human explanation string. Rate-limited.
+- [x] **4.4 Quotes API.** `POST /v1/quotes` and `GET /v1/quotes/{id}`: occupancy from real allocations (HELD excluded), persisted breakdown, 30-minute expiry, inputs hash, human explanation string. Rate-limited.
   *Done when* the quote's numbers equal the engine's for the same inputs, and expired quotes are refused by later steps.
+  *Note (2026-10-30):*
+  - **Quoting:** `POST /v1/quotes` prices a room for a move-in (today to 120 days) and a stay (1 to 36 months) with the engine. It uses the policies in force, the PG's active rule set, the band and the owner's bounds.
+  - **Stored:** the breakdown, the explanation line, the deposit and every charge, the versions that priced it and a SHA-256 of all inputs. A trigger refuses any change (ADR 0039).
+  - **Life:** a quote stands 30 minutes; after that `usable` answers `QUOTE_EXPIRED` for Phase 5's booking. Quotes are rate-limited, and the owner's fee is never shown to students.
+  - **Occupancy:** behind a `BedsTaken` port, zero until Phase 5's allocations exist.
+  - **Proof:** a test rebuilds the inputs from the database, and the engine gives the stored numbers and digest. A new rule version leaves an old quote unchanged.
 
 - [ ] **4.5 Price calendar and honest urgency.** Calendar endpoint (weekly move-ins, 12 weeks, cached) and UI on the PG page ("Move in by 15 Jun: ₹9,500 · from 1 Jul: ₹11,000"); "only N beds left" only from real availability (N ≤ 3); a "price fixed for your whole stay" badge; quotes show the full breakdown.
   *Done when* tests prove every urgency message is backed by data, and the PG page shows quote-consistent prices.
