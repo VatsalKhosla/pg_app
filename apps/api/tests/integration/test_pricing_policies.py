@@ -6,7 +6,7 @@ The changes here are made long after the clock the other tests run at (NOW), so 
 force for them stay the seeded defaults."""
 
 import asyncio
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import timedelta
 from typing import Any
 
@@ -56,11 +56,16 @@ async def _admin_at(staff: Staff, moment: Any) -> Staff:
     return await sign_in(staff.app, staff.client, Role.ADMIN)
 
 
-async def _audited(staff: Staff, entity_type: str) -> list[dict[str, Any]]:
+async def _audited(
+    staff: Staff, entity_type: str, *, ids: Sequence[str] | None = None
+) -> list[dict[str, Any]]:
+    """Audit entries about ``entity_type``; only those about ``ids`` when given, as other tests
+    in the same database write theirs too."""
+    query = select(AuditLog).where(AuditLog.entity_type == entity_type)
+    if ids is not None:
+        query = query.where(AuditLog.entity_id.in_(ids))
     async with staff.app.state.sessionmaker() as db:
-        rows = await db.scalars(
-            select(AuditLog).where(AuditLog.entity_type == entity_type).order_by(AuditLog.id)
-        )
+        rows = await db.scalars(query.order_by(AuditLog.id))
         return [{"action": row.action, "details": row.details} for row in rows]
 
 
@@ -153,7 +158,8 @@ def test_the_defaults_are_in_force_and_admins_change_them_from_then_on(
     assert (changed["tokenPaise"], changed["note"]) == (150000, "A smaller token for the season.")
     assert changed["effectiveFrom"].startswith(LATER.date().isoformat())
     assert changed["changedBy"] is not None
-    assert seen["revalidated"] == [["policies"]]
+    # Its own revalidation: jobs other tests left in the shared outbox may run beside it.
+    assert ["policies"] in seen["revalidated"]
     assert seen["public after"]["booking"]["tokenPaise"] == 150000
     assert seen["again"]["code"] == "POLICY_INVALID"
     refused = seen["refused"]
@@ -212,7 +218,8 @@ def test_a_locality_has_one_band_in_force_for_each_occupancy(run: Callable[..., 
         seen["none"] = await admin.ok(
             "GET", "/v1/admin/rent-bands", params={"locality": "kamla-nagar"}
         )
-        seen["audit"] = [entry["action"] for entry in await _audited(admin, "rent_band")]
+        mine = [seen["first"]["id"], seen["second"]["id"]]
+        seen["audit"] = [entry["action"] for entry in await _audited(admin, "rent_band", ids=mine)]
         return seen
 
     seen = run(scenario)

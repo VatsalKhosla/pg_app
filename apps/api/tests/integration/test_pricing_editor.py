@@ -267,3 +267,65 @@ def test_the_market_is_the_band_and_what_the_localitys_other_pgs_list(
         "2028-07-10",
     ]
     assert seen["next year"]["stayMonths"] == 6
+
+
+def test_a_july_peak_and_an_early_bird_show_in_the_preview_and_on_the_calendar(
+    run: Callable[..., Any],
+) -> None:
+    """BUILD_PLAN 4.6's own scenario: both rules in the preview of next July, then, once in
+    force, July's peak and the early-bird on the PG page's calendar."""
+
+    async def scenario(ops: Staff) -> dict[str, Any]:
+        listing = await _publish(
+            ops,
+            name=f"July PG {_token()}",
+            at=spot(490),
+            locality="moti-bagh",
+            categories=[_category("double", 10_000, beds=2)],
+        )
+        draft = await ops.ok("POST", f"/v1/ops/properties/{listing['id']}/rule-sets/draft")
+        july = {
+            "label": "July peak",
+            "params": {"kind": "season", "start": "07-01", "end": "07-31", "bps": 1500},
+        }
+        for rule in (july, EARLY):
+            await ops.ok("POST", f"/v1/ops/rule-sets/{draft['id']}/rules", json=rule)
+        seen: dict[str, Any] = {
+            "preview": await ops.ok(
+                "GET",
+                f"/v1/ops/rule-sets/{draft['id']}/preview",
+                params={
+                    "room": listing["categories"][0]["id"],
+                    "moveIn": "2028-07-10",
+                    "stay": 11,
+                },
+            )
+        }
+        await ops.ok("POST", f"/v1/ops/rule-sets/{draft['id']}/activate", json={})
+        seen["calendar"] = await ops.ok("GET", f"/v1/properties/{listing['slug']}/price-calendar")
+        return seen
+
+    seen = run(scenario)
+
+    # Next July, 362 days ahead: the peak and the early-bird together, and when students can
+    # quote it.
+    preview = seen["preview"]
+    assert [(item["label"], item["bps"]) for item in preview["adjustments"]] == [
+        ("July peak", 1500),
+        ("Early-bird", -500),
+    ]
+    assert (preview["monthlyRentPaise"], preview["bookableFrom"]) == (1_100_000, "2028-03-12")
+    # From 14 July 2027: July's move-ins at the peak, then the listed rent, then the early-bird
+    # from 30 days ahead (18 August on).
+    weeks = [
+        (week["moveIn"], week["monthlyRentPaise"]) for week in seen["calendar"]["rooms"][0]["weeks"]
+    ]
+    assert weeks[:6] == [
+        ("2027-07-14", 1_150_000),
+        ("2027-07-21", 1_150_000),
+        ("2027-07-28", 1_150_000),
+        ("2027-08-04", 1_000_000),
+        ("2027-08-11", 1_000_000),
+        ("2027-08-18", 950_000),
+    ]
+    assert {rent for _, rent in weeks[5:]} == {950_000}
