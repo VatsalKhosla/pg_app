@@ -80,7 +80,7 @@ flowchart LR
 | Maps | Google Maps Platform via `@vis.gl/react-google-maps` behind a `MapProvider` interface; MapLibre GL + Ola Maps as the alternative adapter | See section 10 |
 | Payments | Razorpay behind a `PaymentGateway` port | Orders, refunds, UPI one-time mandates, Route split settlement |
 | Monitoring | Sentry (web + API), OpenTelemetry traces, structured JSON logs (structlog), product analytics (PostHog, PII masked: personless events through the web server's `/api/events` and the API's outbox; ADR 0035) | |
-| Hosting | Vercel (web, Mumbai functions region); AWS ap-south-1 Mumbai for API/worker (ECS Fargate), RDS PostgreSQL, Redis, S3 + CloudFront; Cloudflare DNS/WAF/Turnstile; Terraform | Low latency for Delhi users, managed services |
+| Hosting | Vercel (web, Mumbai functions region); AWS ap-south-1 Mumbai for API/worker (ECS Fargate), RDS PostgreSQL, Redis, S3 + CloudFront; Cloudflare DNS/WAF/Turnstile; Terraform. Staging runs on free plans until then: Render (web, API with its worker, cache) and Neon (Postgres, object storage), deployed by CI (ADR 0047) | Low latency for Delhi users, managed services |
 
 Use current stable versions and pin them. Verify third-party APIs against official docs at integration time.
 

@@ -15,6 +15,7 @@ Two GitHub Actions workflows guard `main`. Every job runs `make` targets, so any
 | API contract | No breaking schema change since the target branch, or since the previous commit on `main` (oasdiff) | `make api-breaking BASE=origin/main` |
 | Workflows | actionlint, and zizmor's security audits of the workflows | `make lint-workflows` |
 | Pre-commit hooks | Whitespace, line endings, YAML/TOML, merge markers, large files | `pre-commit run --all-files` |
+| Deploy staging | Pushes to `main` only, once every check above passes: builds the API and web images, publishes them to GitHub's container registry, and deploys them to Render (ADR 0047, [the staging runbook](runbooks/staging.md)) | `make api-image web-image` |
 
 **Security** (`.github/workflows/security.yml`) runs on every pull request, every push to `main`, and every Monday at 08:47 IST.
 
