@@ -9,7 +9,6 @@
 - **BUILD_PLAN 4.6:** a rule list, add and edit forms for each kind of rule, a live preview (a move-in and a stay give the breakdown), a 12-week price chart, the band and the median shown, and activation with confirmation. Owners get the same editor in Phase 7.
 
   It's done when ops can set a July peak rule and an early-bird rule and see both in the preview, on the calendar and on the map.
-
 - **ARCHITECTURE §8.6:** edit a draft and see its problems (overlapping seasons, a band conflict, caps); preview any move-in and stay with the full breakdown; see a 12-week chart; then activate, which makes an immutable version and is audited. Show the locality's band and the market median next to the inputs.
 - **What exists:**
   - rule sets with drafts, problems and activation (ADR 0038);
@@ -49,7 +48,6 @@
    - a readout for the pointer and the arrow keys, announced to screen readers, and a table with every value.
 
    Its colour is the first slot of the dataviz reference palette. The validator passed it, for lightness, chroma and contrast of 3:1 or more, against the app's light and dark backgrounds.
-
 6. **No money is worked out in the browser.** The API returns every rent and amount. The browser turns typed percentages and rupees into basis points and paise exactly, formats amounts, and places the API's rents on the chart's axis.
 
 ## Consequences
