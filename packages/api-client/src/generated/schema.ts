@@ -1806,6 +1806,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hold a bed
+         * @description With the student's own quote, unexpired, a bed of its room type held for the stay, at the
+         *     quote's price, until the hold expires. Send an Idempotency-Key, the same on every retry: a
+         *     retry gets the first answer back.
+         *
+         *     - 409 BOOKING_NEEDS_VISIT while beds are reserved on visits only.
+         *     - 409 QUOTE_EXPIRED or QUOTE_USED: ask for a new quote.
+         *     - 409 HOLD_LIMIT_REACHED, and 409 BED_UNAVAILABLE when no bed is free for the stay.
+         *     - 404 for a quote that isn't the student's own.
+         */
+        post: operations["bookingsHoldBed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your booking */
+        get: operations["bookingsMyBooking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visits": {
         parameters: {
             query?: never;
@@ -2347,6 +2391,15 @@ export interface components {
              */
             note: string;
         };
+        /** BookingPlace */
+        BookingPlace: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Locality */
+            locality: string;
+        };
         /** BookingPolicyInput */
         BookingPolicyInput: {
             /** Tokenpaise */
@@ -2407,6 +2460,11 @@ export interface components {
             /** Maxadvancedays */
             maxAdvanceDays: number;
         };
+        /**
+         * BookingStatus
+         * @enum {string}
+         */
+        BookingStatus: "held" | "token_secured" | "confirmed" | "checked_in" | "disputed" | "active" | "completed" | "expired" | "cancelled" | "rejected" | "no_show" | "refunded";
         /**
          * BookingTerms
          * @description What a student relies on when they reserve a bed.
@@ -2956,6 +3014,14 @@ export interface components {
             details: {
                 [key: string]: unknown;
             };
+        };
+        /** HoldRequest */
+        HoldRequest: {
+            /**
+             * Quote
+             * Format: uuid
+             */
+            quote: string;
         };
         /** InventoryBed */
         InventoryBed: {
@@ -4923,6 +4989,53 @@ export interface components {
             minMonths: number;
             /** Bps */
             bps: number;
+        };
+        /**
+         * StudentBooking
+         * @description A booking as its student sees it: the quote's money, fixed for the stay (rule 5). The
+         *     exact address shows once the owner confirms (rule 11).
+         */
+        StudentBooking: {
+            /** Code */
+            code: string;
+            status: components["schemas"]["BookingStatus"];
+            property: components["schemas"]["BookingPlace"];
+            /** Roomtype */
+            roomType: string;
+            /**
+             * Movein
+             * Format: date
+             */
+            moveIn: string;
+            /** Staymonths */
+            stayMonths: number;
+            /**
+             * Plannedmoveout
+             * Format: date
+             */
+            plannedMoveOut: string;
+            /**
+             * Holdexpiresat
+             * Format: date-time
+             */
+            holdExpiresAt: string;
+            /** Monthlyrentpaise */
+            monthlyRentPaise: number;
+            /** Tokenpaise */
+            tokenPaise: number;
+            /** Dueatmoveinpaise */
+            dueAtMoveInPaise: number;
+            /** Depositpaise */
+            depositPaise: number;
+            /** Monthlychargespaise */
+            monthlyChargesPaise: number;
+            /** Onetimechargespaise */
+            oneTimeChargesPaise: number;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
         };
         /**
          * StudentVisit
@@ -9324,6 +9437,91 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlockInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookingsHoldBed: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The same key on every retry of a request: a retry gets the first answer back. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoldRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBooking"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookingsMyBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBooking"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

@@ -6253,6 +6253,122 @@
         }
       }
     },
+    "/v1/bookings": {
+      "post": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Hold a bed",
+        "description": "With the student's own quote, unexpired, a bed of its room type held for the stay, at the\nquote's price, until the hold expires. Send an Idempotency-Key, the same on every retry: a\nretry gets the first answer back.\n\n- 409 BOOKING_NEEDS_VISIT while beds are reserved on visits only.\n- 409 QUOTE_EXPIRED or QUOTE_USED: ask for a new quote.\n- 409 HOLD_LIMIT_REACHED, and 409 BED_UNAVAILABLE when no bed is free for the stay.\n- 404 for a quote that isn't the student's own.",
+        "operationId": "bookingsHoldBed",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HoldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentBooking"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "The same key on every retry of a request: a retry gets the first answer back.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,255}$"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/bookings/{code}": {
+      "get": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Your booking",
+        "operationId": "bookingsMyBooking",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentBooking"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/visits": {
       "get": {
         "tags": [
@@ -7754,6 +7870,30 @@
         "title": "BlockInput",
         "description": "A bed held for an offline tenant or maintenance from ``start``, until ``end`` (the bed\nis free that day) or, without one, until further notice."
       },
+      "BookingPlace": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "locality": {
+            "type": "string",
+            "title": "Locality"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "locality"
+        ],
+        "title": "BookingPlace"
+      },
       "BookingPolicyInput": {
         "properties": {
           "tokenPaise": {
@@ -7922,6 +8062,24 @@
           "maxAdvanceDays"
         ],
         "title": "BookingPolicyVersionInfo"
+      },
+      "BookingStatus": {
+        "type": "string",
+        "enum": [
+          "held",
+          "token_secured",
+          "confirmed",
+          "checked_in",
+          "disputed",
+          "active",
+          "completed",
+          "expired",
+          "cancelled",
+          "rejected",
+          "no_show",
+          "refunded"
+        ],
+        "title": "BookingStatus"
       },
       "BookingTerms": {
         "properties": {
@@ -9426,6 +9584,21 @@
           "details"
         ],
         "title": "HistoryEntry"
+      },
+      "HoldRequest": {
+        "properties": {
+          "quote": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Quote"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "quote"
+        ],
+        "title": "HoldRequest"
       },
       "InventoryBed": {
         "properties": {
@@ -14955,6 +15128,93 @@
           "bps"
         ],
         "title": "StayRuleTier"
+      },
+      "StudentBooking": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "property": {
+            "$ref": "#/components/schemas/BookingPlace"
+          },
+          "roomType": {
+            "type": "string",
+            "title": "Roomtype"
+          },
+          "moveIn": {
+            "type": "string",
+            "format": "date",
+            "title": "Movein"
+          },
+          "stayMonths": {
+            "type": "integer",
+            "title": "Staymonths"
+          },
+          "plannedMoveOut": {
+            "type": "string",
+            "format": "date",
+            "title": "Plannedmoveout"
+          },
+          "holdExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Holdexpiresat"
+          },
+          "monthlyRentPaise": {
+            "type": "integer",
+            "title": "Monthlyrentpaise"
+          },
+          "tokenPaise": {
+            "type": "integer",
+            "title": "Tokenpaise"
+          },
+          "dueAtMoveInPaise": {
+            "type": "integer",
+            "title": "Dueatmoveinpaise"
+          },
+          "depositPaise": {
+            "type": "integer",
+            "title": "Depositpaise"
+          },
+          "monthlyChargesPaise": {
+            "type": "integer",
+            "title": "Monthlychargespaise"
+          },
+          "oneTimeChargesPaise": {
+            "type": "integer",
+            "title": "Onetimechargespaise"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "status",
+          "property",
+          "roomType",
+          "moveIn",
+          "stayMonths",
+          "plannedMoveOut",
+          "holdExpiresAt",
+          "monthlyRentPaise",
+          "tokenPaise",
+          "dueAtMoveInPaise",
+          "depositPaise",
+          "monthlyChargesPaise",
+          "oneTimeChargesPaise",
+          "createdAt"
+        ],
+        "title": "StudentBooking",
+        "description": "A booking as its student sees it: the quote's money, fixed for the stay (rule 5). The\nexact address shows once the owner confirms (rule 11)."
       },
       "StudentVisit": {
         "properties": {
