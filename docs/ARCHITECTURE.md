@@ -3,6 +3,7 @@
 How the platform is built. Read `PRODUCT_CONTEXT.md` first for the why. Sections 7 and 8 (booking, dynamic pricing) are the two pivots; get them right before anything fancy.
 
 Contents
+
 1. Principles
 2. System overview
 3. Stack
@@ -64,23 +65,23 @@ flowchart LR
 
 ## 3. Stack
 
-| Layer | Choice | Why |
-|---|---|---|
-| API | Python 3.12+, FastAPI, Pydantic v2 | A founder already works in FastAPI; typed; OpenAPI out of the box |
-| ORM / migrations | SQLAlchemy 2 (async, asyncpg), Alembic, GeoAlchemy2 | Mature, explicit transactions, PostGIS types |
-| Database | PostgreSQL 16+ with `postgis`, `btree_gist`, `pg_trgm`, `citext` | Geo queries, exclusion constraints, fuzzy search in one database |
-| Cache / rate limits | Redis protocol: Valkey locally, ElastiCache for Valkey expected in production (ADR 0008) | Simple, fast; nothing durable lives only in Redis |
-| Jobs | Outbox table + worker using `SELECT … FOR UPDATE SKIP LOCKED`; scheduler in the worker | Jobs are enqueued in the same transaction as the change that caused them; no broker to run |
-| Python tooling | uv, ruff (incl. security rules), mypy strict, import-linter, pytest, pytest-asyncio, hypothesis, testcontainers, schemathesis, polyfactory | Fast, strict, testable |
-| Web | Next.js (App Router), React, TypeScript strict | SSR/ISR for SEO pages, one app for public site, owner dashboard and ops console |
-| UI | Tailwind CSS, shadcn/ui (Radix primitives) | Accessible components we own |
-| Client data | TanStack Query; typed client from OpenAPI (`openapi-typescript` + `openapi-fetch`) in `packages/api-client` | End-to-end types, no hand-written fetch code |
-| Forms / URL state | React Hook Form + Zod; nuqs for search filters in the URL | Shareable searches, validated forms |
-| Web testing | Vitest, Testing Library, MSW, Playwright, axe-core, Lighthouse CI | Unit to E2E, accessibility and performance budgets |
-| Maps | Google Maps Platform via `@vis.gl/react-google-maps` behind a `MapProvider` interface; MapLibre GL + Ola Maps as the alternative adapter | See section 10 |
-| Payments | Razorpay behind a `PaymentGateway` port | Orders, refunds, UPI one-time mandates, Route split settlement |
-| Monitoring | Sentry (web + API), OpenTelemetry traces, structured JSON logs (structlog), product analytics (PostHog, PII masked: personless events through the web server's `/api/events` and the API's outbox; ADR 0035) | |
-| Hosting | Vercel (web, Mumbai functions region); AWS ap-south-1 Mumbai for API/worker (ECS Fargate), RDS PostgreSQL, Redis, S3 + CloudFront; Cloudflare DNS/WAF/Turnstile; Terraform | Low latency for Delhi users, managed services |
+| Layer               | Choice                                                                                                                                                                                                       | Why                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| API                 | Python 3.12+, FastAPI, Pydantic v2                                                                                                                                                                           | A founder already works in FastAPI; typed; OpenAPI out of the box                          |
+| ORM / migrations    | SQLAlchemy 2 (async, asyncpg), Alembic, GeoAlchemy2                                                                                                                                                          | Mature, explicit transactions, PostGIS types                                               |
+| Database            | PostgreSQL 16+ with `postgis`, `btree_gist`, `pg_trgm`, `citext`                                                                                                                                             | Geo queries, exclusion constraints, fuzzy search in one database                           |
+| Cache / rate limits | Redis protocol: Valkey locally, ElastiCache for Valkey expected in production (ADR 0008)                                                                                                                     | Simple, fast; nothing durable lives only in Redis                                          |
+| Jobs                | Outbox table + worker using `SELECT … FOR UPDATE SKIP LOCKED`; scheduler in the worker                                                                                                                       | Jobs are enqueued in the same transaction as the change that caused them; no broker to run |
+| Python tooling      | uv, ruff (incl. security rules), mypy strict, import-linter, pytest, pytest-asyncio, hypothesis, testcontainers, schemathesis, polyfactory                                                                   | Fast, strict, testable                                                                     |
+| Web                 | Next.js (App Router), React, TypeScript strict                                                                                                                                                               | SSR/ISR for SEO pages, one app for public site, owner dashboard and ops console            |
+| UI                  | Tailwind CSS, shadcn/ui (Radix primitives)                                                                                                                                                                   | Accessible components we own                                                               |
+| Client data         | TanStack Query; typed client from OpenAPI (`openapi-typescript` + `openapi-fetch`) in `packages/api-client`                                                                                                  | End-to-end types, no hand-written fetch code                                               |
+| Forms / URL state   | React Hook Form + Zod; nuqs for search filters in the URL                                                                                                                                                    | Shareable searches, validated forms                                                        |
+| Web testing         | Vitest, Testing Library, MSW, Playwright, axe-core, Lighthouse CI                                                                                                                                            | Unit to E2E, accessibility and performance budgets                                         |
+| Maps                | Google Maps Platform via `@vis.gl/react-google-maps` behind a `MapProvider` interface; MapLibre GL + Ola Maps as the alternative adapter                                                                     | See section 10                                                                             |
+| Payments            | Razorpay behind a `PaymentGateway` port                                                                                                                                                                      | Orders, refunds, UPI one-time mandates, Route split settlement                             |
+| Monitoring          | Sentry (web + API), OpenTelemetry traces, structured JSON logs (structlog), product analytics (PostHog, PII masked: personless events through the web server's `/api/events` and the API's outbox; ADR 0035) |                                                                                            |
+| Hosting             | Vercel (web, Mumbai functions region); AWS ap-south-1 Mumbai for API/worker (ECS Fargate), RDS PostgreSQL, Redis, S3 + CloudFront; Cloudflare DNS/WAF/Turnstile; Terraform                                   | Low latency for Delhi users, managed services                                              |
 
 Use current stable versions and pin them. Verify third-party APIs against official docs at integration time.
 
@@ -140,6 +141,7 @@ Use current stable versions and pin them. Verify third-party APIs against offici
 ## 5. Backend design
 
 ### Layers inside a module
+
 ```
 router.py      HTTP only: parse, authorize (via policies), call service, map errors. No business logic.
 service.py     Use cases. Owns the transaction. Calls domain functions, repositories, ports, outbox.
@@ -148,11 +150,14 @@ repository.py  SQLAlchemy queries for this module's tables only.
 models.py      SQLAlchemy models.   schemas.py  Pydantic request/response models (extra="forbid").
 policies.py    Authorization rules: can(actor, action, resource) -> bool.
 ```
+
 - Enforce with import-linter: `domain` imports nothing from `core.db`, FastAPI or other modules' repositories; modules call each other only through services or domain events.
 - Cross-module side effects go through **domain events written to the outbox** in the same transaction (e.g., `booking.activated` → ledger posting and owner invoice; `pricing.rules_changed` → recompute price summaries).
 
 ### Core building blocks (`core/`)
+
 Built in step 0.4; ADR 0010 records the design choices.
+
 - `money.py`: paise as `int`, basis points as `int`, exact half-up rounding (ties away from zero), rounding to steps, Indian digit grouping for logs. No floats anywhere. Pure.
 - `clock.py`: the injectable clock, the only code allowed to read the system time (ruff enforces); `FrozenClock` lets tests stop and move time. `calendar.py` turns moments into dates in India (pure).
 - `ids.py`: internal `bigint` identity keys; public UUIDv7 `public_id` in all APIs; human booking codes (8 chars, Crockford base32, e.g. `BK-7F3K2Q9M`), normalised when typed (case, spaces, O/0, I/L/1). Pure.
@@ -165,11 +170,13 @@ Built in step 0.4; ADR 0010 records the design choices.
 - `flags.py`: typed feature flags (`Flag`), defaults in code, overrides in `feature_flags`, cached per process for ≤ 30 s; a bad value or an unreachable database falls back to the default.
 - `hashing.py`: keyed digests (HMAC with `SECRET_KEY`) for personal data that must be matched but not stored.
 - `geometry.py`: points, bounds, great-circle distances and the NCR sanity box (pure); `postgis.py`: geography values in, coordinates and distances out (ADR 0021).
+
 ## 6. Data model
 
 All tables have `id bigint generated always as identity`, `created_at`, `updated_at`; user-visible rows also have `public_id uuid unique`. Money columns end in `_paise` (`bigint`, `CHECK (>= 0)` unless noted). Rates are basis points (`_bps`). Times are `timestamptz` (UTC). Move-in/out are `date` (Asia/Kolkata).
 
 **Identity**
+
 - `users` (phone_e164 unique, email citext unique null, name, college_or_workplace, gender `female | male | other` null: only to show PGs someone can stay in, status), `user_roles` (user_id, role: `student | parent | owner | field_agent | ops | admin`).
 - `otp_challenges` (public_id, phone_e164, purpose, code_hash, attempts, requested_at, expires_at, consumed_at, superseded_at, ip_address, user_agent).
 - `sessions` (public_id, user_id, token_hash, kind, started_at, last_seen_at, expires_at, absolute_expires_at, rotated_at, ended_at, end_reason, ip_address, user_agent).
@@ -178,11 +185,13 @@ All tables have `id bigint generated always as identity`, `created_at`, `updated
 - `consents` (user_id, purpose `account | marketing`, notice_version, granted_at, withdrawn_at; one active consent per purpose and version): every grant kept, withdrawal sets `withdrawn_at`.
 
 **Geo** (reference data, ADR 0020)
+
 - `cities` (slug, name, center geography(Point)), `localities` (city_id, slug, name, center geography(Point), boundary geography(MultiPolygon) null), `campuses` (city_id, slug, name, location geography(Point)), `metro_lines` (slug, name, colour, wikidata_id), `metro_stations` (slug, name, location geography(Point), wikidata_id), `metro_station_lines` (station_id, line_id): an interchange is on several lines.
 - Every row keeps the OpenStreetMap element its coordinates came from (`osm_type`, `osm_id`). Slugs are the public keys.
 - Coordinates come from OpenStreetMap through `make geo-refresh` and are never typed in; each station's lines come from Wikidata. The rows are loaded from `apps/api/src/app/modules/geo/data/places.json` by `python -m app.manage geo load`, never edited through the API.
 
 **Catalog**
+
 - `owners` (public_id, user_id, legal_name, business_name, gstin null, kyc_status: `not_started | pending | verified | rejected`, payout_account_ref null, agreement_version null, status: `active | suspended`).
 - `owner_agreements` (owner_id, version, document_sha256, accepted_at, accepted_ip, accepted_user_agent): append-only, so the database refuses updates, deletes and truncation; one row per version an owner accepted (ADR 0025).
 - `properties` (public_id, owner_id, slug, name, description, address_line, locality_id, `location geography(Point,4326)` exact, `display_location geography(Point,4326)` public, `location_precision: exact | approximate`, gender_policy: `boys | girls | coed`, meals: `none | breakfast | two | three | four`, house_rules, verification_status: `unverified | scheduled | verified | rejected | suspended`, licence_status: `unknown | applied | licensed | not_required`, licence_number null, society_permission: `n/a | on_file | missing`, instant_confirm bool, status: `draft | published | paused | delisted`, published_at: first listed). Draft → published ⇄ paused, any → delisted, delisted → draft; publishing needs an active room category with an active bed (ADR 0021).
@@ -191,6 +200,7 @@ All tables have `id bigint generated always as identity`, `created_at`, `updated
 - `amenities` (slug, name; seeded by a data migration, slugs permanent), `property_amenities`; `verification_visits` (public_id, property_id, agent_id, scheduled_by, scheduled_for, status: `scheduled | submitted | cancelled`, status_before; the report: submitted_at (server time), position geography(Point) and position_accuracy_m from the agent's phone, distance_m from the pin, checklist jsonb, result: `passed | failed`, notes; cancelled_at, cancel_reason; one booked visit per property) and `verification_photos` (visit_id, media_asset_id, position) (ADR 0024).
 
 **Inventory**
+
 ```sql
 CREATE TABLE inventory_allocations (
   id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -206,9 +216,11 @@ CREATE TABLE inventory_allocations (
   EXCLUDE USING gist (bed_id WITH =, period WITH &&) WHERE (is_active)
 );
 ```
+
 This constraint is the double-booking guarantee. Never work around it.
 
 **Pricing**
+
 - Policy tables are versions in force from `effective_from` until `effective_to`: a change ends the current one and adds the next, and a gist exclusion constraint keeps versions from overlapping (per locality and occupancy for bands). Admins change them; each change is audited (ADR 0036).
 - `fee_policies` (rate_bps = 3000, basis = `listed_rent`, gst_rate_bps = 1800, gst_mode: `exclusive | inclusive`, effective_from, effective_to).
 - `booking_policies` (token_paise = 200000, hold_minutes = 15, free_cancel_days = 7, check_window_hours = 24, confirm_deadline_hours = 12, no_show_days = 3, late_cancel_policy: `refund_full | forfeit_to_owner | split`, max_active_holds_per_user = 1, max_advance_days = 120).
@@ -221,12 +233,14 @@ This constraint is the double-booking guarantee. Never work around it.
 - `search_listings` (property_id, public_id, slug, name, locality, `display_location` only, gender_policy, meals, verified, licensed, amenities, media_ids, published_at, generated full-text and trigram columns) — the search module's read model of listings the public can find, kept from the catalog's events (ADR 0028).
 
 **Visits and booking**
+
 - `visits` (public_id, property_id, student_id, preferred_slots tstzrange[], scheduled_slot tstzrange null, status: `requested | scheduled | completed | no_show | cancelled`, agent_id null, agent_checkin_at, agent_checkin_gps, outcome, booking_id null).
 - `bookings` (public_id, code unique, student_id, property_id, room_category_id, bed_id, owner_id, quote_id, channel: `on_spot | remote`, visit_id null, move_in, stay_months, planned_move_out, status, hold_expires_at, confirmed_at, checked_in_at, check_window_ends_at, activated_at, cancelled_at, cancelled_by, cancellation_kind, completed_at, monthly_rent_paise, fee_paise, gst_paise, owner_fee_total_paise, token_paise, due_at_move_in_paise, version int).
 - `booking_events` (booking_id, event, from_status, to_status, actor_type, actor_id, payload jsonb) — append-only; powers the student timeline and audits.
 - `disputes` (booking_id, reason: `not_as_shown | unsafe | other`, description, media_ids, status: `open | resolved_refund | resolved_uphold`, resolved_by, resolved_at, notes).
 
 **Payments and ledger**
+
 - `payments` (public_id, booking_id, purpose: `token | rent | owner_invoice`, mode: `payment | upi_mandate`, provider, provider_order_id, provider_payment_id, provider_mandate_id, amount_paise, status, idempotency_key unique).
 - `payment_events` (provider, provider_event_id, event_type, payload jsonb, signature_valid, received_at, processed_at, error) — **unique (provider, provider_event_id)**.
 - `refunds` (payment_id, amount_paise, reason, provider_refund_id, status, requested_by, approved_by).
@@ -234,6 +248,7 @@ This constraint is the double-booking guarantee. Never work around it.
 - `owner_invoices` (owner_id, booking_id, invoice_number unique per financial year, fee_paise, gst_paise, total_paise, token_applied_paise, balance_due_paise, status: `draft | issued | paid | void`, issued_at, pdf_key).
 
 **Platform**
+
 - `outbox_jobs`, `idempotency_keys`, `audit_logs` (append-only; the app's DB role has no UPDATE/DELETE on it), `feature_flags`, `notifications`, `grievances` (ticket_number `GR-…`, user_id when signed in, name, phone or email, category, details, status `received | acknowledged | resolved`, acknowledge_by (48 h), resolve_by (a calendar month), acknowledged_at, reply, resolved_at, resolution; ADR 0034), `data_requests` (public_id, user_id, kind `export | deletion`, status `received | ready | expired | completed | rejected`, requested_at, resolved_at, expires_at, resolved_by, note; one open request per kind and person), `data_exports` (data_request_id, content: the export's JSON until it expires).
 
 **Indexes to create from day one**: GiST on `properties.location` and `display_location`; GiST exclusion index above; trigram GIN on `properties.name` and `localities.name`; btree on every FK; partial index on `bookings (status, hold_expires_at) WHERE status = 'HELD'`; `outbox_jobs (status, run_at)`; BRIN on `booking_events.created_at` and `audit_logs.created_at`.
@@ -241,6 +256,7 @@ This constraint is the double-booking guarantee. Never work around it.
 ## 7. Booking system (pivot)
 
 ### 7.1 Flow
+
 1. Student picks a room category and move-in date on a PG page; the web app requests a **quote**.
 2. Student taps Reserve → `POST /v1/bookings` with `quote_id` and an `Idempotency-Key`. The API creates a **HELD** booking, allocates a free bed, and returns the payment step.
 3. Student secures the token (payment or UPI block). The verified gateway event moves the booking to **TOKEN_SECURED**.
@@ -252,32 +268,35 @@ This constraint is the double-booking guarantee. Never work around it.
 The same flow serves both channels: `on_spot` (student at the property with an agent, usually instant-confirm) and `remote` (behind the flag `remote_booking_enabled`).
 
 ### 7.2 State machine
+
 Implemented as a pure transition table in `booking/domain/state_machine.py`. Services call `transition(booking, event, actor, now) -> (new_state, side_effects)` and persist with a compare-and-set update (`UPDATE … WHERE id = :id AND status = :expected AND version = :v`).
 
-| From | Event | To | Actor | Guard | Side effects |
-|---|---|---|---|---|---|
-| — | `hold` | HELD | student | valid unexpired quote owned by user; bed free; active holds < limit; move_in within limits | allocation active; `hold_expires_at = now + hold_minutes`; create order or mandate request |
-| HELD | `token_secured` | TOKEN_SECURED | system | verified gateway event; amount = quote token | ledger: token received; notify owner and ops; auto-`confirm` if `instant_confirm` |
-| HELD | `hold_expired` | EXPIRED | system | now ≥ hold_expires_at | deactivate allocation; cancel order/mandate |
-| HELD | `cancel` | CANCELLED | student | — | deactivate allocation |
-| TOKEN_SECURED | `confirm` | CONFIRMED | owner, ops | — | notify student with exact address and move-in details |
-| TOKEN_SECURED | `reject`, `confirm_timeout` | REJECTED | owner, ops, system | — | deactivate; full refund/release; suggest similar PGs |
-| TOKEN_SECURED | `cancel` | CANCELLED | student | — (not yet confirmed) | deactivate; full refund/release |
-| CONFIRMED | `cancel` | CANCELLED | student | today ≤ move_in − free_cancel_days | deactivate; full refund/release |
-| CONFIRMED | `cancel_late` | CANCELLED | student | inside the cutoff | deactivate; apply `late_cancel_policy` |
-| TOKEN_SECURED, CONFIRMED | `owner_cancel` | CANCELLED | owner, ops | — | deactivate; full refund/release; flag owner; rebooking help |
-| CONFIRMED | `check_in` | CHECKED_IN | student; or ops, then student confirms | today ≥ move_in − 1 | `check_window_ends_at = now + check_window_hours` |
-| CONFIRMED | `no_show` | NO_SHOW | system | today > move_in + no_show_days | deactivate; apply `late_cancel_policy` |
-| CHECKED_IN | `dispute` | DISPUTED | student | now < check_window_ends_at | open dispute with photos; alert ops |
-| CHECKED_IN | `window_elapsed` | ACTIVE | system | now ≥ check_window_ends_at | earn/capture token; issue owner invoice; ledger postings |
-| DISPUTED | `resolve_refund` | REFUNDED | ops | — | deactivate; full refund/release; rebooking help |
-| DISPUTED | `resolve_uphold` | ACTIVE | ops | — | as `window_elapsed` |
-| ACTIVE | `move_out` | COMPLETED | owner, ops, student | — | truncate allocation period to the move-out date |
+| From                     | Event                       | To            | Actor                                  | Guard                                                                                      | Side effects                                                                               |
+| ------------------------ | --------------------------- | ------------- | -------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| —                        | `hold`                      | HELD          | student                                | valid unexpired quote owned by user; bed free; active holds < limit; move_in within limits | allocation active; `hold_expires_at = now + hold_minutes`; create order or mandate request |
+| HELD                     | `token_secured`             | TOKEN_SECURED | system                                 | verified gateway event; amount = quote token                                               | ledger: token received; notify owner and ops; auto-`confirm` if `instant_confirm`          |
+| HELD                     | `hold_expired`              | EXPIRED       | system                                 | now ≥ hold_expires_at                                                                      | deactivate allocation; cancel order/mandate                                                |
+| HELD                     | `cancel`                    | CANCELLED     | student                                | —                                                                                          | deactivate allocation                                                                      |
+| TOKEN_SECURED            | `confirm`                   | CONFIRMED     | owner, ops                             | —                                                                                          | notify student with exact address and move-in details                                      |
+| TOKEN_SECURED            | `reject`, `confirm_timeout` | REJECTED      | owner, ops, system                     | —                                                                                          | deactivate; full refund/release; suggest similar PGs                                       |
+| TOKEN_SECURED            | `cancel`                    | CANCELLED     | student                                | — (not yet confirmed)                                                                      | deactivate; full refund/release                                                            |
+| CONFIRMED                | `cancel`                    | CANCELLED     | student                                | today ≤ move_in − free_cancel_days                                                         | deactivate; full refund/release                                                            |
+| CONFIRMED                | `cancel_late`               | CANCELLED     | student                                | inside the cutoff                                                                          | deactivate; apply `late_cancel_policy`                                                     |
+| TOKEN_SECURED, CONFIRMED | `owner_cancel`              | CANCELLED     | owner, ops                             | —                                                                                          | deactivate; full refund/release; flag owner; rebooking help                                |
+| CONFIRMED                | `check_in`                  | CHECKED_IN    | student; or ops, then student confirms | today ≥ move_in − 1                                                                        | `check_window_ends_at = now + check_window_hours`                                          |
+| CONFIRMED                | `no_show`                   | NO_SHOW       | system                                 | today > move_in + no_show_days                                                             | deactivate; apply `late_cancel_policy`                                                     |
+| CHECKED_IN               | `dispute`                   | DISPUTED      | student                                | now < check_window_ends_at                                                                 | open dispute with photos; alert ops                                                        |
+| CHECKED_IN               | `window_elapsed`            | ACTIVE        | system                                 | now ≥ check_window_ends_at                                                                 | earn/capture token; issue owner invoice; ledger postings                                   |
+| DISPUTED                 | `resolve_refund`            | REFUNDED      | ops                                    | —                                                                                          | deactivate; full refund/release; rebooking help                                            |
+| DISPUTED                 | `resolve_uphold`            | ACTIVE        | ops                                    | —                                                                                          | as `window_elapsed`                                                                        |
+| ACTIVE                   | `move_out`                  | COMPLETED     | owner, ops, student                    | —                                                                                          | truncate allocation period to the move-out date                                            |
 
 Allocation is active in HELD, TOKEN_SECURED, CONFIRMED, CHECKED_IN, DISPUTED, ACTIVE and COMPLETED (truncated). Every transition writes a `booking_events` row and an audit entry. Test every allowed transition and assert every other (state, event) pair is rejected.
 
 ### 7.3 Holding a bed without race conditions
+
 Inside one transaction:
+
 1. `SELECT b.id FROM beds b JOIN rooms r ON r.id = b.room_id WHERE r.room_category_id = :c AND b.status = 'active' FOR UPDATE OF b` (serialises attempts per category).
 2. Expire stale holds for these beds: set HELD bookings past `hold_expires_at` to EXPIRED and deactivate their allocations.
 3. Choose a bed with no active allocation overlapping `[move_in, planned_move_out)`. Prefer beds in partly occupied rooms, so whole rooms stay free for groups.
@@ -286,6 +305,7 @@ Inside one transaction:
 Required test: 50 concurrent hold requests for the last free bed → exactly one HELD booking, 49 × 409, no overlapping active allocations.
 
 ### 7.4 Edge cases (must be handled and tested)
+
 - **Payment after the hold expired**: if the bed is still free, re-allocate and move to TOKEN_SECURED (`late_payment_revive`); otherwise refund automatically and notify the student with alternatives.
 - **Duplicate or out-of-order webhooks**: processing is idempotent per `provider_event_id` and per payment status; states only move forward.
 - **Quote expired at hold time**: `409 QUOTE_EXPIRED`; the client re-quotes and shows any price change before retrying.
@@ -294,40 +314,46 @@ Required test: 50 concurrent hold requests for the last free bed → exactly one
 - **Stay extension**: update the allocation's upper bound in a transaction (the constraint re-checks).
 
 ### 7.5 Scheduled jobs (worker)
-| Job | Every | Does |
-|---|---|---|
-| expire_holds | 1 min | HELD past expiry → EXPIRED |
-| confirm_timeouts | 5 min | TOKEN_SECURED past the deadline → REJECTED + refund |
-| check_windows | 5 min | CHECKED_IN past the window → ACTIVE |
-| no_shows | daily 10:00 IST | CONFIRMED past move_in + N days → NO_SHOW |
-| reconcile_payments | 15 min | Fetch status of payments stuck in created/authorized |
+
+| Job                    | Every                                                                            | Does                                                                                                                                               |
+| ---------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| expire_holds           | 1 min                                                                            | HELD past expiry → EXPIRED                                                                                                                         |
+| confirm_timeouts       | 5 min                                                                            | TOKEN_SECURED past the deadline → REJECTED + refund                                                                                                |
+| check_windows          | 5 min                                                                            | CHECKED_IN past the window → ACTIVE                                                                                                                |
+| no_shows               | daily 10:00 IST                                                                  | CONFIRMED past move_in + N days → NO_SHOW                                                                                                          |
+| reconcile_payments     | 15 min                                                                           | Fetch status of payments stuck in created/authorized                                                                                               |
 | search.refresh_listing | on `catalog.listing_changed` and `catalog.inventory_changed` + nightly 00:30 IST | Refresh a listing's search entry and `property_price_summaries`; the nightly `search.refresh_all` queues every listing once a day (ADR 0027, 0028) |
-| retention | daily 03:30 IST | `compliance.retention`: apply the retention schedule (`RETENTION_RULES` in `app/jobs.py`) and record what each rule removed (ADR 0018) |
+| retention              | daily 03:30 IST                                                                  | `compliance.retention`: apply the retention schedule (`RETENTION_RULES` in `app/jobs.py`) and record what each rule removed (ADR 0018)             |
 
 All jobs are idempotent and emit metrics (processed, failed, lag).
 
 ## 8. Dynamic pricing engine (pivot)
 
 ### 8.1 Contract
+
 `pricing/domain/engine.py` exposes one pure function:
+
 ```python
 def quote(ctx: PricingContext) -> QuoteResult: ...
 ```
+
 `PricingContext` holds: room category (base rent, owner min/max, occupancy type), property, move_in, stay_months, today, occupancy for the category on move_in (from real allocations), the active rule set, rent band (optional), fee policy, booking policy, pricing caps and `engine_version`. No I/O and no clock reads inside the engine.
 
 ### 8.2 Rule kinds (v1, set by owners/ops by hand)
-| Kind | Params (validated per kind) | Effect |
-|---|---|---|
-| `season` | start_md, end_md (MM-DD, may wrap the year), bps | + or − bps when move_in falls in the range; seasons may not overlap for the same categories |
-| `occupancy` | tiers: [{min_occupancy_bps, bps}] | Premium from the highest tier reached. Occupancy counts beds in TOKEN_SECURED or later plus offline tenants; **HELD beds don't count**, so holds can't inflate prices |
-| `early_bird` | min_days_before, bps (negative) | Discount when booked far enough ahead |
-| `last_minute` | max_days_before, max_occupancy_bps, bps (negative) | Discount close to move-in when occupancy is low |
-| `length_of_stay` | tiers: [{min_months, bps (negative)}] | Discount from the highest tier reached |
-| `override` | start, end, rent_paise | Fixed monthly rent for move-ins in range; skips other rules, still clamped |
+
+| Kind             | Params (validated per kind)                        | Effect                                                                                                                                                                |
+| ---------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `season`         | start_md, end_md (MM-DD, may wrap the year), bps   | + or − bps when move_in falls in the range; seasons may not overlap for the same categories                                                                           |
+| `occupancy`      | tiers: [{min_occupancy_bps, bps}]                  | Premium from the highest tier reached. Occupancy counts beds in TOKEN_SECURED or later plus offline tenants; **HELD beds don't count**, so holds can't inflate prices |
+| `early_bird`     | min_days_before, bps (negative)                    | Discount when booked far enough ahead                                                                                                                                 |
+| `last_minute`    | max_days_before, max_occupancy_bps, bps (negative) | Discount close to move-in when occupancy is low                                                                                                                       |
+| `length_of_stay` | tiers: [{min_months, bps (negative)}]              | Discount from the highest tier reached                                                                                                                                |
+| `override`       | start, end, rent_paise                             | Fixed monthly rent for move-ins in range; skips other rules, still clamped                                                                                            |
 
 Each rule has a `label` shown to students ("Peak season", "Early-bird").
 
 ### 8.3 Algorithm
+
 ```
 base = category.base_rent_paise
 if an override matches move_in:
@@ -345,28 +371,35 @@ else: owner_total = fee; net = round_half_up(fee * 10_000 / (10_000 + gst_rate_b
 token = min(booking_policy.token_paise, price)
 due_at_move_in = price - token
 ```
+
 Worked example (₹10,000 base, July move-in, +15% season, −5% early-bird, 11-month stay −7%): premium 1,500, discount 1,200 → ₹10,300 → rounded to ₹10,300 (step ₹50) → fee ₹3,000, GST ₹540, owner total ₹3,540, token ₹2,000, due at move-in ₹8,300.
 
 ### 8.4 Quotes and the price lock
+
 - `POST /v1/quotes` runs the engine and stores a `price_quotes` row (valid 30 minutes) with the full breakdown, versions and an `inputs_sha256`.
 - Bookings copy the quote's money fields; that monthly rent holds for the whole stay. Rule changes create a new rule-set version and never touch existing quotes or bookings.
 - The response includes a human explanation: "Base ₹10,000 · Peak season +15% · Early-bird −5% · 11-month stay −7% = ₹10,300/month, fixed for your stay".
 
 ### 8.5 Price calendar and honest urgency
+
 - `GET /v1/properties/{slug}/price-calendar?from=…&weeks=12&stay=11` runs the engine for weekly move-in dates and returns each room's rent per week and its free beds (cached five minutes; ADR 0040).
 - The PG page shows "Move in by 15 Jun: ₹9,500 · from 1 Jul: ₹11,000". Text like "price rises on 1 Jul" is allowed only because the calendar proves it.
 - "Only N beds left" appears only when real availability for the chosen dates is ≤ 3.
 - No countdown timers except the real hold expiry during checkout.
 
 ### 8.6 Owner and ops pricing editor
+
 - Edit a draft rule set, see validation errors (overlapping seasons, a band conflict, caps), preview any move-in date and stay with the full breakdown, see a 12-week price chart, then activate. Activation creates an immutable version and is audit-logged.
 - Show the locality band and the market median next to the inputs.
+- `GET /v1/ops/rule-sets/{id}/preview` prices any version as a quote made today would, up to a year ahead, nothing stored; `GET /v1/ops/rule-sets/{id}/calendar` is its weekly chart; `GET /v1/ops/properties/{id}/market` gives each room's band, the locality's median listed rent and the caps (ADR 0041).
 
 ### 8.7 Integrity guards
+
 - The listed rent must be the price charged when no rule applies. Alert ops when it is more than 25% below the locality median for the same occupancy type, or when clamps trigger on more than 20% of quotes in a week.
 - Caps and bands are admin-only settings.
 
 ### 8.8 Invariants (property-based tests with Hypothesis, ≥ 10,000 generated cases in CI)
+
 - `fee` depends only on base rent and fee policy, never on rules, occupancy or dates.
 - `price` stays within [lo, hi] whenever lo ≤ hi, and is a multiple of the rounding step (unless the bounds force otherwise).
 - Total premium ≤ cap and total discount ≤ cap.
@@ -374,11 +407,13 @@ Worked example (₹10,000 base, July move-in, +15% season, −5% early-bird, 11-
 - Same inputs → same output; all amounts are non-negative integers; `due_at_move_in + token = price`.
 
 ### 8.9 Later (Phase 9, after a season of data)
+
 Suggested prices for owners from demand signals: PG page views, visit requests and conversion per locality and week, occupancy pace against last year, and the calendar. Owners approve every suggestion; nothing changes prices automatically.
 
 ## 9. Payments, refunds and ledger
 
 ### 9.1 Port
+
 ```python
 class PaymentGateway(Protocol):
     async def create_order(self, *, amount_paise: int, receipt: str, notes: dict[str, str]) -> Order: ...
@@ -394,9 +429,11 @@ class PaymentGateway(Protocol):
     async def transfer(self, *, payment_id: str, account_ref: str, amount_paise: int, on_hold: bool) -> Transfer: ...
     async def release_transfer(self, transfer_id: str) -> None: ...
 ```
+
 Adapters: `RazorpayGateway` and `FakeGateway` (deterministic, used in tests and local dev, can emit signed webhook fixtures).
 
 ### 9.2 Token modes (`token_mode` flag)
+
 - `payment` (v1 default): server creates an order for exactly `quote.token_paise`; Razorpay Checkout on the web; the server verifies the checkout signature, but **only the verified webhook or a server-side fetch moves the booking**. Refund on cancel, reject, timeout or dispute.
 - `upi_mandate` (after Razorpay enables one-time mandates for us): authorise a block for the token; capture on ACTIVE; release on refund paths. Validity must cover move_in + check window.
 - `rent_via_app` (Phase 9): the student pays the rest of the first month through the app; Route transfers `rent − owner_fee_total` to the owner's linked account.
@@ -404,38 +441,45 @@ Adapters: `RazorpayGateway` and `FakeGateway` (deterministic, used in tests and 
 Verify Razorpay's current docs for order creation, checkout signature format, webhook headers and event names, OTM and Route before writing the adapter.
 
 ### 9.3 Webhooks
+
 `POST /v1/webhooks/razorpay`: read the raw body → verify HMAC with the webhook secret → insert into `payment_events` (unique provider event id; a duplicate returns 200 and stops) → enqueue `process_payment_event` → return 200 within 1 s. The worker maps events to payment status changes and booking transitions, idempotently. Unknown events are stored and ignored.
 
 ### 9.4 Ledger
+
 Chart of accounts (seeded): `gateway_clearing` (asset), `bank` (asset), `owner_receivable` (asset), `student_tokens_held` (liability), `owner_payable` (liability, Phase 9), `gst_payable` (liability), `placement_fee_revenue` (revenue), `payment_fees` (expense).
 
-| Event | Debit | Credit |
-|---|---|---|
-| Token captured | gateway_clearing 2,000 | student_tokens_held 2,000 |
-| Token refunded | student_tokens_held 2,000 | gateway_clearing 2,000 |
-| Booking ACTIVE: invoice owner | owner_receivable 3,540 | placement_fee_revenue 3,000; gst_payable 540 |
-| Booking ACTIVE: apply token | student_tokens_held 2,000 | owner_receivable 2,000 |
-| Owner pays the balance | gateway_clearing 1,540 | owner_receivable 1,540 |
-| Gateway fee | payment_fees | gateway_clearing |
-| Settlement to bank | bank | gateway_clearing |
+| Event                         | Debit                     | Credit                                       |
+| ----------------------------- | ------------------------- | -------------------------------------------- |
+| Token captured                | gateway_clearing 2,000    | student_tokens_held 2,000                    |
+| Token refunded                | student_tokens_held 2,000 | gateway_clearing 2,000                       |
+| Booking ACTIVE: invoice owner | owner_receivable 3,540    | placement_fee_revenue 3,000; gst_payable 540 |
+| Booking ACTIVE: apply token   | student_tokens_held 2,000 | owner_receivable 2,000                       |
+| Owner pays the balance        | gateway_clearing 1,540    | owner_receivable 1,540                       |
+| Gateway fee                   | payment_fees              | gateway_clearing                             |
+| Settlement to bank            | bank                      | gateway_clearing                             |
 
 Amounts shown in rupees for the ₹10,000 example. Every money-moving use case posts its entries in the same transaction as the state change. The accounting treatment must be confirmed with a CA; the ledger design supports changes.
 
 ### 9.5 Owner invoices
+
 Issued on ACTIVE: fee, GST, token applied, balance due; sequential invoice numbers per financial year (`FY2027-28/000123`); a PDF stored privately; balance collected through a Razorpay payment link and marked paid by webhook.
 
 ### 9.6 Reconciliation
+
 Every 15 minutes, check payments stuck in created/authorized. Daily, match gateway settlement reports against the ledger; any mismatch raises an alert and a ticket. A reconciliation dashboard is part of the ops console.
 
 ## 10. Search, PG pages and the map
 
 ### 10.1 Search API
+
 `GET /v1/search/properties` with: `campus` + `radius_m` or `locality` or `bbox`; `move_in_month`; `budget_min`/`budget_max` (against `property_price_summaries` for that month); `gender`; `occupancy`; `meals`; `ac`; `attached_bath`; `amenities[]`; `verified_only` (default true); `available` (beds free for the month); `q` (trigram + full-text on name and locality); `sort`: `recommended | price_asc | price_desc | distance | newest`; cursor pagination (max 50). Returns cards: name, locality, display location, distance to the chosen campus and nearest metro, price range for the month, badges (verified, licensed, meals), cover photo variants, beds-available bucket. Built on the search module's read model and the price summaries, kept from the catalog's events; distances from display points; keyset cursors that carry the order; `SEARCH_INVALID` for a search that can't be answered (ADR 0028).
 
 ### 10.2 Map pins API
+
 `GET /v1/map/pins?bbox=w,s,e,n&zoom=&…same filters` → up to 2,000 compact pins `{id, lat, lng, minRent, maxRent, gender, verified, availability}` using `display_location`. Cached in Redis by rounded bbox, zoom and a filter hash (60 s), with ETags. Clustering happens on the client. The area is snapped outwards to a quarter-tile grid for the zoom, so small pans share cache entries; `truncated` says more than 2,000 matched; `If-None-Match` gets a 304; pins come from the database while Redis is down (ADR 0029).
 
 ### 10.3 The map experience (showcase)
+
 - **Price pins** like "₹8k–12k" (verified PGs get a badge); clusters show the count and the lowest price.
 - Desktop split view (list + map); mobile shows the list first with a map toggle and a draggable bottom sheet.
 - "Search as I move the map": debounce 300 ms, cancel stale requests, keep results in the URL so searches are shareable.
@@ -446,12 +490,14 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 - Load the map SDK lazily, only when the map view is opened.
 
 ### 10.4 Provider choice
+
 - Default: **Google Maps Platform** (strongest India map data). Google announced India pricing up to 70% lower and up to US$6,800 a month of free usage across products from March 2025, with Maps Embed API usage free and unlimited ([Google, Dec 2024](https://blog.google/intl/en-in/products/explore-communicate/helping-developers-in-india-build-more-with-google-maps-platform/)). Use the JS API only on the search map, and the free Embed API for the small map on PG pages.
 - Alternative adapter: **MapLibre GL + Ola Maps** tiles: 100,000 free map loads a month, then ₹0.141 per load, from 1 September 2026 ([Ola Maps pricing](https://maps.olakrutrim.com/pricing)). Check MapLibre compatibility in their docs.
 - Prefer providers that show India's official boundaries; the NCR lock keeps country borders off-screen anyway.
 - Re-check prices and quotas before launch and set budget alerts in the provider console.
 
 ### 10.5 Location privacy
+
 - `display_location` is the exact point shifted by a random bearing and 80–150 m, generated once and stored (regenerated only if the exact point changes), so repeated requests can't be averaged to find the building.
 - Distances shown to the public are measured from the display point too: exact distances to a few known places would give the building away by trilateration (ADR 0021).
 - The exact address and pin are shown only after a visit is scheduled or a booking is confirmed (flag `hide_owner_contact`).
@@ -459,6 +505,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 - Field agents capture the exact location by GPS during verification; ops can adjust the pin manually.
 
 ### 10.6 PG page and SEO
+
 - `/pg/[slug]` (ISR): gallery with "verified photo" labels, video tour, safety checklist summary, room categories with live prices for the chosen month, price calendar, amenities, house rules, deposit and mandatory charges, distance to campuses and metro, owner business name, reviews (later), "Book a visit" and "Reserve a bed" CTAs. Rendered per request with its CSP nonce from listing data cached across visitors (tagged for on-demand revalidation), every charge and the deposit upfront, the safety summary from the last passing visit, and the area as a circle around the display point (ADR 0030).
 - Landing pages: `/pg-near/[campus]`, `/pg-in/[locality]` with real inventory, filters and FAQs. They're rendered on the server from `GET /v1/search/places` (each campus with verified live PGs within 3 km and each locality with some, with the count and the month's rents) and search's first page. A place without PGs says so and is `noindex` (ADR 0032).
 - JSON-LD (`LodgingBusiness` with `Offer` price ranges), canonical URLs, `sitemap.xml`, `robots.txt`, dynamic Open Graph images. The API triggers on-demand revalidation when a listing or its prices change.
@@ -522,7 +569,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 ## 15. API conventions
 
 - REST over JSON at `/v1`; plural nouns; JSON fields in camelCase (Pydantic alias generator), Python in snake_case.
-- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `RATE_LIMITED` (429, with `Retry-After`), `PRICING_CONFIG_ERROR`. Sign-in: `OTP_INVALID`, `OTP_EXPIRED` and `OTP_LOCKED` (400), `OTP_RESEND_TOO_SOON` (429, with `Retry-After`), `HUMAN_CHECK_FAILED` (400), `ACCOUNT_SUSPENDED` (403). Staff sign-in: `STAFF_ACCOUNT_NOT_ALLOWED` (403, one code for every reason), `STAFF_SIGN_IN_EXPIRED` and `STAFF_SIGN_IN_CANCELLED` (400; Google sign-in sends these to the web app's `/staff/sign-in?error=`), `TOTP_INVALID` (400). Consent: `CONSENT_REQUIRED` (400), `PRIVACY_NOTICE_CHANGED` (409), `CONSENT_NEEDED_FOR_ACCOUNT` (409). Catalog: `LISTING_INVALID` (422, every problem in the detail), `LISTING_INCOMPLETE` (409: nothing to sell yet), `ROOM_FULL`, `LABEL_TAKEN` and `OWNER_EXISTS` (409: that phone's account is already an owner), `CONTACT_HIDDEN` (403: the owner's contact details show once a visit is scheduled or a booking confirmed; ADR 0026). Search: `SEARCH_INVALID` (422: a search that can't be answered, every problem in the detail; ADR 0028). Visits: `VISIT_INVALID` (422: times or a request that don't work, every problem in the detail), `VISIT_EXISTS` and `VISIT_LIMIT_REACHED` (409), `CHECK_IN_REQUIRED` and `CHECK_IN_TOO_EARLY` (409; ADR 0033). Policies: `POLICY_INVALID` (422: a version the founders' rules don't allow, every problem in the detail), `PRICING_CONFIG_ERROR` (503 when no version is in force; ADR 0036). Rule sets: `RULE_SET_INVALID` (422: a rule that can't be, or a set that can't go into force, every problem in the detail; ADR 0038). Quotes: `QUOTE_INVALID` (422: a move-in or stay that can't be quoted), `QUOTE_EXPIRED` (409: past its 30 minutes; ADR 0039). Owner agreement: `AGREEMENT_CHANGED` (409: the version or text accepted isn't the current one; ADR 0025). Media: `MEDIA_NOT_ALLOWED` (422: a type or size the purpose doesn't take), `MEDIA_NOT_UPLOADED` (409). `INVALID_TRANSITION` (409) answers any state machine's refusal. Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED` (401: no live session), `CSRF_TOKEN_INVALID` (403), `FORBIDDEN` (403: signed in, but the session lacks the role; another user's record answers `NOT_FOUND`), `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status. Idempotency: `IDEMPOTENCY_KEY_REQUIRED` and `IDEMPOTENCY_KEY_INVALID` (400), `IDEMPOTENCY_KEY_REUSED` (422), `IDEMPOTENCY_KEY_CONFLICT` (409).
+- Errors: RFC 9457 problem+json `{type, title, status, detail, code, errors[], requestId, traceId}` (`app/core/errors.py`, ADR 0009). Each `errors[]` item is `{detail, code, pointer}` for a body field (JSON Pointer, e.g. `/moveIn`) or `{detail, code, parameter}` for a query, path or header parameter. Rejected input is never echoed back, and unexpected errors never reveal their message. Stable codes, e.g. `BED_UNAVAILABLE`, `QUOTE_EXPIRED`, `HOLD_LIMIT_REACHED`, `INVALID_TRANSITION`, `RATE_LIMITED` (429, with `Retry-After`), `PRICING_CONFIG_ERROR`. Sign-in: `OTP_INVALID`, `OTP_EXPIRED` and `OTP_LOCKED` (400), `OTP_RESEND_TOO_SOON` (429, with `Retry-After`), `HUMAN_CHECK_FAILED` (400), `ACCOUNT_SUSPENDED` (403). Staff sign-in: `STAFF_ACCOUNT_NOT_ALLOWED` (403, one code for every reason), `STAFF_SIGN_IN_EXPIRED` and `STAFF_SIGN_IN_CANCELLED` (400; Google sign-in sends these to the web app's `/staff/sign-in?error=`), `TOTP_INVALID` (400). Consent: `CONSENT_REQUIRED` (400), `PRIVACY_NOTICE_CHANGED` (409), `CONSENT_NEEDED_FOR_ACCOUNT` (409). Catalog: `LISTING_INVALID` (422, every problem in the detail), `LISTING_INCOMPLETE` (409: nothing to sell yet), `ROOM_FULL`, `LABEL_TAKEN` and `OWNER_EXISTS` (409: that phone's account is already an owner), `CONTACT_HIDDEN` (403: the owner's contact details show once a visit is scheduled or a booking confirmed; ADR 0026). Search: `SEARCH_INVALID` (422: a search that can't be answered, every problem in the detail; ADR 0028). Visits: `VISIT_INVALID` (422: times or a request that don't work, every problem in the detail), `VISIT_EXISTS` and `VISIT_LIMIT_REACHED` (409), `CHECK_IN_REQUIRED` and `CHECK_IN_TOO_EARLY` (409; ADR 0033). Policies: `POLICY_INVALID` (422: a version the founders' rules don't allow, every problem in the detail), `PRICING_CONFIG_ERROR` (503 when no version is in force; ADR 0036). Rule sets: `RULE_SET_INVALID` (422: a rule that can't be, or a set that can't go into force, every problem in the detail; ADR 0038). Quotes: `QUOTE_INVALID` (422: a move-in or stay that can't be quoted; in ops' preview, also a room whose limits leave no rent; ADR 0041), `QUOTE_EXPIRED` (409: past its 30 minutes; ADR 0039). Owner agreement: `AGREEMENT_CHANGED` (409: the version or text accepted isn't the current one; ADR 0025). Media: `MEDIA_NOT_ALLOWED` (422: a type or size the purpose doesn't take), `MEDIA_NOT_UPLOADED` (409). `INVALID_TRANSITION` (409) answers any state machine's refusal. Generic codes: `VALIDATION_ERROR` (422), `BAD_REQUEST`, `UNAUTHENTICATED` (401: no live session), `CSRF_TOKEN_INVALID` (403), `FORBIDDEN` (403: signed in, but the session lacks the role; another user's record answers `NOT_FOUND`), `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `NOT_ACCEPTABLE`, `CONFLICT`, `PAYLOAD_TOO_LARGE` (bodies over 1 MiB), `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`, and `HTTP_ERROR` for any other status. Idempotency: `IDEMPOTENCY_KEY_REQUIRED` and `IDEMPOTENCY_KEY_INVALID` (400), `IDEMPOTENCY_KEY_REUSED` (422), `IDEMPOTENCY_KEY_CONFLICT` (409).
 - Probes: `GET /healthz` (liveness) and `GET /readyz` (database and Redis reachable, 503 otherwise) sit outside `/v1`, need no authentication, and are left out of tracing and info-level access logs.
 - Money: integer paise with names ending in `Paise`; the client formats with `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`.
 - Dates: `YYYY-MM-DD` for move-in; timestamps in ISO 8601 UTC; display in IST.
@@ -532,6 +579,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 - OpenAPI is the contract: CI regenerates the TS client and fails if it is stale; `oasdiff` fails CI on breaking changes. `make gen-client` exports the schema without starting the API (`python -m app.openapi`) into `packages/api-client/openapi.json` and generates `src/generated/schema.ts` with openapi-typescript; `make check-client` (part of `make check`) fails when either is out of date. Operation ids are the route's tag and function name in camelCase (`systemHealthz`), and every operation declares `4XX`/`5XX` as `application/problem+json` `ProblemDetail`, so the web client's error types are the API's real ones (ADR 0012).
 
 Main endpoints (v1):
+
 ```
 Public   GET  /v1/cities /v1/localities /v1/campuses /v1/campuses/{slug} /v1/metro-stations /v1/amenities
          GET  /v1/search/properties    GET /v1/map/pins
@@ -635,16 +683,16 @@ Target OWASP ASVS level 2 for auth, booking, payments and personal data.
 
 ## 20. Testing strategy
 
-| Level | Tools | Must cover |
-|---|---|---|
-| Unit (pure domain) | pytest, Hypothesis | Pricing engine invariants; state machine (every pair); money maths; policies |
-| Integration | pytest + testcontainers (PostGIS image) | Repositories, exclusion constraint, hold concurrency, outbox, webhooks with signed fixtures, ledger balance |
-| Contract | schemathesis, oasdiff | API matches the schema; no breaking changes |
-| Web unit | Vitest, Testing Library, MSW | Components, hooks, formatting |
-| E2E | Playwright against a production build and the real API on its own database (`scripts/e2e-api.sh`, ADR 0019) (+ FakeGateway or Razorpay test mode on staging) | Search → map → PG page → visit; quote → hold → token → confirm → check-in → active; dispute → refund; owner pricing edit → calendar |
-| Accessibility / performance | axe, Lighthouse CI | Key pages within budget |
-| Load | k6 | Search, map pins, hold race |
-| Security | authorization matrix, ZAP baseline, gitleaks, CodeQL | No regressions |
+| Level                       | Tools                                                                                                                                                        | Must cover                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Unit (pure domain)          | pytest, Hypothesis                                                                                                                                           | Pricing engine invariants; state machine (every pair); money maths; policies                                                        |
+| Integration                 | pytest + testcontainers (PostGIS image)                                                                                                                      | Repositories, exclusion constraint, hold concurrency, outbox, webhooks with signed fixtures, ledger balance                         |
+| Contract                    | schemathesis, oasdiff                                                                                                                                        | API matches the schema; no breaking changes                                                                                         |
+| Web unit                    | Vitest, Testing Library, MSW                                                                                                                                 | Components, hooks, formatting                                                                                                       |
+| E2E                         | Playwright against a production build and the real API on its own database (`scripts/e2e-api.sh`, ADR 0019) (+ FakeGateway or Razorpay test mode on staging) | Search → map → PG page → visit; quote → hold → token → confirm → check-in → active; dispute → refund; owner pricing edit → calendar |
+| Accessibility / performance | axe, Lighthouse CI                                                                                                                                           | Key pages within budget                                                                                                             |
+| Load                        | k6                                                                                                                                                           | Search, map pins, hold race                                                                                                         |
+| Security                    | authorization matrix, ZAP baseline, gitleaks, CodeQL                                                                                                         | No regressions                                                                                                                      |
 
 Coverage gates: ≥ 90% branches in `pricing`, `booking`, `payments` and `ledger`; ≥ 75% overall API; critical E2E flows must pass to merge.
 
