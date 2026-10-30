@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
@@ -16,7 +18,15 @@ const securityHeaders = [
   },
 ];
 
+// The container image (apps/web/Dockerfile) builds Next.js's standalone server, traced from the
+// repository's root so the workspace's API client comes along. Vercel builds need neither.
+const standalone = process.env.NEXT_OUTPUT === "standalone";
+
 const nextConfig: NextConfig = {
+  ...(standalone && {
+    output: "standalone" as const,
+    outputFileTracingRoot: path.join(process.cwd(), "..", ".."),
+  }),
   poweredByHeader: false,
   reactStrictMode: true,
   typedRoutes: true,
