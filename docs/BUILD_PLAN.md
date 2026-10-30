@@ -348,10 +348,14 @@ Start the slow ones in week 1.
   - **API:** a version's preview (any move-in up to a year ahead, the owner's fee included, nothing stored), its weekly chart with the limits that held each week back, and the market beside a PG's rents: each room's band, the locality's median listed rent and the caps (ADR 0041). All are built the way quotes are.
   - **Editor:** `/ops/listings/{id}/pricing` has the versions, a draft's rules with a form per kind, its problems, the market, a live preview, and one small chart per room with a table. Putting a draft in force or discarding it needs a confirmation.
   - **Proof:** before activation the version in force previews as today's quote, and after it the draft's preview equals the new quote. The chart of the version in force equals the PG page's calendar. A July peak and an early-bird both show in next July's preview and, once in force, on the PG page's calendar (API tests). A browser test drives the editor end to end.
-  - **The map:** it shows engine prices from step 4.7, which switches its summaries to the engine; that step's test repeats the July scenario on the map.
+  - **The map:** step 4.7 switched its summaries to the engine, and its test repeats the July scenario on the map.
 
-- [ ] **4.7 Summaries from the engine.** Switch `property_price_summaries` to engine output per month; recompute on `pricing.rules_changed`, allocation changes and band changes.
+- [x] **4.7 Summaries from the engine.** Switch `property_price_summaries` to engine output per month; recompute on `pricing.rules_changed`, allocation changes and band changes.
   *Done when* map pins and search budgets match PG-page prices for the same month.
+  *Note (2026-10-30):*
+  - **Summaries:** each room's range for a month is the least and most the engine quotes for a move-in on any day of it still to come, for an 11-month stay. The inputs are built the same way as quotes, the calendar and the editor's previews (ADR 0042). A room whose limits leave no rent gets no range. Search's results say which stay the rents are for.
+  - **Repricing:** a rule set going into force reprices its PG and revalidates its pages, so the PG page no longer waits for its five-minute cache. A band starting or ending reprices its locality, and a caps change reprices every listing once per version. The nightly refresh stays. Allocation changes join in Phase 5, which also gives the occupancy port its real answer.
+  - **Proof:** with 4.6's July peak and early-bird, July's summary is the peak and August's runs from the early-bird to the listed rent. A search by budget finds the PG exactly at those limits, the map's pins show the same ranges, and every week of the PG page's calendar sits inside its month (API test). Band and caps tests cover the other triggers.
 
 - [ ] **4.8 Integrity alerts.** Ops alerts when listed rent is > 25% below the locality median, when clamps fire on > 20% of a property's weekly quotes, and on frequent rule churn.
   *Done when* seeded scenarios trigger each alert exactly once.

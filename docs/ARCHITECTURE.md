@@ -217,7 +217,7 @@ This constraint is the double-booking guarantee. Never work around it.
 - `pricing_rule_sets` (property_id, version int, status: `draft | active | archived`, created_by, activated_at); unique (property_id) where status = 'active'. Active and archived sets are immutable: triggers refuse changing their rules, moving a set back, and deleting one that isn't a draft (ADR 0038).
 - `pricing_rules` (rule_set_id, kind, room_category_ids bigint[] null (= all), params jsonb validated per kind, label shown to students, enabled).
 - `price_quotes` (public_id, user_id null, room_category_id, move_in, stay_months, base_rent_paise, monthly_rent_paise, adjustments jsonb, clamps jsonb, fee_paise, gst_paise, owner_fee_total_paise, token_paise, due_at_move_in_paise, deposit_paise, mandatory_charges jsonb, rule_set_id, fee_policy_id, rent_band_id null, engine_version, inputs_sha256, expires_at).
-- `property_price_summaries` (property_id, room_category_id, month date, min_rent_paise, max_rent_paise, available_beds, occupancy, ac, attached_bath, computed_at) — feeds search and the map. Owned by the search module: one row per category with a bed to sell and month, for this month and the next six; base rents until the pricing engine (ADR 0027, 0028).
+- `property_price_summaries` (property_id, room_category_id, month date, min_rent_paise, max_rent_paise, available_beds, occupancy, ac, attached_bath, computed_at) — feeds search and the map. Owned by the search module: one row per category with a bed to sell and month, for this month and the next six. Each month's range is the least and most the engine quotes for a move-in on any day of it still to come, for an 11-month stay (ADRs 0027, 0028, 0042).
 - `search_listings` (property_id, public_id, slug, name, locality, `display_location` only, gender_policy, meals, verified, licensed, amenities, media_ids, published_at, generated full-text and trigram columns) — the search module's read model of listings the public can find, kept from the catalog's events (ADR 0028).
 
 **Visits and booking**
@@ -302,6 +302,7 @@ Required test: 50 concurrent hold requests for the last free bed → exactly one
 | no_shows | daily 10:00 IST | CONFIRMED past move_in + N days → NO_SHOW |
 | reconcile_payments | 15 min | Fetch status of payments stuck in created/authorized |
 | search.refresh_listing | on `catalog.listing_changed` and `catalog.inventory_changed` + nightly 00:30 IST | Refresh a listing's search entry and `property_price_summaries`; the nightly `search.refresh_all` queues every listing once a day (ADR 0027, 0028) |
+| search.reprice_listing | on `pricing.rules_changed` (the PG), `pricing.band_changed` (its locality's PGs) and `pricing.caps_changed` (every PG, once per caps version) | Reprice a listing's `property_price_summaries` from the engine and revalidate its pages (ADR 0042) |
 | retention | daily 03:30 IST | `compliance.retention`: apply the retention schedule (`RETENTION_RULES` in `app/jobs.py`) and record what each rule removed (ADR 0018) |
 
 All jobs are idempotent and emit metrics (processed, failed, lag).
@@ -353,7 +354,7 @@ Worked example (₹10,000 base, July move-in, +15% season, −5% early-bird, 11-
 - The response includes a human explanation: "Base ₹10,000 · Peak season +15% · Early-bird −5% · 11-month stay −7% = ₹10,300/month, fixed for your stay".
 
 ### 8.5 Price calendar and honest urgency
-- `GET /v1/properties/{slug}/price-calendar?from=…&weeks=12&stay=11` runs the engine for weekly move-in dates and returns each room's rent per week and its free beds (cached five minutes; ADR 0040).
+- `GET /v1/properties/{slug}/price-calendar?from=…&weeks=12&stay=11` runs the engine for weekly move-in dates and returns each room's rent per week and its free beds (cached five minutes, and revalidated when the PG's rules go into force; ADRs 0040, 0042).
 - The PG page shows "Move in by 15 Jun: ₹9,500 · from 1 Jul: ₹11,000". Text like "price rises on 1 Jul" is allowed only because the calendar proves it.
 - "Only N beds left" appears only when real availability for the chosen dates is ≤ 3.
 - No countdown timers except the real hold expiry during checkout.

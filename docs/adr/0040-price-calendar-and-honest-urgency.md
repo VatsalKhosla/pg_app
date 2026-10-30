@@ -45,5 +45,5 @@
   - an API test proves each calendar week equals a quote for that move-in, including a season that starts partway through the 12 weeks;
   - unit tests prove price changes come only from the calendar's changes and scarcity only from 1 to 3 free beds;
   - a browser test proves the PG page's rents, badge, change line and "only N left" are exactly the calendar's, and that the checker's price is a quote's.
-- **The calendar is cached** in the web app under the listing's tags and `policies`, so a listing or policy change shows at once (ADR 0032, 0036). An activated rule set waits for the five-minute cache unless the listing changes too.
+- **The calendar is cached** in the web app under the listing's tags and `policies`, so a listing or policy change shows at once (ADR 0032, 0036). An activated rule set waits for the five-minute cache unless the listing changes too. (Since ADR 0042, activating a rule set revalidates the PG's pages at once.)
 - **Phase 5** makes free beds and occupancy count bookings, through the same calendar.
