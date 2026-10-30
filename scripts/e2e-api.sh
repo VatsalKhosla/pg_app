@@ -4,8 +4,9 @@
 #
 # It runs against the local infrastructure (started here if it isn't up) but never touches
 # development data: its settings (scripts/e2e-env.sh) name a database, a Valkey database and
-# buckets of its own, migrated, loaded and made here. Sign-in codes go to the log as JSON (the
-# console sender); the tests read them from E2E_API_LOG.
+# buckets of its own, migrated, loaded and made here. The database starts empty on every run, as
+# in CI: listings earlier runs left behind would crowd the maps and lists the tests read. Sign-in
+# codes go to the log as JSON (the console sender); the tests read them from E2E_API_LOG.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # shellcheck source=scripts/e2e-env.sh
@@ -16,10 +17,8 @@ worker_log="${E2E_WORKER_LOG:-$(dirname "$log")/.e2e-worker.log}"
 compose=(docker compose --file infra/docker-compose.yml)
 
 "${compose[@]}" up --detach --build --wait postgres valkey s3 >&2
-if ! "${compose[@]}" exec -T postgres psql --username=platform --dbname=platform --tuples-only \
-  --command="SELECT 1 FROM pg_database WHERE datname = '$database'" | grep -q 1; then
-  "${compose[@]}" exec -T postgres createdb --username=platform "$database"
-fi
+"${compose[@]}" exec -T postgres dropdb --username=platform --if-exists --force "$database"
+"${compose[@]}" exec -T postgres createdb --username=platform "$database"
 
 api=(uv run --directory apps/api --locked)
 "${api[@]}" alembic upgrade head >&2
