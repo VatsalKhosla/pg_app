@@ -388,8 +388,20 @@ Start the slow ones in week 1.
   - **Readings:** ops-marked move-ins wait for the student's `check_in`. The system confirms only an instant-confirm PG's bookings. A late payment revives the booking when the bed is free, and is refunded when it isn't.
   - **Proof:** all 816 (status, event, party) triples are tested, and every guard at its edge, including India's midnight and the exact end of the 24-hour window. Random histories (10,000 in CI) never earn money before ACTIVE, and never hold a bed or keep a token in the wrong status. Branch coverage is 100%.
 
-- [ ] **5.3 Holds.** `POST /v1/bookings` (quote id + Idempotency-Key) per §7.3: locking, stale-hold expiry, bed choice, constraint as the last line of defence, active-hold limit, rate limits, error codes.
+- [x] **5.3 Holds.** `POST /v1/bookings` (quote id + Idempotency-Key) per §7.3: locking, stale-hold expiry, bed choice, constraint as the last line of defence, active-hold limit, rate limits, error codes.
   *Done when* the 50-concurrent-requests test yields exactly one hold, and replaying the same Idempotency-Key returns the same response.
+  *Note (2026-10-31):*
+  - **Tables:** a booking module owns `bookings` (status, version, the quote's money and terms) and the append-only `booking_events`. The allocations' booking foreign key arrives with them (ADR 0046).
+  - **A hold, in one transaction:**
+    - the key is claimed;
+    - the student's own unexpired quote is taken;
+    - their holds are locked and counted;
+    - the room type's beds are locked and stale holds expired;
+    - a free bed is chosen, in a partly held room first;
+    - the booking is added HELD, with its allocation, event row and audit entry.
+
+    It answers `QUOTE_EXPIRED`, `QUOTE_USED`, `HOLD_LIMIT_REACHED`, `BED_UNAVAILABLE`, or `BOOKING_NEEDS_VISIT` while remote booking is off. `GET /v1/bookings/{code}` shows the student their booking.
+  - **Proof:** fifty students asking at once for the last bed get one 201 and 49 409s, with no overlapping allocations. A retry replays the first answer. Every refusal is tested, and so are an expiry at its exact minute, a clashing code drawn again, and history that can't be rewritten.
 
 - [ ] **5.4 Confirmation flow.** Owner/ops confirm or reject; `instant_confirm` per property; confirmation deadline job → REJECTED (refund hooks are stubs until Phase 6); notifications.
   *Done when* all three paths work end to end with notifications.
