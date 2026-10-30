@@ -369,8 +369,13 @@ Start the slow ones in week 1.
 
 ## Phase 5 — Booking system (**pivot 2**)
 
-- [ ] **5.1 Inventory allocations and availability.** The `inventory_allocations` table with the exclusion constraint; availability queries per category and period; offline-tenant and maintenance blocks (ops now, owners in Phase 7).
+- [x] **5.1 Inventory allocations and availability.** The `inventory_allocations` table with the exclusion constraint; availability queries per category and period; offline-tenant and maintenance blocks (ops now, owners in Phase 7).
   *Done when* overlapping active allocations are impossible (constraint test) and availability numbers match allocations.
+  *Note (2026-10-30):*
+  - **Table:** a new inventory module owns `inventory_allocations`: half-open periods with an optional open end, and the exclusion constraint. `booking_id` gets its foreign key with bookings in 5.3 (ADR 0044).
+  - **Ops:** offline-tenant and maintenance blocks are placed on a locked bed and ended or cancelled. A clash answers `BED_UNAVAILABLE` naming what holds the bed, and every change is audited. The console's Beds page shows each bed over time and each room type's free beds.
+  - **Availability:** free beds for a stay and occupancy come from the allocations, through the domain's own definitions. The PG page, the editor's chart and search's summaries count free beds this way, and pricing's occupancy rules count offline tenants (bookings join in 5.3).
+  - **Proof:** a constraint test stores allocations straight into the table; thirty concurrent requests for one bed get one hold. Forty random scenarios match the domain's count of free beds. A tenant lifts a quote by the occupancy rule while maintenance doesn't. A browser test holds and ends a block.
 
 - [ ] **5.2 Booking state machine (pure).** Transition table per ARCHITECTURE §7.2 with guards and side-effect descriptors; exhaustive tests over every (state, event) pair; property tests that random event sequences never break invariants (e.g., no money earned before ACTIVE).
   *Done when* every allowed transition is tested and every other pair is rejected with `INVALID_TRANSITION`.
