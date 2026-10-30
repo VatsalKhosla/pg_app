@@ -14,6 +14,7 @@ from app.core.db import DbSession
 from app.core.ratelimit import RateLimit, rate_limited
 from app.modules.catalog.schemas import Charge
 from app.modules.pricing.domain.engine import ClampKind, RuleKind
+from app.modules.pricing.domain.quotes import DEFAULT_STAY_MONTHS
 from app.modules.pricing.schemas import (
     CalendarRoomInfo,
     CalendarWeekInfo,
@@ -35,7 +36,6 @@ QUOTES_PER_IP: Final = RateLimit("quotes-per-ip", limit=30, window=timedelta(min
 # The calendar (ADR 0040): twelve weekly move-ins by default, for an eleven-month stay, the
 # common one; cached a little, as prices only move with rules, policies and bookings.
 MAX_WEEKS: Final = 12
-DEFAULT_STAY_MONTHS: Final = 11
 CALENDAR_CACHE_CONTROL: Final = "public, max-age=300"
 CALENDAR_PER_IP: Final = RateLimit("calendars-per-ip", limit=60, window=timedelta(minutes=1))
 SLUG: Final = r"^[a-z0-9]+(-[a-z0-9]+)*$"

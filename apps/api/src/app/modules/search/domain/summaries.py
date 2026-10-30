@@ -1,10 +1,10 @@
-"""Price summaries (ARCHITECTURE §6, §18; step 3.1, ADR 0027): each room category's rent range for
-each month a student can move in, worked out ahead so search and the map never price a listing
-per request.
+"""Price summaries (ARCHITECTURE §6, §18; steps 3.1 and 4.7, ADRs 0027 and 0042): each room
+category's rent range for each month a student can move in, worked out ahead so search and the
+map never price a listing per request.
 
-This is the base-rent version: every month's range is the category's base rent, which is what a
-quote charges until the pricing engine arrives (Phase 4) and gives each month its own range.
-Every active bed counts as free until bookings exist (Phase 5).
+A month's range is the least and the most the pricing engine quotes for a move-in on any day of
+it still to come, for the common stay, so the map and search agree with the PG page. Every active
+bed counts as free until bookings exist (Phase 5).
 """
 
 from dataclasses import dataclass
@@ -12,7 +12,7 @@ from datetime import date
 from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from app.core.money import Paise
 
@@ -54,19 +54,30 @@ def months_from(today: date, count: int = SUMMARY_MONTHS) -> list[date]:
     return months
 
 
-def summarise(categories: Sequence[CategoryRent], months: Sequence[date]) -> list[MonthSummary]:
-    """One summary per category and month: the base rent as both ends of the range."""
-    return [
-        MonthSummary(
-            category_id=category.category_id,
-            month=month,
-            min_rent=category.base_rent,
-            max_rent=category.base_rent,
-            available_beds=category.active_beds,
-            occupancy=category.occupancy,
-            ac=category.ac,
-            attached_bath=category.attached_bath,
-        )
-        for category in categories
-        for month in months
-    ]
+def summarise(
+    categories: Sequence[CategoryRent],
+    months: Sequence[date],
+    rents: Mapping[tuple[int, date], tuple[Paise, Paise]],
+) -> list[MonthSummary]:
+    """One summary per category and month the engine priced: its range of rents for the month,
+    lowest and highest, from ``rents`` by category and month. A category it couldn't price (its
+    limits leave no rent) has none, so search shows no price for it."""
+    summaries = []
+    for category in categories:
+        for month in months:
+            found = rents.get((category.category_id, month))
+            if found is None:
+                continue
+            summaries.append(
+                MonthSummary(
+                    category_id=category.category_id,
+                    month=month,
+                    min_rent=found[0],
+                    max_rent=found[1],
+                    available_beds=category.active_beds,
+                    occupancy=category.occupancy,
+                    ac=category.ac,
+                    attached_bath=category.attached_bath,
+                )
+            )
+    return summaries

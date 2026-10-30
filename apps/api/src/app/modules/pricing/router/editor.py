@@ -13,9 +13,9 @@ from app.core.current_actor import CurrentActor
 from app.core.db import DbSession
 from app.core.errors import ForbiddenError
 from app.modules.pricing.domain.policies import BandSource
-from app.modules.pricing.domain.quotes import MAX_STAY_MONTHS
+from app.modules.pricing.domain.quotes import DEFAULT_STAY_MONTHS, MAX_STAY_MONTHS
 from app.modules.pricing.policies import can_manage_rule_sets
-from app.modules.pricing.router.quotes import CHARGE, DEFAULT_STAY_MONTHS, MAX_WEEKS
+from app.modules.pricing.router.quotes import CHARGE, MAX_WEEKS
 from app.modules.pricing.schemas import (
     MarketBand,
     MarketCaps,

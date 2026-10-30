@@ -32,6 +32,7 @@ from app.core.web_cache import NoWebCache, SignedWebCache, WebCache
 from app.jobs import SCHEDULES, build_registry
 from app.modules.media.adapters.s3 import S3Storage
 from app.modules.media.service import Buckets
+from app.modules.pricing.occupancy import NoBookingsYet
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -143,6 +144,7 @@ async def _serve_until_signalled(
                 web_cache=web_cache(settings, http),
                 texts=ConsoleTexts() if settings.text_sender == "console" else NoTexts(),
                 analytics=analytics(settings, http),
+                beds=NoBookingsYet(),
             ),
             schedules=SCHEDULES,
         )

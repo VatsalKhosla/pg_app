@@ -13,6 +13,9 @@ from app.core.scheduler import DailyAt, Every, ScheduledJob, dedupe_key
 from app.core.texts import NoTexts
 from app.core.web_cache import NoWebCache
 from app.jobs import SCHEDULES, build_registry
+from app.modules.pricing.occupancy import NoBookingsYet
+from app.modules.pricing.service import BAND_CHANGED, CAPS_CHANGED, RULES_CHANGED
+from app.modules.search.jobs import REPRICE
 from tests.storage import BUCKETS, MemoryStorage
 
 
@@ -60,10 +63,13 @@ def test_every_schedule_has_a_registered_handler() -> None:
         web_cache=NoWebCache(),
         texts=NoTexts(),
         analytics=NoAnalytics(),
+        beds=NoBookingsYet(),
     ).kinds
 
     assert {job.kind for job in SCHEDULES} <= kinds
     assert len({job.name for job in SCHEDULES}) == len(SCHEDULES)
+    # Prices that move reprice search's summaries (step 4.7).
+    assert {RULES_CHANGED, BAND_CHANGED, CAPS_CHANGED, REPRICE} <= kinds
 
 
 @pytest.mark.parametrize(

@@ -22,6 +22,9 @@ if TYPE_CHECKING:
 
 QUOTE_TTL: Final = timedelta(minutes=30)
 MAX_STAY_MONTHS: Final = 36
+# The stay the PG page's calendar, search and the map price for, unless asked otherwise: the
+# common one, an academic year (ADR 0040).
+DEFAULT_STAY_MONTHS: Final = 11
 # How far ahead ops' editor prices, beyond the booking horizon: next year's season can be set
 # up and checked before students can book it (ADR 0041).
 PREVIEW_DAYS: Final = 366
@@ -53,6 +56,14 @@ def preview_problems(*, move_in: date, stay_months: int, today: date) -> list[st
     if not 1 <= stay_months <= MAX_STAY_MONTHS:
         problems.append(f"a stay is from 1 to {MAX_STAY_MONTHS} months")
     return problems
+
+
+def move_in_days(month: date, today: date) -> list[date]:
+    """The days of ``month`` (its first day) a student could move in on, from ``today``: every
+    day of a later month, the rest of this one, none of a past one."""
+    following = date(month.year + month.month // 12, month.month % 12 + 1, 1)
+    first = max(month, today)
+    return [first + timedelta(days=offset) for offset in range((following - first).days)]
 
 
 def bookable_from(move_in: date, *, today: date, booking: BookingPolicy) -> date | None:

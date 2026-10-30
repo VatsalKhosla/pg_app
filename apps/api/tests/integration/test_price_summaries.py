@@ -11,6 +11,7 @@ from sqlalchemy import select
 from app.config import Settings
 from app.core.outbox import OutboxJob
 from app.modules.catalog.repository import CatalogRepository
+from app.modules.pricing.occupancy import NoBookingsYet
 from app.modules.search.repository import SummaryRepository
 from app.modules.search.service import REFRESH, SearchIndex
 from tests.jobs import run_due_jobs
@@ -171,7 +172,8 @@ def test_the_nightly_refresh_queues_every_listing_once_a_day_and_rolls_the_month
         added = []
         for _ in range(2):
             async with ops.app.state.sessionmaker() as db, db.begin():
-                added.append(await SearchIndex(db, ops.app.state.clock).refresh_all())
+                index = SearchIndex(db, ops.app.state.clock, beds=NoBookingsYet())
+                added.append(await index.refresh_all())
         async with ops.app.state.sessionmaker() as db, db.begin():
             queued = await db.scalar(
                 select(OutboxJob.id).where(

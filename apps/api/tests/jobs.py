@@ -10,6 +10,7 @@ from app.core.outbox import OutboxWorker
 from app.core.texts import ConsoleTexts, Texts
 from app.core.web_cache import WebCache
 from app.jobs import build_registry
+from app.modules.pricing.occupancy import NoBookingsYet
 from tests.storage import BUCKETS, MemoryStorage
 
 
@@ -59,6 +60,7 @@ async def run_due_jobs(
             web_cache=web_cache or RecordedWebCache(),
             texts=texts or ConsoleTexts(),
             analytics=analytics or NoAnalytics(),
+            beds=NoBookingsYet(),
         ),
         clock=app.state.clock,
         worker_id="test",

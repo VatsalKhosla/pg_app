@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Final
 from app.core import audit
 from app.core.errors import InvalidTransitionError, NotFoundError
 from app.core.money import BasisPoints, Paise
+from app.core.outbox import enqueue
 from app.core.web_cache import POLICIES_TAG, ask_to_revalidate
 from app.modules.geo.service import GeoLookup, LocalityRef
 from app.modules.identity.service import Account, Accounts
@@ -52,6 +53,11 @@ if TYPE_CHECKING:
 
 HISTORY_LIMIT: Final = 20
 BANDS_LIMIT: Final = 200
+
+# A band began or ended for a locality and sharing, or the caps changed: prices may move
+# (ADR 0042).
+BAND_CHANGED: Final = "pricing.band_changed"
+CAPS_CHANGED: Final = "pricing.caps_changed"
 
 _MODELS: Final[dict[PolicyKind, type[PolicyVersion]]] = {
     PolicyKind.FEE: FeePolicyVersion,
@@ -248,6 +254,15 @@ class PolicyService:
             )
             # The pages that state the policies (Pricing, the token, refunds) say the new ones.
             await ask_to_revalidate(self._db, self._clock, [POLICIES_TAG])
+            if kind == PolicyKind.CAPS:
+                # Every dynamic price may move: search's summaries follow (ADR 0042).
+                await enqueue(
+                    self._db,
+                    CAPS_CHANGED,
+                    {"version": str(version.public_id)},
+                    clock=self._clock,
+                    dedupe_key=f"{CAPS_CHANGED}:{version.public_id}",
+                )
             return (await self._views({kind: version}))[kind]
 
     async def _views[V: PolicyVersion](
@@ -319,6 +334,7 @@ class RentBandService:
             )
             self._db.add(row)
             await self._db.flush()
+            await self._changed(place.id, row, "set")
             await self._audit(
                 actor,
                 "pricing.rent_band_set",
@@ -343,8 +359,19 @@ class RentBandService:
             if band.effective_to is not None or band.effective_from >= now:
                 raise InvalidTransitionError("Only a band in force can be ended.")
             band.effective_to = now
+            await self._changed(band.locality_id, band, "ended")
             await self._audit(actor, "pricing.rent_band_ended", band, note=note)
             return (await self._views([band]))[0]
+
+    async def _changed(self, locality_id: int, band: RentBandRow, change: str) -> None:
+        """The locality's PGs' prices may move: search's summaries and their pages follow."""
+        await enqueue(
+            self._db,
+            BAND_CHANGED,
+            {"locality_id": locality_id, "band": str(band.public_id), "change": change},
+            clock=self._clock,
+            dedupe_key=f"{BAND_CHANGED}:{band.public_id}:{change}",
+        )
 
     async def _audit(self, actor: Actor, action: str, band: RentBandRow, **details: object) -> None:
         await audit.record(

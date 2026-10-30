@@ -393,6 +393,12 @@ class CatalogRepository:
         )
         return list(rents)
 
+    async def property_ids_in(self, locality_id: int) -> list[int]:
+        rows = await self._db.scalars(
+            select(Property.id).where(Property.locality_id == locality_id).order_by(Property.id)
+        )
+        return list(rows)
+
     async def property_ids_after(self, after: int | None, *, limit: int) -> list[int]:
         """Properties' internal ids in order, a page at a time."""
         query = select(Property.id).order_by(Property.id).limit(limit)

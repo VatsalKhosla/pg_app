@@ -273,6 +273,10 @@ class CatalogLookup:
             for row in found.values()
         }
 
+    async def property_ids_in(self, locality_id: int) -> list[int]:
+        """Every listing of a locality, by internal id."""
+        return await self._catalog.property_ids_in(locality_id)
+
     async def property_ids(self, *, after: int | None, limit: int) -> list[int]:
         """Every property's internal id, a page at a time (``after`` the last one seen)."""
         return await self._catalog.property_ids_after(after, limit=limit)

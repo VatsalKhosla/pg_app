@@ -35,6 +35,7 @@ from app.modules.identity.repository import UserRepository
 from app.modules.identity.service import SessionService
 from app.modules.media.adapters.s3 import S3Storage
 from app.modules.media.service import upload_key
+from app.modules.pricing.occupancy import NoBookingsYet
 from tests.conftest import TEST_SECRET_KEY
 from tests.media_samples import assert_clean, phone_photo, phone_video
 
@@ -102,6 +103,7 @@ class Uploader:
                 web_cache=NoWebCache(),
                 texts=NoTexts(),
                 analytics=NoAnalytics(),
+                beds=NoBookingsYet(),
             ),
             clock=self.app.state.clock,
             worker_id="test",

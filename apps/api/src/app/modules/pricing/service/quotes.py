@@ -26,7 +26,7 @@ from app.modules.catalog.domain.charges import (
 )
 from app.modules.catalog.service import CatalogLookup, PricedCategory, PricedProperty
 from app.modules.geo.service import GeoLookup
-from app.modules.pricing.domain.engine import ImpossibleBoundsError, PricingContext, quote
+from app.modules.pricing.domain.engine import ImpossibleBoundsError, quote
 from app.modules.pricing.domain.quotes import (
     PREVIEW_DAYS,
     QUOTE_TTL,
@@ -37,11 +37,8 @@ from app.modules.pricing.domain.quotes import (
     preview_problems,
     quote_problems,
 )
-from app.modules.pricing.domain.rule_sets import RuleSetStatus
 from app.modules.pricing.errors import PricingConfigError, QuoteExpiredError, QuoteInvalidError
 from app.modules.pricing.models import (
-    BookingPolicyVersion,
-    FeePolicyVersion,
     PriceQuote,
     PricingCapsVersion,
 )
@@ -51,12 +48,12 @@ from app.modules.pricing.repository import (
     RentBandRepository,
     RuleSetRepository,
 )
-from app.modules.pricing.service.policies import band_of, booking_policy, fee_policy, pricing_caps
-from app.modules.pricing.service.rule_sets import domain_rule
+from app.modules.pricing.service.inputs import PgPricing, PricingInputs
+from app.modules.pricing.service.policies import pricing_caps
 
 if TYPE_CHECKING:
     import uuid
-    from datetime import date, datetime
+    from datetime import date
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -64,25 +61,13 @@ if TYPE_CHECKING:
     from app.core.clock import Clock
     from app.core.flags import FlagReader
     from app.core.money import Paise
-    from app.modules.catalog.domain.rooms import Occupancy
-    from app.modules.pricing.domain.engine import ClampKind, PricingRule, Quote
-    from app.modules.pricing.domain.policies import BookingPolicy, PricingCaps
+    from app.modules.pricing.domain.engine import ClampKind, Quote
+    from app.modules.pricing.domain.policies import PricingCaps
     from app.modules.pricing.models import PricingRuleSet
     from app.modules.pricing.models import RentBand as RentBandRow
     from app.modules.pricing.occupancy import BedsTaken
 
 logger = structlog.stdlib.get_logger(__name__)
-
-
-@dataclass(frozen=True, slots=True)
-class _PgPricing:
-    fee_row: FeePolicyVersion
-    booking_row: BookingPolicyVersion
-    caps_row: PricingCapsVersion
-    booking: BookingPolicy
-    rule_set: PricingRuleSet | None
-    rules: tuple[PricingRule, ...]
-    bands: dict[Occupancy, RentBandRow | None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -182,7 +167,7 @@ class QuoteService:
         self._db = db
         self._clock = clock
         self._flags = flags
-        self._beds = beds
+        self._inputs = PricingInputs(db, beds=beds)
         self._catalog = CatalogLookup(db)
         self._geo = GeoLookup(db)
         self._policies = PolicyRepository(db)
@@ -201,13 +186,13 @@ class QuoteService:
             if found is None or not found[0].public or not found[1].active:
                 raise NotFoundError
             place, category = found
-            pricing = await self._active(place, now=now)
+            pricing = await self._inputs.active(place, now=now)
             if problems := quote_problems(
                 move_in=move_in, stay_months=stay_months, today=today, booking=pricing.booking
             ):
                 raise QuoteInvalidError(problems)
             band_row = pricing.bands.get(category.occupancy)
-            context = await self._context(pricing, category, move_in, stay_months, today)
+            context = await self._inputs.context(pricing, category, move_in, stay_months, today)
             try:
                 result = quote(context)
             except ImpossibleBoundsError as error:
@@ -286,7 +271,7 @@ class QuoteService:
             place = await self._catalog.priced_property_by_slug(slug, verified_only=verified_only)
             if place is None or not place.public:
                 raise NotFoundError
-            pricing = await self._active(place, now=now)
+            pricing = await self._inputs.active(place, now=now)
             first = max(start or today, today)
             horizon = today + timedelta(days=pricing.booking.max_advance_days)
             move_ins = [
@@ -329,8 +314,8 @@ class QuoteService:
                 raise NotFoundError
             if problems := preview_problems(move_in=move_in, stay_months=stay_months, today=today):
                 raise QuoteInvalidError(problems)
-            pricing = await self._pricing(place, now=now, rule_set=rule_set)
-            context = await self._context(pricing, category, move_in, stay_months, today)
+            pricing = await self._inputs.of(place, now=now, rule_set=rule_set)
+            context = await self._inputs.context(pricing, category, move_in, stay_months, today)
             try:
                 result = quote(context)
             except ImpossibleBoundsError as error:
@@ -356,7 +341,7 @@ class QuoteService:
         today = india_date(now)
         async with self._db.begin():
             rule_set, place = await self._set_and_place(rule_set_id)
-            pricing = await self._pricing(place, now=now, rule_set=rule_set)
+            pricing = await self._inputs.of(place, now=now, rule_set=rule_set)
             first = max(start or today, today)
             last = today + timedelta(days=PREVIEW_DAYS)
             move_ins = [
@@ -410,7 +395,7 @@ class QuoteService:
 
     async def _weeks(
         self,
-        pricing: _PgPricing,
+        pricing: PgPricing,
         category: PricedCategory,
         move_ins: list[date],
         stay_months: int,
@@ -420,7 +405,7 @@ class QuoteService:
         no rent."""
         weeks = []
         for move_in in move_ins:
-            context = await self._context(pricing, category, move_in, stay_months, today)
+            context = await self._inputs.context(pricing, category, move_in, stay_months, today)
             try:
                 result = quote(context)
             except ImpossibleBoundsError:
@@ -433,60 +418,6 @@ class QuoteService:
                 )
             )
         return tuple(weeks)
-
-    async def _active(self, place: PricedProperty, *, now: datetime) -> _PgPricing:
-        """What the PG's prices depend on now: the policies, its active rule set, its bands."""
-        rule_set = await self._sets.in_status(place.id, RuleSetStatus.ACTIVE)
-        return await self._pricing(place, now=now, rule_set=rule_set)
-
-    async def _pricing(
-        self, place: PricedProperty, *, now: datetime, rule_set: PricingRuleSet | None
-    ) -> _PgPricing:
-        """The policies and bands in force now, with ``rule_set``'s rules."""
-        fee_row = await self._policies.in_force(FeePolicyVersion, at=now)
-        booking_row = await self._policies.in_force(BookingPolicyVersion, at=now)
-        caps_row = await self._policies.in_force(PricingCapsVersion, at=now)
-        if fee_row is None or booking_row is None or caps_row is None:
-            raise PricingConfigError
-        rules = () if rule_set is None else await self._sets.rules_of(rule_set.id)
-        bands = {
-            occupancy: await self._bands.in_force(place.locality_id, occupancy, at=now)
-            for occupancy in {category.occupancy for category in place.categories}
-        }
-        return _PgPricing(
-            fee_row=fee_row,
-            booking_row=booking_row,
-            caps_row=caps_row,
-            booking=booking_policy(booking_row),
-            rule_set=rule_set,
-            rules=tuple(domain_rule(row) for row in rules),
-            bands=bands,
-        )
-
-    async def _context(
-        self,
-        pricing: _PgPricing,
-        category: PricedCategory,
-        move_in: date,
-        stay_months: int,
-        today: date,
-    ) -> PricingContext:
-        band_row = pricing.bands.get(category.occupancy)
-        return PricingContext(
-            room_category_id=category.id,
-            base_rent_paise=category.base_rent,
-            owner_min_paise=category.owner_min,
-            owner_max_paise=category.owner_max,
-            move_in=move_in,
-            stay_months=stay_months,
-            today=today,
-            occupancy_bps=await self._beds.occupancy_bps(category.id, move_in),
-            rules=pricing.rules,
-            band=None if band_row is None else band_of(band_row),
-            fee_policy=fee_policy(pricing.fee_row),
-            booking_policy=pricing.booking,
-            caps=pricing_caps(pricing.caps_row),
-        )
 
     async def get(self, quote_id: uuid.UUID) -> QuoteView:
         async with self._db.begin():

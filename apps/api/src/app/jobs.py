@@ -35,9 +35,13 @@ from app.modules.media.jobs import (
     discard_upload_handler,
     process_handler,
 )
+from app.modules.pricing.service import BAND_CHANGED, CAPS_CHANGED, RULES_CHANGED
 from app.modules.search.jobs import (
     REFRESH,
     REFRESH_ALL,
+    REPRICE,
+    band_changed_handler,
+    caps_changed_handler,
     changed_handler,
     refresh_all_handler,
     refresh_handler,
@@ -51,6 +55,7 @@ if TYPE_CHECKING:
     from app.core.web_cache import WebCache
     from app.modules.media.ports import ObjectStorage
     from app.modules.media.service import Buckets
+    from app.modules.pricing.occupancy import BedsTaken
 
 # A person's data export (DPDP): one part from every module that holds personal data. A module
 # that starts keeping personal data adds its part here.
@@ -90,10 +95,11 @@ def build_registry(
     web_cache: WebCache,
     texts: Texts,
     analytics: Analytics,
+    beds: BedsTaken,
 ) -> JobRegistry:
     """Every handler, with what it needs from outside: the object storage media jobs use, the
-    web app whose cached pages are revalidated, the texts visits and grievances send, and where
-    the funnel's server-side steps go."""
+    web app whose cached pages are revalidated, the texts visits and grievances send, where the
+    funnel's server-side steps go, and how full rooms are for the prices search keeps."""
     registry = JobRegistry()
     registry.register(OUTBOX_CLEANUP, delete_finished_jobs)
     registry.register(IDEMPOTENCY_CLEANUP, delete_expired_keys)
@@ -103,10 +109,16 @@ def build_registry(
     registry.register(DISCARD_UPLOAD, discard_upload_handler(storage, buckets))
     # A listing changed, its rooms and rents included: its search entry and price summaries
     # follow (steps 3.1 and 3.2), and the web app's pages for it (step 3.6).
-    registry.register(INVENTORY_CHANGED, changed_handler)
-    registry.register(LISTING_CHANGED, changed_handler)
-    registry.register(REFRESH, refresh_handler)
-    registry.register(REFRESH_ALL, refresh_all_handler)
+    registry.register(INVENTORY_CHANGED, changed_handler(beds))
+    registry.register(LISTING_CHANGED, changed_handler(beds))
+    registry.register(REFRESH, refresh_handler(beds))
+    registry.register(REFRESH_ALL, refresh_all_handler(beds))
+    # Its prices moved: its rules went into force, or its locality's band or the caps changed
+    # (step 4.7, ADR 0042).
+    registry.register(RULES_CHANGED, changed_handler(beds))
+    registry.register(REPRICE, changed_handler(beds))
+    registry.register(BAND_CHANGED, band_changed_handler(beds))
+    registry.register(CAPS_CHANGED, caps_changed_handler(beds))
     registry.register(REVALIDATE, revalidate_handler(web_cache))
     registry.register(TEXT, text_handler(texts))
     registry.register(GRIEVANCE_TEXT, grievance_text_handler(texts))

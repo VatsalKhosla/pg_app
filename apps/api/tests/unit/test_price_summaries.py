@@ -1,4 +1,4 @@
-"""Price summaries' rules (step 3.1, ADR 0027), without a database."""
+"""Price summaries' rules (steps 3.1 and 4.7, ADRs 0027 and 0042), without a database."""
 
 from datetime import UTC, date, datetime
 
@@ -40,7 +40,7 @@ def test_the_month_is_indias() -> None:
     assert months_from(india_date(datetime(2027, 1, 31, 19, 0, tzinfo=UTC)))[0] == date(2027, 2, 1)
 
 
-def test_the_base_rent_is_the_whole_range_until_the_pricing_engine() -> None:
+def test_a_months_range_is_the_engines_and_an_unpriced_month_has_none() -> None:
     rents = [
         CategoryRent(
             category_id=7,
@@ -51,14 +51,23 @@ def test_the_base_rent_is_the_whole_range_until_the_pricing_engine() -> None:
             attached_bath=False,
         )
     ]
+    july, august, *_ = months_from(date(2027, 7, 14))
 
-    [summary, *_] = summarise(rents, months_from(date(2027, 7, 14)))
-
-    assert (summary.min_rent, summary.max_rent, summary.available_beds) == (
-        1_200_000,
-        1_200_000,
-        2,
+    summaries = summarise(
+        rents,
+        [july, august],
+        {
+            (7, july): (Paise(1_380_000), Paise(1_380_000)),
+            (7, august): (Paise(1_140_000), Paise(1_200_000)),
+        },
     )
+    unpriced = summarise(rents, [july, august], {})
+
+    assert [(s.month, s.min_rent, s.max_rent, s.available_beds) for s in summaries] == [
+        (july, 1_380_000, 1_380_000, 2),
+        (august, 1_140_000, 1_200_000, 2),
+    ]
+    assert unpriced == []
 
 
 @given(
@@ -75,11 +84,17 @@ def test_the_base_rent_is_the_whole_range_until_the_pricing_engine() -> None:
     ),
     st.dates(min_value=date(2026, 1, 1), max_value=date(2040, 12, 31)),
 )
-def test_every_category_gets_every_month_and_a_sound_range(
+def test_every_priced_category_gets_every_month_and_a_sound_range(
     rents: list[CategoryRent], today: date
 ) -> None:
     months = months_from(today)
-    summaries = summarise(rents, months)
+    # As the engine might price them: the listed rent, or up to a tenth below it.
+    priced = {
+        (rent.category_id, month): (Paise(max(rent.base_rent * 9 // 10, 1)), rent.base_rent)
+        for rent in rents
+        for month in months
+    }
+    summaries = summarise(rents, months, priced)
 
     assert len(months) == SUMMARY_MONTHS
     assert all(month.day == 1 for month in months)

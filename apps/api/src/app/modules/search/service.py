@@ -33,6 +33,7 @@ from app.modules.catalog.service import CatalogLookup
 from app.modules.geo.service import GeoLookup
 from app.modules.media.domain.assets import AssetStatus, Moderation
 from app.modules.media.service import MediaLookup
+from app.modules.pricing.service import PricingLookup
 from app.modules.search.cache import Cached
 from app.modules.search.domain.pins import PIN_CAP, cache_key, snapped
 from app.modules.search.domain.query import (
@@ -67,10 +68,13 @@ if TYPE_CHECKING:
     from app.core.geometry import Bounds, Point
     from app.modules.geo.service import PlaceNear
     from app.modules.media.service import Buckets, MediaRef
+    from app.modules.pricing.occupancy import BedsTaken
     from app.modules.search.cache import PinCache
 
 REFRESH: Final = "search.refresh_listing"
 REFRESH_ALL: Final = "search.refresh_all"
+# A listing's prices moved (its locality's band changed): refreshed, and its pages revalidated.
+REPRICE: Final = "search.reprice_listing"
 # Listings read per query by the nightly fan-out.
 _PAGE: Final = 500
 
@@ -78,10 +82,11 @@ logger = structlog.stdlib.get_logger(__name__)
 
 
 class SearchIndex:
-    def __init__(self, db: AsyncSession, clock: Clock) -> None:
+    def __init__(self, db: AsyncSession, clock: Clock, *, beds: BedsTaken) -> None:
         self._db = db
         self._clock = clock
         self._catalog = CatalogLookup(db)
+        self._pricing = PricingLookup(db, clock, beds=beds)
         self._listings = SearchRepository(db)
         self._summaries = SummaryRepository(db)
 
@@ -101,6 +106,10 @@ class SearchIndex:
                 property_id, entry, refreshed_at=now, changed_at=now if changed else None
             )
         rents = await self._catalog.rents(property_id)
+        months = months_from(india_date(now))
+        ranges = await self._pricing.month_rents(
+            property_id, months, only={rent.category_id for rent in rents}
+        )
         summaries = summarise(
             [
                 CategoryRent(
@@ -113,7 +122,8 @@ class SearchIndex:
                 )
                 for rent in rents
             ],
-            months_from(india_date(now)),
+            months,
+            {key: (found.low, found.high) for key, found in ranges.items()},
         )
         await self._summaries.replace(property_id, summaries, computed_at=now)
         if changed:
@@ -125,10 +135,10 @@ class SearchIndex:
                     self._db, self._clock, [*map(listing_tag, slugs), LISTINGS_TAG]
                 )
 
-    async def refresh_all(self) -> int:
-        """Ask for every listing's refresh, one job each; a second run the same day adds
-        nothing. How many jobs it added."""
-        today = india_date(self._clock.now()).isoformat()
+    async def refresh_all(self, *, reason: str | None = None) -> int:
+        """Ask for every listing's refresh, one job each, for ``reason`` (today's date unless
+        given): a second run for the same reason adds nothing. How many jobs it added."""
+        reason = reason or india_date(self._clock.now()).isoformat()
         added, after = 0, None
         while ids := await self._catalog.property_ids(after=after, limit=_PAGE):
             for property_id in ids:
@@ -137,10 +147,24 @@ class SearchIndex:
                     REFRESH,
                     {"property_id": property_id},
                     clock=self._clock,
-                    dedupe_key=f"{REFRESH}:{property_id}:{today}",
+                    dedupe_key=f"{REFRESH}:{property_id}:{reason}",
                 )
             after = ids[-1]
-        logger.info("search refresh queued for every listing", jobs=added)
+        logger.info("search refresh queued for every listing", jobs=added, reason=reason)
+        return added
+
+    async def reprice_locality(self, locality_id: int, *, reason: str) -> int:
+        """After a band change: each of the locality's listings worked out again, its pages
+        revalidated, one job each and once per ``reason``. How many jobs it added."""
+        added = 0
+        for property_id in await self._catalog.property_ids_in(locality_id):
+            added += await enqueue(
+                self._db,
+                REPRICE,
+                {"property_id": property_id},
+                clock=self._clock,
+                dedupe_key=f"{REPRICE}:{property_id}:{reason}",
+            )
         return added
 
 

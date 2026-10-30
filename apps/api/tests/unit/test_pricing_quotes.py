@@ -16,6 +16,7 @@ from app.modules.pricing.domain.quotes import (
     explanation,
     inputs_digest,
     median_rent,
+    move_in_days,
     preview_problems,
     quote_problems,
 )
@@ -125,3 +126,14 @@ def test_a_move_in_beyond_the_horizon_says_when_students_can_quote_it() -> None:
 )
 def test_the_market_median_is_the_middle_rent(rents: list[int], middle: int | None) -> None:
     assert median_rent(rents) == middle
+
+
+def test_a_months_move_in_days_run_from_today_to_its_end() -> None:
+    today = date(2027, 7, 14)
+    this_month = move_in_days(date(2027, 7, 1), today)
+
+    assert (this_month[0], this_month[-1], len(this_month)) == (today, date(2027, 7, 31), 18)
+    assert len(move_in_days(date(2027, 8, 1), today)) == 31
+    assert len(move_in_days(date(2028, 2, 1), today)) == 29
+    assert move_in_days(date(2027, 12, 1), today)[-1] == date(2027, 12, 31)
+    assert move_in_days(date(2027, 6, 1), today) == []

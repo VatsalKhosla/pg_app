@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Final
 
 from app.core import audit
 from app.core.errors import InvalidTransitionError, NotFoundError
+from app.core.outbox import enqueue
 from app.modules.catalog.service import CatalogLookup, PricedCategory, PricedProperty
 from app.modules.identity.service import Account, Accounts
 from app.modules.pricing.domain.engine import PricingRule, RuleKind, RuleParams
@@ -38,6 +39,10 @@ if TYPE_CHECKING:
     from app.core.clock import Clock
 
 NOTE_MAX_LENGTH: Final = 500
+
+
+# A PG's rule set went into force: what its prices are has changed (ADR 0042).
+RULES_CHANGED: Final = "pricing.rules_changed"
 
 
 @dataclass(frozen=True, slots=True)
@@ -227,6 +232,14 @@ class RuleSetService:
                 archived=None if active is None else active.version,
                 rules=len(rows),
                 note=note,
+            )
+            # Search's price summaries and the PG's cached pages follow (ADR 0042).
+            await enqueue(
+                self._db,
+                RULES_CHANGED,
+                {"property_id": place.id},
+                clock=self._clock,
+                dedupe_key=f"{RULES_CHANGED}:{draft.public_id}",
             )
             return await self._view(draft)
 

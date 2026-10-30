@@ -34,6 +34,7 @@ from app.modules.identity.domain.consent import ConsentPurpose
 from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.repository import ConsentRepository, UserRepository
 from app.modules.identity.service import SessionService
+from app.modules.pricing.occupancy import NoBookingsYet
 from tests.conftest import NOTICE_VERSION, TEST_SECRET_KEY
 from tests.storage import BUCKETS, MemoryStorage
 
@@ -115,6 +116,7 @@ async def _run_worker(app: FastAPI) -> None:
             web_cache=NoWebCache(),
             texts=NoTexts(),
             analytics=NoAnalytics(),
+            beds=NoBookingsYet(),
         ),
         clock=app.state.clock,
         worker_id="test",
