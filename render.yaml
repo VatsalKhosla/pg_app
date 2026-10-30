@@ -1,5 +1,6 @@
 # Staging on Render's free plan (ADR 0047; docs/runbooks/staging.md), in Ohio, beside the Neon
-# project's database and object storage (AWS us-east-2):
+# project's database and object storage (AWS us-east-2). Until launch it is what fixyourstay.in
+# shows, under a banner saying it's a test copy:
 # - the web app;
 # - the API, with its worker and migrations in one container (the free plan has no background
 #   workers);
@@ -23,13 +24,14 @@ services:
       url: ghcr.io/vatsalkhosla/pg_app-web:staging
     # Answered by the web server alone, without the API.
     healthCheckPath: /robots.txt
+    # Render adds www.fixyourstay.in too, redirecting to it.
     domains:
-      - staging.fixyourstay.in
+      - fixyourstay.in
     envVars:
       # The server reaches the API at its public address: the free plan's services can't take
       # private network traffic.
       - key: API_URL
-        value: https://api.staging.fixyourstay.in
+        value: https://api.fixyourstay.in
       - fromGroup: fys-staging-shared
 
   - type: web
@@ -43,7 +45,7 @@ services:
     # Liveness only: /readyz would restart the service while Neon's database wakes up.
     healthCheckPath: /healthz
     domains:
-      - api.staging.fixyourstay.in
+      - api.fixyourstay.in
     envVars:
       - key: APP_ENV
         value: staging
@@ -60,14 +62,14 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: SITE_URL
-        value: https://staging.fixyourstay.in
+        value: https://fixyourstay.in
       - key: API_URL
-        value: https://api.staging.fixyourstay.in
+        value: https://api.fixyourstay.in
       - key: CORS_ALLOWED_ORIGINS
-        value: https://staging.fixyourstay.in
-      # The web app and the API are sibling subdomains, so the session cookie covers both.
+        value: https://fixyourstay.in
+      # The web app and the API share the domain, so the session cookie covers both.
       - key: SESSION_COOKIE_DOMAIN
-        value: staging.fixyourstay.in
+        value: fixyourstay.in
       # No SMS provider yet (a paid vendor the founders choose): sign-in codes and visit texts
       # are off.
       - key: OTP_SENDER

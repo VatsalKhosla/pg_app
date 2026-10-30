@@ -232,8 +232,8 @@ jobs:
     env:
       # What the web image inlines (apps/web/src/config/env.ts).
       NEXT_PUBLIC_APP_ENV: staging
-      NEXT_PUBLIC_SITE_URL: https://staging.fixyourstay.in
-      NEXT_PUBLIC_API_URL: https://api.staging.fixyourstay.in
+      NEXT_PUBLIC_SITE_URL: https://fixyourstay.in
+      NEXT_PUBLIC_API_URL: https://api.fixyourstay.in
       # Neon's object storage (render.yaml): the public media bucket, and where uploads go.
       NEXT_PUBLIC_MEDIA_URL: https://br-tiny-surf-b4c7xiwd.storage.c-6.us-east-2.aws.neon.tech/pg-platform-media
       NEXT_PUBLIC_UPLOAD_ORIGIN: https://br-tiny-surf-b4c7xiwd.storage.c-6.us-east-2.aws.neon.tech
@@ -282,4 +282,4 @@ jobs:
           # The API first: it brings the database up to date as it starts.
           deploy "$API_HOOK" "$pg_app_api_DIGEST"
           deploy "$WEB_HOOK" "$pg_app_web_DIGEST"
-          echo "::notice title=Staging::Deploying ${GITHUB_SHA::7} to https://staging.fixyourstay.in"
+          echo "::notice title=Staging::Deploying ${GITHUB_SHA::7} to https://fixyourstay.in"
