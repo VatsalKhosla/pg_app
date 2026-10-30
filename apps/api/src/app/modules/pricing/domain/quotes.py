@@ -11,17 +11,20 @@ import json
 from datetime import date, timedelta
 from typing import TYPE_CHECKING, Final
 
-from app.core.money import format_rupees
+from app.core.money import Paise, divide_round_half_up, format_rupees
 from app.modules.pricing.domain.engine import PricingContext, Quote, RuleKind
 from app.modules.pricing.domain.rule_sets import params_to_json
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
     from app.modules.pricing.domain.policies import BookingPolicy
 
 QUOTE_TTL: Final = timedelta(minutes=30)
 MAX_STAY_MONTHS: Final = 36
+# How far ahead ops' editor prices, beyond the booking horizon: next year's season can be set
+# up and checked before students can book it (ADR 0041).
+PREVIEW_DAYS: Final = 366
 # A real minus sign for people, rather than a hyphen.
 _MINUS: Final = chr(0x2212)
 
@@ -38,6 +41,35 @@ def quote_problems(
     if not 1 <= stay_months <= MAX_STAY_MONTHS:
         problems.append(f"a stay is from 1 to {MAX_STAY_MONTHS} months")
     return problems
+
+
+def preview_problems(*, move_in: date, stay_months: int, today: date) -> list[str]:
+    """What stops the editor pricing this move-in and stay; empty when nothing does."""
+    problems = []
+    if move_in < today:
+        problems.append("the move-in date has passed")
+    elif move_in > today + timedelta(days=PREVIEW_DAYS):
+        problems.append("the editor prices move-ins up to a year ahead")
+    if not 1 <= stay_months <= MAX_STAY_MONTHS:
+        problems.append(f"a stay is from 1 to {MAX_STAY_MONTHS} months")
+    return problems
+
+
+def bookable_from(move_in: date, *, today: date, booking: BookingPolicy) -> date | None:
+    """The first day students can quote this move-in; None when they can today."""
+    opens = move_in - timedelta(days=booking.max_advance_days)
+    return opens if opens > today else None
+
+
+def median_rent(rents: Sequence[int]) -> Paise | None:
+    """The middle rent, or the two middle ones' mean rounded half-up; None for none."""
+    if not rents:
+        return None
+    ordered = sorted(rents)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return Paise(ordered[middle])
+    return Paise(divide_round_half_up(ordered[middle - 1] + ordered[middle], 2))
 
 
 def bps_text(bps: int) -> str:

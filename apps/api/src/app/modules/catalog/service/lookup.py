@@ -149,6 +149,16 @@ class CatalogLookup:
         found = await self._catalog.property_by_slug(slug)
         return None if found is None else await self._priced(found, verified_only=verified_only)
 
+    async def locality_rents(
+        self, locality_id: int, occupancy: Occupancy, *, except_property: int
+    ) -> list[Paise]:
+        """The listed rents of the active room categories of this occupancy in the locality's
+        published PGs, but one: the market a PG's prices sit in (ARCHITECTURE §8.6)."""
+        rents = await self._catalog.locality_rents(
+            locality_id, occupancy, except_property=except_property
+        )
+        return [Paise(rent) for rent in rents]
+
     async def beds(self, property_id: int) -> dict[int, int]:
         """Each room category's active beds, by its internal id."""
         return {

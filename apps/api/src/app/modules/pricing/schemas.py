@@ -409,3 +409,102 @@ class PriceCalendar(ApiModel):
     slug: str
     stay_months: int
     rooms: list[CalendarRoomInfo]
+
+
+# Ops' pricing editor (ADR 0041).
+
+
+class PricingPreview(ApiModel):
+    """What a quote made today would say were this rule set in force (ARCHITECTURE §8.6): the
+    student's breakdown, and the owner's fee, which is on the listed rent whatever the rules do
+    (rule 2). Nothing is stored."""
+
+    rule_set: uuid.UUID
+    room_category: uuid.UUID
+    room_category_label: str
+    move_in: date
+    stay_months: int
+    base_rent_paise: int
+    monthly_rent_paise: int
+    premium_bps: int
+    discount_bps: int
+    adjustments: list[QuoteAdjustment]
+    clamps: list[QuoteClamp]
+    explanation: str
+    token_paise: int
+    due_at_move_in_paise: int
+    deposit_paise: int
+    charges: list[Charge]
+    monthly_charges_paise: int
+    one_time_charges_paise: int
+    fee_paise: int
+    gst_paise: int
+    owner_fee_total_paise: int
+    # The first day students can quote this move-in (the booking horizon); null when they can.
+    bookable_from: date | None
+
+
+class RuleSetWeekInfo(ApiModel):
+    move_in: date
+    monthly_rent_paise: int
+    # The limits that held that week's rent back.
+    clamps: list[ClampKind]
+
+
+class RuleSetRoomInfo(ApiModel):
+    room_category: uuid.UUID
+    label: str
+    base_rent_paise: int
+    beds_free: int
+    # Each week's move-in, earliest first; empty when the room's bounds leave no rent.
+    weeks: list[RuleSetWeekInfo]
+
+
+class RuleSetCalendar(ApiModel):
+    """Each active room's rent for a move-in each week, were this rule set in force: the
+    editor's price chart."""
+
+    rule_set: uuid.UUID
+    stay_months: int
+    rooms: list[RuleSetRoomInfo]
+
+
+class MarketBand(ApiModel):
+    min_rent_paise: int
+    max_rent_paise: int
+    source: BandSource
+    reference: str
+
+
+class MarketRoomInfo(ApiModel):
+    room_category: uuid.UUID
+    label: str
+    occupancy: Occupancy
+    base_rent_paise: int
+    owner_min_paise: int | None
+    owner_max_paise: int | None
+    # The band in force for the locality and occupancy; null for none.
+    band: MarketBand | None
+    # The middle of the rents the locality's other published PGs list for this occupancy, from
+    # ``comparables`` room types; null when there are none.
+    median_rent_paise: int | None
+    comparables: int
+
+
+class MarketCaps(ApiModel):
+    """The limits on every dynamic price (admins set them): how far above and below the listed
+    rent the rules may take it, and the step rents are rounded to."""
+
+    max_premium_bps: int
+    max_discount_bps: int
+    rounding_step_paise: int
+
+
+class PricingMarket(ApiModel):
+    """What a PG's rents sit beside: each room's band and the locality's market, and the caps
+    in force."""
+
+    property: RuleSetProperty
+    locality: str
+    caps: MarketCaps
+    rooms: list[MarketRoomInfo]

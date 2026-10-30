@@ -5654,6 +5654,241 @@
         }
       }
     },
+    "/v1/ops/rule-sets/{rule_set_id}/preview": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Price a room with a rule set's rules",
+        "description": "Ops and admins, for any version, draft or not: what a quote made today for an active\nroom of the PG would say were it in force, with the owner's fee. Move-ins up to a year\nahead, beyond the booking horizon (``bookableFrom`` says when students can quote it). 422\nQUOTE_INVALID for a move-in or stay that can't be priced, or a room whose bounds leave no\nrent. Nothing is stored.",
+        "operationId": "pricingPreview",
+        "parameters": [
+          {
+            "name": "rule_set_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Set Id"
+            }
+          },
+          {
+            "name": "room",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Room"
+            }
+          },
+          {
+            "name": "moveIn",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Movein"
+            }
+          },
+          {
+            "name": "stay",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 36,
+              "minimum": 1,
+              "default": 11,
+              "title": "Stay"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingPreview"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/rule-sets/{rule_set_id}/calendar": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Each room's rent by move-in with a rule set",
+        "description": "Ops and admins, for any version: each active room's rent for a move-in each week from\n``from`` (today at the earliest), 12 weeks by default, up to a year ahead, were it in force,\nwith the limits that held each week's rent back; and the room's free beds.",
+        "operationId": "pricingRuleSetCalendar",
+        "parameters": [
+          {
+            "name": "rule_set_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Set Id"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "weeks",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "default": 12,
+              "title": "Weeks"
+            }
+          },
+          {
+            "name": "stay",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 36,
+              "minimum": 1,
+              "default": 11,
+              "title": "Stay"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleSetCalendar"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/properties/{property_id}/market": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "The band and market beside a PG's rents",
+        "description": "Ops and admins: for each of the PG's active rooms, its listed rent and the owner's\nbounds beside the band in force for its locality and occupancy, and the middle of the rents\nthe locality's other published PGs list for that occupancy; and the caps in force.",
+        "operationId": "pricingMarket",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingMarket"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/visits": {
       "get": {
         "tags": [
@@ -9299,6 +9534,140 @@
         ],
         "title": "MapPins"
       },
+      "MarketBand": {
+        "properties": {
+          "minRentPaise": {
+            "type": "integer",
+            "title": "Minrentpaise"
+          },
+          "maxRentPaise": {
+            "type": "integer",
+            "title": "Maxrentpaise"
+          },
+          "source": {
+            "$ref": "#/components/schemas/BandSource"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "minRentPaise",
+          "maxRentPaise",
+          "source",
+          "reference"
+        ],
+        "title": "MarketBand"
+      },
+      "MarketCaps": {
+        "properties": {
+          "maxPremiumBps": {
+            "type": "integer",
+            "title": "Maxpremiumbps"
+          },
+          "maxDiscountBps": {
+            "type": "integer",
+            "title": "Maxdiscountbps"
+          },
+          "roundingStepPaise": {
+            "type": "integer",
+            "title": "Roundingsteppaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "maxPremiumBps",
+          "maxDiscountBps",
+          "roundingStepPaise"
+        ],
+        "title": "MarketCaps",
+        "description": "The limits on every dynamic price (admins set them): how far above and below the listed\nrent the rules may take it, and the step rents are rounded to."
+      },
+      "MarketRoomInfo": {
+        "properties": {
+          "roomCategory": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Roomcategory"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "occupancy": {
+            "$ref": "#/components/schemas/Occupancy"
+          },
+          "baseRentPaise": {
+            "type": "integer",
+            "title": "Baserentpaise"
+          },
+          "ownerMinPaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ownerminpaise"
+          },
+          "ownerMaxPaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ownermaxpaise"
+          },
+          "band": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MarketBand"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "medianRentPaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medianrentpaise"
+          },
+          "comparables": {
+            "type": "integer",
+            "title": "Comparables"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "roomCategory",
+          "label",
+          "occupancy",
+          "baseRentPaise",
+          "ownerMinPaise",
+          "ownerMaxPaise",
+          "band",
+          "medianRentPaise",
+          "comparables"
+        ],
+        "title": "MarketRoomInfo"
+      },
       "Me": {
         "properties": {
           "id": {
@@ -10521,6 +10890,195 @@
           "roundingStepPaise"
         ],
         "title": "PricingCapsVersionInfo"
+      },
+      "PricingMarket": {
+        "properties": {
+          "property": {
+            "$ref": "#/components/schemas/RuleSetProperty"
+          },
+          "locality": {
+            "type": "string",
+            "title": "Locality"
+          },
+          "caps": {
+            "$ref": "#/components/schemas/MarketCaps"
+          },
+          "rooms": {
+            "items": {
+              "$ref": "#/components/schemas/MarketRoomInfo"
+            },
+            "type": "array",
+            "title": "Rooms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "property",
+          "locality",
+          "caps",
+          "rooms"
+        ],
+        "title": "PricingMarket",
+        "description": "What a PG's rents sit beside: each room's band and the locality's market, and the caps\nin force."
+      },
+      "PricingPreview": {
+        "properties": {
+          "ruleSet": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Ruleset"
+          },
+          "roomCategory": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Roomcategory"
+          },
+          "roomCategoryLabel": {
+            "type": "string",
+            "title": "Roomcategorylabel"
+          },
+          "moveIn": {
+            "type": "string",
+            "format": "date",
+            "title": "Movein"
+          },
+          "stayMonths": {
+            "type": "integer",
+            "title": "Staymonths"
+          },
+          "baseRentPaise": {
+            "type": "integer",
+            "title": "Baserentpaise"
+          },
+          "monthlyRentPaise": {
+            "type": "integer",
+            "title": "Monthlyrentpaise"
+          },
+          "premiumBps": {
+            "type": "integer",
+            "title": "Premiumbps"
+          },
+          "discountBps": {
+            "type": "integer",
+            "title": "Discountbps"
+          },
+          "adjustments": {
+            "items": {
+              "$ref": "#/components/schemas/QuoteAdjustment"
+            },
+            "type": "array",
+            "title": "Adjustments"
+          },
+          "clamps": {
+            "items": {
+              "$ref": "#/components/schemas/QuoteClamp"
+            },
+            "type": "array",
+            "title": "Clamps"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "tokenPaise": {
+            "type": "integer",
+            "title": "Tokenpaise"
+          },
+          "dueAtMoveInPaise": {
+            "type": "integer",
+            "title": "Dueatmoveinpaise"
+          },
+          "depositPaise": {
+            "type": "integer",
+            "title": "Depositpaise"
+          },
+          "charges": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/MonthlyCharge"
+                },
+                {
+                  "$ref": "#/components/schemas/MeteredCharge"
+                },
+                {
+                  "$ref": "#/components/schemas/OneTimeCharge"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "metered": "#/components/schemas/MeteredCharge",
+                  "monthly": "#/components/schemas/MonthlyCharge",
+                  "oneTime": "#/components/schemas/OneTimeCharge"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Charges"
+          },
+          "monthlyChargesPaise": {
+            "type": "integer",
+            "title": "Monthlychargespaise"
+          },
+          "oneTimeChargesPaise": {
+            "type": "integer",
+            "title": "Onetimechargespaise"
+          },
+          "feePaise": {
+            "type": "integer",
+            "title": "Feepaise"
+          },
+          "gstPaise": {
+            "type": "integer",
+            "title": "Gstpaise"
+          },
+          "ownerFeeTotalPaise": {
+            "type": "integer",
+            "title": "Ownerfeetotalpaise"
+          },
+          "bookableFrom": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookablefrom"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ruleSet",
+          "roomCategory",
+          "roomCategoryLabel",
+          "moveIn",
+          "stayMonths",
+          "baseRentPaise",
+          "monthlyRentPaise",
+          "premiumBps",
+          "discountBps",
+          "adjustments",
+          "clamps",
+          "explanation",
+          "tokenPaise",
+          "dueAtMoveInPaise",
+          "depositPaise",
+          "charges",
+          "monthlyChargesPaise",
+          "oneTimeChargesPaise",
+          "feePaise",
+          "gstPaise",
+          "ownerFeeTotalPaise",
+          "bookableFrom"
+        ],
+        "title": "PricingPreview",
+        "description": "What a quote made today would say were this rule set in force (ARCHITECTURE §8.6): the\nstudent's breakdown, and the owner's fee, which is on the listed rent whatever the rules do\n(rule 2). Nothing is stored."
       },
       "PricingRuleInfo": {
         "properties": {
@@ -12137,6 +12695,35 @@
         "type": "object",
         "title": "RuleSetActivation"
       },
+      "RuleSetCalendar": {
+        "properties": {
+          "ruleSet": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Ruleset"
+          },
+          "stayMonths": {
+            "type": "integer",
+            "title": "Staymonths"
+          },
+          "rooms": {
+            "items": {
+              "$ref": "#/components/schemas/RuleSetRoomInfo"
+            },
+            "type": "array",
+            "title": "Rooms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ruleSet",
+          "stayMonths",
+          "rooms"
+        ],
+        "title": "RuleSetCalendar",
+        "description": "Each active room's rent for a move-in each week, were this rule set in force: the\neditor's price chart."
+      },
       "RuleSetInfo": {
         "properties": {
           "id": {
@@ -12264,6 +12851,44 @@
         ],
         "title": "RuleSetProperty"
       },
+      "RuleSetRoomInfo": {
+        "properties": {
+          "roomCategory": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Roomcategory"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "baseRentPaise": {
+            "type": "integer",
+            "title": "Baserentpaise"
+          },
+          "bedsFree": {
+            "type": "integer",
+            "title": "Bedsfree"
+          },
+          "weeks": {
+            "items": {
+              "$ref": "#/components/schemas/RuleSetWeekInfo"
+            },
+            "type": "array",
+            "title": "Weeks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "roomCategory",
+          "label",
+          "baseRentPaise",
+          "bedsFree",
+          "weeks"
+        ],
+        "title": "RuleSetRoomInfo"
+      },
       "RuleSetStatus": {
         "type": "string",
         "enum": [
@@ -12332,6 +12957,34 @@
           "rules"
         ],
         "title": "RuleSetSummaryInfo"
+      },
+      "RuleSetWeekInfo": {
+        "properties": {
+          "moveIn": {
+            "type": "string",
+            "format": "date",
+            "title": "Movein"
+          },
+          "monthlyRentPaise": {
+            "type": "integer",
+            "title": "Monthlyrentpaise"
+          },
+          "clamps": {
+            "items": {
+              "$ref": "#/components/schemas/ClampKind"
+            },
+            "type": "array",
+            "title": "Clamps"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "moveIn",
+          "monthlyRentPaise",
+          "clamps"
+        ],
+        "title": "RuleSetWeekInfo"
       },
       "SafetySummary": {
         "properties": {

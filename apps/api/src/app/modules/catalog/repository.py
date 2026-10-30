@@ -377,6 +377,22 @@ class CatalogRepository:
         )
         return [RentRow(*row) for row in rows]
 
+    async def locality_rents(
+        self, locality_id: int, occupancy: str, *, except_property: int
+    ) -> list[int]:
+        rents = await self._db.scalars(
+            select(RoomCategory.base_rent_paise)
+            .join(Property, Property.id == RoomCategory.property_id)
+            .where(
+                Property.locality_id == locality_id,
+                Property.status == PropertyStatus.PUBLISHED,
+                Property.id != except_property,
+                RoomCategory.occupancy == occupancy,
+                RoomCategory.status == CategoryStatus.ACTIVE,
+            )
+        )
+        return list(rents)
+
     async def property_ids_after(self, after: int | None, *, limit: int) -> list[int]:
         """Properties' internal ids in order, a page at a time."""
         query = select(Property.id).order_by(Property.id).limit(limit)

@@ -461,6 +461,18 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("DELETE", "/v1/ops/rule-sets/{rule_set_id}"): Rule(
         ops_only(204), path={"rule_set_id": "a_draft_rule_set"}
     ),
+    # The pricing editor (ADR 0041): ops and admins. The draft's PG has no room with the id sent.
+    ("GET", "/v1/ops/rule-sets/{rule_set_id}/preview"): Rule(
+        ops_only(404),
+        lambda: {"params": {"room": str(uuid.uuid7()), "moveIn": "2027-01-10", "stay": 11}},
+        path={"rule_set_id": "a_draft_rule_set"},
+    ),
+    ("GET", "/v1/ops/rule-sets/{rule_set_id}/calendar"): Rule(
+        ops_only(200), path={"rule_set_id": "a_draft_rule_set"}
+    ),
+    ("GET", "/v1/ops/properties/{property_id}/market"): Rule(
+        ops_only(200), path={"property_id": "a_listing"}
+    ),
     # Student visits (ADR 0033): people signed in by phone ask and cancel their own; ops book and
     # cancel any; field agents run the ones booked for them. The visit is another student's, booked
     # with another agent, so it doesn't exist for any phone caller or field agent here.

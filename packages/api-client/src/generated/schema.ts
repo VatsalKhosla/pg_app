@@ -1632,6 +1632,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ops/rule-sets/{rule_set_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Price a room with a rule set's rules
+         * @description Ops and admins, for any version, draft or not: what a quote made today for an active
+         *     room of the PG would say were it in force, with the owner's fee. Move-ins up to a year
+         *     ahead, beyond the booking horizon (``bookableFrom`` says when students can quote it). 422
+         *     QUOTE_INVALID for a move-in or stay that can't be priced, or a room whose bounds leave no
+         *     rent. Nothing is stored.
+         */
+        get: operations["pricingPreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/rule-sets/{rule_set_id}/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Each room's rent by move-in with a rule set
+         * @description Ops and admins, for any version: each active room's rent for a move-in each week from
+         *     ``from`` (today at the earliest), 12 weeks by default, up to a year ahead, were it in force,
+         *     with the limits that held each week's rent back; and the room's free beds.
+         */
+        get: operations["pricingRuleSetCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/properties/{property_id}/market": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The band and market beside a PG's rents
+         * @description Ops and admins: for each of the PG's active rooms, its listed rent and the owner's
+         *     bounds beside the band in force for its locality and occupancy, and the middle of the rents
+         *     the locality's other published PGs list for that occupancy; and the caps in force.
+         */
+        get: operations["pricingMarket"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visits": {
         parameters: {
             query?: never;
@@ -2920,6 +2988,51 @@ export interface components {
              */
             month: string;
         };
+        /** MarketBand */
+        MarketBand: {
+            /** Minrentpaise */
+            minRentPaise: number;
+            /** Maxrentpaise */
+            maxRentPaise: number;
+            source: components["schemas"]["BandSource"];
+            /** Reference */
+            reference: string;
+        };
+        /**
+         * MarketCaps
+         * @description The limits on every dynamic price (admins set them): how far above and below the listed
+         *     rent the rules may take it, and the step rents are rounded to.
+         */
+        MarketCaps: {
+            /** Maxpremiumbps */
+            maxPremiumBps: number;
+            /** Maxdiscountbps */
+            maxDiscountBps: number;
+            /** Roundingsteppaise */
+            roundingStepPaise: number;
+        };
+        /** MarketRoomInfo */
+        MarketRoomInfo: {
+            /**
+             * Roomcategory
+             * Format: uuid
+             */
+            roomCategory: string;
+            /** Label */
+            label: string;
+            occupancy: components["schemas"]["Occupancy"];
+            /** Baserentpaise */
+            baseRentPaise: number;
+            /** Ownerminpaise */
+            ownerMinPaise: number | null;
+            /** Ownermaxpaise */
+            ownerMaxPaise: number | null;
+            band: components["schemas"]["MarketBand"] | null;
+            /** Medianrentpaise */
+            medianRentPaise: number | null;
+            /** Comparables */
+            comparables: number;
+        };
         /**
          * Me
          * @description The signed-in user.
@@ -3366,6 +3479,80 @@ export interface components {
             maxDiscountBps: number;
             /** Roundingsteppaise */
             roundingStepPaise: number;
+        };
+        /**
+         * PricingMarket
+         * @description What a PG's rents sit beside: each room's band and the locality's market, and the caps
+         *     in force.
+         */
+        PricingMarket: {
+            property: components["schemas"]["RuleSetProperty"];
+            /** Locality */
+            locality: string;
+            caps: components["schemas"]["MarketCaps"];
+            /** Rooms */
+            rooms: components["schemas"]["MarketRoomInfo"][];
+        };
+        /**
+         * PricingPreview
+         * @description What a quote made today would say were this rule set in force (ARCHITECTURE §8.6): the
+         *     student's breakdown, and the owner's fee, which is on the listed rent whatever the rules do
+         *     (rule 2). Nothing is stored.
+         */
+        PricingPreview: {
+            /**
+             * Ruleset
+             * Format: uuid
+             */
+            ruleSet: string;
+            /**
+             * Roomcategory
+             * Format: uuid
+             */
+            roomCategory: string;
+            /** Roomcategorylabel */
+            roomCategoryLabel: string;
+            /**
+             * Movein
+             * Format: date
+             */
+            moveIn: string;
+            /** Staymonths */
+            stayMonths: number;
+            /** Baserentpaise */
+            baseRentPaise: number;
+            /** Monthlyrentpaise */
+            monthlyRentPaise: number;
+            /** Premiumbps */
+            premiumBps: number;
+            /** Discountbps */
+            discountBps: number;
+            /** Adjustments */
+            adjustments: components["schemas"]["QuoteAdjustment"][];
+            /** Clamps */
+            clamps: components["schemas"]["QuoteClamp"][];
+            /** Explanation */
+            explanation: string;
+            /** Tokenpaise */
+            tokenPaise: number;
+            /** Dueatmoveinpaise */
+            dueAtMoveInPaise: number;
+            /** Depositpaise */
+            depositPaise: number;
+            /** Charges */
+            charges: (components["schemas"]["MonthlyCharge"] | components["schemas"]["MeteredCharge"] | components["schemas"]["OneTimeCharge"])[];
+            /** Monthlychargespaise */
+            monthlyChargesPaise: number;
+            /** Onetimechargespaise */
+            oneTimeChargesPaise: number;
+            /** Feepaise */
+            feePaise: number;
+            /** Gstpaise */
+            gstPaise: number;
+            /** Ownerfeetotalpaise */
+            ownerFeeTotalPaise: number;
+            /** Bookablefrom */
+            bookableFrom: string | null;
         };
         /** PricingRuleInfo */
         PricingRuleInfo: {
@@ -3920,6 +4107,22 @@ export interface components {
              */
             note: string;
         };
+        /**
+         * RuleSetCalendar
+         * @description Each active room's rent for a move-in each week, were this rule set in force: the
+         *     editor's price chart.
+         */
+        RuleSetCalendar: {
+            /**
+             * Ruleset
+             * Format: uuid
+             */
+            ruleSet: string;
+            /** Staymonths */
+            stayMonths: number;
+            /** Rooms */
+            rooms: components["schemas"]["RuleSetRoomInfo"][];
+        };
         /** RuleSetInfo */
         RuleSetInfo: {
             /**
@@ -3959,6 +4162,22 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** RuleSetRoomInfo */
+        RuleSetRoomInfo: {
+            /**
+             * Roomcategory
+             * Format: uuid
+             */
+            roomCategory: string;
+            /** Label */
+            label: string;
+            /** Baserentpaise */
+            baseRentPaise: number;
+            /** Bedsfree */
+            bedsFree: number;
+            /** Weeks */
+            weeks: components["schemas"]["RuleSetWeekInfo"][];
+        };
         /**
          * RuleSetStatus
          * @enum {string}
@@ -3982,6 +4201,18 @@ export interface components {
             note: string;
             /** Rules */
             rules: number;
+        };
+        /** RuleSetWeekInfo */
+        RuleSetWeekInfo: {
+            /**
+             * Movein
+             * Format: date
+             */
+            moveIn: string;
+            /** Monthlyrentpaise */
+            monthlyRentPaise: number;
+            /** Clamps */
+            clamps: components["schemas"]["ClampKind"][];
         };
         /**
          * SafetySummary
@@ -8401,6 +8632,134 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RuleSetInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingPreview: {
+        parameters: {
+            query: {
+                room: string;
+                moveIn: string;
+                stay?: number;
+            };
+            header?: never;
+            path: {
+                rule_set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingPreview"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingRuleSetCalendar: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                weeks?: number;
+                stay?: number;
+            };
+            header?: never;
+            path: {
+                rule_set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetCalendar"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingMarket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingMarket"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

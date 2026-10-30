@@ -10,9 +10,13 @@ from app.core.money import Paise, format_rupees, rupees
 from app.modules.pricing.domain.engine import OverrideRule, PricingRule, quote
 from app.modules.pricing.domain.quotes import (
     MAX_STAY_MONTHS,
+    PREVIEW_DAYS,
+    bookable_from,
     bps_text,
     explanation,
     inputs_digest,
+    median_rent,
+    preview_problems,
     quote_problems,
 )
 from tests.unit.test_pricing_engine import BOOKING, EARLY, LONG_STAY, PEAK, TODAY, context
@@ -82,3 +86,42 @@ def test_the_inputs_digest_is_the_same_for_the_same_inputs_and_changes_with_any(
     ]
     assert digest not in others
     assert len(set(others)) == len(others)
+
+
+def test_the_editor_prices_from_today_to_a_year_ahead() -> None:
+    year = TODAY + timedelta(days=PREVIEW_DAYS)
+
+    assert preview_problems(move_in=TODAY, stay_months=36, today=TODAY) == []
+    assert preview_problems(move_in=year, stay_months=1, today=TODAY) == []
+    assert preview_problems(move_in=TODAY - timedelta(days=1), stay_months=37, today=TODAY) == [
+        "the move-in date has passed",
+        f"a stay is from 1 to {MAX_STAY_MONTHS} months",
+    ]
+    assert preview_problems(move_in=year + timedelta(days=1), stay_months=11, today=TODAY) == [
+        "the editor prices move-ins up to a year ahead"
+    ]
+
+
+def test_a_move_in_beyond_the_horizon_says_when_students_can_quote_it() -> None:
+    horizon = TODAY + timedelta(days=BOOKING.max_advance_days)
+
+    assert bookable_from(horizon, today=TODAY, booking=BOOKING) is None
+    assert bookable_from(TODAY, today=TODAY, booking=BOOKING) is None
+    assert bookable_from(horizon + timedelta(days=9), today=TODAY, booking=BOOKING) == (
+        TODAY + timedelta(days=9)
+    )
+
+
+@pytest.mark.parametrize(
+    ("rents", "middle"),
+    [
+        ([], None),
+        ([900_000], 900_000),
+        ([1_250_000, 800_000, 900_000], 900_000),
+        ([800_000, 1_250_000, 900_000, 1_000_000], 950_000),
+        # The two middle ones' mean, rounded half-up to the paisa.
+        ([100, 201], 151),
+    ],
+)
+def test_the_market_median_is_the_middle_rent(rents: list[int], middle: int | None) -> None:
+    assert median_rent(rents) == middle
