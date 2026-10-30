@@ -46,5 +46,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0040](0040-price-calendar-and-honest-urgency.md) | The price calendar and honest urgency: each room's rent for 12 weekly move-ins as a quote would say, cached; the PG page's rents, price changes and "only N beds left" from that calendar and real inventory only; and a quote checker with the full breakdown | Accepted |
 | [0041](0041-pricing-editor.md) | The pricing editor: any version previewed and charted the way a quote prices, up to a year ahead; the band, market median and caps beside the rules; and activation only once confirmed | Accepted |
 | [0042](0042-price-summaries-from-the-engine.md) | Price summaries from the engine: each month's range from every move-in day's quote for the common stay, so the map, search and the PG page agree; repriced when a rule set goes into force, a band starts or ends, or the caps change | Accepted |
+| [0043](0043-pricing-integrity-alerts.md) | Pricing's integrity alerts: a rent more than 25% below its market, a week of quotes more than 20% held back, rules activated more than three times a week; each raised once by its key, resolved by ops or by the check | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

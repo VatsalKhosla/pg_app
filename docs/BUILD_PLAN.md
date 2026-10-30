@@ -357,8 +357,15 @@ Start the slow ones in week 1.
   - **Repricing:** a rule set going into force reprices its PG and revalidates its pages, so the PG page no longer waits for its five-minute cache. A band starting or ending reprices its locality, and a caps change reprices every listing once per version. The nightly refresh stays. Allocation changes join in Phase 5, which also gives the occupancy port its real answer.
   - **Proof:** with 4.6's July peak and early-bird, July's summary is the peak and August's runs from the early-bird to the listed rent. A search by budget finds the PG exactly at those limits, the map's pins show the same ranges, and every week of the PG page's calendar sits inside its month (API test). Band and caps tests cover the other triggers.
 
-- [ ] **4.8 Integrity alerts.** Ops alerts when listed rent is > 25% below the locality median, when clamps fire on > 20% of a property's weekly quotes, and on frequent rule churn.
+- [x] **4.8 Integrity alerts.** Ops alerts when listed rent is > 25% below the locality median, when clamps fire on > 20% of a property's weekly quotes, and on frequent rule churn.
   *Done when* seeded scenarios trigger each alert exactly once.
+  *Note (2026-10-30):*
+  - **Alerts:** `pricing_alerts` holds them, each with a unique key, so a check raises it once however often it runs (ADR 0043).
+    - A rent below the market is keyed by room and rent. It's checked nightly against the editor's median of at least three others, and resolves itself once fixed.
+    - Clamps are keyed by PG and week. Last week is checked nightly: more than 20% of at least ten quotes.
+    - Churn is checked as rules go into force: more than three activations in a week.
+  - **Ops:** the console's Pricing alerts page lists them, open or resolved, in a sentence each with a link to the PG's pricing, and resolves them with a note (audited).
+  - **Proof:** API tests seed each scenario and run its check twice, for exactly one alert each. The rent alert clears itself, and a new rent too low is a new alert. A browser test resolves a churn alert.
 
 ## Phase 5 — Booking system (**pivot 2**)
 

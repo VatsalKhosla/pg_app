@@ -217,6 +217,7 @@ This constraint is the double-booking guarantee. Never work around it.
 - `pricing_rule_sets` (property_id, version int, status: `draft | active | archived`, created_by, activated_at); unique (property_id) where status = 'active'. Active and archived sets are immutable: triggers refuse changing their rules, moving a set back, and deleting one that isn't a draft (ADR 0038).
 - `pricing_rules` (rule_set_id, kind, room_category_ids bigint[] null (= all), params jsonb validated per kind, label shown to students, enabled).
 - `price_quotes` (public_id, user_id null, room_category_id, move_in, stay_months, base_rent_paise, monthly_rent_paise, adjustments jsonb, clamps jsonb, fee_paise, gst_paise, owner_fee_total_paise, token_paise, due_at_move_in_paise, deposit_paise, mandatory_charges jsonb, rule_set_id, fee_policy_id, rent_band_id null, engine_version, inputs_sha256, expires_at).
+- `pricing_alerts` (public_id, kind: `rent_below_market | clamps_frequent | rule_churn`, key unique, property_id, room_category_id null, details jsonb, raised_at, resolved_at, resolved_by, resolution): ops' integrity alerts, each raised once by its key (ADR 0043).
 - `property_price_summaries` (property_id, room_category_id, month date, min_rent_paise, max_rent_paise, available_beds, occupancy, ac, attached_bath, computed_at) — feeds search and the map. Owned by the search module: one row per category with a bed to sell and month, for this month and the next six. Each month's range is the least and most the engine quotes for a move-in on any day of it still to come, for an 11-month stay (ADRs 0027, 0028, 0042).
 - `search_listings` (property_id, public_id, slug, name, locality, `display_location` only, gender_policy, meals, verified, licensed, amenities, media_ids, published_at, generated full-text and trigram columns) — the search module's read model of listings the public can find, kept from the catalog's events (ADR 0028).
 
@@ -302,6 +303,7 @@ Required test: 50 concurrent hold requests for the last free bed → exactly one
 | no_shows | daily 10:00 IST | CONFIRMED past move_in + N days → NO_SHOW |
 | reconcile_payments | 15 min | Fetch status of payments stuck in created/authorized |
 | search.refresh_listing | on `catalog.listing_changed` and `catalog.inventory_changed` + nightly 00:30 IST | Refresh a listing's search entry and `property_price_summaries`; the nightly `search.refresh_all` queues every listing once a day (ADR 0027, 0028) |
+| pricing.check_integrity | nightly 01:00 IST | Raise rents more than 25% below their market (resolving those no longer below) and last week's PGs whose quotes a limit held back more than 20% of the time; rule churn is checked as rules go into force (ADR 0043) |
 | search.reprice_listing | on `pricing.rules_changed` (the PG), `pricing.band_changed` (its locality's PGs) and `pricing.caps_changed` (every PG, once per caps version) | Reprice a listing's `property_price_summaries` from the engine and revalidate its pages (ADR 0042) |
 | retention | daily 03:30 IST | `compliance.retention`: apply the retention schedule (`RETENTION_RULES` in `app/jobs.py`) and record what each rule removed (ADR 0018) |
 
@@ -366,6 +368,7 @@ Worked example (₹10,000 base, July move-in, +15% season, −5% early-bird, 11-
 
 ### 8.7 Integrity guards
 - The listed rent must be the price charged when no rule applies. Alert ops when it is more than 25% below the locality median for the same occupancy type, or when clamps trigger on more than 20% of quotes in a week.
+- `pricing_alerts` holds these, and rules activated more than three times in a week, each raised once; ops read and resolve them at `GET /v1/ops/pricing-alerts` and `POST /v1/ops/pricing-alerts/{id}/resolve` (ADR 0043).
 - Caps and bands are admin-only settings.
 
 ### 8.8 Invariants (property-based tests with Hypothesis, ≥ 10,000 generated cases in CI)
