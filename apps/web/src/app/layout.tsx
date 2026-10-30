@@ -69,6 +69,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         >
           {t("skipToContent")}
         </a>
+        {/* Staging is a test copy with fictional sample PGs (ADR 0047): nobody may mistake it. */}
+        {publicEnv.appEnv === "staging" ? (
+          <p
+            role="note"
+            className="border-b bg-accent px-4 py-2 text-center text-sm text-accent-foreground"
+          >
+            {t("stagingNotice", { brand: brand.name })}
+          </p>
+        ) : null}
         <SiteHeader />
         <main id="main" tabIndex={-1} className="flex flex-1 flex-col outline-none">
           <ErrorTextProvider

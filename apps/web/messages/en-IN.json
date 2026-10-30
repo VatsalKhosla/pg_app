@@ -7,6 +7,7 @@
   },
   "Layout": {
     "skipToContent": "Skip to content",
+    "stagingNotice": "This is a test copy of {brand}. Its PGs are fictional samples, and nothing booked here is real.",
     "mainNavigation": "Main",
     "footerNavigation": "Footer",
     "openMenu": "Open menu",

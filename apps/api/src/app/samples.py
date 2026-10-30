@@ -4,8 +4,9 @@ photos included. A composition root, like app/jobs.py: it calls several modules'
 
 Everything here is fictional: the names say so, the owners' numbers are random, the photos are
 plain colours with "Fictional sample" written on them, and the places are only offsets from the
-seeded campuses. ``python -m app.manage catalog samples`` refuses to run anywhere deployed, so
-none of it can reach a real environment (CLAUDE.md: never invent real-world data).
+seeded campuses. ``python -m app.manage catalog samples`` refuses to run in production, so none
+of it reaches the live site (CLAUDE.md: never invent real-world data). Staging has them, under a
+banner saying they're fictional (ADR 0047).
 """
 
 import io

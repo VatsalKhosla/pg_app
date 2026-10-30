@@ -30,7 +30,8 @@ deploy, and it is what ``make seed`` runs (ADR 0020).
 deployed, Terraform does.
 
 ``catalog samples`` adds six fictional sample PGs, verified and live with generated photos, to
-try the site on locally (ADR 0030); a second run adds nothing. It refuses anywhere deployed.
+try the site on locally and on staging (ADRs 0030, 0047); a second run adds nothing. It refuses
+in production.
 """
 
 import argparse
@@ -294,8 +295,8 @@ async def _main(
 
 
 async def _samples(settings: Settings, *, clock: Clock, out: TextIO) -> int:
-    if settings.is_deployed:
-        out.write("Not done: sample listings are for local development only.\n")
+    if settings.app_env == "production":
+        out.write("Not done: sample listings never go to production.\n")
         return 1
     engine = create_engine(settings, application_name=f"{settings.otel_service_name}-manage")
     try:

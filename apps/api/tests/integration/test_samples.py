@@ -92,7 +92,7 @@ def test_a_run_waits_for_one_already_making_the_samples(
     assert run_as_staff(make_settings(database_url=database_url), scenario)
 
 
-def test_sample_pgs_are_refused_anywhere_deployed(
+def test_sample_pgs_never_go_to_production(
     make_settings: Callable[..., Settings], database_url: str
 ) -> None:
     settings = make_settings(database_url=database_url).model_copy(update={"app_env": "production"})
@@ -101,4 +101,4 @@ def test_sample_pgs_are_refused_anywhere_deployed(
     status = manage(["catalog", "samples"], settings=settings, clock=FrozenClock(NOW), out=out)
 
     assert status == 1
-    assert "local development only" in out.getvalue()
+    assert "never go to production" in out.getvalue()

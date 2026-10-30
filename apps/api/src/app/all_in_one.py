@@ -4,7 +4,9 @@ For a host whose free plan runs one process per service and has no background wo
 staging for now (ADR 0047). Production runs the API and the worker as services of their own
 (ARCHITECTURE §3).
 
-It brings the database up to date, then runs the worker and the API side by side. When either
+It brings the database up to date and loads the geo reference data, which changes only what
+differs. With ``SEED_SAMPLES=true`` (staging) it adds the fictional sample PGs, which a second run
+leaves alone and production refuses. Then it runs the worker and the API side by side. When either
 stops, so does the other and the container exits, for the host to start it again. A SIGTERM from
 the host stops both gracefully.
 """
@@ -57,10 +59,17 @@ def supervise(commands: Sequence[Sequence[str]]) -> int:
             signal.signal(signum, handler)
 
 
+def _run(*args: str) -> int:
+    return subprocess.run([sys.executable, "-m", *args], check=False).returncode  # noqa: S603
+
+
 def main() -> int:
-    migrated = subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], check=False)
-    if migrated.returncode != 0:
-        return migrated.returncode
+    for step in (("alembic", "upgrade", "head"), ("app.manage", "geo", "load")):
+        if (code := _run(*step)) != 0:
+            return code
+    # The samples are a nicety: the site starts without them if they can't be made.
+    if os.environ.get("SEED_SAMPLES") == "true":
+        _run("app.manage", "catalog", "samples")
     port = os.environ.get("PORT", "8000")
     return supervise(
         [

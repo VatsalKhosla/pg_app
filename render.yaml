@@ -100,6 +100,10 @@ services:
         value: "2"
       - key: WORKER_CONCURRENCY
         value: "1"
+      # The six fictional sample PGs, added once (the founders' choice; ADR 0047). The web app
+      # says on every page that they're samples.
+      - key: SEED_SAMPLES
+        value: "true"
       - fromGroup: fys-staging-shared
 
   - type: keyvalue
