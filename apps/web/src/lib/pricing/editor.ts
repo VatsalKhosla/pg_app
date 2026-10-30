@@ -12,6 +12,7 @@ export const LABEL_MAX = 40;
 export const TIERS_MAX = 5;
 export const MAX_STAY_MONTHS = 36;
 export { DEFAULT_STAY } from "./calendar";
+export { addDays, dayText } from "@/lib/format/days";
 
 const MINUS = "−";
 
@@ -30,39 +31,10 @@ const MONTH_DAY = new Intl.DateTimeFormat("en-IN", {
   month: "short",
   timeZone: "UTC",
 });
-const DAY = new Intl.DateTimeFormat("en-IN", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  timeZone: "UTC",
-});
-const SHORT_DAY = new Intl.DateTimeFormat("en-IN", {
-  day: "numeric",
-  month: "short",
-  timeZone: "UTC",
-});
-
-function parts(day: string): [number, number, number] {
-  const [year = 0, month = 1, date = 1] = day.split("-").map(Number);
-  return [year, month, date];
-}
-
 /** A season's "MM-DD" as people read it: "08-01" is "1 Aug" (in a leap year, so 29 Feb is). */
 export function monthDayText(monthDay: string): string {
   const [month = 1, day = 1] = monthDay.split("-").map(Number);
   return MONTH_DAY.format(Date.UTC(2000, month - 1, day));
-}
-
-/** A "YYYY-MM-DD" day as people read it: "4 Aug 2027", or "4 Aug" when `short`. */
-export function dayText(day: string, { short = false }: { short?: boolean } = {}): string {
-  const [year, month, date] = parts(day);
-  return (short ? SHORT_DAY : DAY).format(Date.UTC(year, month - 1, date));
-}
-
-/** "YYYY-MM-DD" plus whole days, on the calendar. */
-export function addDays(day: string, days: number): string {
-  const [year, month, date] = parts(day);
-  return new Date(Date.UTC(year, month - 1, date + days)).toISOString().slice(0, 10);
 }
 
 /** Whether a month has the day, in a leap year (a season may start on 29 Feb). */

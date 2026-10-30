@@ -15,6 +15,8 @@ const WITH_DETAIL: readonly string[] = [
   "MEDIA_NOT_ALLOWED",
   "RULE_SET_INVALID",
   "QUOTE_INVALID",
+  "BLOCK_INVALID",
+  "BED_UNAVAILABLE",
 ];
 
 /** What to tell ops about a failed call, from the console's own messages. */

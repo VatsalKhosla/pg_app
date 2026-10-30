@@ -84,6 +84,21 @@ export default async function OpsListingPage({
     { key: "details", title: t("details.title"), body: <DetailsForm listing={listing} /> },
     { key: "rooms", title: t("rooms.title"), body: <RoomsEditor listing={listing} /> },
     {
+      key: "beds",
+      title: t("beds.section"),
+      body: (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">{t("beds.linkHint")}</p>
+          <Link
+            href={`/ops/listings/${id}/beds` as Route}
+            className="inline-flex min-h-6 items-center font-medium text-primary underline underline-offset-4"
+          >
+            {t("beds.link")}
+          </Link>
+        </div>
+      ),
+    },
+    {
       key: "pricing",
       title: t("pricing.section"),
       body: (

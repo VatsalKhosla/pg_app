@@ -977,7 +977,9 @@
       "API_TIMEOUT": "The server took too long. Try again.",
       "RULE_SET_INVALID": "That doesn't work:",
       "QUOTE_INVALID": "That can't be priced:",
-      "PRICING_CONFIG_ERROR": "Pricing isn't set up yet: an admin needs to set the policies."
+      "PRICING_CONFIG_ERROR": "Pricing isn't set up yet: an admin needs to set the policies.",
+      "BLOCK_INVALID": "That block doesn't work:",
+      "BED_UNAVAILABLE": "That bed is taken then:"
     },
     "visits": {
       "title": "Verification",
@@ -1352,6 +1354,58 @@
       "note": "What you found (optional)",
       "resolve": "Resolve",
       "resolving": "Resolving…"
+    },
+    "beds": {
+      "metaTitle": "Beds",
+      "title": "Beds",
+      "back": "Back to the listing",
+      "intro": "What holds each bed over time: offline tenants the owner placed without us, and maintenance. Bookings will show here too. A bed held on any day of a stay isn't free for it.",
+      "section": "Beds over time",
+      "link": "Open the beds",
+      "linkHint": "Offline tenants and maintenance, and how many beds are free.",
+      "window": "Which days",
+      "from": "From",
+      "days": "For",
+      "daysOption": "{count, plural, one {# day} other {# days}}",
+      "show": "Show",
+      "free": "{free} of {total} beds free for all of {start} to {end}",
+      "noRooms": "No rooms yet. Add rooms and beds on the listing first.",
+      "bed": "Bed",
+      "room": "Room",
+      "heldBy": "Held by",
+      "nothing": "Nothing",
+      "outOfUse": "Out of use",
+      "kinds": {
+        "booking": "A booking",
+        "offline_tenant": "An offline tenant",
+        "maintenance": "Maintenance"
+      },
+      "span": "{from} to {until}",
+      "openEnded": "from {from}, until further notice",
+      "endTitle": "End: {kind}, bed {bed}",
+      "freeFrom": "Free from",
+      "end": "End",
+      "ending": "Ending…",
+      "endHint": "On or before its first day, the block is cancelled.",
+      "add": {
+        "title": "Hold a bed",
+        "bed": "Bed",
+        "chooseBed": "Choose a bed",
+        "bedOption": "{category}, room {room}, bed {bed}",
+        "kind": "What holds it",
+        "start": "From",
+        "end": "Free again from (optional)",
+        "endHint": "Leave it empty for until further notice.",
+        "note": "Note (optional)",
+        "save": "Hold the bed",
+        "saving": "Holding…",
+        "saved": "Held.",
+        "validation": {
+          "bed": "Choose a bed.",
+          "date": "Choose a date.",
+          "order": "Free again only after it's held: a later date."
+        }
+      }
     }
   },
   "Field": {

@@ -1,15 +1,11 @@
-import type { Page } from "@playwright/test";
-
 import { expect, test, wcagViolations } from "./fixtures";
-import { newMobile } from "./sign-in-codes";
-import { newStaff, signInAsStaff } from "./staff";
+import { opsWithListing } from "./ops-api";
 
 // The pricing editor end to end (BUILD_PLAN 4.6, ADR 0041), against the real API: ops draft a
 // rule, see what a student would be quoted and the weeks it moves, and put it in force once
 // they confirm. And pricing's alerts (step 4.8, ADR 0043): rules that keep changing are raised
 // for ops, who resolve them.
 
-const API = `http://127.0.0.1:${process.env.E2E_API_PORT ?? "8100"}`;
 const SHORT = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
 const LONG = new Intl.DateTimeFormat("en-IN", {
   day: "numeric",
@@ -27,51 +23,6 @@ function daysFromToday(days: number): Date {
 
 function iso(day: Date): string {
   return day.toISOString().slice(0, 10);
-}
-
-/**
- * A new ops person, signed in, with a listing of their own that has one room: what each test
- * prices, so runs and other tests never meet. `post` calls the API as them.
- */
-async function opsWithListing(page: Page, name: string) {
-  const ops = await newStaff(["ops"]);
-  await page.goto("/ops");
-  await signInAsStaff(page, ops);
-  await expect(page).toHaveURL(/\/ops\/listings$/u);
-  const csrf = (await page.context().cookies(API)).find(
-    (cookie) => cookie.name === "__Secure-csrf",
-  )?.value;
-  if (csrf === undefined) throw new Error("no CSRF cookie after signing in");
-  const post = async (path: string, data: object) => {
-    const response = await page.request.post(`${API}${path}`, {
-      data,
-      headers: { "X-CSRF-Token": csrf },
-    });
-    expect(response.ok(), `${path}: ${String(response.status())}`).toBe(true);
-    return (await response.json()) as { id: string };
-  };
-  const owner = await post("/v1/ops/owners", {
-    phone: newMobile(),
-    legalName: "Fictional Pricing Stays Private Limited",
-    businessName: "Fictional Pricing Stays",
-  });
-  const listing = await post("/v1/ops/properties", {
-    owner: owner.id,
-    locality: "kamla-nagar",
-    name,
-    addressLine: "House 9, a fictional lane",
-    location: { lat: 28.688, lng: 77.21 },
-    locationPrecision: "exact",
-    genderPolicy: "girls",
-    meals: "two",
-  });
-  await post(`/v1/ops/properties/${listing.id}/room-categories`, {
-    occupancy: "double",
-    label: "Twin sharing",
-    baseRentPaise: 1_000_000,
-    securityDepositPaise: 1_000_000,
-  });
-  return { listing, post };
 }
 
 test.describe("the pricing editor", () => {
