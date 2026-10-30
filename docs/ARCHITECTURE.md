@@ -310,7 +310,7 @@ In the code (ADR 0046): an advisory lock on the student guards the active-hold l
 | Job | Every | Does |
 |---|---|---|
 | expire_holds | 1 min | HELD past expiry → EXPIRED |
-| confirm_timeouts | 5 min | TOKEN_SECURED past the deadline → REJECTED + refund |
+| booking.confirmation_timeouts | 5 min | TOKEN_SECURED past the deadline → REJECTED + refund (refunds are stubs until Phase 6; ADR 0048) |
 | check_windows | 5 min | CHECKED_IN past the window → ACTIVE |
 | no_shows | daily 10:00 IST | CONFIRMED past move_in + N days → NO_SHOW |
 | reconcile_payments | 15 min | Fetch status of payments stuck in created/authorized |

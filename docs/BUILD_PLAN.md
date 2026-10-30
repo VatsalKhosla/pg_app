@@ -39,8 +39,8 @@ Start the slow ones in week 1.
 - [ ] Accounts: GitHub, Vercel, AWS (Mumbai), Cloudflare, Sentry, PostHog, an email sender (SES or Resend). Google Workspace for staff sign-in.
 - [ ] Staging on free plans for now (ADR 0047), following `docs/runbooks/staging.md`:
   - make the media bucket public-read in Neon's console, and regenerate its keys;
-  - make the two images public, apply the Render blueprint, and save the deploy hooks as GitHub secrets;
-  - add two CNAME records at GoDaddy.
+  - apply the Render blueprint, and save the deploy hooks as GitHub secrets;
+  - point fixyourstay.in at Render in GoDaddy, and turn GitHub Pages off.
 - [ ] GitHub repository settings (docs/ci.md): the branch ruleset for `main` with the required checks, secret scanning with push protection, Dependabot alerts, and the free Renovate GitHub App for dependency updates.
 - [ ] Lawyer: Terms, Privacy notice (DPDP), Refund & Cancellation policy, owner agreement (30% fee, 90-day introduction clause, token set-off), E-Commerce Rules seller-disclosure question (hiding owner contacts), grievance officer. The drafts are in `apps/web/src/content/legal`, with the open questions in brackets.
 - [ ] The facts the trust pages state (`apps/web/src/config/company.ts`): the registered name and office address, the phone line a person answers and its hours, the help email, the founders' names, roles and photos, and the grievance officer's name, designation and contact details. A production build waits for them (ADR 0034).
@@ -403,8 +403,14 @@ Start the slow ones in week 1.
     It answers `QUOTE_EXPIRED`, `QUOTE_USED`, `HOLD_LIMIT_REACHED`, `BED_UNAVAILABLE`, or `BOOKING_NEEDS_VISIT` while remote booking is off. `GET /v1/bookings/{code}` shows the student their booking.
   - **Proof:** fifty students asking at once for the last bed get one 201 and 49 409s, with no overlapping allocations. A retry replays the first answer. Every refusal is tested, and so are an expiry at its exact minute, a clashing code drawn again, and history that can't be rewritten.
 
-- [ ] **5.4 Confirmation flow.** Owner/ops confirm or reject; `instant_confirm` per property; confirmation deadline job → REJECTED (refund hooks are stubs until Phase 6); notifications.
+- [x] **5.4 Confirmation flow.** Owner/ops confirm or reject; `instant_confirm` per property; confirmation deadline job → REJECTED (refund hooks are stubs until Phase 6); notifications.
   *Done when* all three paths work end to end with notifications.
+  *Note (2026-10-31):*
+  - **One core for every status change:** a compare-and-set, the effects, the stamps, an event row and an audit entry. The money effects stay stubs until Phase 6 (ADR 0048).
+  - **Owners and ops** see, confirm and reject a booking under `/v1/owner/bookings/{code}` and `/v1/ops/bookings/{code}`; an owner reaches only their own PGs' bookings.
+  - **The system:** `secure_token` is what Phase 6's verified payment will call. A job every five minutes rejects bookings past their owner's deadline, and an instant-confirm PG confirms as the token comes in.
+  - **Texts** go to the owner and the student for each change, and the address only once confirmed. The student's data export now holds their bookings.
+  - **Proof:** all three paths run end to end with their texts, history and stamps, and the deadline is tested at its exact second.
 
 - [ ] **5.5 Student booking pages.** Booking timeline from `booking_events`; what to pay at move-in and to whom; deposit and charges; exact address after confirmation; cancel with the exact policy text and the refund amount shown before confirming; support contact.
   *Done when* the UI shows the right actions for every state (component tests per state).
