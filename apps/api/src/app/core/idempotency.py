@@ -41,6 +41,20 @@ KEY_TTL: Final = timedelta(hours=24)
 IDEMPOTENCY_CLEANUP: Final = "idempotency.cleanup"
 
 _WELL_FORMED_KEY: Final = re.compile(r"[A-Za-z0-9._:-]{8,255}")
+# The header as a route's OpenAPI operation describes it (``openapi_extra``), so the typed client
+# asks for it. The route checks it itself, to answer the codes above.
+OPENAPI_HEADER: Final = {
+    "parameters": [
+        {
+            "name": IDEMPOTENCY_KEY_HEADER,
+            "in": "header",
+            "required": True,
+            "description": "The same key on every retry of a request: a retry gets the first"
+            " answer back.",
+            "schema": {"type": "string", "pattern": f"^{_WELL_FORMED_KEY.pattern}$"},
+        }
+    ]
+}
 
 
 class IdempotencyKeyRequiredError(AppError):

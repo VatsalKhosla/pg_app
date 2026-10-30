@@ -87,6 +87,33 @@ def free_beds(
     return {bed for bed in beds if bed not in taken}
 
 
+@dataclass(frozen=True, slots=True)
+class RoomBeds:
+    """A room's beds that can be sold, by internal id."""
+
+    room_id: int
+    bed_ids: tuple[int, ...]
+
+
+def choose_bed(
+    rooms: Iterable[RoomBeds], allocations: Iterable[tuple[int, Period]], period: Period
+) -> int | None:
+    """The bed a new booking takes for ``period`` (§7.3): a free one in a room partly held then,
+    so whole rooms stay free for groups. Rooms with the fewest free beds come first, and the
+    lowest bed id settles a tie. None when every bed is held on some day of the period."""
+    taken = {bed for bed, held in allocations if held.overlaps(period)}
+    best: tuple[bool, int, int] | None = None
+    for room in rooms:
+        free = [bed for bed in room.bed_ids if bed not in taken]
+        if not free:
+            continue
+        # A room nobody holds sorts after every partly held one.
+        rank = (len(free) == len(room.bed_ids), len(free), min(free))
+        if best is None or rank < best:
+            best = rank
+    return None if best is None else best[2]
+
+
 def occupancy_bps(active_beds: int, taken: int) -> int:
     """How full a room type is, out of 10,000: beds taken over its active beds (none: 0)."""
     if active_beds <= 0:

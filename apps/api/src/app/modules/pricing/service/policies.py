@@ -139,6 +139,18 @@ def _plain(values: dict[str, Any]) -> dict[str, object]:
     return {name: str(value) if isinstance(value, str) else value for name, value in values.items()}
 
 
+class BookingTerms:
+    """The booking terms a quote was made under: a booking keeps them for good, so a later
+    change to the terms never alters a booking already made (ADR 0046). In the caller's
+    transaction."""
+
+    def __init__(self, db: AsyncSession) -> None:
+        self._policies = PolicyRepository(db)
+
+    async def of(self, booking_policy_id: int) -> BookingPolicy:
+        return booking_policy(await self._policies.version(BookingPolicyVersion, booking_policy_id))
+
+
 class PolicyService:
     def __init__(self, db: AsyncSession, clock: Clock) -> None:
         self._db = db

@@ -42,6 +42,12 @@ class PolicyRepository:
             )
         )
 
+    async def version[V: PolicyVersion](self, model: type[V], version_id: int) -> V:
+        """A version by its internal id, as a quote names it."""
+        found = await self._db.get(model, version_id)
+        assert found is not None  # noqa: S101 - asked for by a row that refers to it
+        return found
+
     async def history[V: PolicyVersion](self, model: type[V], *, limit: int) -> list[V]:
         """The latest versions, newest first."""
         rows = await self._db.scalars(

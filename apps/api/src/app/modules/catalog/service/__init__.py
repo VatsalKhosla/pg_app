@@ -8,6 +8,7 @@ from app.modules.catalog.service.listings import ListingService, PropertyChanges
 from app.modules.catalog.service.lookup import (
     BedLayout,
     BedRef,
+    BookingPlace,
     CatalogLookup,
     CategoryRent,
     LayoutBed,
@@ -16,6 +17,7 @@ from app.modules.catalog.service.lookup import (
     PricedCategory,
     PricedProperty,
     SearchEntry,
+    SellableRoom,
     VisitPlace,
 )
 from app.modules.catalog.service.owners import OwnerChanges, OwnerRecord, OwnerService
@@ -45,6 +47,7 @@ __all__ = [
     "AgreementService",
     "BedLayout",
     "BedRef",
+    "BookingPlace",
     "CatalogLookup",
     "CatalogReader",
     "CategoryChanges",
@@ -72,6 +75,7 @@ __all__ = [
     "Report",
     "RoomView",
     "SearchEntry",
+    "SellableRoom",
     "Standing",
     "VerificationService",
     "VisitPlace",

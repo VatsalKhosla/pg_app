@@ -14,6 +14,7 @@ from app.modules.inventory.service.availability import (
     AvailabilityLookup,
     CategoryOccupancy,
 )
+from app.modules.inventory.service.holds import BedHolds
 
 __all__ = [
     "ALLOCATIONS_CHANGED",
@@ -21,6 +22,7 @@ __all__ = [
     "AllocationService",
     "AllocationsTaken",
     "AvailabilityLookup",
+    "BedHolds",
     "BedWindow",
     "BlockView",
     "CategoryOccupancy",

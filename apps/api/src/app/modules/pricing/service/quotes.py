@@ -162,6 +162,67 @@ def _charge(charge: MandatoryCharge) -> dict[str, object]:
             }
 
 
+@dataclass(frozen=True, slots=True)
+class BookableQuote:
+    """A quote as the booking that takes it copies it: its money, never priced again (rule 5),
+    and the booking terms it was made under."""
+
+    id: int
+    public_id: uuid.UUID
+    # Who asked for it, when signed in.
+    user_id: int | None
+    property_id: int
+    room_category_id: int
+    move_in: date
+    stay_months: int
+    monthly_rent_paise: int
+    fee_paise: int
+    gst_paise: int
+    owner_fee_total_paise: int
+    token_paise: int
+    due_at_move_in_paise: int
+    deposit_paise: int
+    monthly_charges_paise: int
+    one_time_charges_paise: int
+    booking_policy_id: int
+
+
+class QuoteLookup:
+    """Quotes for the bookings that take them (ADR 0046), in the caller's transaction."""
+
+    def __init__(self, db: AsyncSession, clock: Clock) -> None:
+        self._clock = clock
+        self._quotes = QuoteRepository(db)
+
+    async def usable(self, quote_id: uuid.UUID) -> BookableQuote:
+        """A quote a booking may take: 404 for none by that id, 409 QUOTE_EXPIRED once its 30
+        minutes are up."""
+        row = await self._quotes.get(quote_id)
+        if row is None:
+            raise NotFoundError
+        if row.expires_at <= self._clock.now():
+            raise QuoteExpiredError
+        return BookableQuote(
+            id=row.id,
+            public_id=row.public_id,
+            user_id=row.user_id,
+            property_id=row.property_id,
+            room_category_id=row.room_category_id,
+            move_in=row.move_in,
+            stay_months=row.stay_months,
+            monthly_rent_paise=row.monthly_rent_paise,
+            fee_paise=row.fee_paise,
+            gst_paise=row.gst_paise,
+            owner_fee_total_paise=row.owner_fee_total_paise,
+            token_paise=row.token_paise,
+            due_at_move_in_paise=row.due_at_move_in_paise,
+            deposit_paise=row.deposit_paise,
+            monthly_charges_paise=row.monthly_charges_paise,
+            one_time_charges_paise=row.one_time_charges_paise,
+            booking_policy_id=row.booking_policy_id,
+        )
+
+
 class QuoteService:
     def __init__(
         self, db: AsyncSession, clock: Clock, *, flags: FlagReader, beds: BedsTaken
@@ -435,14 +496,6 @@ class QuoteService:
         async with self._db.begin():
             row = await self._quote(quote_id)
             return await self._view(row)
-
-    async def usable(self, quote_id: uuid.UUID) -> PriceQuote:
-        """A quote a booking may take (Phase 5): 409 QUOTE_EXPIRED once its 30 minutes are up.
-        In the caller's transaction."""
-        row = await self._quote(quote_id)
-        if row.expires_at <= self._clock.now():
-            raise QuoteExpiredError
-        return row
 
     async def _quote(self, quote_id: uuid.UUID) -> PriceQuote:
         row = await self._quotes.get(quote_id)

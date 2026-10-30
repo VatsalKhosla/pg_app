@@ -39,6 +39,16 @@ class AllocationRepository:
         query = select(InventoryAllocation).where(InventoryAllocation.public_id == public_id)
         return await self._db.scalar(query.with_for_update() if lock else query)
 
+    async def of_booking(self, booking_id: int) -> InventoryAllocation | None:
+        """The booking's allocation, locked until the transaction ends."""
+        return await self._db.scalar(
+            select(InventoryAllocation)
+            .where(InventoryAllocation.booking_id == booking_id)
+            .order_by(InventoryAllocation.id.desc())
+            .limit(1)
+            .with_for_update()
+        )
+
     async def active_overlapping(
         self, bed_ids: Collection[int], period: Period
     ) -> list[InventoryAllocation]:

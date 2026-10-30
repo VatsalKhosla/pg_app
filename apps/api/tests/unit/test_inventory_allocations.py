@@ -10,7 +10,9 @@ from hypothesis import strategies as st
 from app.modules.inventory.domain.allocations import (
     AllocationKind,
     Period,
+    RoomBeds,
     block_problems,
+    choose_bed,
     free_beds,
     occupancy_bps,
     stay_period,
@@ -86,6 +88,25 @@ def test_a_bed_is_free_when_nothing_holds_it_on_any_day() -> None:
     assert free_beds({1, 2, 3, 4}, held, Period(date(2027, 8, 1), date(2027, 9, 2))) == {1, 3, 4}
 
 
+def test_a_booking_takes_a_bed_in_a_partly_held_room_first() -> None:
+    # Room 1 has two free beds, room 2 one of two (bed 21 is held), room 3 one of three.
+    rooms = [RoomBeds(1, (11, 12)), RoomBeds(2, (21, 22)), RoomBeds(3, (31, 32, 33))]
+    stay = Period(date(2027, 7, 20), date(2028, 6, 20))
+    held = [(21, JULY), (31, Period(date(2027, 1, 1))), (32, Period(date(2028, 5, 1)))]
+
+    # Rooms 2 and 3 have one free bed each: the lower bed id wins.
+    assert choose_bed(rooms, held, stay) == 22
+    # With bed 22 gone too, room 3 is the only partly held room with a free bed.
+    assert choose_bed(rooms, [*held, (22, stay)], stay) == 33
+    # A room nobody holds goes last, its lowest bed first.
+    assert choose_bed(rooms, [*held, (22, stay), (33, stay)], stay) == 11
+    # Held until the day the stay begins doesn't count against a room.
+    before = Period(date(2027, 6, 1), stay.start)
+    assert choose_bed([RoomBeds(4, (41, 42)), RoomBeds(5, (51, 52))], [(51, before)], stay) == 41
+    assert choose_bed(rooms[:1], [(11, stay), (12, Period(TODAY))], stay) is None
+    assert choose_bed([], [], stay) is None
+
+
 def test_occupancy_is_taken_over_active_beds_rounded_down() -> None:
     assert [occupancy_bps(3, taken) for taken in range(4)] == [0, 3_333, 6_666, 10_000]
     assert (occupancy_bps(0, 0), occupancy_bps(2, 5)) == (0, 10_000)
@@ -112,3 +133,15 @@ def test_a_free_bed_has_no_day_in_common_with_any_allocation(
     for bed in range(1, 7):
         clash = any(owner == bed and period.overlaps(wanted) for owner, period in held)
         assert (bed in free) is not clash
+
+
+@given(
+    st.lists(st.tuples(st.integers(min_value=1, max_value=6), periods()), max_size=12), periods()
+)
+def test_the_bed_a_booking_takes_is_free(held: list[tuple[int, Period]], wanted: Period) -> None:
+    rooms = [RoomBeds(1, (1, 2, 3)), RoomBeds(2, (4, 5)), RoomBeds(3, (6,))]
+    chosen = choose_bed(rooms, held, wanted)
+    free = free_beds(set(range(1, 7)), held, wanted)
+
+    assert (chosen is None) is (not free)
+    assert chosen is None or chosen in free

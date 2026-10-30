@@ -6,6 +6,7 @@ from app.core.db import Base
 from app.core.flags import FeatureFlag
 from app.core.idempotency import IdempotencyRecord
 from app.core.outbox import OutboxJob
+from app.modules.booking.models import Booking, BookingEventRecord
 from app.modules.catalog.models import (
     Amenity,
     Bed,
@@ -57,6 +58,8 @@ __all__ = [
     "AuditLog",
     "Base",
     "Bed",
+    "Booking",
+    "BookingEventRecord",
     "BookingPolicyVersion",
     "Campus",
     "City",

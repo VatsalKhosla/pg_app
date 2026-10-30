@@ -24,8 +24,7 @@ from app.modules.pricing.domain.engine import PricingContext, quote
 from app.modules.pricing.domain.quotes import inputs_digest
 from app.modules.pricing.errors import QuoteExpiredError
 from app.modules.pricing.models import PriceQuote, PricingRuleRow
-from app.modules.pricing.occupancy import NoBookingsYet
-from app.modules.pricing.service import PolicyService, QuoteService, domain_rule
+from app.modules.pricing.service import PolicyService, QuoteLookup, domain_rule
 from tests.conftest import TEST_SECRET_KEY
 from tests.integration.test_search import _category, _publish, _token
 from tests.staff_api import NOW, Staff, run_as_staff, sign_in, spot
@@ -211,9 +210,8 @@ def test_a_quote_is_the_engines_answer_kept_for_thirty_minutes(  # noqa: PLR0915
         app.state.clock.set(NOW + timedelta(minutes=31))
         seen["expired"] = await ops.ok("GET", f"{QUOTES}/{seen['quote']['id']}")
         async with app.state.sessionmaker() as db, db.begin():
-            service = QuoteService(db, app.state.clock, flags=app.state.flags, beds=NoBookingsYet())
             try:
-                await service.usable(uuid.UUID(seen["quote"]["id"]))
+                await QuoteLookup(db, app.state.clock).usable(uuid.UUID(seen["quote"]["id"]))
             except QuoteExpiredError as error:
                 seen["usable"] = error.code
         return seen

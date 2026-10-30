@@ -32,8 +32,8 @@ class InventoryAllocation(Model):
     bed_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("beds.id"))
     period: Mapped[Range[date]] = mapped_column(DATERANGE)
     kind: Mapped[str] = mapped_column(Text)
-    # The booking that holds the bed; its foreign key arrives with the bookings table (5.3).
-    booking_id: Mapped[int | None] = mapped_column(BigInteger)
+    # The booking that holds the bed.
+    booking_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("bookings.id"))
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=sql("true"))
     note: Mapped[str] = mapped_column(Text, server_default="")
     created_by: Mapped[int | None] = mapped_column(

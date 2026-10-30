@@ -64,6 +64,7 @@ PATH_VALUES: Final = frozenset(
         "a_missing_quote",
         "a_missing_alert",
         "a_missing_block",
+        "a_missing_booking",
         "an_owner",
         "a_live_listing",
     }
@@ -492,6 +493,16 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("GET", "/v1/ops/pricing-alerts"): Rule(ops_only(200)),
     ("POST", "/v1/ops/pricing-alerts/{alert_id}/resolve"): Rule(
         ops_only(404), lambda: {"json": {}}, path={"alert_id": "a_missing_alert"}
+    ),
+    # Bookings (ADR 0046): people signed in by phone hold beds with their own quotes and see their
+    # own bookings; staff sessions don't. A hold without an Idempotency-Key is refused before
+    # anything else, and the booking asked for is nobody's.
+    ("POST", "/v1/bookings"): Rule(
+        signed_in(400, field_agent=403, ops=403, admin=403),
+        lambda: {"json": {"quote": str(uuid.uuid7())}},
+    ),
+    ("GET", "/v1/bookings/{code}"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403), path={"code": "a_missing_booking"}
     ),
     # Student visits (ADR 0033): people signed in by phone ask and cancel their own; ops book and
     # cancel any; field agents run the ones booked for them. The visit is another student's, booked

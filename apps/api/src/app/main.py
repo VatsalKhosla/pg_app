@@ -23,6 +23,7 @@ from app.core.redis import create_redis
 from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
+from app.modules.booking.router import router as booking_router
 from app.modules.catalog.agreements import FileAgreements
 from app.modules.catalog.router import router as catalog_router
 from app.modules.compliance.router import router as compliance_router
@@ -76,6 +77,7 @@ ROUTERS: Final = (
     search_router,
     pricing_router,
     inventory_router,
+    booking_router,
     visits_router,
     media_router,
 )

@@ -21,7 +21,7 @@ from app.core.actor import Actor, Role
 from app.core.clock import FrozenClock
 from app.core.cookies import CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE
 from app.core.csrf import issue_csrf_token
-from app.core.ids import new_ticket_number
+from app.core.ids import new_booking_code, new_ticket_number
 from app.core.money import Paise
 from app.main import create_app
 from app.modules.catalog.domain.listing import (
@@ -330,6 +330,7 @@ _FIXED: Final[dict[str, Callable[[], str]]] = {
     "a_missing_quote": lambda: str(uuid.uuid7()),
     "a_missing_alert": lambda: str(uuid.uuid7()),
     "a_missing_block": lambda: str(uuid.uuid7()),
+    "a_missing_booking": new_booking_code,
 }
 
 

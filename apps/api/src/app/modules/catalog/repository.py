@@ -462,6 +462,23 @@ class CatalogRepository:
         query = select(Bed).where(Bed.public_id == public_id)
         return await self._db.scalar(query.with_for_update() if lock else query)
 
+    async def lock_active_beds(self, category_id: int) -> list[tuple[int, int, str]]:
+        """An active room type's active beds as (bed id, room id, room label), locked in id
+        order, so holds on the room type wait for one another and never deadlock (§7.3)."""
+        rows = await self._db.execute(
+            select(Bed.id, Room.id, Room.label)
+            .join(Room, Room.id == Bed.room_id)
+            .join(RoomCategory, RoomCategory.id == Room.room_category_id)
+            .where(
+                Room.room_category_id == category_id,
+                RoomCategory.status == CategoryStatus.ACTIVE,
+                Bed.status == BedStatus.ACTIVE,
+            )
+            .order_by(Bed.id)
+            .with_for_update(of=Bed)
+        )
+        return [(bed, room, label) for bed, room, label in rows]
+
     async def active_bed_ids(self, category_id: int) -> list[int]:
         rows = await self._db.scalars(
             select(Bed.id)

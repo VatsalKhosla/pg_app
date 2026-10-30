@@ -180,6 +180,30 @@ class VisitPlace:
     public: bool
 
 
+@dataclass(frozen=True, slots=True)
+class BookingPlace:
+    """A PG as bookings need it: whose it is, whether it confirms bookings itself, and whether
+    the public may see it now. Its address stays here until a booking is confirmed (rule 11)."""
+
+    id: int
+    public_id: uuid.UUID
+    slug: str
+    name: str
+    locality: str
+    owner_id: int
+    instant_confirm: bool
+    public: bool
+
+
+@dataclass(frozen=True, slots=True)
+class SellableRoom:
+    """A room with its beds that can be sold, by internal id, for a hold to choose from."""
+
+    id: int
+    label: str
+    bed_ids: tuple[int, ...]
+
+
 class CatalogLookup:
     def __init__(self, db: AsyncSession) -> None:
         self._catalog = CatalogRepository(db)
@@ -433,6 +457,41 @@ class CatalogLookup:
             )
             for row in found.values()
         }
+
+    async def booking_places(
+        self, ids: Collection[int], *, verified_only: bool
+    ) -> dict[int, BookingPlace]:
+        """PGs by internal id, as bookings need them: two queries, however many."""
+        found = await self._catalog.properties_by_id(ids)
+        localities = await self._geo.localities({row.locality_id for row in found.values()})
+        return {
+            row.id: BookingPlace(
+                id=row.id,
+                public_id=row.public_id,
+                slug=row.slug,
+                name=row.name,
+                locality=localities[row.locality_id].name,
+                owner_id=row.owner_id,
+                instant_confirm=row.instant_confirm,
+                public=is_public(
+                    PropertyStatus(row.status),
+                    VerificationStatus(row.verification_status),
+                    verified_only=verified_only,
+                ),
+            )
+            for row in found.values()
+        }
+
+    async def locked_sellable_rooms(self, category_id: int) -> tuple[SellableRoom, ...]:
+        """A room type's rooms with their active beds, the beds locked until the transaction
+        ends, so holds on the room type go one at a time (ARCHITECTURE §7.3)."""
+        rooms: dict[int, tuple[str, list[int]]] = {}
+        for bed, room, label in await self._catalog.lock_active_beds(category_id):
+            rooms.setdefault(room, (label, []))[1].append(bed)
+        return tuple(
+            SellableRoom(id=room, label=label, bed_ids=tuple(beds))
+            for room, (label, beds) in rooms.items()
+        )
 
     async def property_ids_in(self, locality_id: int) -> list[int]:
         """Every listing of a locality, by internal id."""
