@@ -8,7 +8,7 @@ tokens and caps is data in the database, never configuration (ARCHITECTURE §22)
 import re
 from functools import lru_cache
 from typing import Annotated, Final, Literal, Self
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -49,12 +49,36 @@ class LoggingSettings(BaseSettings):
     log_format: Literal["json", "console"] = "json"
 
 
+def asyncpg_url(url: str) -> str:
+    """``url`` for the asyncpg driver. Hosted Postgres (Neon, for staging) hands out
+    ``postgresql://`` URLs with libpq's parameters: ``sslmode`` becomes asyncpg's ``ssl``, and
+    ``channel_binding``, which asyncpg doesn't take, goes."""
+    parts = urlsplit(url)
+    query = parse_qsl(parts.query, keep_blank_values=True)
+    if parts.scheme not in {"postgres", "postgresql"} and not any(
+        name in {"sslmode", "channel_binding"} for name, _ in query
+    ):
+        return url
+    scheme = "postgresql+asyncpg" if parts.scheme in {"postgres", "postgresql"} else parts.scheme
+    kept = [
+        ("ssl" if name == "sslmode" else name, value)
+        for name, value in query
+        if name != "channel_binding"
+    ]
+    return urlunsplit(parts._replace(scheme=scheme, query=urlencode(kept)))
+
+
 class DatabaseSettings(LoggingSettings):
     database_url: SecretStr
     db_pool_size: int = Field(default=10, ge=1)
     db_max_overflow: int = Field(default=10, ge=0)
     db_pool_timeout_seconds: float = Field(default=5.0, gt=0)
     db_statement_timeout_ms: int = Field(default=15_000, ge=0)
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _for_asyncpg(cls, value: object) -> object:
+        return asyncpg_url(value) if isinstance(value, str) else value
 
     @field_validator("database_url")
     @classmethod

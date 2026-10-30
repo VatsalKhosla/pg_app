@@ -101,9 +101,34 @@ def test_empty_optional_values_mean_unset(environment: pytest.MonkeyPatch) -> No
 
 
 @pytest.mark.parametrize(
+    ("given", "used"),
+    [
+        (DATABASE_URL, DATABASE_URL),
+        (
+            "postgres://app:pw@db.internal:5432/app",
+            "postgresql+asyncpg://app:pw@db.internal:5432/app",
+        ),
+        # As Neon's dashboard gives it.
+        (
+            "postgresql://owner:pw@ep-fictional-1.ap-southeast-1.aws.neon.tech/neondb"
+            "?sslmode=require&channel_binding=require",
+            "postgresql+asyncpg://owner:pw@ep-fictional-1.ap-southeast-1.aws.neon.tech/neondb"
+            "?ssl=require",
+        ),
+    ],
+)
+def test_a_postgres_url_is_used_with_the_asyncpg_driver(
+    environment: pytest.MonkeyPatch, given: str, used: str
+) -> None:
+    environment.setenv("DATABASE_URL", given)
+
+    assert Settings().database_url.get_secret_value() == used
+
+
+@pytest.mark.parametrize(
     ("name", "value"),
     [
-        ("DATABASE_URL", "postgresql://app:pw@db/app"),  # sync driver
+        ("DATABASE_URL", "mysql://app:pw@db/app"),
         ("REDIS_URL", "http://cache.internal:6379"),
     ],
 )
@@ -334,7 +359,7 @@ def test_allowed_addresses_must_be_addresses_and_stay_out_of_the_error(
 
 
 def test_a_rejected_secret_never_appears_in_the_error(environment: pytest.MonkeyPatch) -> None:
-    environment.setenv("DATABASE_URL", "postgresql://app:db-secret-password@db.internal/app")
+    environment.setenv("DATABASE_URL", "mysql://app:db-secret-password@db.internal/app")
 
     with pytest.raises(ValidationError) as error:
         Settings()
