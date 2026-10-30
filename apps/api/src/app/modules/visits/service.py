@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Final
 from app.config import BRAND_NAME
 from app.core import analytics, audit
 from app.core.actor import Role
-from app.core.calendar import INDIA
+from app.core.calendar import spoken_time
 from app.core.errors import InvalidTransitionError, NotFoundError
 from app.core.flags import Flag
 from app.core.geometry import NCR_BOUNDS, distance_m
@@ -75,10 +75,7 @@ class VisitView:
 
 def when(moment: datetime) -> str:
     """A visit's time as a text says it, in India: "Sat 2 Nov, 11:30 am"."""
-    local = moment.astimezone(INDIA)
-    hour = local.hour % 12 or 12
-    half = "am" if local.hour < 12 else "pm"
-    return f"{local:%a} {local.day} {local:%b}, {hour}:{local:%M} {half}"
+    return spoken_time(moment)
 
 
 class VisitService:

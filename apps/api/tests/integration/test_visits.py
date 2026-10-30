@@ -17,6 +17,7 @@ from app.core.calendar import INDIA
 from app.jobs import EXPORTERS
 from app.modules.catalog.models import Property
 from app.modules.identity.domain.sessions import SessionKind
+from app.modules.identity.repository import UserRepository
 from app.modules.identity.service import SessionService
 from app.modules.visits.domain.visits import StudentVisitStatus
 from app.modules.visits.models import Visit
@@ -67,6 +68,12 @@ async def _listing(ops: Staff, token: str, name: str = "Vasant") -> dict[str, An
 
 
 async def _agent_id(ops: Staff, agent: Staff) -> str:
+    """The agent's id as ops' list of field agents gives it. The list sorts by name, unnamed
+    last, and other tests leave many unnamed agents, so this one is named first."""
+    async with ops.app.state.sessionmaker() as db, db.begin():
+        user = await UserRepository(db).get(agent.user_id)
+        assert user is not None
+        user.name = "A visits test agent"
     agents = await ops.ok("GET", "/v1/ops/field-agents")
     me = await agent.public_id()
     return str(next(item["id"] for item in agents["items"] if item["id"] == me))

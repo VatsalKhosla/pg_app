@@ -482,6 +482,15 @@ class CatalogLookup:
             for row in found.values()
         }
 
+    async def owner_id_of_user(self, user_id: int) -> int | None:
+        """The owner record of a person signed in by phone, if they're an owner."""
+        owner = await self._catalog.owner_of_user(user_id)
+        return None if owner is None else owner.id
+
+    async def owner_user_ids(self, owner_ids: Collection[int]) -> dict[int, int]:
+        """Each owner's account, by owner id: who an owner's texts go to."""
+        return await self._catalog.owner_user_ids(owner_ids)
+
     async def locked_sellable_rooms(self, category_id: int) -> tuple[SellableRoom, ...]:
         """A room type's rooms with their active beds, the beds locked until the transaction
         ends, so holds on the room type go one at a time (ARCHITECTURE §7.3)."""

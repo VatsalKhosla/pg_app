@@ -25,3 +25,11 @@ def spoken_date(moment: datetime) -> str:
     """The day in India, as a text message says it: "Sat 31 Oct"."""
     local = moment.astimezone(INDIA)
     return f"{local:%a} {local.day} {local:%b}"
+
+
+def spoken_time(moment: datetime) -> str:
+    """The day and time in India, as a text message says them: "Sat 2 Nov, 11:30 am"."""
+    local = moment.astimezone(INDIA)
+    hour = local.hour % 12 or 12
+    half = "am" if local.hour < 12 else "pm"
+    return f"{local:%a} {local.day} {local:%b}, {hour}:{local:%M} {half}"

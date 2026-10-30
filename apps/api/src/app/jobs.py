@@ -13,6 +13,13 @@ from app.core.idempotency import IDEMPOTENCY_CLEANUP, delete_expired_keys
 from app.core.outbox import OUTBOX_CLEANUP, JobRegistry, delete_finished_jobs
 from app.core.scheduler import DailyAt, Every, ScheduledJob
 from app.core.web_cache import REVALIDATE, revalidate_handler
+from app.modules.booking.jobs import (
+    CONFIRMATION_TIMEOUTS,
+    NOTIFY,
+    notify_handler,
+    time_out_confirmations,
+)
+from app.modules.booking.service import bookings_part
 from app.modules.catalog.service import INVENTORY_CHANGED, LISTING_CHANGED, owner_data
 from app.modules.compliance.jobs import (
     BUILD_EXPORT,
@@ -61,7 +68,14 @@ if TYPE_CHECKING:
 
 # A person's data export (DPDP): one part from every module that holds personal data. A module
 # that starts keeping personal data adds its part here.
-EXPORTERS: Final = (personal_data, owner_data, data_requests_part, visits_part, grievances_part)
+EXPORTERS: Final = (
+    personal_data,
+    owner_data,
+    data_requests_part,
+    visits_part,
+    bookings_part,
+    grievances_part,
+)
 
 # The retention schedule (DPDP: no longer than needed). A module that starts keeping personal data
 # adds its rule here; periods still to be decided by the founders are noted in ADR 0018.
@@ -89,6 +103,12 @@ SCHEDULES: Final = (
     ScheduledJob(name=REFRESH_ALL, kind=REFRESH_ALL, schedule=DailyAt(time(0, 30))),
     # Pricing's integrity alerts: the market as it stands, and last week's quotes (ADR 0043).
     ScheduledJob(name=CHECK_INTEGRITY, kind=CHECK_INTEGRITY, schedule=DailyAt(time(1, 0))),
+    # Owners who didn't confirm in time lose the booking, and the student is refunded (§7.5).
+    ScheduledJob(
+        name=CONFIRMATION_TIMEOUTS,
+        kind=CONFIRMATION_TIMEOUTS,
+        schedule=Every(timedelta(minutes=5)),
+    ),
 )
 
 
@@ -102,8 +122,9 @@ def build_registry(
     beds: BedsTaken,
 ) -> JobRegistry:
     """Every handler, with what it needs from outside: the object storage media jobs use, the
-    web app whose cached pages are revalidated, the texts visits and grievances send, where the
-    funnel's server-side steps go, and how full rooms are for the prices search keeps."""
+    web app whose cached pages are revalidated, the texts visits, bookings and grievances send,
+    where the funnel's server-side steps go, and how full rooms are for the prices search
+    keeps."""
     registry = JobRegistry()
     registry.register(OUTBOX_CLEANUP, delete_finished_jobs)
     registry.register(IDEMPOTENCY_CLEANUP, delete_expired_keys)
@@ -128,6 +149,9 @@ def build_registry(
     registry.register(ALLOCATIONS_CHANGED, changed_handler(beds))
     registry.register(REVALIDATE, revalidate_handler(web_cache))
     registry.register(TEXT, text_handler(texts))
+    # Bookings (step 5.4, ADR 0048): texts about them, and confirmations not given in time.
+    registry.register(NOTIFY, notify_handler(texts))
+    registry.register(CONFIRMATION_TIMEOUTS, time_out_confirmations)
     registry.register(GRIEVANCE_TEXT, grievance_text_handler(texts))
     registry.register(ANALYTICS_CAPTURE, capture_handler(analytics))
     return registry

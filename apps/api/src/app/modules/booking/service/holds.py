@@ -20,36 +20,19 @@ from typing import TYPE_CHECKING, Final
 
 from sqlalchemy.exc import IntegrityError
 
-from app.core import audit, idempotency
+from app.core import idempotency
 from app.core.calendar import india_date
-from app.core.errors import InvalidTransitionError, NotFoundError
+from app.core.errors import NotFoundError
 from app.core.flags import Flag
 from app.core.ids import new_booking_code, normalize_booking_code
-from app.modules.booking.domain.state_machine import (
-    ActivateAllocation,
-    BookingEvent,
-    BookingFacts,
-    BookingStatus,
-    CancelPayment,
-    DeactivateAllocation,
-    Moment,
-    Notify,
-    Party,
-    RequestPayment,
-    SetCheckWindowEnd,
-    SetConfirmDeadline,
-    SetHoldExpiry,
-    TransitionRefusedError,
-    hold,
-    transition,
-)
+from app.modules.booking.domain.state_machine import BookingEvent, Party, hold
 from app.modules.booking.errors import BookingNeedsVisitError, HoldLimitReachedError, QuoteUsedError
-from app.modules.booking.models import HOLD, Booking, BookingEventRecord, Channel
+from app.modules.booking.models import HOLD, Booking, Channel
 from app.modules.booking.repository import BookingRepository
-from app.modules.booking.schemas import BookingPlace as PlaceSchema
-from app.modules.booking.schemas import StudentBooking
+from app.modules.booking.service.transitions import Transitions, fields
+from app.modules.booking.service.views import BookingViews
 from app.modules.catalog.service import CatalogLookup
-from app.modules.inventory.domain.allocations import Period, stay_period
+from app.modules.inventory.domain.allocations import stay_period
 from app.modules.inventory.errors import BedUnavailableError
 from app.modules.inventory.service import BedHolds
 from app.modules.pricing.errors import QuoteExpiredError
@@ -57,40 +40,16 @@ from app.modules.pricing.service import BookingTerms, QuoteLookup
 
 if TYPE_CHECKING:
     import uuid
-    from collections.abc import Iterable
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.core.actor import Actor
     from app.core.clock import Clock
     from app.core.flags import FlagReader
-    from app.modules.booking.domain.state_machine import Effect, Transition
-    from app.modules.catalog.service import BookingPlace
+    from app.modules.booking.schemas import StudentBooking
 
 # A random code clashing with another booking's is rare; three in a row, impossible in practice.
 CODE_ATTEMPTS: Final = 3
-
-_AUDIT_ACTORS: Final[dict[Party, audit.ActorType]] = {
-    Party.STUDENT: "user",
-    Party.OWNER: "owner",
-    Party.OPS: "staff",
-}
-
-
-def _fields(effects: Iterable[Effect]) -> dict[str, object]:
-    """What the effects change on the booking's own row, saved with its status."""
-    fields: dict[str, object] = {}
-    for effect in effects:
-        match effect:
-            case SetHoldExpiry(at=at):
-                fields["hold_expires_at"] = at
-            case SetConfirmDeadline(at=at):
-                fields["confirm_by"] = at
-            case SetCheckWindowEnd(at=at):
-                fields["check_window_ends_at"] = at
-            case _:
-                pass
-    return fields
 
 
 class BookingService:
@@ -103,6 +62,8 @@ class BookingService:
         self._quotes = QuoteLookup(db, clock)
         self._terms = BookingTerms(db)
         self._beds = BedHolds(db, clock)
+        self._transitions = Transitions(db, clock)
+        self._views = BookingViews(db)
 
     async def hold(
         self, actor: Actor, quote_id: uuid.UUID, *, request: idempotency.IdempotentRequest
@@ -142,7 +103,9 @@ class BookingService:
             rooms = await self._beds.lock_room_type(quote.room_category_id)
             beds = [bed for room in rooms for bed in room.bed_ids]
             for stale in await self._bookings.stale_holds(beds, now=now):
-                await self._apply(stale, BookingEvent.HOLD_EXPIRED, Party.SYSTEM, place, by=None)
+                await self._transitions.apply(
+                    stale, BookingEvent.HOLD_EXPIRED, Party.SYSTEM, place, by=None
+                )
             stay = stay_period(quote.move_in, quote.stay_months)
             assert stay.end is not None  # noqa: S101 - a stay always ends
             bed = await self._beds.free_bed(rooms, stay)
@@ -173,12 +136,12 @@ class BookingService:
                 deposit_paise=quote.deposit_paise,
                 monthly_charges_paise=quote.monthly_charges_paise,
                 one_time_charges_paise=quote.one_time_charges_paise,
-                **_fields(step.effects),
+                **fields(step.effects),
             )
             await self._add(booking)
-            await self._carry_out(booking, step.effects, by=actor.user_id)
-            await self._log(booking, HOLD, None, step, Party.STUDENT, by=actor.user_id)
-            view = await self._student_view(booking, place)
+            await self._transitions.carry_out(booking, HOLD, step, by=actor.user_id)
+            await self._transitions.log(booking, HOLD, None, step, Party.STUDENT, by=actor.user_id)
+            view = await self._views.student(booking, place)
             await idempotency.complete(
                 self._db, request, idempotency.StoredResponse(201, view.model_dump(mode="json"))
             )
@@ -193,8 +156,7 @@ class BookingService:
             booking = await self._bookings.by_code(canonical)
             if booking is None or booking.student_id != actor.user_id:
                 raise NotFoundError
-            places = await self._catalog.booking_places([booking.property_id], verified_only=False)
-            return await self._student_view(booking, places[booking.property_id])
+            return await self._views.student(booking, await self._views.place(booking))
 
     async def _add(self, booking: Booking) -> None:
         """Adds the booking, with a new code should its random one be taken."""
@@ -211,115 +173,3 @@ class BookingService:
                 break
         # The row's own defaults: its version and when it was made.
         await self._db.refresh(booking)
-
-    async def _apply(
-        self,
-        booking: Booking,
-        event: BookingEvent,
-        party: Party,
-        place: BookingPlace,
-        *,
-        by: int | None,
-    ) -> Transition:
-        """``event`` from ``party``, through the state machine: the status saved with a
-        compare-and-set, the effects carried out, and the change written down."""
-        terms = await self._terms.of(booking.booking_policy_id)
-        facts = BookingFacts(
-            status=BookingStatus(booking.status),
-            move_in=booking.move_in,
-            token_paise=booking.token_paise,
-            instant_confirm=place.instant_confirm,
-            hold_expires_at=booking.hold_expires_at,
-            confirm_by=booking.confirm_by,
-            check_window_ends_at=booking.check_window_ends_at,
-        )
-        try:
-            step = transition(facts, event, party, Moment(self._clock.now()), terms)
-        except TransitionRefusedError as refusal:
-            raise InvalidTransitionError(refusal.reason) from refusal
-        was = facts.status
-        if not await self._bookings.compare_and_set(
-            booking, to=step.to, values=_fields(step.effects)
-        ):
-            raise InvalidTransitionError("The booking changed a moment ago. Try again.")
-        await self._carry_out(booking, step.effects, by=by)
-        await self._log(booking, event, was, step, party, by=by)
-        return step
-
-    async def _carry_out(
-        self, booking: Booking, effects: Iterable[Effect], *, by: int | None
-    ) -> None:
-        for effect in effects:
-            match effect:
-                case ActivateAllocation():
-                    await self._beds.hold(
-                        booking.bed_id,
-                        Period(booking.move_in, booking.planned_move_out),
-                        booking_id=booking.id,
-                        property_id=booking.property_id,
-                    )
-                case DeactivateAllocation():
-                    await self._beds.release(booking.id, property_id=booking.property_id, by=by)
-                case SetHoldExpiry() | SetConfirmDeadline() | SetCheckWindowEnd():
-                    # Saved with the status.
-                    pass
-                case RequestPayment() | CancelPayment():
-                    # The gateway's order, and withdrawing it, come with payments (Phase 6).
-                    pass
-                case Notify():
-                    # Notifications come with the confirmation flow (5.4).
-                    pass
-                case _:  # pragma: no cover - each later step carries out the effects it brings
-                    msg = f"{type(effect).__name__} isn't carried out yet"
-                    raise NotImplementedError(msg)
-
-    async def _log(
-        self,
-        booking: Booking,
-        event: str,
-        was: BookingStatus | None,
-        step: Transition,
-        party: Party,
-        *,
-        by: int | None,
-    ) -> None:
-        self._bookings.record(
-            BookingEventRecord(
-                booking_id=booking.id,
-                event=event,
-                from_status=was,
-                to_status=step.to,
-                actor_type=party,
-                actor_id=by,
-                payload={"effects": [type(effect).__name__ for effect in step.effects]},
-            )
-        )
-        await audit.record(
-            self._db,
-            clock=self._clock,
-            actor=audit.SYSTEM if party is Party.SYSTEM else audit.Actor(_AUDIT_ACTORS[party], by),
-            action=f"booking.{event}",
-            entity_type="booking",
-            entity_id=booking.code,
-            details={"from": was, "to": step.to},
-        )
-
-    async def _student_view(self, booking: Booking, place: BookingPlace) -> StudentBooking:
-        bed = await self._catalog.bed_ref(booking.bed_id)
-        return StudentBooking(
-            code=booking.code,
-            status=BookingStatus(booking.status),
-            property=PlaceSchema(slug=place.slug, name=place.name, locality=place.locality),
-            room_type=bed.category_label,
-            move_in=booking.move_in,
-            stay_months=booking.stay_months,
-            planned_move_out=booking.planned_move_out,
-            hold_expires_at=booking.hold_expires_at,
-            monthly_rent_paise=booking.monthly_rent_paise,
-            token_paise=booking.token_paise,
-            due_at_move_in_paise=booking.due_at_move_in_paise,
-            deposit_paise=booking.deposit_paise,
-            monthly_charges_paise=booking.monthly_charges_paise,
-            one_time_charges_paise=booking.one_time_charges_paise,
-            created_at=booking.created_at,
-        )

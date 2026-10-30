@@ -8,6 +8,7 @@ from app.modules.booking.domain.state_machine import BookingStatus
 from app.modules.booking.models import Booking, BookingEventRecord
 
 if TYPE_CHECKING:
+    import uuid
     from collections.abc import Collection, Mapping
     from datetime import datetime
 
@@ -24,11 +25,51 @@ class BookingRepository:
     def record(self, entry: BookingEventRecord) -> None:
         self._db.add(entry)
 
-    async def by_code(self, code: str) -> Booking | None:
-        return await self._db.scalar(select(Booking).where(Booking.code == code))
+    async def by_code(self, code: str, *, lock: bool = False) -> Booking | None:
+        query = select(Booking).where(Booking.code == code)
+        return await self._db.scalar(query.with_for_update() if lock else query)
+
+    async def by_public_id(self, public_id: uuid.UUID, *, lock: bool = False) -> Booking | None:
+        query = select(Booking).where(Booking.public_id == public_id)
+        return await self._db.scalar(query.with_for_update() if lock else query)
+
+    async def unconfirmed_past(self, now: datetime, *, limit: int) -> list[Booking]:
+        """Bookings with the token in whose owner hasn't confirmed by their deadline, locked,
+        the most overdue first; ones another run holds are left to it."""
+        rows = await self._db.scalars(
+            select(Booking)
+            .where(Booking.status == BookingStatus.TOKEN_SECURED, Booking.confirm_by <= now)
+            .order_by(Booking.confirm_by, Booking.id)
+            .limit(limit)
+            .with_for_update(skip_locked=True)
+        )
+        return list(rows)
 
     async def by_quote(self, quote_id: int) -> Booking | None:
         return await self._db.scalar(select(Booking).where(Booking.quote_id == quote_id))
+
+    async def of_student(self, student_id: int) -> list[Booking]:
+        """Every booking the student made, newest first."""
+        rows = await self._db.scalars(
+            select(Booking)
+            .where(Booking.student_id == student_id)
+            .order_by(Booking.created_at.desc(), Booking.id.desc())
+        )
+        return list(rows)
+
+    async def events_of(self, booking_ids: Collection[int]) -> dict[int, list[BookingEventRecord]]:
+        """Each booking's changes, oldest first."""
+        if not booking_ids:
+            return {}
+        rows = await self._db.scalars(
+            select(BookingEventRecord)
+            .where(BookingEventRecord.booking_id.in_(booking_ids))
+            .order_by(BookingEventRecord.id)
+        )
+        found: dict[int, list[BookingEventRecord]] = {}
+        for row in rows:
+            found.setdefault(row.booking_id, []).append(row)
+        return found
 
     async def lock_holds_of(self, student_id: int) -> None:
         """Until the transaction ends, the student's other holds wait for this one, so two at

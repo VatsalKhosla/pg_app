@@ -426,7 +426,9 @@ def test_a_code_another_booking_has_is_drawn_again(
         taken = (await _hold(first, (await _quote(first, _category_of(listing)))["id"])).json()
         fresh = new_booking_code()
         draws = iter([taken["code"], fresh])
-        monkeypatch.setattr("app.modules.booking.service.new_booking_code", lambda: next(draws))
+        monkeypatch.setattr(
+            "app.modules.booking.service.holds.new_booking_code", lambda: next(draws)
+        )
         quote = await _quote(second, _category_of(listing))
         return (await _hold(second, quote["id"])).json()["code"], fresh
 

@@ -203,6 +203,14 @@ class CatalogRepository:
         query = select(Owner).where(Owner.public_id == public_id)
         return await self._db.scalar(query.with_for_update() if lock else query)
 
+    async def owner_user_ids(self, owner_ids: Collection[int]) -> dict[int, int]:
+        if not owner_ids:
+            return {}
+        rows = await self._db.execute(
+            select(Owner.id, Owner.user_id).where(Owner.id.in_(owner_ids))
+        )
+        return {row.id: row.user_id for row in rows}
+
     async def owner_of_user(self, user_id: int, *, lock: bool = False) -> Owner | None:
         query = select(Owner).where(Owner.user_id == user_id)
         return await self._db.scalar(query.with_for_update() if lock else query)
