@@ -43,7 +43,7 @@
    With no hooks configured, it publishes and skips the deploy. Images are built on GitHub, so Render's build minutes go unused, and every push is built from the same commit CI tested.
 4. **The fictional sample PGs go on staging**, at the founders' request (2026-10-31). `catalog samples` now refuses only production, and the web app shows a banner on every page of staging: a test copy whose PGs are fictional samples, where nothing booked is real. They need storage for their photos, which Neon now provides.
 5. **What staging inlines:**
-   - **the addresses:** `staging.fixyourstay.in` and `api.staging.fixyourstay.in`, sibling subdomains so the session cookie covers both;
+   - **the addresses:** at first `staging.fixyourstay.in` and `api.staging.fixyourstay.in`. On 2026-10-31 the founders asked for the main domain to show the site, so until launch staging is `fixyourstay.in` (with `www.` redirecting) and `api.fixyourstay.in`, and the session cookie covers the domain. At launch, production takes these and staging moves back to `staging.` addresses;
    - **Turnstile:** Cloudflare's test keys;
    - **the map:** OpenStreetMap's tiles, since a site this lightly used is within their tile policy. The live site still waits for a map provider the founders choose.
 
@@ -56,11 +56,11 @@
 ## Consequences
 
 - **The founders' steps** are in `docs/runbooks/staging.md`, about 15 minutes once:
-  - make the two images public, and the media bucket public-read;
+  - make the media bucket public-read (the images come out public, as the repository is);
   - regenerate the storage keys, which were pasted into a chat;
   - apply the blueprint with Neon's connection string and the storage keys;
   - save the two deploy hooks as GitHub secrets;
-  - add two CNAME records at GoDaddy.
+  - point the domain at Render in GoDaddy: an A record for the main domain, CNAMEs for `www` and `api`, and GoDaddy's forwarding and parked page removed.
 - **A first visit after a quiet spell waits about a minute** while the web app wakes, and the API may add another. Jobs run only while the API is awake.
 - **Each green push to `main` takes about five minutes longer**, for building and publishing the images.
 - **The move to Vercel and AWS** (8.5) replaces the hosts and keeps the images, the deploy job and the settings.
