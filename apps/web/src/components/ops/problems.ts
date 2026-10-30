@@ -13,6 +13,8 @@ const WITH_DETAIL: readonly string[] = [
   "LISTING_INVALID",
   "LISTING_INCOMPLETE",
   "MEDIA_NOT_ALLOWED",
+  "RULE_SET_INVALID",
+  "QUOTE_INVALID",
 ];
 
 /** What to tell ops about a failed call, from the console's own messages. */

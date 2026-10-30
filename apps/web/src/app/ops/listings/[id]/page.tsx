@@ -54,8 +54,8 @@ async function load(id: string) {
 }
 
 /**
- * One listing in full, and everything ops do to it: status, verification, details, rooms,
- * amenities, media, and its history.
+ * One listing in full, and everything ops do to it: status, verification, details, rooms and
+ * their pricing (its own page), amenities, media, and its history.
  */
 export default async function OpsListingPage({
   params,
@@ -83,6 +83,21 @@ export default async function OpsListingPage({
     },
     { key: "details", title: t("details.title"), body: <DetailsForm listing={listing} /> },
     { key: "rooms", title: t("rooms.title"), body: <RoomsEditor listing={listing} /> },
+    {
+      key: "pricing",
+      title: t("pricing.section"),
+      body: (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">{t("pricing.linkHint")}</p>
+          <Link
+            href={`/ops/listings/${id}/pricing` as Route}
+            className="inline-flex min-h-6 items-center font-medium text-primary underline underline-offset-4"
+          >
+            {t("pricing.link")}
+          </Link>
+        </div>
+      ),
+    },
     {
       key: "amenities",
       title: t("amenities.title"),

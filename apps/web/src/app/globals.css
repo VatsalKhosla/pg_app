@@ -26,6 +26,15 @@
   --border: oklch(0.91 0 0);
   --input: oklch(0.91 0 0);
   --ring: var(--brand-primary);
+  /*
+   * Charts (the pricing editor): the reference palette's first categorical slot, checked with
+   * the dataviz validator against these backgrounds in both themes, with hairline grey chrome.
+   */
+  --chart-series: #2a78d6;
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --chart-reference: #898781;
+  --chart-band: rgb(137 135 129 / 14%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -48,6 +57,11 @@
     --border: oklch(1 0 0 / 12%);
     --input: oklch(1 0 0 / 16%);
     --ring: var(--brand-primary-dark);
+    --chart-series: #3987e5;
+    --chart-grid: #2c2c2a;
+    --chart-axis: #383835;
+    --chart-reference: #898781;
+    --chart-band: rgb(195 194 183 / 12%);
   }
 }
 
