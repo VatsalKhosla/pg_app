@@ -21,7 +21,13 @@
 
 1. **Render runs the services, as `render.yaml` describes them.** They run in Ohio, beside the founders' Neon project (AWS us-east-2), so the API sits next to its database and storage. Users in India wait a little longer for each page than they would from Singapore, which a staging site can bear.
    - **The web app** is Next.js's standalone server in a new image (`apps/web/Dockerfile`).
-   - **The API** is the existing image. On staging it runs `python -m app.all_in_one`: migrations first, then the worker and the API side by side, because the free plan has no workers. When either process stops, so does the other, and Render restarts the container.
+   - **The API** is the existing image. On staging it runs `python -m app.all_in_one`, because the free plan has no workers:
+     - migrations first;
+     - then the geo data, which a load changes only where it differs;
+     - then, with `SEED_SAMPLES=true`, the six fictional sample PGs, which a second run leaves alone;
+     - then the worker and the API side by side.
+
+     When either process stops, so does the other, and Render restarts the container.
    - **The cache** is Render's Key Value, which only the private network reaches.
 
    Production keeps the API and the worker apart.
@@ -35,15 +41,16 @@
    - it calls each Render service's deploy hook with the image's digest, the API first.
 
    With no hooks configured, it publishes and skips the deploy. Images are built on GitHub, so Render's build minutes go unused, and every push is built from the same commit CI tested.
-4. **What staging inlines:**
+4. **The fictional sample PGs go on staging**, at the founders' request (2026-10-31). `catalog samples` now refuses only production, and the web app shows a banner on every page of staging: a test copy whose PGs are fictional samples, where nothing booked is real. They need storage for their photos, which Neon now provides.
+5. **What staging inlines:**
    - **the addresses:** `staging.fixyourstay.in` and `api.staging.fixyourstay.in`, sibling subdomains so the session cookie covers both;
    - **Turnstile:** Cloudflare's test keys;
    - **the map:** OpenStreetMap's tiles, since a site this lightly used is within their tile policy. The live site still waits for a map provider the founders choose.
 
    Search engines are kept out, as `robots.txt` already does on staging.
-5. **What waits for a founder's choice:**
+6. **What waits for a founder's choice:**
    - **SMS:** phone sign-in stays off, because the provider is a paid vendor.
-   - **Listings:** the fictional sample PGs still refuse deployed environments.
+   - **Real listings:** they come through the ops console once staff can sign in.
    - **Staff sign-in:** it needs a Google OAuth client for staging.
 
 ## Consequences

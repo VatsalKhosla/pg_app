@@ -1,6 +1,6 @@
 # PG booking platform
 
-An online platform for booking verified PG (paying guest) beds in Delhi NCR. Students find PGs on a map, book a visit, reserve a bed with a small refundable token and move in; owners pay a one-time placement fee. The brand name is still undecided.
+An online platform for booking verified PG (paying guest) beds in Delhi NCR. Students find PGs on a map, book a visit, reserve a bed with a small refundable token and move in; owners pay a one-time placement fee. The brand lives in `apps/web/src/config/brand.ts` and the API's `BRAND_NAME` only.
 
 | Path | What it holds |
 |---|---|

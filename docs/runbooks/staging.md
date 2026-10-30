@@ -10,7 +10,7 @@ Everything runs in the US East (Ohio) region, where the Neon project is, so the 
 | Part | Where | Free plan limits that matter |
 |---|---|---|
 | Web app | Render, free web service `fys-staging-web` | Sleeps after 15 idle minutes. The first visit after that waits about a minute. |
-| API, worker and migrations, in one container | Render, free web service `fys-staging-api` | Sleeps the same way, and jobs wait while it sleeps. Render's free plan has no background workers. |
+| API, worker and migrations, in one container | Render, free web service `fys-staging-api` | Sleeps the same way, and jobs wait while it sleeps. Render's free plan has no background workers. Each start brings the database up to date, loads the geo data and checks the samples are there, which adds a few seconds to waking. |
 | Cache (rate limits, short-lived data) | Render, free Key Value `fys-staging-cache` | Kept in memory only, so it starts empty after a restart. That's fine for a cache. |
 | Database (Postgres with PostGIS) | Neon, free plan, project `fixyourstay-staging` | 0.5 GB. It pauses when idle and wakes in about a second. |
 | Photos | Neon's object storage on the same project: buckets `pg-platform-private` (uploads) and `pg-platform-media` (public photos) | 5 GB. It's addressed by path, and uploads are allowed only from the staging site (CORS). |
@@ -22,7 +22,7 @@ The services are described in `render.yaml`; the deploy is the **Deploy staging*
 
 - **Phone sign-in** answers "unavailable", because there is no SMS provider yet (a paid vendor the founders choose). Students can browse but can't sign in.
 - **Staff sign-in** needs a Google OAuth client for staging (see [Later](#later)).
-- **Listings:** it starts with none (see [Later](#later)).
+- **Real listings:** staging shows the six fictional sample PGs, added on its first start. A banner on every page says they're samples (see [Later](#later)).
 - **Map:** it uses OpenStreetMap's tiles, which their policy allows for a site this lightly used. The live site needs a map provider the founders choose.
 - **Search engines** are kept out: `robots.txt` disallows everything on staging.
 
@@ -79,9 +79,7 @@ From then on, every green push to `main` deploys.
 
 ## Later
 
-- **Listings:** staging starts empty. Two ways to fill it, both the founders' call:
-  - the six fictional sample PGs, clearly labelled, which today refuse to run anywhere deployed;
-  - real listings added through the ops console, once staff can sign in.
+- **Real listings** come through the ops console, once staff can sign in. To stop adding the samples, set `SEED_SAMPLES` to `false` on `fys-staging-api`; the ones already there stay until they're unpublished in the ops console.
 - **Staff sign-in:**
   1. Create a Google OAuth client in a Google Cloud project, with the redirect URI `https://api.staging.fixyourstay.in/v1/auth/staff/google/callback`.
   2. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `STAFF_GOOGLE_EMAILS` on `fys-staging-api`.
