@@ -1,0 +1,118 @@
+# Staging on Render's free plan (ADR 0047; docs/runbooks/staging.md), in Ohio, beside the Neon
+# project's database and object storage (AWS us-east-2):
+# - the web app;
+# - the API, with its worker and migrations in one container (the free plan has no background
+#   workers);
+# - a Key Value cache that only the private network reaches.
+# The database and the photo storage are Neon's free plan.
+#
+# Deploys come from GitHub Actions (the "Deploy staging" job). After every check on main passes,
+# it builds both images, publishes them to GitHub's container registry and calls each service's
+# deploy hook.
+#
+# Founders: apply this once from Render's dashboard (New, then Blueprint, then this repository).
+# Render asks then for each value marked "sync: false"; never commit those.
+
+services:
+  - type: web
+    name: fys-staging-web
+    runtime: image
+    plan: free
+    region: ohio
+    image:
+      url: ghcr.io/vatsalkhosla/pg_app-web:staging
+    # Answered by the web server alone, without the API.
+    healthCheckPath: /robots.txt
+    domains:
+      - staging.fixyourstay.in
+    envVars:
+      # The server reaches the API at its public address: the free plan's services can't take
+      # private network traffic.
+      - key: API_URL
+        value: https://api.staging.fixyourstay.in
+      - fromGroup: fys-staging-shared
+
+  - type: web
+    name: fys-staging-api
+    runtime: image
+    plan: free
+    region: ohio
+    image:
+      url: ghcr.io/vatsalkhosla/pg_app-api:staging
+    dockerCommand: python -m app.all_in_one
+    # Liveness only: /readyz would restart the service while Neon's database wakes up.
+    healthCheckPath: /healthz
+    domains:
+      - api.staging.fixyourstay.in
+    envVars:
+      - key: APP_ENV
+        value: staging
+      - key: LOG_FORMAT
+        value: json
+      # Neon's connection string, as its dashboard gives it (direct, without pooling).
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: fys-staging-cache
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SITE_URL
+        value: https://staging.fixyourstay.in
+      - key: API_URL
+        value: https://api.staging.fixyourstay.in
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://staging.fixyourstay.in
+      # The web app and the API are sibling subdomains, so the session cookie covers both.
+      - key: SESSION_COOKIE_DOMAIN
+        value: staging.fixyourstay.in
+      # No SMS provider yet (a paid vendor the founders choose): sign-in codes and visit texts
+      # are off.
+      - key: OTP_SENDER
+        value: unavailable
+      - key: TEXT_SENDER
+        value: unavailable
+      # Cloudflare's published test secret, which always passes; the API refuses it in
+      # production.
+      - key: TURNSTILE_SECRET_KEY
+        value: 1x0000000000000000000000000000000AA
+      # Photos: Neon's object storage, on the project's branch. It's addressed by path; the
+      # media bucket is public-read, and the private one takes the web app's uploads (CORS).
+      - key: S3_ENDPOINT_URL
+        value: https://br-tiny-surf-b4c7xiwd.storage.c-6.us-east-2.aws.neon.tech
+      - key: S3_REGION
+        value: us-east-2
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: MEDIA_PUBLIC_BASE_URL
+        value: https://br-tiny-surf-b4c7xiwd.storage.c-6.us-east-2.aws.neon.tech/pg-platform-media
+      # Render's proxy is the only way in, so the client addresses it forwards are believed.
+      - key: FORWARDED_ALLOW_IPS
+        value: "*"
+      # Neon's free database takes few connections, and the free instance is small.
+      - key: DB_POOL_SIZE
+        value: "3"
+      - key: DB_MAX_OVERFLOW
+        value: "2"
+      - key: WORKER_CONCURRENCY
+        value: "1"
+      - fromGroup: fys-staging-shared
+
+  - type: keyvalue
+    name: fys-staging-cache
+    plan: free
+    region: ohio
+    # Nothing outside Render's private network may connect.
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+
+envVarGroups:
+  - name: fys-staging-shared
+    envVars:
+      # Signs the API's requests that tell the web app a page is out of date (ADR 0032).
+      - key: REVALIDATE_SECRET
+        generateValue: true

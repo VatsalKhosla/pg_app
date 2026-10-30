@@ -211,3 +211,75 @@ jobs:
           # Their checks run as the jobs above and in the Security workflow.
           SKIP: ruff-check,ruff-format,mypy,eslint,prettier,gitleaks
         run: uv run --project apps/api --locked pre-commit run --all-files --show-diff-on-failure
+
+  # Staging (ADR 0047, docs/runbooks/staging.md): a push to main that passes every check above is
+  # built into the API and web images, published to GitHub's container registry, and deployed to
+  # Render through each service's deploy hook. Until the founders add the hooks, the images are
+  # published and the deploy is skipped.
+  staging:
+    name: Deploy staging
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [api, web, e2e, client, contract, workflows, hooks]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: staging
+    permissions:
+      contents: read
+      packages: write # publish the images to GitHub's container registry
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: true
+    env:
+      # What the web image inlines (apps/web/src/config/env.ts).
+      NEXT_PUBLIC_APP_ENV: staging
+      NEXT_PUBLIC_SITE_URL: https://staging.fixyourstay.in
+      NEXT_PUBLIC_API_URL: https://api.staging.fixyourstay.in
+      # Neon's object storage (render.yaml): the public media bucket, and where uploads go.
+      NEXT_PUBLIC_MEDIA_URL: https://br-tiny-surf-b4c7xiwd.storage.c-6.us-east-2.aws.neon.tech/pg-platform-media
+      NEXT_PUBLIC_UPLOAD_ORIGIN: https://br-tiny-surf-b4c7xiwd.storage.c-6.us-east-2.aws.neon.tech
+      # Cloudflare's published test site key, which always passes; for staging only.
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+      # OpenStreetMap's own tiles: a staging site's light use is within their tile policy.
+      NEXT_PUBLIC_MAP_TILES_URL: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+      NEXT_PUBLIC_MAP_TILES_ATTRIBUTION: © OpenStreetMap contributors
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the API and web images
+        run: |
+          registry="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}"
+          echo "REGISTRY=$registry" >> "$GITHUB_ENV"
+          make api-image API_IMAGE="$registry/pg_app-api:$GITHUB_SHA"
+          make web-image WEB_IMAGE="$registry/pg_app-web:$GITHUB_SHA"
+      - name: Publish them to GitHub's container registry
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          printf '%s' "$TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          for name in pg_app-api pg_app-web; do
+            docker tag "$REGISTRY/$name:$GITHUB_SHA" "$REGISTRY/$name:staging"
+            docker push --quiet "$REGISTRY/$name:$GITHUB_SHA"
+            docker push --quiet "$REGISTRY/$name:staging"
+            digest="$(docker inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$REGISTRY/$name:$GITHUB_SHA" | grep -m 1 "^$REGISTRY/$name@")"
+            echo "${name//-/_}_DIGEST=$digest" >> "$GITHUB_ENV"
+          done
+          docker logout ghcr.io
+      - name: Deploy to Render
+        env:
+          API_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_API }}
+          WEB_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_WEB }}
+        run: |
+          if [[ -z "$API_HOOK" || -z "$WEB_HOOK" ]]; then
+            echo "::notice title=Staging::Images published; add RENDER_DEPLOY_HOOK_API and RENDER_DEPLOY_HOOK_WEB to deploy them (docs/runbooks/staging.md)."
+            exit 0
+          fi
+          deploy() {
+            local image
+            image="$(jq --raw-output --null-input --arg image "$2" '$image | @uri')"
+            curl --fail --silent --show-error --max-time 30 --request POST "$1&imgURL=$image" > /dev/null
+          }
+          # The API first: it brings the database up to date as it starts.
+          deploy "$API_HOOK" "$pg_app_api_DIGEST"
+          deploy "$WEB_HOOK" "$pg_app_web_DIGEST"
+          echo "::notice title=Staging::Deploying ${GITHUB_SHA::7} to https://staging.fixyourstay.in"
