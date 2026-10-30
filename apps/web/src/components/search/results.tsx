@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/errors";
 import type { SearchPage } from "@/lib/search/client";
 import { cn } from "@/lib/utils";
+import { DEFAULT_STAY } from "@/lib/pricing/calendar";
 
 import { ResultCard } from "./result-card";
 
@@ -104,9 +105,13 @@ export function Results({
     results.isPlaceholderData || (results.isRefetching && !results.isFetchingNextPage);
   return (
     <div className={className}>
-      <p role="status" className="mb-3 text-sm text-muted-foreground">
+      <p role="status" className="text-sm text-muted-foreground">
         {t("results.count", { count: cards.length, more: String(results.hasNextPage) })}
         {refreshing ? <span className="ms-2">{t("results.loading")}</span> : null}
+      </p>
+      {/* The engine prices a month's move-ins for a stay (ADR 0042): say which. */}
+      <p className="mb-3 text-sm text-muted-foreground">
+        {t("results.rents", { months: DEFAULT_STAY })}
       </p>
       <ul
         aria-busy={refreshing}

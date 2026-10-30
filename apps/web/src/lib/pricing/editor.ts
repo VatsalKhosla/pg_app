@@ -11,7 +11,7 @@ export const PREVIEW_DAYS = 366;
 export const LABEL_MAX = 40;
 export const TIERS_MAX = 5;
 export const MAX_STAY_MONTHS = 36;
-export const DEFAULT_STAY = 11;
+export { DEFAULT_STAY } from "./calendar";
 
 const MINUS = "−";
 

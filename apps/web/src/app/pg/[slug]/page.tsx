@@ -20,7 +20,7 @@ import {
 } from "@/lib/api/public";
 import { formatDistance } from "@/lib/format/distance";
 import { formatINR } from "@/lib/money";
-import { priceStretches, scarceBeds } from "@/lib/pricing/calendar";
+import { DEFAULT_STAY, priceStretches, scarceBeds } from "@/lib/pricing/calendar";
 import { breadcrumbJsonLd, listingJsonLd } from "@/lib/seo/json-ld";
 import { cn } from "@/lib/utils";
 
@@ -336,7 +336,6 @@ async function Rooms({
   );
 }
 
-const DEFAULT_STAY = 11;
 const STAYS = [1, 3, 6, 9, 11, 12, 18, 24] as const;
 
 /**

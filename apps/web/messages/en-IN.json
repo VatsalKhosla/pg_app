@@ -303,7 +303,8 @@
       "noneHint": "Try a bigger area or fewer filters.",
       "failed": "Search didn't work just now. Please try again.",
       "retry": "Try again",
-      "invalid": "That search doesn't work:"
+      "invalid": "That search doesn't work:",
+      "rents": "Rents a month for a {months}-month stay starting that month. A PG's page prices your own dates."
     },
     "card": {
       "price": "{min} to {max} a month",

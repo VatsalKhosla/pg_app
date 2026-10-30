@@ -10,6 +10,12 @@ export interface Week {
   monthlyRentPaise: number;
 }
 
+/**
+ * The stay the PG page's calendar, search and the map price for unless asked otherwise: an
+ * academic year, as the API's DEFAULT_STAY_MONTHS (ADRs 0040, 0042).
+ */
+export const DEFAULT_STAY = 11;
+
 /** A run of weeks with one price: from its first move-in to its last. */
 export interface PriceStretch {
   first: string;
