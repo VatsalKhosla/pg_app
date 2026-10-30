@@ -18,7 +18,7 @@ import {
   type FeePolicyInput,
   type PricingCapsInput,
 } from "@/lib/admin/client";
-import { percentToBps, wholeNumber } from "@/lib/admin/units";
+import { percentToBps, wholeNumber } from "@/lib/forms/units";
 import { showFieldErrors } from "@/lib/forms/field-errors";
 import { z } from "@/lib/forms/zod";
 import { rupeesToPaise } from "@/lib/money";

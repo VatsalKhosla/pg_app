@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bpsToPercentInput, percentToBps, wholeNumber } from "@/lib/admin/units";
+import { bpsToPercentInput, percentToBps, wholeNumber } from "@/lib/forms/units";
 
 describe("percentages on the admin forms", () => {
   it.each([

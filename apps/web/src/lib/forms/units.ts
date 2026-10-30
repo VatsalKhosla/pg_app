@@ -1,6 +1,6 @@
 /**
- * Rates on the admin forms (ADR 0036): the API keeps them in basis points (30% is 3000), and
- * admins type percentages. Converted without floating point, as money is.
+ * Rates on the admin and ops forms (ADRs 0036, 0041): the API keeps them in basis points (30% is
+ * 3000), and staff type percentages. Converted without floating point, as money is.
  */
 
 const PERCENT = /^(\d{1,3})(?:\.(\d{1,2}))?$/u;

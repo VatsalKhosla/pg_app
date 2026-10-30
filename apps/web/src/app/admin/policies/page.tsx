@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { type PolicyField, PolicyForm, type PolicyName } from "@/components/admin/policy-form";
-import { bpsToPercentInput } from "@/lib/admin/units";
+import { bpsToPercentInput } from "@/lib/forms/units";
 import { unwrap } from "@/lib/api/client";
 import { getServerApi } from "@/lib/api/server";
 import { ADMIN_POLICIES_PATH } from "@/lib/auth/routes";
