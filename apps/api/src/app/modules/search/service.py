@@ -31,8 +31,10 @@ from app.core.web_cache import LISTINGS_TAG, ask_to_revalidate, listing_tag
 from app.modules.catalog.domain.listing import GenderPolicy
 from app.modules.catalog.service import CatalogLookup
 from app.modules.geo.service import GeoLookup
+from app.modules.inventory.service import AvailabilityLookup
 from app.modules.media.domain.assets import AssetStatus, Moderation
 from app.modules.media.service import MediaLookup
+from app.modules.pricing.domain.quotes import DEFAULT_STAY_MONTHS
 from app.modules.pricing.service import PricingLookup
 from app.modules.search.cache import Cached
 from app.modules.search.domain.pins import PIN_CAP, cache_key, snapped
@@ -87,6 +89,7 @@ class SearchIndex:
         self._clock = clock
         self._catalog = CatalogLookup(db)
         self._pricing = PricingLookup(db, clock, beds=beds)
+        self._availability = AvailabilityLookup(db)
         self._listings = SearchRepository(db)
         self._summaries = SummaryRepository(db)
 
@@ -106,10 +109,17 @@ class SearchIndex:
                 property_id, entry, refreshed_at=now, changed_at=now if changed else None
             )
         rents = await self._catalog.rents(property_id)
-        months = months_from(india_date(now))
+        today = india_date(now)
+        months = months_from(today)
         ranges = await self._pricing.month_rents(
             property_id, months, only={rent.category_id for rent in rents}
         )
+        free: dict[tuple[int, date], int] = {}
+        for month in months:
+            counts = await self._availability.free_beds_for_stay(
+                property_id, max(month, today), DEFAULT_STAY_MONTHS
+            )
+            free.update({(category_id, month): count for category_id, count in counts.items()})
         summaries = summarise(
             [
                 CategoryRent(
@@ -124,6 +134,7 @@ class SearchIndex:
             ],
             months,
             {key: (found.low, found.high) for key, found in ranges.items()},
+            free,
         )
         await self._summaries.replace(property_id, summaries, computed_at=now)
         if changed:

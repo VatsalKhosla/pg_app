@@ -29,6 +29,7 @@ from app.modules.identity.service import (
     delete_old_challenges,
     personal_data,
 )
+from app.modules.inventory.service import ALLOCATIONS_CHANGED
 from app.modules.media.jobs import (
     DISCARD_UPLOAD,
     PROCESS,
@@ -123,6 +124,8 @@ def build_registry(
     registry.register(BAND_CHANGED, band_changed_handler(beds))
     registry.register(CAPS_CHANGED, caps_changed_handler(beds))
     registry.register(CHECK_INTEGRITY, check_integrity_handler)
+    # Its beds changed hands: free beds, occupancy and so prices (step 5.1, ADR 0044).
+    registry.register(ALLOCATIONS_CHANGED, changed_handler(beds))
     registry.register(REVALIDATE, revalidate_handler(web_cache))
     registry.register(TEXT, text_handler(texts))
     registry.register(GRIEVANCE_TEXT, grievance_text_handler(texts))

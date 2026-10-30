@@ -3,8 +3,8 @@ category's rent range for each month a student can move in, worked out ahead so 
 map never price a listing per request.
 
 A month's range is the least and the most the pricing engine quotes for a move-in on any day of
-it still to come, for the common stay, so the map and search agree with the PG page. Every active
-bed counts as free until bookings exist (Phase 5).
+it still to come, for the common stay, so the map and search agree with the PG page. Its free beds
+are those nothing holds for that stay from the month's first move-in (ADR 0044).
 """
 
 from dataclasses import dataclass
@@ -58,10 +58,12 @@ def summarise(
     categories: Sequence[CategoryRent],
     months: Sequence[date],
     rents: Mapping[tuple[int, date], tuple[Paise, Paise]],
+    free_beds: Mapping[tuple[int, date], int],
 ) -> list[MonthSummary]:
     """One summary per category and month the engine priced: its range of rents for the month,
-    lowest and highest, from ``rents`` by category and month. A category it couldn't price (its
-    limits leave no rent) has none, so search shows no price for it."""
+    lowest and highest, from ``rents`` by category and month, and its free beds from
+    ``free_beds``. A category it couldn't price (its limits leave no rent) has none, so search
+    shows no price for it."""
     summaries = []
     for category in categories:
         for month in months:
@@ -74,7 +76,7 @@ def summarise(
                     month=month,
                     min_rent=found[0],
                     max_rent=found[1],
-                    available_beds=category.active_beds,
+                    available_beds=free_beds.get((category.category_id, month), 0),
                     occupancy=category.occupancy,
                     ac=category.ac,
                     attached_bath=category.attached_bath,

@@ -60,12 +60,13 @@ def test_a_months_range_is_the_engines_and_an_unpriced_month_has_none() -> None:
             (7, july): (Paise(1_380_000), Paise(1_380_000)),
             (7, august): (Paise(1_140_000), Paise(1_200_000)),
         },
+        {(7, july): 2, (7, august): 1},
     )
-    unpriced = summarise(rents, [july, august], {})
+    unpriced = summarise(rents, [july, august], {}, {})
 
     assert [(s.month, s.min_rent, s.max_rent, s.available_beds) for s in summaries] == [
         (july, 1_380_000, 1_380_000, 2),
-        (august, 1_140_000, 1_200_000, 2),
+        (august, 1_140_000, 1_200_000, 1),
     ]
     assert unpriced == []
 
@@ -94,7 +95,8 @@ def test_every_priced_category_gets_every_month_and_a_sound_range(
         for rent in rents
         for month in months
     }
-    summaries = summarise(rents, months, priced)
+    free = {(rent.category_id, month): rent.active_beds for rent in rents for month in months}
+    summaries = summarise(rents, months, priced, free)
 
     assert len(months) == SUMMARY_MONTHS
     assert all(month.day == 1 for month in months)

@@ -6042,6 +6042,217 @@
         }
       }
     },
+    "/v1/ops/properties/{property_id}/inventory": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "A PG's beds over time",
+        "description": "Ops and admins: every bed with what holds it from ``from`` (today unless given) for\n``days`` days, and each room type's beds free for all of them.",
+        "operationId": "inventoryInventory",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 366,
+              "minimum": 1,
+              "default": 120,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryView"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/beds/{bed_id}/blocks": {
+      "post": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Hold a bed for an offline tenant or maintenance",
+        "description": "Ops and admins. 409 BED_UNAVAILABLE, saying what holds the bed, when anything does on\none of those days; 422 BLOCK_INVALID for a block that can't be. Audited.",
+        "operationId": "inventoryPlaceBlock",
+        "parameters": [
+          {
+            "name": "bed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Bed Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/blocks/{block_id}/end": {
+      "post": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "End a block",
+        "description": "Ops and admins: the bed is free from ``on``, sooner or later than planned; on or before\nits first day, the block is cancelled. 409 INVALID_TRANSITION for a booking's allocation or\na cancelled block, BED_UNAVAILABLE when a later end would overlap. Audited.",
+        "operationId": "inventoryEndBlock",
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Block Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockEnd"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/visits": {
       "get": {
         "tags": [
@@ -7187,6 +7398,63 @@
         ],
         "title": "AlertRoom"
       },
+      "AllocationInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AllocationKind"
+          },
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "start",
+          "end",
+          "note",
+          "active"
+        ],
+        "title": "AllocationInfo"
+      },
+      "AllocationKind": {
+        "type": "string",
+        "enum": [
+          "booking",
+          "offline_tenant",
+          "maintenance"
+        ],
+        "title": "AllocationKind"
+      },
       "AmenitiesChange": {
         "properties": {
           "amenities": {
@@ -7349,6 +7617,142 @@
         ],
         "title": "BedsFree",
         "description": "How many beds are free that month, roughly: real inventory (CLAUDE.md rule 7), without\nhanding out exact counts."
+      },
+      "BlockBed": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "room": {
+            "type": "string",
+            "title": "Room"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "room"
+        ],
+        "title": "BlockBed"
+      },
+      "BlockEnd": {
+        "properties": {
+          "on": {
+            "type": "string",
+            "format": "date",
+            "title": "On"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "on"
+        ],
+        "title": "BlockEnd",
+        "description": "The bed is free from ``on``; on or before the block's first day, it's cancelled."
+      },
+      "BlockInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AllocationKind"
+          },
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "bed": {
+            "$ref": "#/components/schemas/BlockBed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "start",
+          "end",
+          "note",
+          "active",
+          "bed"
+        ],
+        "title": "BlockInfo"
+      },
+      "BlockInput": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "offline_tenant",
+              "maintenance"
+            ],
+            "title": "Kind"
+          },
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "start"
+        ],
+        "title": "BlockInput",
+        "description": "A bed held for an offline tenant or maintenance from ``start``, until ``end`` (the bed\nis free that day) or, without one, until further notice."
       },
       "BookingPolicyInput": {
         "properties": {
@@ -9022,6 +9426,141 @@
           "details"
         ],
         "title": "HistoryEntry"
+      },
+      "InventoryBed": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "room": {
+            "type": "string",
+            "title": "Room"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "allocations": {
+            "items": {
+              "$ref": "#/components/schemas/AllocationInfo"
+            },
+            "type": "array",
+            "title": "Allocations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "room",
+          "active",
+          "allocations"
+        ],
+        "title": "InventoryBed"
+      },
+      "InventoryCategory": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "activeBeds": {
+            "type": "integer",
+            "title": "Activebeds"
+          },
+          "freeBeds": {
+            "type": "integer",
+            "title": "Freebeds"
+          },
+          "beds": {
+            "items": {
+              "$ref": "#/components/schemas/InventoryBed"
+            },
+            "type": "array",
+            "title": "Beds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "active",
+          "activeBeds",
+          "freeBeds",
+          "beds"
+        ],
+        "title": "InventoryCategory"
+      },
+      "InventoryPlace": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "InventoryPlace"
+      },
+      "InventoryView": {
+        "properties": {
+          "property": {
+            "$ref": "#/components/schemas/InventoryPlace"
+          },
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date",
+            "title": "End"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/InventoryCategory"
+            },
+            "type": "array",
+            "title": "Categories"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "property",
+          "start",
+          "end",
+          "categories"
+        ],
+        "title": "InventoryView",
+        "description": "A PG's beds and what holds each from ``start`` until ``end``."
       },
       "KycStatus": {
         "type": "string",

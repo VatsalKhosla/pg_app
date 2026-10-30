@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from app.modules.pricing.domain.policies import BookingPolicy
     from app.modules.pricing.models import PricingRuleSet
     from app.modules.pricing.models import RentBand as RentBandRow
-    from app.modules.pricing.occupancy import BedsTaken
+    from app.modules.pricing.occupancy import BedsTaken, RoomOccupancy
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,7 +44,10 @@ class PgPricing:
 
 class PricingInputs:
     def __init__(self, db: AsyncSession, *, beds: BedsTaken) -> None:
+        self._db = db
         self._beds = beds
+        # Each category's occupancy, read once for this pass.
+        self._occupancy: dict[int, RoomOccupancy] = {}
         self._policies = PolicyRepository(db)
         self._sets = RuleSetRepository(db)
         self._bands = RentBandRepository(db)
@@ -96,10 +99,16 @@ class PricingInputs:
             move_in=move_in,
             stay_months=stay_months,
             today=today,
-            occupancy_bps=await self._beds.occupancy_bps(category.id, move_in),
+            occupancy_bps=(await self._occupancy_of(category.id)).bps_on(move_in),
             rules=pricing.rules,
             band=None if band_row is None else band_of(band_row),
             fee_policy=fee_policy(pricing.fee_row),
             booking_policy=pricing.booking,
             caps=pricing_caps(pricing.caps_row),
         )
+
+    async def _occupancy_of(self, category_id: int) -> RoomOccupancy:
+        if (found := self._occupancy.get(category_id)) is None:
+            found = await self._beds.occupancy(self._db, category_id)
+            self._occupancy[category_id] = found
+        return found

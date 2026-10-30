@@ -26,6 +26,7 @@ from app.modules.catalog.domain.charges import (
 )
 from app.modules.catalog.service import CatalogLookup, PricedCategory, PricedProperty
 from app.modules.geo.service import GeoLookup
+from app.modules.inventory.service import AvailabilityLookup
 from app.modules.pricing.domain.engine import ImpossibleBoundsError, quote
 from app.modules.pricing.domain.quotes import (
     PREVIEW_DAYS,
@@ -83,7 +84,8 @@ class CalendarRoom:
     category: PricedCategory
     # Empty when the room can't be priced (ops have been told).
     weeks: tuple[CalendarWeek, ...]
-    # Beds free, from real inventory: active beds, less those booked once booking exists.
+    # Beds free for a whole stay from the first move-in shown, from real inventory: active
+    # beds that no booking, offline tenant or maintenance holds then (ADR 0044).
     beds_free: int
 
 
@@ -169,6 +171,7 @@ class QuoteService:
         self._flags = flags
         self._inputs = PricingInputs(db, beds=beds)
         self._catalog = CatalogLookup(db)
+        self._availability = AvailabilityLookup(db)
         self._geo = GeoLookup(db)
         self._policies = PolicyRepository(db)
         self._sets = RuleSetRepository(db)
@@ -280,6 +283,7 @@ class QuoteService:
                 if day <= horizon
             ]
             beds = await self._catalog.beds(place.id)
+            free = await self._free_for(place, move_ins, stay_months)
             rooms = []
             for category in place.categories:
                 if not category.active or beds.get(category.id, 0) == 0:
@@ -287,7 +291,7 @@ class QuoteService:
                 prices = await self._weeks(pricing, category, move_ins, stay_months, today)
                 if prices is None:
                     logger.error("no rent the bounds allow", property=str(place.public_id))
-                rooms.append(CalendarRoom(category, prices or (), beds.get(category.id, 0)))
+                rooms.append(CalendarRoom(category, prices or (), free.get(category.id, 0)))
             return CalendarView(place, stay_months, tuple(rooms))
 
     # Ops' pricing editor (ARCHITECTURE §8.6; step 4.6, ADR 0041): any version's prices, before
@@ -349,17 +353,25 @@ class QuoteService:
                 for day in (first + timedelta(weeks=week) for week in range(weeks))
                 if day <= last
             ]
-            beds = await self._catalog.beds(place.id)
+            free = await self._free_for(place, move_ins, stay_months)
             rooms = [
                 CalendarRoom(
                     category,
                     await self._weeks(pricing, category, move_ins, stay_months, today) or (),
-                    beds.get(category.id, 0),
+                    free.get(category.id, 0),
                 )
                 for category in place.categories
                 if category.active
             ]
             return CalendarView(place, stay_months, tuple(rooms))
+
+    async def _free_for(
+        self, place: PricedProperty, move_ins: list[date], stay_months: int
+    ) -> dict[int, int]:
+        """Each room's beds free for a whole stay from the first move-in shown (none: none)."""
+        if not move_ins:
+            return {}
+        return await self._availability.free_beds_for_stay(place.id, move_ins[0], stay_months)
 
     async def market(self, property_id: uuid.UUID) -> MarketView:
         """Beside each of the PG's active rooms: the band in force for its locality and

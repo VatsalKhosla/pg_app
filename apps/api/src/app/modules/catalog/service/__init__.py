@@ -6,8 +6,13 @@ from app.modules.catalog.service.export import owner_data
 from app.modules.catalog.service.inventory import CategoryChanges, CategoryDraft, InventoryService
 from app.modules.catalog.service.listings import ListingService, PropertyChanges, PropertyDraft
 from app.modules.catalog.service.lookup import (
+    BedLayout,
+    BedRef,
     CatalogLookup,
     CategoryRent,
+    LayoutBed,
+    LayoutCategory,
+    LayoutRoom,
     PricedCategory,
     PricedProperty,
     SearchEntry,
@@ -38,6 +43,8 @@ __all__ = [
     "INVENTORY_CHANGED",
     "LISTING_CHANGED",
     "AgreementService",
+    "BedLayout",
+    "BedRef",
     "CatalogLookup",
     "CatalogReader",
     "CategoryChanges",
@@ -46,6 +53,9 @@ __all__ = [
     "CategoryView",
     "ContactDetails",
     "InventoryService",
+    "LayoutBed",
+    "LayoutCategory",
+    "LayoutRoom",
     "ListingDetail",
     "ListingService",
     "ListingSummary",

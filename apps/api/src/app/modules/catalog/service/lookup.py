@@ -14,7 +14,7 @@ from app.modules.catalog.domain.listing import (
     VerificationStatus,
     is_public,
 )
-from app.modules.catalog.domain.rooms import CategoryStatus, Occupancy
+from app.modules.catalog.domain.rooms import BedStatus, CategoryStatus, Occupancy
 from app.modules.catalog.repository import CatalogRepository, charges_from_json
 from app.modules.geo.service import GeoLookup
 
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
     from app.core.geometry import Point
     from app.modules.catalog.domain.charges import MandatoryCharge
-    from app.modules.catalog.models import Property
+    from app.modules.catalog.models import Bed, Property
     from app.modules.geo.service import LocalityRef
 
 # A card shows the first of a listing's photos that is ready: a few to choose from is plenty.
@@ -44,6 +44,59 @@ class CategoryRent:
     occupancy: Occupancy
     ac: bool
     attached_bath: bool
+
+
+@dataclass(frozen=True, slots=True)
+class LayoutBed:
+    id: int
+    public_id: uuid.UUID
+    label: str
+    active: bool
+
+
+@dataclass(frozen=True, slots=True)
+class LayoutRoom:
+    id: int
+    public_id: uuid.UUID
+    label: str
+    beds: tuple[LayoutBed, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class LayoutCategory:
+    id: int
+    public_id: uuid.UUID
+    label: str
+    active: bool
+    rooms: tuple[LayoutRoom, ...]
+
+    @property
+    def active_beds(self) -> tuple[LayoutBed, ...]:
+        return tuple(bed for room in self.rooms for bed in room.beds if bed.active)
+
+
+@dataclass(frozen=True, slots=True)
+class BedLayout:
+    """A PG's room types, rooms and beds: what inventory holds over time (ADR 0044)."""
+
+    property_id: int
+    property_public_id: uuid.UUID
+    name: str
+    categories: tuple[LayoutCategory, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class BedRef:
+    """A bed with where it is, for a change to what holds it."""
+
+    id: int
+    public_id: uuid.UUID
+    label: str
+    active: bool
+    room_label: str
+    category_id: int
+    category_label: str
+    property_id: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,6 +216,81 @@ class CatalogLookup:
     ) -> PricedProperty | None:
         found = await self._catalog.property_by_slug(slug)
         return None if found is None else await self._priced(found, verified_only=verified_only)
+
+    async def bed_layout(self, property_id: int) -> BedLayout | None:
+        """A PG's room types with their rooms and beds, by its internal id."""
+        found = (await self._catalog.properties_by_id([property_id])).get(property_id)
+        return None if found is None else await self._layout(found)
+
+    async def bed_layout_of(self, public_id: uuid.UUID) -> BedLayout | None:
+        found = await self._catalog.property(public_id)
+        return None if found is None else await self._layout(found)
+
+    async def _layout(self, found: Property) -> BedLayout:
+        categories = await self._catalog.categories(found.id)
+        rooms = await self._catalog.rooms_of([category.id for category in categories])
+        beds = await self._catalog.beds_of([room.id for room in rooms])
+        return BedLayout(
+            property_id=found.id,
+            property_public_id=found.public_id,
+            name=found.name,
+            categories=tuple(
+                LayoutCategory(
+                    id=category.id,
+                    public_id=category.public_id,
+                    label=category.label,
+                    active=category.status == CategoryStatus.ACTIVE,
+                    rooms=tuple(
+                        LayoutRoom(
+                            id=room.id,
+                            public_id=room.public_id,
+                            label=room.label,
+                            beds=tuple(
+                                LayoutBed(
+                                    id=bed.id,
+                                    public_id=bed.public_id,
+                                    label=bed.label,
+                                    active=bed.status == BedStatus.ACTIVE,
+                                )
+                                for bed in beds
+                                if bed.room_id == room.id
+                            ),
+                        )
+                        for room in rooms
+                        if room.room_category_id == category.id
+                    ),
+                )
+                for category in categories
+            ),
+        )
+
+    async def active_bed_ids(self, category_id: int) -> list[int]:
+        """A room type's beds that can be sold, by internal id."""
+        return await self._catalog.active_bed_ids(category_id)
+
+    async def bed_ref(self, bed_id: int) -> BedRef:
+        """A bed by its internal id, with where it is."""
+        found = await self._catalog.bed_by_id(bed_id)
+        return await self._ref(found)
+
+    async def locked_bed(self, public_id: uuid.UUID) -> BedRef | None:
+        """A bed, held until the transaction ends so changes to what holds it go one at a time
+        (ARCHITECTURE §7.3)."""
+        bed = await self._catalog.bed(public_id, lock=True)
+        return None if bed is None else await self._ref(bed)
+
+    async def _ref(self, bed: Bed) -> BedRef:
+        place = await self._catalog.bed_place(bed.id)
+        return BedRef(
+            id=bed.id,
+            public_id=bed.public_id,
+            label=bed.label,
+            active=bed.status == BedStatus.ACTIVE,
+            room_label=place.room_label,
+            category_id=place.category_id,
+            category_label=place.category_label,
+            property_id=place.property_id,
+        )
 
     async def listed_rooms(self) -> list[ListedRoom]:
         """Every active room of every published PG: the market pricing's alerts compare

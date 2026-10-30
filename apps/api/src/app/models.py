@@ -37,6 +37,7 @@ from app.modules.identity.models import (
     UserRole,
     UserSession,
 )
+from app.modules.inventory.models import InventoryAllocation
 from app.modules.media.models import MediaAsset
 from app.modules.pricing.models import (
     BookingPolicyVersion,
@@ -66,6 +67,7 @@ __all__ = [
     "FeePolicyVersion",
     "Grievance",
     "IdempotencyRecord",
+    "InventoryAllocation",
     "Locality",
     "MediaAsset",
     "MetroLine",

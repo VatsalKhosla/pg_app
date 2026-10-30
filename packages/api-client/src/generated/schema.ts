@@ -1742,6 +1742,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ops/properties/{property_id}/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A PG's beds over time
+         * @description Ops and admins: every bed with what holds it from ``from`` (today unless given) for
+         *     ``days`` days, and each room type's beds free for all of them.
+         */
+        get: operations["inventoryInventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/beds/{bed_id}/blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hold a bed for an offline tenant or maintenance
+         * @description Ops and admins. 409 BED_UNAVAILABLE, saying what holds the bed, when anything does on
+         *     one of those days; 422 BLOCK_INVALID for a block that can't be. Audited.
+         */
+        post: operations["inventoryPlaceBlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/blocks/{block_id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End a block
+         * @description Ops and admins: the bed is free from ``on``, sooner or later than planned; on or before
+         *     its first day, the block is cancelled. 409 INVALID_TRANSITION for a booking's allocation or
+         *     a cancelled block, BED_UNAVAILABLE when a later end would overlap. Audited.
+         */
+        post: operations["inventoryEndBlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visits": {
         parameters: {
             query?: never;
@@ -2124,6 +2188,31 @@ export interface components {
             /** Label */
             label: string;
         };
+        /** AllocationInfo */
+        AllocationInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["AllocationKind"];
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /** End */
+            end: string | null;
+            /** Note */
+            note: string;
+            /** Active */
+            active: boolean;
+        };
+        /**
+         * AllocationKind
+         * @enum {string}
+         */
+        AllocationKind: "booking" | "offline_tenant" | "maintenance";
         /** AmenitiesChange */
         AmenitiesChange: {
             /** Amenities */
@@ -2190,6 +2279,74 @@ export interface components {
          * @enum {string}
          */
         BedsFree: "none" | "few" | "some" | "many";
+        /** BlockBed */
+        BlockBed: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
+            /** Room */
+            room: string;
+        };
+        /**
+         * BlockEnd
+         * @description The bed is free from ``on``; on or before the block's first day, it's cancelled.
+         */
+        BlockEnd: {
+            /**
+             * On
+             * Format: date
+             */
+            on: string;
+        };
+        /** BlockInfo */
+        BlockInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["AllocationKind"];
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /** End */
+            end: string | null;
+            /** Note */
+            note: string;
+            /** Active */
+            active: boolean;
+            bed: components["schemas"]["BlockBed"];
+        };
+        /**
+         * BlockInput
+         * @description A bed held for an offline tenant or maintenance from ``start``, until ``end`` (the bed
+         *     is free that day) or, without one, until further notice.
+         */
+        BlockInput: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "offline_tenant" | "maintenance";
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /** End */
+            end?: string | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /** BookingPolicyInput */
         BookingPolicyInput: {
             /** Tokenpaise */
@@ -2799,6 +2956,69 @@ export interface components {
             details: {
                 [key: string]: unknown;
             };
+        };
+        /** InventoryBed */
+        InventoryBed: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
+            /** Room */
+            room: string;
+            /** Active */
+            active: boolean;
+            /** Allocations */
+            allocations: components["schemas"]["AllocationInfo"][];
+        };
+        /** InventoryCategory */
+        InventoryCategory: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
+            /** Active */
+            active: boolean;
+            /** Activebeds */
+            activeBeds: number;
+            /** Freebeds */
+            freeBeds: number;
+            /** Beds */
+            beds: components["schemas"]["InventoryBed"][];
+        };
+        /** InventoryPlace */
+        InventoryPlace: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * InventoryView
+         * @description A PG's beds and what holds each from ``start`` until ``end``.
+         */
+        InventoryView: {
+            property: components["schemas"]["InventoryPlace"];
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Categories */
+            categories: components["schemas"]["InventoryCategory"][];
         };
         /**
          * KycStatus
@@ -8973,6 +9193,137 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PricingAlertInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    inventoryInventory: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                days?: number;
+            };
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryView"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    inventoryPlaceBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bed_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    inventoryEndBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                block_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockEnd"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockInfo"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

@@ -63,6 +63,7 @@ PATH_VALUES: Final = frozenset(
         "a_draft_rule",
         "a_missing_quote",
         "a_missing_alert",
+        "a_missing_block",
         "an_owner",
         "a_live_listing",
     }
@@ -473,6 +474,19 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ),
     ("GET", "/v1/ops/properties/{property_id}/market"): Rule(
         ops_only(200), path={"property_id": "a_listing"}
+    ),
+    # Inventory (ADR 0044): ops and admins; each call blocks a fresh listing's bed. No block has
+    # the id sent to end.
+    ("GET", "/v1/ops/properties/{property_id}/inventory"): Rule(
+        ops_only(200), path={"property_id": "a_listing"}
+    ),
+    ("POST", "/v1/ops/beds/{bed_id}/blocks"): Rule(
+        ops_only(201),
+        lambda: {"json": {"kind": "maintenance", "start": "2027-08-01", "end": "2027-08-05"}},
+        path={"bed_id": "a_bed"},
+    ),
+    ("POST", "/v1/ops/blocks/{block_id}/end"): Rule(
+        ops_only(404), lambda: {"json": {"on": "2027-08-03"}}, path={"block_id": "a_missing_block"}
     ),
     # Pricing's integrity alerts (ADR 0043): ops and admins. No alert has the id sent.
     ("GET", "/v1/ops/pricing-alerts"): Rule(ops_only(200)),

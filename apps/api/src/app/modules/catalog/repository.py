@@ -172,6 +172,13 @@ class ListedRow(NamedTuple):
     base_rent_paise: int
 
 
+class BedPlaceRow(NamedTuple):
+    room_label: str
+    category_id: int
+    category_label: str
+    property_id: int
+
+
 class RentRow(NamedTuple):
     category_id: int
     base_rent_paise: int
@@ -446,9 +453,35 @@ class CatalogRepository:
             select(RoomCategory).where(RoomCategory.public_id == public_id).with_for_update()
         )
 
+    async def bed_by_id(self, bed_id: int) -> Bed:
+        found = await self._db.get(Bed, bed_id)
+        assert found is not None  # noqa: S101 - asked for by a row that refers to it
+        return found
+
     async def bed(self, public_id: uuid.UUID, *, lock: bool = False) -> Bed | None:
         query = select(Bed).where(Bed.public_id == public_id)
         return await self._db.scalar(query.with_for_update() if lock else query)
+
+    async def active_bed_ids(self, category_id: int) -> list[int]:
+        rows = await self._db.scalars(
+            select(Bed.id)
+            .join(Room, Room.id == Bed.room_id)
+            .where(Room.room_category_id == category_id, Bed.status == BedStatus.ACTIVE)
+            .order_by(Bed.id)
+        )
+        return list(rows)
+
+    async def bed_place(self, bed_id: int) -> BedPlaceRow:
+        """Where a bed is: its room's label, its category's id and label, and its PG's id."""
+        row = (
+            await self._db.execute(
+                select(Room.label, RoomCategory.id, RoomCategory.label, RoomCategory.property_id)
+                .join(Bed, Bed.room_id == Room.id)
+                .join(RoomCategory, RoomCategory.id == Room.room_category_id)
+                .where(Bed.id == bed_id)
+            )
+        ).one()
+        return BedPlaceRow(*row)
 
     async def property_of_category(self, category_id: int) -> Property:
         found = await self._db.scalar(

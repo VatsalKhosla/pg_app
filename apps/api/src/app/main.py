@@ -33,10 +33,11 @@ from app.modules.identity.adapters.unavailable_otp import UnavailableOtpSender
 from app.modules.identity.auth import authenticate_session
 from app.modules.identity.router import GOOGLE_CALLBACK_PATH
 from app.modules.identity.router import router as identity_router
+from app.modules.inventory.router import router as inventory_router
+from app.modules.inventory.service import AllocationsTaken
 from app.modules.media.adapters.s3 import S3Storage
 from app.modules.media.router import router as media_router
 from app.modules.media.service import Buckets
-from app.modules.pricing.occupancy import NoBookingsYet
 from app.modules.pricing.router import router as pricing_router
 from app.modules.search.router import router as search_router
 from app.modules.system.router import router as system_router
@@ -74,6 +75,7 @@ ROUTERS: Final = (
     catalog_router,
     search_router,
     pricing_router,
+    inventory_router,
     visits_router,
     media_router,
 )
@@ -100,7 +102,7 @@ def _set_shared_state(app: FastAPI, settings: Settings, agreements: AgreementLib
     app.state.contact_access = VisitContacts()
     # How full a room category is on a move-in, for quotes' occupancy rules: booking (Phase 5)
     # answers it; until then no bed is taken (ADR 0039).
-    app.state.beds_taken = NoBookingsYet()
+    app.state.beds_taken = AllocationsTaken()
     app.state.staff_google_domains = settings.staff_google_domains
     app.state.staff_google_emails = settings.staff_google_emails
 

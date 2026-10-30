@@ -179,12 +179,13 @@ test-api-unit: ## Run the API unit tests only (no Docker needed)
 	$(API) pytest -m "not integration"
 
 .PHONY: coverage-money
-coverage-money: ## Fail below 95% branch coverage of the money code's pure domain: pricing for now (ADR 0037)
+coverage-money: ## Fail below 95% branch coverage of the money code's pure domain: pricing and inventory so far (ADRs 0037, 0044)
 	@# Coverage needs every branch, not 10,000 cases: the test run already did those.
 	HYPOTHESIS_PROFILE=dev $(API) pytest -q -p no:cacheprovider tests/unit/test_pricing_engine.py \
 		tests/unit/test_pricing_policies.py tests/unit/test_pricing_rule_sets.py \
 		tests/unit/test_pricing_quotes.py tests/unit/test_pricing_alerts.py \
-		--cov=app.modules.pricing.domain --cov-branch \
+		tests/unit/test_inventory_allocations.py \
+		--cov=app.modules.pricing.domain --cov=app.modules.inventory.domain --cov-branch \
 		--cov-report=term-missing --cov-fail-under=95
 
 .PHONY: test-web
