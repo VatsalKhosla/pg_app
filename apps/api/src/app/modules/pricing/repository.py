@@ -3,10 +3,12 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func, or_, select
+from sqlalchemy.dialects.postgresql import insert
 
 from app.modules.pricing.models import (
     PolicyVersion,
     PriceQuote,
+    PricingAlert,
     PricingRuleRow,
     PricingRuleSet,
     RentBand,
@@ -14,9 +16,11 @@ from app.modules.pricing.models import (
 
 if TYPE_CHECKING:
     import uuid
-    from datetime import datetime
+    from datetime import date, datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.modules.pricing.domain.alerts import AlertKind
 
 
 class PolicyRepository:
@@ -85,6 +89,15 @@ class RentBandRepository:
 class RuleSetRepository:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
+
+    async def activations_since(self, property_id: int, since: datetime) -> int:
+        """How many of the PG's rule sets went into force from ``since`` on."""
+        count = await self._db.scalar(
+            select(func.count()).where(
+                PricingRuleSet.property_id == property_id, PricingRuleSet.activated_at >= since
+            )
+        )
+        return count or 0
 
     async def lock_property(self, property_id: int) -> None:
         """Until the transaction ends, other changes to this PG's rule sets wait."""
@@ -164,3 +177,63 @@ class QuoteRepository:
 
     async def get(self, public_id: uuid.UUID) -> PriceQuote | None:
         return await self._db.scalar(select(PriceQuote).where(PriceQuote.public_id == public_id))
+
+
+class AlertRepository:
+    def __init__(self, db: AsyncSession) -> None:
+        self._db = db
+
+    async def raise_once(self, **values: object) -> bool:
+        """An alert, unless one with its key was ever raised; whether this one was."""
+        added = await self._db.scalar(
+            insert(PricingAlert)
+            .values(**values)
+            .on_conflict_do_nothing(index_elements=[PricingAlert.key])
+            .returning(PricingAlert.id)
+        )
+        return added is not None
+
+    async def open_of_kind(self, kind: AlertKind) -> list[PricingAlert]:
+        """The open alerts of a kind, locked for the check that may resolve them."""
+        rows = await self._db.scalars(
+            select(PricingAlert)
+            .where(PricingAlert.kind == kind, PricingAlert.resolved_at.is_(None))
+            .order_by(PricingAlert.public_id)
+            .with_for_update()
+        )
+        return list(rows)
+
+    async def page(
+        self, *, resolved: bool, before: uuid.UUID | None, limit: int
+    ) -> list[PricingAlert]:
+        """Open or resolved alerts, newest first, ``limit + 1`` at most."""
+        state = (
+            PricingAlert.resolved_at.is_not(None)
+            if resolved
+            else PricingAlert.resolved_at.is_(None)
+        )
+        query = (
+            select(PricingAlert)
+            .where(state)
+            .order_by(PricingAlert.public_id.desc())
+            .limit(limit + 1)
+        )
+        if before is not None:
+            query = query.where(PricingAlert.public_id < before)
+        return list(await self._db.scalars(query))
+
+    async def get(self, public_id: uuid.UUID, *, lock: bool = False) -> PricingAlert | None:
+        query = select(PricingAlert).where(PricingAlert.public_id == public_id)
+        return await self._db.scalar(query.with_for_update() if lock else query)
+
+    async def weekly_quotes(self, first: date, last: date) -> list[tuple[int, int, int]]:
+        """Each PG quoted from ``first`` to ``last`` (days in India): its quotes, and how many a
+        limit held back."""
+        clamped = func.count().filter(func.jsonb_array_length(PriceQuote.clamps) > 0)
+        rows = await self._db.execute(
+            select(PriceQuote.property_id, func.count(), clamped)
+            .where(PriceQuote.quoted_on.between(first, last))
+            .group_by(PriceQuote.property_id)
+            .order_by(PriceQuote.property_id)
+        )
+        return [(row[0], row[1], row[2]) for row in rows]

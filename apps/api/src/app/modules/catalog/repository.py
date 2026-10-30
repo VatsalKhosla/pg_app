@@ -160,6 +160,18 @@ class NearbyProperty:
     distance_m: float
 
 
+class ListedRow(NamedTuple):
+    property_id: int
+    property_public_id: uuid.UUID
+    property_name: str
+    locality_id: int
+    category_id: int
+    category_public_id: uuid.UUID
+    label: str
+    occupancy: str
+    base_rent_paise: int
+
+
 class RentRow(NamedTuple):
     category_id: int
     base_rent_paise: int
@@ -376,6 +388,29 @@ class CatalogRepository:
             .order_by(RoomCategory.id)
         )
         return [RentRow(*row) for row in rows]
+
+    async def listed_rooms(self) -> list[ListedRow]:
+        """Every active room category of every published PG, with its PG and locality."""
+        rows = await self._db.execute(
+            select(
+                Property.id,
+                Property.public_id,
+                Property.name,
+                Property.locality_id,
+                RoomCategory.id,
+                RoomCategory.public_id,
+                RoomCategory.label,
+                RoomCategory.occupancy,
+                RoomCategory.base_rent_paise,
+            )
+            .join(RoomCategory, RoomCategory.property_id == Property.id)
+            .where(
+                Property.status == PropertyStatus.PUBLISHED,
+                RoomCategory.status == CategoryStatus.ACTIVE,
+            )
+            .order_by(RoomCategory.id)
+        )
+        return [ListedRow(*row) for row in rows]
 
     async def locality_rents(
         self, locality_id: int, occupancy: str, *, except_property: int

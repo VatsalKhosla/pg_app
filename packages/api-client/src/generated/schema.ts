@@ -1700,6 +1700,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ops/pricing-alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pricing's integrity alerts
+         * @description Ops and admins: open alerts (or resolved ones), newest first. Each says what it's about
+         *     and the numbers that raised it.
+         */
+        get: operations["pricingPricingAlerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/pricing-alerts/{alert_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve an alert
+         * @description Ops and admins: they've looked at it, and say what they found. 409 INVALID_TRANSITION
+         *     once it's resolved. Audited.
+         */
+        post: operations["pricingResolvePricingAlert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visits": {
         parameters: {
             query?: never;
@@ -2026,6 +2068,61 @@ export interface components {
             acceptedAt: string | null;
             /** Acceptedversion */
             acceptedVersion: string | null;
+        };
+        /**
+         * AlertKind
+         * @enum {string}
+         */
+        AlertKind: "rent_below_market" | "clamps_frequent" | "rule_churn";
+        /**
+         * AlertNumbers
+         * @description What raised it, as it was then; each kind fills its own.
+         */
+        AlertNumbers: {
+            /** Listedrentpaise */
+            listedRentPaise?: number | null;
+            /** Medianrentpaise */
+            medianRentPaise?: number | null;
+            /** Comparables */
+            comparables?: number | null;
+            /** Locality */
+            locality?: string | null;
+            /** Week */
+            week?: string | null;
+            /** Quotes */
+            quotes?: number | null;
+            /** Clamped */
+            clamped?: number | null;
+            /** Activations */
+            activations?: number | null;
+        };
+        /** AlertPlace */
+        AlertPlace: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** AlertResolution */
+        AlertResolution: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** AlertRoom */
+        AlertRoom: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
         };
         /** AmenitiesChange */
         AmenitiesChange: {
@@ -3441,6 +3538,35 @@ export interface components {
             stayMonths: number;
             /** Rooms */
             rooms: components["schemas"]["CalendarRoomInfo"][];
+        };
+        /** PricingAlertInfo */
+        PricingAlertInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["AlertKind"];
+            property: components["schemas"]["AlertPlace"];
+            room: components["schemas"]["AlertRoom"] | null;
+            numbers: components["schemas"]["AlertNumbers"];
+            /**
+             * Raisedat
+             * Format: date-time
+             */
+            raisedAt: string;
+            /** Resolvedat */
+            resolvedAt: string | null;
+            resolvedBy: components["schemas"]["Changer"] | null;
+            /** Resolution */
+            resolution: string;
+        };
+        /** PricingAlertPage */
+        PricingAlertPage: {
+            /** Items */
+            items: components["schemas"]["PricingAlertInfo"][];
+            /** Nextcursor */
+            nextCursor: string | null;
         };
         /** PricingCapsInput */
         PricingCapsInput: {
@@ -8760,6 +8886,93 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PricingMarket"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingPricingAlerts: {
+        parameters: {
+            query?: {
+                status?: "open" | "resolved";
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingAlertPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    pricingResolvePricingAlert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertResolution"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingAlertInfo"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

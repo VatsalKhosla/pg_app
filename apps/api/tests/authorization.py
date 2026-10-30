@@ -62,6 +62,7 @@ PATH_VALUES: Final = frozenset(
         "a_draft_rule_set",
         "a_draft_rule",
         "a_missing_quote",
+        "a_missing_alert",
         "an_owner",
         "a_live_listing",
     }
@@ -472,6 +473,11 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ),
     ("GET", "/v1/ops/properties/{property_id}/market"): Rule(
         ops_only(200), path={"property_id": "a_listing"}
+    ),
+    # Pricing's integrity alerts (ADR 0043): ops and admins. No alert has the id sent.
+    ("GET", "/v1/ops/pricing-alerts"): Rule(ops_only(200)),
+    ("POST", "/v1/ops/pricing-alerts/{alert_id}/resolve"): Rule(
+        ops_only(404), lambda: {"json": {}}, path={"alert_id": "a_missing_alert"}
     ),
     # Student visits (ADR 0033): people signed in by phone ask and cancel their own; ops book and
     # cancel any; field agents run the ones booked for them. The visit is another student's, booked

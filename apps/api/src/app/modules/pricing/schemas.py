@@ -10,6 +10,7 @@ from pydantic import Field, StringConstraints
 from app.core.schemas import ApiModel
 from app.modules.catalog.domain.rooms import Occupancy
 from app.modules.catalog.schemas import Charge
+from app.modules.pricing.domain.alerts import RESOLUTION_MAX_LENGTH, AlertKind
 from app.modules.pricing.domain.engine import LABEL_MAX_LENGTH, ClampKind, RuleKind
 from app.modules.pricing.domain.policies import (
     NOTE_MAX_LENGTH,
@@ -508,3 +509,56 @@ class PricingMarket(ApiModel):
     locality: str
     caps: MarketCaps
     rooms: list[MarketRoomInfo]
+
+
+# Integrity alerts (ADR 0043).
+
+
+class AlertPlace(ApiModel):
+    id: uuid.UUID
+    name: str
+
+
+class AlertRoom(ApiModel):
+    id: uuid.UUID
+    label: str
+
+
+class AlertNumbers(ApiModel):
+    """What raised it, as it was then; each kind fills its own."""
+
+    # A rent below the market.
+    listed_rent_paise: int | None = None
+    median_rent_paise: int | None = None
+    comparables: int | None = None
+    locality: str | None = None
+    # Clamps and churn: the week's Monday.
+    week: date | None = None
+    quotes: int | None = None
+    clamped: int | None = None
+    activations: int | None = None
+
+
+class PricingAlertInfo(ApiModel):
+    id: uuid.UUID
+    kind: AlertKind
+    property: AlertPlace
+    room: AlertRoom | None
+    numbers: AlertNumbers
+    raised_at: datetime
+    resolved_at: datetime | None
+    # Who resolved it; null while open, when the check found it no longer holds, or once their
+    # account has gone.
+    resolved_by: Changer | None
+    resolution: str
+
+
+class PricingAlertPage(ApiModel):
+    items: list[PricingAlertInfo]
+    next_cursor: uuid.UUID | None
+
+
+class AlertResolution(ApiModel):
+    note: Annotated[
+        str, StringConstraints(strip_whitespace=True, max_length=RESOLUTION_MAX_LENGTH)
+    ] = ""

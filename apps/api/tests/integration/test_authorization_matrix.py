@@ -328,6 +328,7 @@ _FIXED: Final[dict[str, Callable[[], str]]] = {
     "a_campus": lambda: read_reference_data().campuses[0].slug,
     "a_missing_rent_band": lambda: str(uuid.uuid7()),
     "a_missing_quote": lambda: str(uuid.uuid7()),
+    "a_missing_alert": lambda: str(uuid.uuid7()),
 }
 
 

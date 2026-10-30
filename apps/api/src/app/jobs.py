@@ -35,6 +35,7 @@ from app.modules.media.jobs import (
     discard_upload_handler,
     process_handler,
 )
+from app.modules.pricing.jobs import CHECK_INTEGRITY, check_integrity_handler
 from app.modules.pricing.service import BAND_CHANGED, CAPS_CHANGED, RULES_CHANGED
 from app.modules.search.jobs import (
     REFRESH,
@@ -85,6 +86,8 @@ SCHEDULES: Final = (
     ScheduledJob(name=RETENTION, kind=RETENTION, schedule=DailyAt(time(3, 30))),
     # Just after midnight, so the price months roll forward as soon as a new one starts.
     ScheduledJob(name=REFRESH_ALL, kind=REFRESH_ALL, schedule=DailyAt(time(0, 30))),
+    # Pricing's integrity alerts: the market as it stands, and last week's quotes (ADR 0043).
+    ScheduledJob(name=CHECK_INTEGRITY, kind=CHECK_INTEGRITY, schedule=DailyAt(time(1, 0))),
 )
 
 
@@ -119,6 +122,7 @@ def build_registry(
     registry.register(REPRICE, changed_handler(beds))
     registry.register(BAND_CHANGED, band_changed_handler(beds))
     registry.register(CAPS_CHANGED, caps_changed_handler(beds))
+    registry.register(CHECK_INTEGRITY, check_integrity_handler)
     registry.register(REVALIDATE, revalidate_handler(web_cache))
     registry.register(TEXT, text_handler(texts))
     registry.register(GRIEVANCE_TEXT, grievance_text_handler(texts))

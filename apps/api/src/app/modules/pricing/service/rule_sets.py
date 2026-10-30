@@ -27,6 +27,7 @@ from app.modules.pricing.domain.rule_sets import (
 from app.modules.pricing.errors import RuleSetInvalidError
 from app.modules.pricing.models import PricingRuleRow, PricingRuleSet
 from app.modules.pricing.repository import RentBandRepository, RuleSetRepository
+from app.modules.pricing.service.alerts import AlertChecks
 from app.modules.pricing.service.policies import band_of
 
 if TYPE_CHECKING:
@@ -241,6 +242,8 @@ class RuleSetService:
                 clock=self._clock,
                 dedupe_key=f"{RULES_CHANGED}:{draft.public_id}",
             )
+            # Rules that keep changing are for ops to look at (ADR 0043).
+            await AlertChecks(self._db, self._clock).churn(place)
             return await self._view(draft)
 
     async def discard(self, actor: Actor, rule_set_id: uuid.UUID) -> None:

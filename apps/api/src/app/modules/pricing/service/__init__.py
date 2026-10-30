@@ -1,5 +1,6 @@
 """Pricing's use cases: the policies in force and their changes, rent bands, and PGs' rule sets."""
 
+from app.modules.pricing.service.alerts import AlertChecks, AlertService, AlertView
 from app.modules.pricing.service.lookup import PricingLookup, RentRange
 from app.modules.pricing.service.policies import (
     BAND_CHANGED,
@@ -35,6 +36,9 @@ __all__ = [
     "BAND_CHANGED",
     "CAPS_CHANGED",
     "RULES_CHANGED",
+    "AlertChecks",
+    "AlertService",
+    "AlertView",
     "BandView",
     "CalendarView",
     "MarketView",

@@ -47,6 +47,21 @@ class CategoryRent:
 
 
 @dataclass(frozen=True, slots=True)
+class ListedRoom:
+    """An active room category of a published PG, as pricing's market check compares it."""
+
+    property_id: int
+    property_public_id: uuid.UUID
+    property_name: str
+    locality_id: int
+    category_id: int
+    category_public_id: uuid.UUID
+    label: str
+    occupancy: Occupancy
+    base_rent: Paise
+
+
+@dataclass(frozen=True, slots=True)
 class PricedCategory:
     """A room category as pricing needs it: its listed rent and the owner's bounds."""
 
@@ -148,6 +163,24 @@ class CatalogLookup:
     ) -> PricedProperty | None:
         found = await self._catalog.property_by_slug(slug)
         return None if found is None else await self._priced(found, verified_only=verified_only)
+
+    async def listed_rooms(self) -> list[ListedRoom]:
+        """Every active room of every published PG: the market pricing's alerts compare
+        listed rents with (ADR 0043)."""
+        return [
+            ListedRoom(
+                property_id=row.property_id,
+                property_public_id=row.property_public_id,
+                property_name=row.property_name,
+                locality_id=row.locality_id,
+                category_id=row.category_id,
+                category_public_id=row.category_public_id,
+                label=row.label,
+                occupancy=Occupancy(row.occupancy),
+                base_rent=Paise(row.base_rent_paise),
+            )
+            for row in await self._catalog.listed_rooms()
+        ]
 
     async def locality_rents(
         self, locality_id: int, occupancy: Occupancy, *, except_property: int

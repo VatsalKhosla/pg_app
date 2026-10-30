@@ -6,7 +6,7 @@ constraints keep any two from overlapping, so at any moment exactly one is in fo
 
 import uuid
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final
 
 from sqlalchemy import (
     BigInteger,
@@ -27,6 +27,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.db import AppendOnlyModel, Model
 from app.core.ids import new_public_id
 from app.modules.catalog.domain.rooms import Occupancy
+from app.modules.pricing.domain.alerts import RESOLUTION_MAX_LENGTH, AlertKind
 from app.modules.pricing.domain.engine import LABEL_MAX_LENGTH, RuleKind
 from app.modules.pricing.domain.policies import (
     MAX_RENT,
@@ -317,4 +318,43 @@ class PriceQuote(AppendOnlyModel):
         CheckConstraint("inputs_sha256 ~ '^[0-9a-f]{64}$'", name="inputs_sha256"),
         Index("ix_price_quotes_room_category_id", "room_category_id"),
         Index("ix_price_quotes_expires_at", "expires_at"),
+    )
+
+
+class PricingAlert(Model):
+    """Something about a PG's prices for ops to look at (ARCHITECTURE §8.7; step 4.8, ADR 0043).
+    Its ``key`` makes it raised once for what it's about, however often the checks run. Ops
+    resolve it, or the check does once a rent is no longer below the market."""
+
+    __tablename__ = "pricing_alerts"
+
+    public_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, default=new_public_id)
+    kind: Mapped[str] = mapped_column(Text)
+    key: Mapped[str] = mapped_column(Text, unique=True)
+    property_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("properties.id"))
+    # The room it's about, for a rent below the market.
+    room_category_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("room_categories.id")
+    )
+    # The numbers that raised it, as they were then.
+    details: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    raised_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Who resolved it; none when the check found it no longer holds.
+    resolved_by: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL")
+    )
+    resolution: Mapped[str] = mapped_column(Text, server_default="")
+
+    __table_args__ = (
+        CheckConstraint(_one_of("kind", AlertKind), name="kind"),
+        CheckConstraint(f"char_length(resolution) <= {RESOLUTION_MAX_LENGTH}", name="resolution"),
+        CheckConstraint("resolved_at IS NOT NULL OR resolved_by IS NULL", name="resolved"),
+        # The open ones, for ops' list and the nightly check.
+        Index(
+            "ix_pricing_alerts_open",
+            "kind",
+            "public_id",
+            postgresql_where=sql("resolved_at IS NULL"),
+        ),
     )

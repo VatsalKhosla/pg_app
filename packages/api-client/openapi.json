@@ -5889,6 +5889,159 @@
         }
       }
     },
+    "/v1/ops/pricing-alerts": {
+      "get": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Pricing's integrity alerts",
+        "description": "Ops and admins: open alerts (or resolved ones), newest first. Each says what it's about\nand the numbers that raised it.",
+        "operationId": "pricingPricingAlerts",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "open",
+                "resolved"
+              ],
+              "type": "string",
+              "default": "open",
+              "title": "Status"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingAlertPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/pricing-alerts/{alert_id}/resolve": {
+      "post": {
+        "tags": [
+          "pricing"
+        ],
+        "summary": "Resolve an alert",
+        "description": "Ops and admins: they've looked at it, and say what they found. 409 INVALID_TRANSITION\nonce it's resolved. Audited.",
+        "operationId": "pricingResolvePricingAlert",
+        "parameters": [
+          {
+            "name": "alert_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Alert Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertResolution"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingAlertInfo"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/visits": {
       "get": {
         "tags": [
@@ -6874,6 +7027,165 @@
           "acceptedVersion"
         ],
         "title": "AgreementInfo"
+      },
+      "AlertKind": {
+        "type": "string",
+        "enum": [
+          "rent_below_market",
+          "clamps_frequent",
+          "rule_churn"
+        ],
+        "title": "AlertKind"
+      },
+      "AlertNumbers": {
+        "properties": {
+          "listedRentPaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listedrentpaise"
+          },
+          "medianRentPaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medianrentpaise"
+          },
+          "comparables": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comparables"
+          },
+          "locality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locality"
+          },
+          "week": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week"
+          },
+          "quotes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quotes"
+          },
+          "clamped": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clamped"
+          },
+          "activations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AlertNumbers",
+        "description": "What raised it, as it was then; each kind fills its own."
+      },
+      "AlertPlace": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "AlertPlace"
+      },
+      "AlertResolution": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AlertResolution"
+      },
+      "AlertRoom": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "AlertRoom"
       },
       "AmenitiesChange": {
         "properties": {
@@ -10789,6 +11101,109 @@
         ],
         "title": "PriceCalendar",
         "description": "What each room costs a month for a move-in each week, as quotes say (ARCHITECTURE §8.5):\nthe only data the PG page's price changes and urgency may come from."
+      },
+      "PricingAlertInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AlertKind"
+          },
+          "property": {
+            "$ref": "#/components/schemas/AlertPlace"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AlertRoom"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "numbers": {
+            "$ref": "#/components/schemas/AlertNumbers"
+          },
+          "raisedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Raisedat"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedat"
+          },
+          "resolvedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Changer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolution": {
+            "type": "string",
+            "title": "Resolution"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "property",
+          "room",
+          "numbers",
+          "raisedAt",
+          "resolvedAt",
+          "resolvedBy",
+          "resolution"
+        ],
+        "title": "PricingAlertInfo"
+      },
+      "PricingAlertPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PricingAlertInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "PricingAlertPage"
       },
       "PricingCapsInput": {
         "properties": {
