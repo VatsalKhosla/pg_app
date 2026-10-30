@@ -612,7 +612,8 @@
       "owners": "Owners",
       "staffHome": "Staff tools",
       "visits": "Visits",
-      "grievances": "Grievances"
+      "grievances": "Grievances",
+      "pricingAlerts": "Pricing alerts"
     },
     "listings": {
       "title": "Listings",
@@ -1321,6 +1322,36 @@
         "confirming": "Discarding…",
         "cancel": "Keep it"
       }
+    },
+    "alerts": {
+      "metaTitle": "Pricing alerts",
+      "title": "Pricing alerts",
+      "intro": "Things about PGs' prices to look at: a listed rent far below its market, a week of quotes often held back by a limit, and rules that keep changing. Each is raised once. Resolve it once you've looked.",
+      "statusFilter": "Show alerts that are",
+      "open": "Open",
+      "resolved": "Resolved",
+      "none": "Nothing to look at.",
+      "noneResolved": "No alert has been resolved yet.",
+      "older": "Show older alerts",
+      "kinds": {
+        "rent_below_market": "Rent far below the market",
+        "clamps_frequent": "Limits often held prices back",
+        "rule_churn": "Rules keep changing"
+      },
+      "about": {
+        "rent_below_market": "{room} lists {listed} a month, more than 25% below the {median} median of {count, plural, one {# room type} other {# room types}} in {locality}.",
+        "clamps_frequent": "Limits held back {clamped} of its {quotes} quotes in the week of {week}.",
+        "rule_churn": "Its rules went into force {count} times in the week of {week}."
+      },
+      "raised": "Raised {when}",
+      "resolvedOn": "Resolved {when}",
+      "resolvedBy": "by {name}",
+      "byCheck": "by the nightly check",
+      "someone": "an account that has gone",
+      "pricing": "Open its pricing",
+      "note": "What you found (optional)",
+      "resolve": "Resolve",
+      "resolving": "Resolving…"
     }
   },
   "Field": {

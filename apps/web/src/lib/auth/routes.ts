@@ -23,6 +23,7 @@ export const VISITS_PATH = "/visits" satisfies Route;
 export const OPS_VISITS_PATH = "/ops/visits" satisfies Route;
 export const FIELD_STUDENT_VISITS_PATH = "/field/student-visits" satisfies Route;
 export const OPS_GRIEVANCES_PATH = "/ops/grievances" satisfies Route;
+export const OPS_PRICING_ALERTS_PATH = "/ops/pricing-alerts" satisfies Route;
 export const ADMIN_HOME_PATH = "/admin" satisfies Route;
 export const ADMIN_POLICIES_PATH = "/admin/policies" satisfies Route;
 export const ADMIN_RENT_BANDS_PATH = "/admin/rent-bands" satisfies Route;

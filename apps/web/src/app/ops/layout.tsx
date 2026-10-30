@@ -8,6 +8,7 @@ import {
   OPS_NEW_LISTING_PATH,
   OPS_OWNERS_PATH,
   OPS_GRIEVANCES_PATH,
+  OPS_PRICING_ALERTS_PATH,
   OPS_VISITS_PATH,
   STAFF_HOME_PATH,
 } from "@/lib/auth/routes";
@@ -39,6 +40,7 @@ export default async function OpsLayout({ children }: LayoutProps<"/ops">) {
             { href: OPS_OWNERS_PATH, label: t("owners") },
             { href: OPS_VISITS_PATH, label: t("visits") },
             { href: OPS_GRIEVANCES_PATH, label: t("grievances") },
+            { href: OPS_PRICING_ALERTS_PATH, label: t("pricingAlerts") },
             { href: STAFF_HOME_PATH, label: t("staffHome"), exact: true },
           ]}
         />
