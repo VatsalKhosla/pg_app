@@ -198,7 +198,11 @@ test.describe("ops console", () => {
     await expect(history.getByText("Draft to Published")).toBeVisible();
     expect(await wcagViolations(page)).toEqual([]);
 
+    // Listings come oldest first, a page at a time: find it by name, as ops do among many.
     await nav.getByRole("link", { name: "Listings" }).click();
+    const search = page.getByRole("search").getByRole("searchbox");
+    await search.fill(name);
+    await search.press("Enter");
     await expect(page.getByRole("link", { name: new RegExp(name) })).toBeVisible();
   });
 });
