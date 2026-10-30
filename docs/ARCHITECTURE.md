@@ -280,6 +280,13 @@ Implemented as a pure transition table in `booking/domain/state_machine.py`. Ser
 
 Allocation is active in HELD, TOKEN_SECURED, CONFIRMED, CHECKED_IN, DISPUTED, ACTIVE and COMPLETED (truncated). Every transition writes a `booking_events` row and an audit entry. Test every allowed transition and assert every other (state, event) pair is rejected.
 
+The machine (ADR 0045) takes the booking's facts, the event, who sent it, the moment and the booking's own terms. It answers the next status with side-effect descriptors, or refuses with 409 `INVALID_TRANSITION`. Where the table leaves room, it takes the stricter reading:
+- **Check-in:** ops may mark a move-in, but only the student's confirmation sends `check_in`.
+- **Confirm:** the system sends `confirm` only as an instant-confirm PG's auto-confirmation.
+- **The owner's deadline:** a secured token sets it for `confirm_deadline_hours`.
+- **A late payment (§7.4):** it is `late_payment_revive` when the bed is free, and `late_payment_refund` when it isn't. After a refund the booking stays EXPIRED.
+- **Move-out:** it is recorded once its day has come.
+
 ### 7.3 Holding a bed without race conditions
 Inside one transaction:
 1. `SELECT b.id FROM beds b JOIN rooms r ON r.id = b.room_id WHERE r.room_category_id = :c AND b.status = 'active' FOR UPDATE OF b` (serialises attempts per category).

@@ -377,8 +377,12 @@ Start the slow ones in week 1.
   - **Availability:** free beds for a stay and occupancy come from the allocations, through the domain's own definitions. The PG page, the editor's chart and search's summaries count free beds this way, and pricing's occupancy rules count offline tenants (bookings join in 5.3).
   - **Proof:** a constraint test stores allocations straight into the table; thirty concurrent requests for one bed get one hold. Forty random scenarios match the domain's count of free beds. A tenant lifts a quote by the occupancy rule while maintenance doesn't. A browser test holds and ends a block.
 
-- [ ] **5.2 Booking state machine (pure).** Transition table per ARCHITECTURE §7.2 with guards and side-effect descriptors; exhaustive tests over every (state, event) pair; property tests that random event sequences never break invariants (e.g., no money earned before ACTIVE).
+- [x] **5.2 Booking state machine (pure).** Transition table per ARCHITECTURE §7.2 with guards and side-effect descriptors; exhaustive tests over every (state, event) pair; property tests that random event sequences never break invariants (e.g., no money earned before ACTIVE).
   *Done when* every allowed transition is tested and every other pair is rejected with `INVALID_TRANSITION`.
+  *Note (2026-10-30):*
+  - **Table:** `booking/domain/state_machine.py` holds §7.2's and §7.4's rows and nothing else. Each row names its parties, its guard and its side effects as descriptors the services carry out. Anything else is refused with its reason, for the services to answer `INVALID_TRANSITION` (ADR 0045).
+  - **Readings:** ops-marked move-ins wait for the student's `check_in`. The system confirms only an instant-confirm PG's bookings. A late payment revives the booking when the bed is free, and is refunded when it isn't.
+  - **Proof:** all 816 (status, event, party) triples are tested, and every guard at its edge, including India's midnight and the exact end of the 24-hour window. Random histories (10,000 in CI) never earn money before ACTIVE, and never hold a bed or keep a token in the wrong status. Branch coverage is 100%.
 
 - [ ] **5.3 Holds.** `POST /v1/bookings` (quote id + Idempotency-Key) per §7.3: locking, stale-hold expiry, bed choice, constraint as the last line of defence, active-hold limit, rate limits, error codes.
   *Done when* the 50-concurrent-requests test yields exactly one hold, and replaying the same Idempotency-Key returns the same response.
