@@ -440,8 +440,12 @@ Start the slow ones in week 1.
   - **Observable:** `booking.transitions` (by event, from, to, by) and `booking.job.changes` (by job) beside the outbox's metrics. The API and the worker export them over OTLP/HTTP once an endpoint is set, and the worker now reports to Sentry too.
   - **Proof:** a hold a second before and at its expiry, a no-show on the last day and the next morning, each run twice; the schedule against §7.5; the counters read through an in-memory reader.
 
-- [ ] **5.9 On-spot booking from a visit.** From a checked-in visit, the agent opens "Reserve now" for the student (channel `on_spot`, linked `visit_id`), usually instant-confirm.
+- [x] **5.9 On-spot booking from a visit.** From a checked-in visit, the agent opens "Reserve now" for the student (channel `on_spot`, linked `visit_id`), usually instant-confirm.
   *Done when* the visit → booking path works on a phone and the visit log links to the booking.
+  *Note (2026-10-31):*
+  - **API:** `POST /v1/bookings` takes the student's own visit. Once the agent has checked in, and until the visit's day ends in India, it makes an `on_spot` booking linked to the visit, whatever remote booking's flag says (otherwise `VISIT_NOT_ON_SITE`). The PG's instant-confirm still decides confirming. The visit records the booking's code, and the student's visit says whether they can reserve (ADR 0053).
+  - **Web:** "Reserve a bed here" on the student's visit, "Reserve this bed" after checking a price at that PG (one Idempotency-Key per quote), and the booking in ops' and the agent's visit logs.
+  - **Proof:** the phone browser test goes on from the check-in to a held booking and ops' log; API tests for the link both ways and each refusal; unit tests for the rule at the day's end; component tests for reserving.
 
 - [ ] **5.10 Ops bookings board.** Board by state with filters, SLA timers (unconfirmed > 2 h, disputes), actions with reasons, full event history.
   *Done when* ops can run a day of bookings from it without database access.
