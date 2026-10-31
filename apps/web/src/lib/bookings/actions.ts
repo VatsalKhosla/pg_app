@@ -18,6 +18,8 @@ const CONFIRMED_ONWARDS: readonly BookingStatus[] = [
 ];
 
 export interface BookingActions {
+  /** Say they've moved in: from the day before the move-in, on a confirmed booking. */
+  checkIn: boolean;
   /** Cancel, with the refund the API says cancelling now gives back. */
   cancel: boolean;
   findAnother: boolean;
@@ -25,13 +27,15 @@ export interface BookingActions {
 }
 
 /**
- * What a student can do with a booking in its state (step 5.5): the API says whether it can be
- * cancelled now (and what that gives back); everything else follows from the status.
+ * What a student can do with a booking in its state (steps 5.5 and 5.6): the API says whether it
+ * can be cancelled now (and what that gives back) and whether they may say they've moved in;
+ * everything else follows from the status.
  */
 export function actionsFor(
-  booking: Pick<StudentBooking, "status" | "cancellation">,
+  booking: Pick<StudentBooking, "status" | "cancellation" | "canCheckIn">,
 ): BookingActions {
   return {
+    checkIn: booking.canCheckIn,
     cancel: booking.cancellation !== null,
     findAnother: ENDED_EARLY.includes(booking.status),
     contact: CONFIRMED_ONWARDS.includes(booking.status),

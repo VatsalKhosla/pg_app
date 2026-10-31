@@ -8,9 +8,21 @@ import { useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/errors";
 import { actionsFor } from "@/lib/bookings/actions";
-import { cancelMyBooking, type StudentBooking } from "@/lib/bookings/client";
+import { cancelMyBooking, checkInToMyBooking, type StudentBooking } from "@/lib/bookings/client";
+
+export interface CheckInText {
+  start: string;
+  title: string;
+  /** What saying so starts, with the booking's own window. */
+  body: string;
+  confirm: string;
+  notYet: string;
+  saving: string;
+  changed: string;
+}
 
 export interface BookingActionsText {
+  checkIn: CheckInText;
   cancel: string;
   confirmTitle: string;
   /** What cancelling now gives back, the API's amount already in words. */
@@ -27,17 +39,89 @@ export interface BookingActionsText {
 type Step = "idle" | "asking" | "busy" | "changed" | "failed";
 
 /**
- * What a student can do with their booking now (step 5.5, ADR 0049): cancel it, after seeing what
- * that gives back and confirming; or, once it ended without a stay, look for another PG. Nothing
- * is pre-ticked and nothing counts down here: the refund is the API's, and the API checks it
- * again as the student confirms.
+ * "I've moved in" (step 5.6, ADR 0050), asked once more before it's sent: the student's time to
+ * tell us if the room isn't as shown starts on their word, so they say it once they're in.
+ */
+function CheckIn({ code, text, failed }: { code: string; text: CheckInText; failed: string }) {
+  const router = useRouter();
+  const [step, setStep] = useState<Step>("idle");
+
+  function checkIn() {
+    setStep("busy");
+    checkInToMyBooking(code)
+      .then(() => {
+        setStep("idle");
+        router.refresh();
+      })
+      .catch((error: unknown) => {
+        if (error instanceof ApiError && error.code === "INVALID_TRANSITION") {
+          setStep("changed");
+          router.refresh();
+          return;
+        }
+        setStep("failed");
+      });
+  }
+
+  if (step === "idle" || step === "changed") {
+    return (
+      <div className="space-y-2">
+        <Button
+          onClick={() => {
+            setStep("asking");
+          }}
+        >
+          {text.start}
+        </Button>
+        {step === "changed" ? (
+          <p role="alert" className="text-sm text-destructive">
+            {text.changed}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+  return (
+    <section aria-labelledby="check-in-title" className="space-y-3 rounded-lg border p-4">
+      <h3 id="check-in-title" className="font-semibold">
+        {text.title}
+      </h3>
+      <p>{text.body}</p>
+      <div className="flex flex-wrap gap-3">
+        <Button disabled={step === "busy"} onClick={checkIn}>
+          {step === "busy" ? text.saving : text.confirm}
+        </Button>
+        <Button
+          variant="outline"
+          disabled={step === "busy"}
+          onClick={() => {
+            setStep("idle");
+          }}
+        >
+          {text.notYet}
+        </Button>
+      </div>
+      {step === "failed" ? (
+        <p role="alert" className="text-sm text-destructive">
+          {failed}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+/**
+ * What a student can do with their booking now (steps 5.5 and 5.6, ADRs 0049 and 0050): say
+ * they've moved in; cancel it, after seeing what that gives back and confirming; or, once it
+ * ended without a stay, look for another PG. Nothing is pre-ticked and nothing counts down here:
+ * the refund is the API's, and the API checks it again as the student confirms.
  */
 export function BookingActions({
   booking,
   policyPath,
   text,
 }: {
-  booking: Pick<StudentBooking, "code" | "status" | "cancellation">;
+  booking: Pick<StudentBooking, "code" | "status" | "cancellation" | "canCheckIn">;
   policyPath: Route;
   text: BookingActionsText;
 }) {
@@ -65,6 +149,9 @@ export function BookingActions({
 
   return (
     <div className="space-y-4">
+      {actions.checkIn ? (
+        <CheckIn code={booking.code} text={text.checkIn} failed={text.failed} />
+      ) : null}
       {actions.cancel && cancellation !== null ? (
         step === "idle" || step === "changed" ? (
           <div className="space-y-2">

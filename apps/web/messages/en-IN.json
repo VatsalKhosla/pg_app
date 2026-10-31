@@ -1863,8 +1863,8 @@
     "next": {
       "held": "Pay the token to keep this bed. Your hold ends at {time}. Paying online opens soon.",
       "token_secured": "Your token is in. The owner confirms by {time}; if they don't, you get it all back.",
-      "confirmed": "You move in on {date}. The address and the owner's phone are below.",
-      "checked_in": "Welcome in. If the room isn't as shown, tell us within 24 hours.",
+      "confirmed": "You move in on {date}. The address and the owner's phone are below. From {opens}, tell us once you've moved in.",
+      "checked_in": "Welcome in. If the room isn't as shown, contact us before {time}, quoting your booking code.",
       "disputed": "We're looking into what you told us, and will call you.",
       "active": "Your token now counts toward your rent.",
       "completed": "Your stay has ended.",
@@ -1905,7 +1905,7 @@
       "check_in": "You moved in",
       "no_show": "Marked as not moved in",
       "dispute": "You told us about a problem",
-      "window_elapsed": "Your 24 hours to check the room passed",
+      "window_elapsed": "Your time to check the room passed",
       "resolve_refund": "Refunded after our check",
       "resolve_uphold": "Settled after our check",
       "move_out": "You moved out",
@@ -1925,6 +1925,21 @@
       "changed": "What cancelling gives back has just changed. Look at it again before you cancel.",
       "failed": "That didn't work. Please try again.",
       "findAnother": "Find another PG"
+    },
+    "checkIn": {
+      "start": "I've moved in",
+      "title": "Have you moved in to {pg}?",
+      "body": "Say so once you're in the room. From then you have {hours, plural, one {# hour} other {# hours}} to tell us if it isn't as shown. After that, your token counts toward your rent.",
+      "confirm": "Yes, I've moved in",
+      "notYet": "Not yet",
+      "saving": "Saving…",
+      "changed": "This booking has just changed. Here it is as it is now."
+    },
+    "window": {
+      "left": "{hours, plural, one {# hour} other {# hours}} and {minutes, plural, one {# minute} other {# minutes}} left",
+      "leftMinutes": "{minutes, plural, one {# minute} other {# minutes}} left",
+      "lastMinute": "Less than a minute left",
+      "over": "Your time to check the room is over. Your booking settles in a few minutes."
     },
     "help": "Questions about this booking? Quote {code} when you contact us.",
     "contactUs": "Contact us"

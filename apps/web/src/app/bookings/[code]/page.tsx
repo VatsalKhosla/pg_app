@@ -2,9 +2,11 @@ import type { Schemas } from "@pg-platform/api-client";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getFormatter, getTranslations } from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import { getFormatter, getMessages, getTranslations } from "next-intl/server";
 
 import { BookingActions } from "@/components/bookings/booking-actions";
+import { CheckWindow } from "@/components/bookings/check-window";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getServerApi } from "@/lib/api/server";
@@ -23,9 +25,10 @@ export async function generateMetadata(): Promise<Metadata> {
 type Contact = Schemas["ListingContact"];
 
 /**
- * A student's booking (step 5.5, ADR 0049): what happens next, what they pay and to whom, where
- * to go once the owner confirms (the address and the owner's phone show only then; CLAUDE.md
- * rule 11), what happened so far, and cancelling, with what it gives back shown first.
+ * A student's booking (steps 5.5 and 5.6, ADRs 0049 and 0050): what happens next, what they pay
+ * and to whom, where to go once the owner confirms (the address and the owner's phone show only
+ * then; CLAUDE.md rule 11), what happened so far, cancelling, with what it gives back shown
+ * first, and saying they've moved in, after which their time to check the room counts down.
  */
 export default async function BookingPage({ params }: PageProps<"/bookings/[code]">) {
   const { code } = await params;
@@ -39,6 +42,7 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
     throw error;
   }
   const t = await getTranslations("Bookings");
+  const messages = await getMessages();
   const format = await getFormatter();
   const when = (moment: string) =>
     format.dateTime(new Date(moment), { dateStyle: "medium", timeStyle: "short" });
@@ -57,13 +61,18 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
       }
     }
   }
+  // The one deadline each status has: the hold's, the owner's, or the end of the student's time
+  // to check the room.
+  const deadline =
+    (booking.status === "token_secured"
+      ? booking.confirmBy
+      : booking.status === "checked_in"
+        ? booking.checkWindowEndsAt
+        : null) ?? booking.holdExpiresAt;
   const next = t(`next.${booking.status}`, {
-    time: when(
-      booking.status === "token_secured" && booking.confirmBy !== null
-        ? booking.confirmBy
-        : booking.holdExpiresAt,
-    ),
+    time: when(deadline),
     date: dayText(booking.moveIn),
+    opens: booking.checkInOpensOn === null ? "" : dayText(booking.checkInOpensOn),
   });
   const { cancellation } = booking;
   const refund =
@@ -136,12 +145,26 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
           {t(`status.${booking.status}`)}
         </h2>
         <p>{next}</p>
+        {booking.status === "checked_in" && booking.checkWindowEndsAt !== null ? (
+          <NextIntlClientProvider messages={{ Bookings: { window: messages.Bookings.window } }}>
+            <CheckWindow endsAt={booking.checkWindowEndsAt} />
+          </NextIntlClientProvider>
+        ) : null}
       </section>
 
       <BookingActions
         booking={booking}
         policyPath={trustPages.refunds}
         text={{
+          checkIn: {
+            start: t("checkIn.start"),
+            title: t("checkIn.title", { pg: booking.property.name }),
+            body: t("checkIn.body", { hours: booking.checkWindowHours }),
+            confirm: t("checkIn.confirm"),
+            notYet: t("checkIn.notYet"),
+            saving: t("checkIn.saving"),
+            changed: t("checkIn.changed"),
+          },
           cancel: t("actions.cancel"),
           confirmTitle: t("actions.confirmTitle", { code: booking.code }),
           refund,

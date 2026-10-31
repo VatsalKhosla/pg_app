@@ -5,8 +5,8 @@ import { unwrap } from "@/lib/api/client";
 import { withCsrf } from "@/lib/api/csrf";
 
 /**
- * Bookings' calls from the browser (step 5.5, ADR 0049): a student cancelling their own. Pages
- * read on the server.
+ * Bookings' calls from the browser (steps 5.5 and 5.6, ADRs 0049 and 0050): a student cancelling
+ * their own, or saying they've moved in. Pages read on the server.
  */
 
 export type StudentBooking = Schemas["StudentBooking"];
@@ -21,6 +21,15 @@ export function cancelMyBooking(code: string, refundPaise: number): Promise<Stud
         body: { refundPaise },
         headers,
       }),
+    ),
+  );
+}
+
+/** The student has moved in: their time to tell us if the room isn't as shown starts now. */
+export function checkInToMyBooking(code: string): Promise<StudentBooking> {
+  return withCsrf((headers) =>
+    unwrap(
+      browserApi.POST("/v1/bookings/{code}/check-in", { params: { path: { code } }, headers }),
     ),
   );
 }
