@@ -6315,6 +6315,109 @@
             }
           }
         ]
+      },
+      "get": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Your bookings",
+        "description": "Newest first.",
+        "operationId": "bookingsMyBookings",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentBookingList"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{code}/cancel": {
+      "post": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Cancel your booking",
+        "description": "With the refund the student was shown (the booking's ``cancellation``): free until the\ncutoff, then as the late-cancel rule says. 409 REFUND_CHANGED if cancelling now means\nsomething else; 409 INVALID_TRANSITION once it can't be cancelled.",
+        "operationId": "bookingsCancelMyBooking",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentBooking"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/bookings/{code}": {
@@ -8640,6 +8743,41 @@
           "items"
         ],
         "title": "CampusList"
+      },
+      "CancelRequest": {
+        "properties": {
+          "refundPaise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Refundpaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "refundPaise"
+        ],
+        "title": "CancelRequest"
+      },
+      "CancellationTerms": {
+        "properties": {
+          "refundPaise": {
+            "type": "integer",
+            "title": "Refundpaise"
+          },
+          "late": {
+            "type": "boolean",
+            "title": "Late"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "refundPaise",
+          "late"
+        ],
+        "title": "CancellationTerms",
+        "description": "What cancelling now would mean (rule 9): the refund, and whether the free-cancellation\ncutoff has passed, so the late-cancel rule decides it."
       },
       "CancelledBy": {
         "type": "string",
@@ -12153,6 +12291,17 @@
         "title": "OwnerUpdate",
         "description": "Only the fields sent change; ``gstin: null`` clears it."
       },
+      "Party": {
+        "type": "string",
+        "enum": [
+          "student",
+          "owner",
+          "ops",
+          "system"
+        ],
+        "title": "Party",
+        "description": "Who sends an event. The system is the jobs and the gateway's verified events."
+      },
       "PlaceKind": {
         "type": "string",
         "enum": [
@@ -15641,6 +15790,18 @@
             "format": "date-time",
             "title": "Holdexpiresat"
           },
+          "confirmBy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmby"
+          },
           "monthlyRentPaise": {
             "type": "integer",
             "title": "Monthlyrentpaise"
@@ -15669,6 +15830,23 @@
             "type": "string",
             "format": "date-time",
             "title": "Createdat"
+          },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEntry"
+            },
+            "type": "array",
+            "title": "Timeline"
+          },
+          "cancellation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CancellationTerms"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -15682,16 +15860,36 @@
           "stayMonths",
           "plannedMoveOut",
           "holdExpiresAt",
+          "confirmBy",
           "monthlyRentPaise",
           "tokenPaise",
           "dueAtMoveInPaise",
           "depositPaise",
           "monthlyChargesPaise",
           "oneTimeChargesPaise",
-          "createdAt"
+          "createdAt",
+          "timeline",
+          "cancellation"
         ],
         "title": "StudentBooking",
-        "description": "A booking as its student sees it: the quote's money, fixed for the stay (rule 5). The\nexact address shows once the owner confirms (rule 11)."
+        "description": "A booking as its student sees it: the quote's money, fixed for the stay (rule 5). The\nexact address and the owner's phone show once the owner confirms (rule 11), from the PG's\ncontact."
+      },
+      "StudentBookingList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StudentBooking"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "StudentBookingList"
       },
       "StudentVisit": {
         "properties": {
@@ -15887,6 +16085,35 @@
           "cancelled"
         ],
         "title": "StudentVisitStatus"
+      },
+      "TimelineEntry": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "title": "Event"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "by": {
+            "$ref": "#/components/schemas/Party"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event",
+          "status",
+          "by",
+          "at"
+        ],
+        "title": "TimelineEntry",
+        "description": "One change to the booking, as its history has it."
       },
       "UploadForm": {
         "properties": {

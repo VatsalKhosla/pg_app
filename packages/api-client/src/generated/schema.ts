@@ -1813,7 +1813,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Your bookings
+         * @description Newest first.
+         */
+        get: operations["bookingsMyBookings"];
         put?: never;
         /**
          * Hold a bed
@@ -1827,6 +1831,28 @@ export interface paths {
          *     - 404 for a quote that isn't the student's own.
          */
         post: operations["bookingsHoldBed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{code}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel your booking
+         * @description With the refund the student was shown (the booking's ``cancellation``): free until the
+         *     cutoff, then as the late-cancel rule says. 409 REFUND_CHANGED if cancelling now means
+         *     something else; 409 INVALID_TRANSITION once it can't be cancelled.
+         */
+        post: operations["bookingsCancelMyBooking"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2657,6 +2683,22 @@ export interface components {
         CampusList: {
             /** Items */
             items: components["schemas"]["CampusInfo"][];
+        };
+        /** CancelRequest */
+        CancelRequest: {
+            /** Refundpaise */
+            refundPaise: number;
+        };
+        /**
+         * CancellationTerms
+         * @description What cancelling now would mean (rule 9): the refund, and whether the free-cancellation
+         *     cutoff has passed, so the late-cancel rule decides it.
+         */
+        CancellationTerms: {
+            /** Refundpaise */
+            refundPaise: number;
+            /** Late */
+            late: boolean;
         };
         /**
          * CancelledBy
@@ -3944,6 +3986,12 @@ export interface components {
             gstin?: string | null;
         };
         /**
+         * Party
+         * @description Who sends an event. The system is the jobs and the gateway's verified events.
+         * @enum {string}
+         */
+        Party: "student" | "owner" | "ops" | "system";
+        /**
          * PlaceKind
          * @enum {string}
          */
@@ -5168,7 +5216,8 @@ export interface components {
         /**
          * StudentBooking
          * @description A booking as its student sees it: the quote's money, fixed for the stay (rule 5). The
-         *     exact address shows once the owner confirms (rule 11).
+         *     exact address and the owner's phone show once the owner confirms (rule 11), from the PG's
+         *     contact.
          */
         StudentBooking: {
             /** Code */
@@ -5194,6 +5243,8 @@ export interface components {
              * Format: date-time
              */
             holdExpiresAt: string;
+            /** Confirmby */
+            confirmBy: string | null;
             /** Monthlyrentpaise */
             monthlyRentPaise: number;
             /** Tokenpaise */
@@ -5211,6 +5262,14 @@ export interface components {
              * Format: date-time
              */
             createdAt: string;
+            /** Timeline */
+            timeline: components["schemas"]["TimelineEntry"][];
+            cancellation: components["schemas"]["CancellationTerms"] | null;
+        };
+        /** StudentBookingList */
+        StudentBookingList: {
+            /** Items */
+            items: components["schemas"]["StudentBooking"][];
         };
         /**
          * StudentVisit
@@ -5270,6 +5329,21 @@ export interface components {
          * @enum {string}
          */
         StudentVisitStatus: "requested" | "scheduled" | "completed" | "no_show" | "cancelled";
+        /**
+         * TimelineEntry
+         * @description One change to the booking, as its history has it.
+         */
+        TimelineEntry: {
+            /** Event */
+            event: string;
+            status: components["schemas"]["BookingStatus"];
+            by: components["schemas"]["Party"];
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+        };
         /**
          * UploadForm
          * @description Post the file here as multipart/form-data: every field, then the file as ``file``.
@@ -9634,6 +9708,44 @@ export interface operations {
             };
         };
     };
+    bookingsMyBookings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBookingList"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     bookingsHoldBed: {
         parameters: {
             query?: never;
@@ -9652,6 +9764,50 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBooking"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookingsCancelMyBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
