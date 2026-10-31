@@ -14,9 +14,11 @@ from app.core.outbox import OUTBOX_CLEANUP, JobRegistry, delete_finished_jobs
 from app.core.scheduler import DailyAt, Every, ScheduledJob
 from app.core.web_cache import REVALIDATE, revalidate_handler
 from app.modules.booking.jobs import (
+    CHECK_WINDOWS,
     CONFIRMATION_TIMEOUTS,
     NOTIFY,
     notify_handler,
+    settle_check_windows,
     time_out_confirmations,
 )
 from app.modules.booking.service import bookings_part
@@ -109,6 +111,8 @@ SCHEDULES: Final = (
         kind=CONFIRMATION_TIMEOUTS,
         schedule=Every(timedelta(minutes=5)),
     ),
+    # A check window that ended without a dispute settles the booking (§7.5).
+    ScheduledJob(name=CHECK_WINDOWS, kind=CHECK_WINDOWS, schedule=Every(timedelta(minutes=5))),
 )
 
 
@@ -152,6 +156,7 @@ def build_registry(
     # Bookings (step 5.4, ADR 0048): texts about them, and confirmations not given in time.
     registry.register(NOTIFY, notify_handler(texts))
     registry.register(CONFIRMATION_TIMEOUTS, time_out_confirmations)
+    registry.register(CHECK_WINDOWS, settle_check_windows)
     registry.register(GRIEVANCE_TEXT, grievance_text_handler(texts))
     registry.register(ANALYTICS_CAPTURE, capture_handler(analytics))
     return registry

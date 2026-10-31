@@ -42,6 +42,18 @@ class BookingRepository:
         query = select(Booking).where(Booking.public_id == public_id)
         return await self._db.scalar(query.with_for_update() if lock else query)
 
+    async def windows_over(self, now: datetime, *, limit: int) -> list[Booking]:
+        """Checked-in bookings whose 24 hours to check the room are over, locked, the earliest
+        first; ones another run holds are left to it."""
+        rows = await self._db.scalars(
+            select(Booking)
+            .where(Booking.status == BookingStatus.CHECKED_IN, Booking.check_window_ends_at <= now)
+            .order_by(Booking.check_window_ends_at, Booking.id)
+            .limit(limit)
+            .with_for_update(skip_locked=True)
+        )
+        return list(rows)
+
     async def unconfirmed_past(self, now: datetime, *, limit: int) -> list[Booking]:
         """Bookings with the token in whose owner hasn't confirmed by their deadline, locked,
         the most overdue first; ones another run holds are left to it."""

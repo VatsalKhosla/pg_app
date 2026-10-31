@@ -40,13 +40,13 @@ def run(
     return run_scenario
 
 
-async def _again(student: Staff) -> Staff:
-    """The same student signed in again, once the clock has moved past their session."""
-    async with student.app.state.sessionmaker() as db:
-        session = await SessionService(db, student.app.state.clock).start(
-            student.user_id, kind=SessionKind.USER, ip_address=None, user_agent=None
+async def _again(person: Staff, *, kind: SessionKind = SessionKind.USER) -> Staff:
+    """The same person signed in again, once the clock has moved past their session."""
+    async with person.app.state.sessionmaker() as db:
+        session = await SessionService(db, person.app.state.clock).start(
+            person.user_id, kind=kind, ip_address=None, user_agent=None
         )
-    return Staff(student.app, student.client, user_id=student.user_id, token=session.token)
+    return Staff(person.app, person.client, user_id=person.user_id, token=session.token)
 
 
 def _steps(booking: dict[str, Any]) -> list[tuple[str, str, str]]:

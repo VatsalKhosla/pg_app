@@ -510,6 +510,10 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
         lambda: {"json": {"refundPaise": 0}},
         path={"code": "a_missing_booking"},
     ),
+    # Moving in (ADR 0050): the student says so on their own booking.
+    ("POST", "/v1/bookings/{code}/check-in"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403), path={"code": "a_missing_booking"}
+    ),
     # Answering bookings (ADR 0048): an owner answers their own PGs' bookings, and ops answer any.
     # The booking asked for is nobody's.
     ("GET", "/v1/owner/bookings/{code}"): Rule(
@@ -531,6 +535,9 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
         ops_only(404),
         lambda: {"json": {"reason": "The room is under repair"}},
         path={"code": "a_missing_booking"},
+    ),
+    ("POST", "/v1/ops/bookings/{code}/move-in-reminder"): Rule(
+        ops_only(404), path={"code": "a_missing_booking"}
     ),
     # Student visits (ADR 0033): people signed in by phone ask and cancel their own; ops book and
     # cancel any; field agents run the ones booked for them. The visit is another student's, booked

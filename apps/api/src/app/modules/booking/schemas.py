@@ -57,6 +57,14 @@ class StudentBooking(ApiModel):
     hold_expires_at: datetime
     # Once the token is in: the owner confirms by then, or the token comes back in full.
     confirm_by: datetime | None
+    # Once confirmed: the day the student may say they've moved in, and whether they may now.
+    check_in_opens_on: date | None
+    can_check_in: bool
+    # How long the student has, once moved in, to tell us if the room isn't as shown (the
+    # booking's terms; 24 hours by default)...
+    check_window_hours: int
+    # ...and, once they have, when that time ends: the one countdown besides a hold's.
+    check_window_ends_at: datetime | None
     monthly_rent_paise: int
     token_paise: int
     due_at_move_in_paise: int
@@ -104,8 +112,18 @@ class ManagedBooking(ApiModel):
     hold_expires_at: datetime
     # Once the token is in: the owner confirms by then, or the booking is rejected and refunded.
     confirm_by: datetime | None
+    # Once the student says they've moved in: when, and the end of their 24 hours to check the room.
+    checked_in_at: datetime | None
+    check_window_ends_at: datetime | None
     student: BookingStudent
     created_at: datetime
+
+
+class MoveInReminder(ApiModel):
+    """Ops' nudge to a student who has moved in to say so (step 5.6)."""
+
+    # False when they were already asked today: one text a day at most.
+    sent: bool
 
 
 class RejectRequest(ApiModel):

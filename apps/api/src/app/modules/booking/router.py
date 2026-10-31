@@ -1,6 +1,6 @@
-"""Booking routes (ARCHITECTURE §7, §15; ADRs 0046, 0048): a student holds a bed with their quote
-and sees their booking; its owner, or ops for them, sees it and confirms or rejects it. Another
-student's booking, or another owner's, is a 404."""
+"""Booking routes (ARCHITECTURE §7, §15; ADRs 0046, 0048 to 0050): a student holds a bed with their
+quote, sees their booking, and says when they've moved in; its owner, or ops for them, sees it and
+confirms or rejects it. Another student's booking, or another owner's, is a 404."""
 
 from datetime import timedelta
 from typing import Final
@@ -19,6 +19,7 @@ from app.modules.booking.schemas import (
     CancelRequest,
     HoldRequest,
     ManagedBooking,
+    MoveInReminder,
     RejectRequest,
     StudentBooking,
     StudentBookingList,
@@ -88,6 +89,17 @@ async def cancel_my_booking(
     if not can_book(actor):
         raise ForbiddenError
     return await _service(request, db, clock).cancel(actor, code, refund_paise=body.refund_paise)
+
+
+@router.post("/bookings/{code}/check-in", summary="Say you've moved in")
+async def check_in(
+    code: str, request: Request, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> StudentBooking:
+    """On a confirmed booking, from the day before the move-in: the student's 24 hours to tell us
+    if the room isn't as shown start now, and the owner hears. 409 INVALID_TRANSITION otherwise."""
+    if not can_book(actor):
+        raise ForbiddenError
+    return await _service(request, db, clock).check_in(actor, code)
 
 
 @router.get("/bookings/{code}", summary="Your booking")
@@ -160,3 +172,16 @@ async def ops_reject(
 ) -> ManagedBooking:
     """As the owner's rejection; audited as the ops member's, with the reason."""
     return await BookingDesk(db, clock).reject(actor, code, party=_ops(actor), reason=body.reason)
+
+
+@router.post(
+    "/ops/bookings/{code}/move-in-reminder", summary="Ask a student to say they've moved in"
+)
+async def ops_move_in_reminder(
+    code: str, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> MoveInReminder:
+    """When ops hear a student has moved in but they haven't said so: the student gets a text
+    asking them to, one a day at most. The booking doesn't change, as the check window starts on
+    the student's own word. 409 INVALID_TRANSITION unless they may check in now."""
+    _ops(actor)
+    return MoveInReminder(sent=await BookingDesk(db, clock).move_in_reminder(actor, code))

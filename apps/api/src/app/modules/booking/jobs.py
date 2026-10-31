@@ -13,10 +13,19 @@ if TYPE_CHECKING:
     from app.core.outbox import JobContext, JobHandler, JobPayload
     from app.core.texts import Texts
 
-__all__ = ["CONFIRMATION_TIMEOUTS", "NOTIFY", "notify_handler", "time_out_confirmations"]
+__all__ = [
+    "CHECK_WINDOWS",
+    "CONFIRMATION_TIMEOUTS",
+    "NOTIFY",
+    "notify_handler",
+    "settle_check_windows",
+    "time_out_confirmations",
+]
 
-# §7.5: every five minutes, the bookings whose owners didn't confirm in time are rejected.
+# §7.5: every five minutes, the bookings whose owners didn't confirm in time are rejected...
 CONFIRMATION_TIMEOUTS: Final = "booking.confirmation_timeouts"
+# ...and the ones whose 24 hours to check the room are over are settled.
+CHECK_WINDOWS: Final = "booking.check_windows"
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -47,3 +56,9 @@ async def time_out_confirmations(context: JobContext, _payload: JobPayload) -> N
     rejected = await BookingSystem(context.session, context.clock).time_out_confirmations()
     if rejected:
         logger.info("bookings not confirmed in time were rejected", count=rejected)
+
+
+async def settle_check_windows(context: JobContext, _payload: JobPayload) -> None:
+    settled = await BookingSystem(context.session, context.clock).settle_check_windows()
+    if settled:
+        logger.info("bookings whose check window ended were settled", count=settled)

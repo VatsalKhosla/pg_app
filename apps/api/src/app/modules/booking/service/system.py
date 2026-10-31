@@ -5,6 +5,9 @@ a job's, or the payment that secures a token.
   Phase 6; until then nothing in the API does, and tests use it directly.
 - **Confirmation timeouts:** an owner who doesn't answer by the booking's deadline loses it. The
   booking is rejected, its bed freed and its token refunded (§7.5, every five minutes).
+- **Check windows:** once a student's 24 hours to check the room are over without a dispute, the
+  booking is settled: ACTIVE, the token earned and the owner invoiced (Phase 6; §7.5, every five
+  minutes).
 """
 
 from typing import TYPE_CHECKING, Final
@@ -23,7 +26,7 @@ if TYPE_CHECKING:
     from app.core.clock import Clock
     from app.modules.booking.models import Booking
 
-# How many overdue bookings one run of the job takes on; the next run takes the rest.
+# How many bookings one run of a job takes on; the next run takes the rest.
 TIMEOUT_BATCH: Final = 100
 
 
@@ -48,6 +51,19 @@ class BookingSystem:
             moment=Moment(self._clock.now(), paid_paise=paid_paise),
         )
         return booking
+
+    async def settle_check_windows(self) -> int:
+        """Settles the bookings whose 24 hours to check the room are over: how many."""
+        over = await self._bookings.windows_over(self._clock.now(), limit=TIMEOUT_BATCH)
+        for booking in over:
+            await self._transitions.apply(
+                booking,
+                BookingEvent.WINDOW_ELAPSED,
+                Party.SYSTEM,
+                await self._views.place(booking),
+                by=None,
+            )
+        return len(over)
 
     async def time_out_confirmations(self) -> int:
         """Rejects the bookings whose owners didn't confirm in time: how many."""

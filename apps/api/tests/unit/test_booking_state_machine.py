@@ -44,6 +44,8 @@ from app.modules.booking.domain.state_machine import (
     Transition,
     TransitionRefusedError,
     TruncateAllocation,
+    allows,
+    check_in_opens_on,
     hold,
     transition,
 )
@@ -337,6 +339,17 @@ def test_checking_in_opens_the_day_before_the_move_in_and_starts_the_window() ->
     )
     a_week_late = Moment(at_india(MOVE_IN + timedelta(days=7), 9))
     assert transition(confirmed, E.CHECK_IN, P.STUDENT, a_week_late, TERMS).to is S.CHECKED_IN
+
+
+def test_a_page_offers_a_change_exactly_when_the_machine_takes_it() -> None:
+    confirmed = facts(S.CONFIRMED)
+    opens = at_india(check_in_opens_on(MOVE_IN), 0, 0)
+    assert check_in_opens_on(MOVE_IN) == date(2027, 7, 13)
+    assert not allows(confirmed, E.CHECK_IN, P.STUDENT, Moment(opens - timedelta(seconds=1)), TERMS)
+    assert allows(confirmed, E.CHECK_IN, P.STUDENT, Moment(opens), TERMS)
+    # Not the owner's to say, nor a booking that isn't confirmed.
+    assert not allows(confirmed, E.CHECK_IN, P.OWNER, Moment(opens), TERMS)
+    assert not allows(facts(S.TOKEN_SECURED), E.CHECK_IN, P.STUDENT, Moment(opens), TERMS)
 
 
 def test_a_no_show_waits_the_terms_days_after_the_move_in() -> None:

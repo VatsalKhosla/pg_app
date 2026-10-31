@@ -4,7 +4,7 @@ and from the PG's contact, which a confirmed booking unlocks (rule 11)."""
 
 from typing import TYPE_CHECKING
 
-from app.modules.booking.domain.state_machine import BookingStatus, Party
+from app.modules.booking.domain.state_machine import BookingStatus, Party, check_in_opens_on
 from app.modules.booking.schemas import BookingPlace as PlaceSchema
 from app.modules.booking.schemas import (
     BookingStudent,
@@ -43,11 +43,14 @@ class BookingViews:
         *,
         history: Sequence[BookingEventRecord],
         cancellation: Cancellation | None,
+        can_check_in: bool,
+        check_window_hours: int,
     ) -> StudentBooking:
         bed = await self._catalog.bed_ref(booking.bed_id)
+        status = BookingStatus(booking.status)
         return StudentBooking(
             code=booking.code,
-            status=BookingStatus(booking.status),
+            status=status,
             property=PlaceSchema(slug=place.slug, name=place.name, locality=place.locality),
             room_type=bed.category_label,
             move_in=booking.move_in,
@@ -55,6 +58,12 @@ class BookingViews:
             planned_move_out=booking.planned_move_out,
             hold_expires_at=booking.hold_expires_at,
             confirm_by=booking.confirm_by,
+            check_in_opens_on=check_in_opens_on(booking.move_in)
+            if status is BookingStatus.CONFIRMED
+            else None,
+            can_check_in=can_check_in,
+            check_window_hours=check_window_hours,
+            check_window_ends_at=booking.check_window_ends_at,
             monthly_rent_paise=booking.monthly_rent_paise,
             token_paise=booking.token_paise,
             due_at_move_in_paise=booking.due_at_move_in_paise,
@@ -95,6 +104,8 @@ class BookingViews:
             deposit_paise=booking.deposit_paise,
             hold_expires_at=booking.hold_expires_at,
             confirm_by=booking.confirm_by,
+            checked_in_at=booking.checked_in_at,
+            check_window_ends_at=booking.check_window_ends_at,
             # A first name is enough to greet them by; their number waits for 5.5 and 5.10.
             student=BookingStudent(name=None if student.name is None else student.name.split()[0]),
             created_at=booking.created_at,

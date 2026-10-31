@@ -1,5 +1,6 @@
-"""Where a booking is answered (step 5.4, ADR 0048): its owner or ops see it, and confirm or
-reject it once the token is in. Each method is one transaction.
+"""Where a booking is answered (steps 5.4 and 5.6, ADRs 0048 and 0050): its owner or ops see it,
+and confirm or reject it once the token is in; ops can ask a student who has moved in to say so.
+Each method is one transaction.
 
 An owner answers only their own PGs' bookings; anyone else's is a 404, as is a booking the code
 doesn't find. The row is locked while it changes, so two answers at once go one after the other,
@@ -47,6 +48,14 @@ class BookingDesk:
         return await self._answer(
             actor, code, BookingEvent.REJECT, party=party, note=reason.strip()
         )
+
+    async def move_in_reminder(self, actor: Actor, code: str) -> bool:
+        """Ops heard the student has moved in: the student is asked to say so themselves. Whether
+        the text went now; once a day at most."""
+        async with self._db.begin():
+            booking = await self._find(actor, code, party=Party.OPS, lock=False)
+            place = await self._views.place(booking)
+            return await self._transitions.remind_to_check_in(booking, place, by=actor.user_id)
 
     async def _answer(
         self, actor: Actor, code: str, event: BookingEvent, *, party: Party, note: str | None

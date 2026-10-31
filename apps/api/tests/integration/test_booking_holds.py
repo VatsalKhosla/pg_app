@@ -202,6 +202,11 @@ def test_a_student_holds_a_bed_at_their_quotes_price(run: Callable[..., Any]) ->
         "plannedMoveOut": "2028-07-20",
         "holdExpiresAt": (NOW + timedelta(minutes=15)).isoformat().replace("+00:00", "Z"),
         "confirmBy": None,
+        # Moving in comes once the booking is confirmed; the terms give 24 hours to check the room.
+        "checkInOpensOn": None,
+        "canCheckIn": False,
+        "checkWindowHours": 24,
+        "checkWindowEndsAt": None,
         "monthlyRentPaise": quote["monthlyRentPaise"],
         "tokenPaise": quote["tokenPaise"],
         "dueAtMoveInPaise": quote["dueAtMoveInPaise"],

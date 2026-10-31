@@ -26,7 +26,7 @@ from app.core.errors import InvalidTransitionError, NotFoundError
 from app.core.flags import Flag
 from app.core.ids import new_booking_code, normalize_booking_code
 from app.modules.booking.domain.cancellation import cancellation
-from app.modules.booking.domain.state_machine import BookingEvent, Moment, Party, hold
+from app.modules.booking.domain.state_machine import BookingEvent, Moment, Party, allows, hold
 from app.modules.booking.errors import (
     BookingNeedsVisitError,
     HoldLimitReachedError,
@@ -190,6 +190,17 @@ class BookingService:
             )
             return await self._view(booking, place)
 
+    async def check_in(self, actor: Actor, code: str) -> StudentBooking:
+        """The student says they've moved in, from the day before the move-in: their 24 hours to
+        tell us if the room isn't as shown start now, and the owner hears."""
+        async with self._db.begin():
+            booking = await self._own(actor, code, lock=True)
+            place = await self._views.place(booking)
+            await self._transitions.apply(
+                booking, BookingEvent.CHECK_IN, Party.STUDENT, place, by=actor.user_id
+            )
+            return await self._view(booking, place)
+
     async def _own(self, actor: Actor, code: str, *, lock: bool) -> Booking:
         """The student's own booking by its code; anyone else's is a 404."""
         canonical = normalize_booking_code(code)
@@ -199,11 +210,19 @@ class BookingService:
         return booking
 
     async def _view(self, booking: Booking, place: BookingPlace) -> StudentBooking:
-        """The booking as its student sees it now: its history, and what cancelling means."""
+        """The booking as its student sees it now: its history, what cancelling means, and
+        whether they may say they've moved in."""
         terms = await self._terms.of(booking.booking_policy_id)
-        offered = cancellation(facts_of(booking, place), Moment(self._clock.now()), terms)
+        facts, now = facts_of(booking, place), Moment(self._clock.now())
         history = (await self._bookings.events_of([booking.id])).get(booking.id, [])
-        return await self._views.student(booking, place, history=history, cancellation=offered)
+        return await self._views.student(
+            booking,
+            place,
+            history=history,
+            cancellation=cancellation(facts, now, terms),
+            can_check_in=allows(facts, BookingEvent.CHECK_IN, Party.STUDENT, now, terms),
+            check_window_hours=terms.check_window_hours,
+        )
 
     async def _add(self, booking: Booking) -> None:
         """Adds the booking, with a new code should its random one be taken."""

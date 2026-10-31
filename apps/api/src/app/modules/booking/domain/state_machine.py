@@ -349,8 +349,13 @@ def _cancel_late(ask: _Ask) -> str | None:
     return None
 
 
+def check_in_opens_on(move_in: date) -> date:
+    """The first day a student may say they've moved in: the day before the move-in."""
+    return move_in - timedelta(days=1)
+
+
 def _check_in_open(ask: _Ask) -> str | None:
-    if ask.moment.today < ask.facts.move_in - timedelta(days=1):
+    if ask.moment.today < check_in_opens_on(ask.facts.move_in):
         return "checking in opens the day before the move-in"
     return None
 
@@ -624,3 +629,19 @@ def transition(
         msg = f"{problem[0].upper()}{problem[1:]}."
         raise TransitionRefusedError(msg)
     return Transition(rule.to, rule.effects(ask))
+
+
+def allows(
+    facts: BookingFacts,
+    event: BookingEvent,
+    party: Party,
+    moment: Moment,
+    policy: BookingPolicy,
+) -> bool:
+    """Whether ``transition`` would take ``event`` from ``party`` at ``moment``: what a page may
+    offer."""
+    try:
+        transition(facts, event, party, moment, policy)
+    except TransitionRefusedError:
+        return False
+    return True

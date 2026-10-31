@@ -13,6 +13,7 @@ A PG that confirms its bookings itself gets its `confirm` straight after.
 from typing import TYPE_CHECKING, Final
 
 from app.core import audit
+from app.core.calendar import india_date
 from app.core.errors import InvalidTransitionError
 from app.core.outbox import enqueue
 from app.modules.booking.domain.state_machine import (
@@ -24,6 +25,8 @@ from app.modules.booking.domain.state_machine import (
     BookingStatus,
     CancelPayment,
     DeactivateAllocation,
+    EarnToken,
+    IssueOwnerInvoice,
     Moment,
     Notify,
     Party,
@@ -139,20 +142,41 @@ class Transitions:
     ) -> Transition:
         """``event`` from ``party`` (the user ``by``, None for the system), as one step."""
         now = self._clock.now()
-        terms = await self._terms.of(booking.booking_policy_id)
-        facts = facts_of(booking, place)
-        try:
-            step = transition(facts, event, party, moment or Moment(now), terms)
-        except TransitionRefusedError as refusal:
-            raise InvalidTransitionError(refusal.reason) from refusal
+        was = BookingStatus(booking.status)
+        step = await self._step(booking, event, party, place, moment or Moment(now))
         values = fields(step.effects) | stamps(step.to, event, party, now)
         if not await self._bookings.compare_and_set(booking, to=step.to, values=values):
             raise InvalidTransitionError("The booking changed a moment ago. Try again.")
         await self.carry_out(booking, event, step, by=by)
-        await self.log(booking, event, facts.status, step, party, by=by, note=note)
+        await self.log(booking, event, was, step, party, by=by, note=note)
         if AutoConfirm() in step.effects:
             await self.apply(booking, BookingEvent.CONFIRM, Party.SYSTEM, place, by=None)
         return step
+
+    async def remind_to_check_in(self, booking: Booking, place: BookingPlace, *, by: int) -> bool:
+        """Ops' nudge to a student who has moved in to say so, only while they may (409
+        INVALID_TRANSITION otherwise), and one text a day at most: whether it went now. Nothing
+        else changes, as the check window starts on the student's own word (ADR 0050)."""
+        now = self._clock.now()
+        await self._step(booking, BookingEvent.CHECK_IN, Party.STUDENT, place, Moment(now))
+        sent = await self._notify(
+            booking,
+            BookingEvent.CHECK_IN,
+            Party.STUDENT,
+            BookingStatus.CONFIRMED,
+            instant=False,
+            dedupe_key=f"{NOTIFY}:{booking.public_id}:move_in_reminder:{india_date(now)}",
+        )
+        await audit.record(
+            self._db,
+            clock=self._clock,
+            actor=audit.Actor("staff", by),
+            action="booking.move_in_reminder",
+            entity_type="booking",
+            entity_id=booking.code,
+            details={"sent": sent},
+        )
+        return sent
 
     async def carry_out(
         self, booking: Booking, event: str, step: Transition, *, by: int | None
@@ -181,9 +205,12 @@ class Transitions:
                     | RecordTokenReceived()
                     | RefundToken()
                     | ApplyLateCancelPolicy()
+                    | EarnToken()
+                    | IssueOwnerInvoice()
                 ):
-                    # The gateway's orders and refunds, and the ledger, come with payments
-                    # (Phase 6); until then these are stubs.
+                    # The gateway's orders and refunds, the token earned, the owner's invoice and
+                    # the ledger come with payments (Phase 6); until then these are stubs, and no
+                    # money moves.
                     pass
                 case SuggestSimilar():
                     # The student's text says so; finding them similar PGs comes with 5.7.
@@ -227,9 +254,32 @@ class Transitions:
             details={"from": was, "to": step.to} | ({} if note is None else {"note": note}),
         )
 
+    async def _step(
+        self,
+        booking: Booking,
+        event: BookingEvent,
+        party: Party,
+        place: BookingPlace,
+        moment: Moment,
+    ) -> Transition:
+        """The state machine's answer, or 409 INVALID_TRANSITION."""
+        terms = await self._terms.of(booking.booking_policy_id)
+        try:
+            return transition(facts_of(booking, place), event, party, moment, terms)
+        except TransitionRefusedError as refusal:
+            raise InvalidTransitionError(refusal.reason) from refusal
+
     async def _notify(
-        self, booking: Booking, event: str, who: Party, status: BookingStatus, *, instant: bool
-    ) -> None:
+        self,
+        booking: Booking,
+        event: str,
+        who: Party,
+        status: BookingStatus,
+        *,
+        instant: bool,
+        dedupe_key: str | None = None,
+    ) -> bool:
+        """Queues the text; once per change unless ``dedupe_key`` says otherwise."""
         payload = {
             "booking": str(booking.public_id),
             "event": event,
@@ -237,10 +287,11 @@ class Transitions:
             "status": status,
             "instant": instant,
         }
-        await enqueue(
+        return await enqueue(
             self._db,
             NOTIFY,
             payload,
             clock=self._clock,
-            dedupe_key=f"{NOTIFY}:{booking.public_id}:{event}:{who}:{booking.version}",
+            dedupe_key=dedupe_key
+            or f"{NOTIFY}:{booking.public_id}:{event}:{who}:{booking.version}",
         )

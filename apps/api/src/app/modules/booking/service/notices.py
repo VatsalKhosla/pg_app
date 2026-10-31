@@ -8,9 +8,17 @@ from app.config import BRAND_NAME
 from app.core.calendar import spoken_time
 from app.modules.booking.domain.state_machine import BookingEvent, BookingStatus, Party
 from app.modules.booking.repository import BookingRepository
-from app.modules.booking.texts import CONFIRMED, FOR, NEW_CONFIRMED, TOKEN_IN
+from app.modules.booking.texts import (
+    CONFIRM_MOVE_IN,
+    CONFIRMED,
+    FOR,
+    MOVED_IN,
+    NEW_CONFIRMED,
+    TOKEN_IN,
+)
 from app.modules.catalog.service import CatalogLookup
 from app.modules.identity.service import Accounts
+from app.modules.pricing.service import BookingTerms
 
 if TYPE_CHECKING:
     import uuid
@@ -29,6 +37,7 @@ class BookingNotices:
         self._bookings = BookingRepository(db)
         self._catalog = CatalogLookup(db)
         self._accounts = Accounts(db)
+        self._terms = BookingTerms(db)
 
     async def message(
         self,
@@ -67,4 +76,10 @@ class BookingNotices:
                 "move_in": _day(booking.move_in),
                 "address": f"{place.address_line}, {place.locality}",
             }
+        elif template == CONFIRM_MOVE_IN:
+            terms = await self._terms.of(booking.booking_policy_id)
+            values["hours"] = str(terms.check_window_hours)
+        elif template == MOVED_IN:
+            assert booking.check_window_ends_at is not None  # noqa: S101 - set as they checked in
+            values["window_ends"] = spoken_time(booking.check_window_ends_at)
         return phone, template, values
