@@ -309,10 +309,10 @@ In the code (ADR 0046): an advisory lock on the student guards the active-hold l
 ### 7.5 Scheduled jobs (worker)
 | Job | Every | Does |
 |---|---|---|
-| expire_holds | 1 min | HELD past expiry → EXPIRED |
+| booking.expire_holds | 1 min | HELD past expiry → EXPIRED, the bed free again (ADR 0052) |
 | booking.confirmation_timeouts | 5 min | TOKEN_SECURED past the deadline → REJECTED + refund (refunds are stubs until Phase 6; ADR 0048) |
 | booking.check_windows | 5 min | CHECKED_IN past the window's exact end → ACTIVE; earning the token and the owner's invoice are stubs until Phase 6 (ADR 0050) |
-| no_shows | daily 10:00 IST | CONFIRMED past move_in + N days → NO_SHOW |
+| booking.no_shows | daily 10:00 IST | CONFIRMED past move_in + the terms' `no_show_days` (India's date) → NO_SHOW: the bed freed, the late-cancel rule applied (a stub until Phase 6), both sides texted (ADR 0052) |
 | reconcile_payments | 15 min | Fetch status of payments stuck in created/authorized |
 | search.refresh_listing | on `catalog.listing_changed` and `catalog.inventory_changed` + nightly 00:30 IST | Refresh a listing's search entry and `property_price_summaries`; the nightly `search.refresh_all` queues every listing once a day (ADR 0027, 0028) |
 | pricing.check_integrity | nightly 01:00 IST | Raise rents more than 25% below their market (resolving those no longer below) and last week's PGs whose quotes a limit held back more than 20% of the time; rule churn is checked as rules go into force (ADR 0043) |
@@ -320,7 +320,7 @@ In the code (ADR 0046): an advisory lock on the student guards the active-hold l
 | search.reprice_listing | on `pricing.rules_changed` (the PG), `pricing.band_changed` (its locality's PGs) and `pricing.caps_changed` (every PG, once per caps version) | Reprice a listing's `property_price_summaries` from the engine and revalidate its pages (ADR 0042) |
 | retention | daily 03:30 IST | `compliance.retention`: apply the retention schedule (`RETENTION_RULES` in `app/jobs.py`) and record what each rule removed (ADR 0018) |
 
-All jobs are idempotent and emit metrics (processed, failed, lag).
+All jobs are idempotent and emit metrics (processed, failed, lag). The booking jobs also count what they moved (`booking.job.changes`), and every booking status change is counted by event (`booking.transitions`; ADR 0052).
 
 ## 8. Dynamic pricing engine (pivot)
 
@@ -646,7 +646,7 @@ Target OWASP ASVS level 2 for auth, booking, payments and personal data.
 
 - Structured JSON logs with request id, user id (internal), route and latency; no PII; phone numbers masked.
 - OpenTelemetry tracing across FastAPI, SQLAlchemy and httpx, exported to the chosen backend; trace ids returned in error responses.
-- Metrics: bookings by state and transitions per hour, hold expiry rate, quote-to-hold and hold-to-secured conversion, webhook lag, outbox lag and dead jobs, reconciliation mismatches, OTP send failures, p95 latency per route, error rate.
+- Metrics (OpenTelemetry, exported over OTLP/HTTP by the API and the worker once `OTEL_EXPORTER_OTLP_ENDPOINT` is set; ADR 0052): bookings by state and transitions per hour, hold expiry rate, quote-to-hold and hold-to-secured conversion, webhook lag, outbox lag and dead jobs, reconciliation mismatches, OTP send failures, p95 latency per route, error rate.
 - Sentry for web and API, with release tracking and source maps.
 - Alerts: dead outbox jobs, webhook failures, reconciliation mismatch, error-rate spike, OTP provider failure, constraint violations above baseline, refund stuck > 24 h.
 - Runbooks in `docs/runbooks/` for each alert.

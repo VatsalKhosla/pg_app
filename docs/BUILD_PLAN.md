@@ -433,8 +433,12 @@ Start the slow ones in week 1.
   - **Web:** the report form on the booking page with private photo uploads, the report's status, "PGs like this one", and ops' `/ops/disputes` queue and detail with a confirm step before settling.
   - **Proof:** API tests for both outcomes (booking, bed, texts, history, audit), the window's exact end, photo ownership, upload limits and the queue's order; component tests for both forms.
 
-- [ ] **5.8 Booking jobs.** expire_holds, confirm_timeouts, check_windows, no_shows (§7.5) — idempotent, observable, with metrics.
+- [x] **5.8 Booking jobs.** expire_holds, confirm_timeouts, check_windows, no_shows (§7.5) — idempotent, observable, with metrics.
   *Done when* running each job twice in a row changes nothing the second time (tested).
+  *Note (2026-10-31):*
+  - **Jobs:** `booking.expire_holds` (every minute) and `booking.no_shows` (10:00 IST daily) join the confirmation timeouts and check windows. Each takes the earliest due first with `SKIP LOCKED` and moves bookings through the state machine, whose guards set the exact moment. A no-show frees the bed and texts both sides with the last day they could have arrived. Partial indexes serve each scan (ADR 0052).
+  - **Observable:** `booking.transitions` (by event, from, to, by) and `booking.job.changes` (by job) beside the outbox's metrics. The API and the worker export them over OTLP/HTTP once an endpoint is set, and the worker now reports to Sentry too.
+  - **Proof:** a hold a second before and at its expiry, a no-show on the last day and the next morning, each run twice; the schedule against §7.5; the counters read through an in-memory reader.
 
 - [ ] **5.9 On-spot booking from a visit.** From a checked-in visit, the agent opens "Reserve now" for the student (channel `on_spot`, linked `visit_id`), usually instant-confirm.
   *Done when* the visit → booking path works on a phone and the visit log links to the booking.
