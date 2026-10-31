@@ -1,11 +1,15 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { Route } from "next";
+import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { problemMessage } from "@/components/auth/problem-message";
 import { Button } from "@/components/ui/button";
+import { BOOKINGS_PATH } from "@/lib/auth/routes";
+import { holdBed } from "@/lib/bookings/client";
 import { Field, Select } from "@/components/ui/fields";
 import { Input } from "@/components/ui/input";
 import { fillBlanks } from "@/lib/content/markdown";
@@ -34,22 +38,34 @@ export interface QuoteCheckerText {
   validUntil: string;
   bookingSoon: string;
   errors: Record<string, string>;
+  /** On the spot, at the student's visit (step 5.9). */
+  reserve: {
+    note: string;
+    submit: string;
+    reserving: string;
+    errors: Record<string, string>;
+  };
 }
 
 // The codes whose message the API completes with what it found.
 const WITH_DETAIL: readonly string[] = ["QUOTE_INVALID"];
+const RESERVE_WITH_DETAIL: readonly string[] = ["VISIT_NOT_ON_SITE", "HOLD_LIMIT_REACHED"];
 const TIME = new Intl.DateTimeFormat("en-IN", { timeStyle: "short", timeZone: "Asia/Kolkata" });
 
 /**
  * A student's own price for a room, move-in and stay (step 4.5, ADR 0040): a quote from the API,
  * shown with how it was worked out, the token, what's due at move-in, the deposit and the other
  * charges (CLAUDE.md rule 7). The browser formats amounts; it never works one out.
+ *
+ * At their visit (``visit``, step 5.9), the student can reserve the bed at that price on the
+ * spot, once the agent has checked in; the booking's page then takes them on.
  */
 export function QuoteChecker({
   rooms,
   stays,
   defaultStay,
   today,
+  visit = null,
   text,
 }: {
   rooms: readonly { id: string; label: string }[];
@@ -57,11 +73,18 @@ export function QuoteChecker({
   defaultStay: number;
   /** Today in India, YYYY-MM-DD: the earliest move-in. */
   today: string;
+  /** The student's visit to this PG, when they came from it to reserve on the spot. */
+  visit?: string | null;
   text: QuoteCheckerText;
 }) {
   const id = useId();
+  const router = useRouter();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  // One key per quote: a retry of the same reservation replays its first answer.
+  const [reservation, setReservation] = useState<string | null>(null);
+  const [reserving, setReserving] = useState(false);
+  const [refused, setRefused] = useState<string | null>(null);
   const schema = z.object({
     room: z.string().min(1, text.needRoom),
     moveIn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, text.needDate),
@@ -80,11 +103,25 @@ export function QuoteChecker({
 
   async function check(values: Values) {
     setFailure(null);
+    setRefused(null);
     try {
       setQuote(await createQuote(values.room, values.moveIn, Number(values.stay)));
+      setReservation(crypto.randomUUID());
     } catch (error) {
       setQuote(null);
       setFailure(problemMessage(error, text.errors, WITH_DETAIL));
+    }
+  }
+
+  async function reserve(quoteId: string, key: string) {
+    setReserving(true);
+    setRefused(null);
+    try {
+      const booking = await holdBed(quoteId, visit, key);
+      router.push(`${BOOKINGS_PATH}/${booking.code}` as Route);
+    } catch (error) {
+      setRefused(problemMessage(error, text.reserve.errors, RESERVE_WITH_DETAIL));
+      setReserving(false);
     }
   }
 
@@ -158,8 +195,26 @@ export function QuoteChecker({
             </ul>
             <p className="text-sm text-muted-foreground">
               {fillBlanks(text.validUntil, { time: TIME.format(new Date(quote.expiresAt)) })}{" "}
-              {text.bookingSoon}
+              {visit === null ? text.bookingSoon : null}
             </p>
+            {visit === null || reservation === null ? null : (
+              <div className="space-y-2 pt-2">
+                <p className="text-sm">{text.reserve.note}</p>
+                <Button
+                  disabled={reserving}
+                  onClick={() => {
+                    void reserve(quote.id, reservation);
+                  }}
+                >
+                  {reserving ? text.reserve.reserving : text.reserve.submit}
+                </Button>
+                {refused === null ? null : (
+                  <p role="alert" className="text-sm text-destructive">
+                    {refused}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -5,9 +5,9 @@ import { unwrap } from "@/lib/api/client";
 import { withCsrf } from "@/lib/api/csrf";
 
 /**
- * Bookings' calls from the browser (steps 5.5 to 5.7, ADRs 0049 to 0051): a student cancelling
- * their own, saying they've moved in, or reporting a room that isn't as shown. Pages read on the
- * server.
+ * Bookings' calls from the browser (steps 5.5 to 5.9, ADRs 0049 to 0053): a student reserving a
+ * bed, cancelling their own, saying they've moved in, or reporting a room that isn't as shown.
+ * Pages read on the server.
  */
 
 export type StudentBooking = Schemas["StudentBooking"];
@@ -44,6 +44,27 @@ export function openDispute(code: string, report: DisputeRequest): Promise<Stude
       browserApi.POST("/v1/bookings/{code}/disputes", {
         params: { path: { code } },
         body: report,
+        headers,
+      }),
+    ),
+  );
+}
+
+/**
+ * A bed of the quote's room held for the stay. With ``visit``, on the spot at the student's
+ * visit (step 5.9). ``idempotencyKey`` is the same on every retry of one reservation, so a retry
+ * gets the first answer back instead of a second hold.
+ */
+export function holdBed(
+  quote: string,
+  visit: string | null,
+  idempotencyKey: string,
+): Promise<StudentBooking> {
+  return withCsrf((headers) =>
+    unwrap(
+      browserApi.POST("/v1/bookings", {
+        params: { header: { "Idempotency-Key": idempotencyKey } },
+        body: visit === null ? { quote } : { quote, visit },
         headers,
       }),
     ),

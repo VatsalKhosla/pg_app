@@ -55,6 +55,7 @@ export default async function OpsVisitPage({ params }: PageProps<"/ops/visits/[i
             accuracy: formatDistance(visit.checkIn.accuracyM),
           }),
         ]),
+    ...(visit.booking === null ? [] : [t("detail.logReserved", { code: visit.booking })]),
     ...(visit.finishedAt === null || visit.outcome === null
       ? []
       : [

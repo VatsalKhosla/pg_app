@@ -414,7 +414,10 @@
     "cancelling": "Cancelling…",
     "cancelledByStudent": "You cancelled this visit.",
     "cancelledByOps": "We cancelled this visit.",
-    "failed": "That didn't work. Please try again."
+    "failed": "That didn't work. Please try again.",
+    "reserveHint": "Liked the room? Our agent has checked in, so you can reserve a bed here today.",
+    "reserve": "Reserve a bed here",
+    "reserved": "You reserved a bed: booking {code}"
   },
   "Pg": {
     "metaDescription": "{gender} PG in {locality}: rooms from {from} a month, deposit and every charge shown upfront.",
@@ -551,6 +554,7 @@
     "quote": {
       "title": "Check your price",
       "intro": "Pick a room, the day you'd move in and how long you'd stay. The rent we show is fixed for your whole stay.",
+      "atYourVisit": "You're at this PG with our agent. Check your price for the room you liked, then reserve it here.",
       "room": "Room",
       "chooseRoom": "Choose a room",
       "moveIn": "Move-in date",
@@ -574,6 +578,20 @@
         "RATE_LIMITED": "That's a lot of prices at once. Please wait a minute.",
         "PRICING_CONFIG_ERROR": "This room can't be priced right now; our team has been told.",
         "API_UNREACHABLE": "We couldn't reach our servers. Check your connection and try again."
+      },
+      "reserve": {
+        "note": "Reserving holds this bed for you at this price while you pay the token.",
+        "submit": "Reserve this bed",
+        "reserving": "Reserving…",
+        "errors": {
+          "generic": "We couldn't reserve the bed. Please try again.",
+          "VISIT_NOT_ON_SITE": "This can't be reserved from your visit:",
+          "HOLD_LIMIT_REACHED": "You're already holding a bed:",
+          "BED_UNAVAILABLE": "No bed of this room is free for your stay any more. Try another date or room.",
+          "QUOTE_EXPIRED": "This price has run out. Check your price again.",
+          "QUOTE_USED": "This price was used for a booking already. Check your price again.",
+          "UNAUTHENTICATED": "Sign in again on your phone to reserve."
+        }
       }
     }
   },
@@ -1059,6 +1077,7 @@
         "logRequested": "Asked for, with {count, plural, one {# time} other {# times}} offered",
         "logScheduled": "Booked for {when}",
         "logCheckedIn": "Agent checked in at {when}, {distance} from the building (phone accurate to {accuracy})",
+        "logReserved": "The student reserved a bed on the spot: booking {code}",
         "logFinished": "Recorded at {when}: {outcome}",
         "logCancelled": "Cancelled at {when} by {by}",
         "by": {
@@ -1611,7 +1630,8 @@
         "save": "Save",
         "saving": "Saving…",
         "done": "Done: {outcome}.",
-        "failed": "That didn't work: {detail}"
+        "failed": "That didn't work: {detail}",
+        "reserved": "The student reserved a bed on the spot: booking {code}"
       }
     }
   },

@@ -7,7 +7,7 @@ import { CancelMyVisit } from "@/components/visits/cancel-my-visit";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getServerApi } from "@/lib/api/server";
-import { VISITS_PATH } from "@/lib/auth/routes";
+import { BOOKINGS_PATH, VISITS_PATH } from "@/lib/auth/routes";
 import { requireSession } from "@/lib/auth/session";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -119,6 +119,27 @@ export default async function VisitsPage() {
                     )}
                   </dl>
                 )}
+                {visit.booking === null ? null : (
+                  <p className="text-sm">
+                    <Link
+                      href={`${BOOKINGS_PATH}/${visit.booking}` as Route}
+                      className="font-medium text-primary underline underline-offset-4"
+                    >
+                      {t("reserved", { code: visit.booking })}
+                    </Link>
+                  </p>
+                )}
+                {visit.canReserve ? (
+                  <div className="space-y-1">
+                    <p className="text-sm">{t("reserveHint")}</p>
+                    <Link
+                      href={`/pg/${visit.property.slug}?visit=${visit.id}#quote-title` as Route}
+                      className={buttonVariants()}
+                    >
+                      {t("reserve")}
+                    </Link>
+                  </div>
+                ) : null}
                 {visit.status === "cancelled" ? (
                   <p className="text-sm text-muted-foreground">
                     {visit.cancelledBy === "student"

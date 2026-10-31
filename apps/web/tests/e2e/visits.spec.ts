@@ -8,9 +8,10 @@ import { eventsOf } from "./posthog";
 import { codeSentTo, logLength, newMobile } from "./sign-in-codes";
 import { manage, newStaff, signInAsStaff } from "./staff";
 
-// A visit end to end (BUILD_PLAN 3.7), on phones, against the real API and its worker: a student
-// finds a sample PG and asks to visit it, ops book a time with a field agent, the agent checks in
-// at the building and says how it went, and ops see the visit log. Along the way the booking
+// A visit end to end (BUILD_PLAN 3.7 and 5.9), on phones, against the real API and its worker: a
+// student finds a sample PG and asks to visit it, ops book a time with a field agent, the agent
+// checks in at the building and says how it went, the student reserves a bed there on the spot,
+// and ops see it all in the visit log. Along the way the booking
 // funnel reaches PostHog's stand-in as one anonymous journey (BUILD_PLAN 3.9).
 
 const ASTER = "fictional-sample-pg-aster-kamla-nagar";
@@ -152,9 +153,27 @@ test.describe("a visit", () => {
     await expect(agentPage.getByText("Done: Interested.")).toBeVisible();
     expect(await wcagViolations(agentPage)).toEqual([]);
 
-    // Ops: the visit log, the agent's check-in and how it went.
+    // The student, still at the PG, reserves a bed there on the spot from their visit (BUILD_PLAN
+    // 5.9), while remote booking is off.
+    await page.reload();
+    await expect(mine).toContainText("you can reserve a bed here today");
+    await mine.getByRole("link", { name: "Reserve a bed here" }).click();
+    await expect(page).toHaveURL(new RegExp(`/pg/${ASTER}\\?visit=`));
+    const price = page.getByRole("region", { name: "Check your price" });
+    await price.getByLabel("Room").selectOption({ index: 1 });
+    await price.getByRole("button", { name: "Show my price" }).click();
+    await price.getByRole("button", { name: "Reserve this bed" }).click();
+    await expect(page).toHaveURL(/\/bookings\/BK-[0-9A-Z]{8}$/);
+    await expect(page.getByRole("heading", { name: "Held for you" })).toBeVisible();
+    const code = new URL(page.url()).pathname.split("/").pop() ?? "";
+    expect(await wcagViolations(page)).toEqual([]);
+
+    // Ops: the visit log, the agent's check-in, the booking made on the spot and how it went.
     await opsPage.reload();
     const log = opsPage.getByRole("region", { name: "Visit log" });
+    await expect(
+      log.getByText(`The student reserved a bed on the spot: booking ${code}`),
+    ).toBeVisible();
     await expect(log.getByText(/^Agent checked in at .+ from the building/)).toBeVisible();
     await expect(log.getByText(/: Interested$/)).toBeVisible();
     await expect(log.getByText("Agent's note: Liked the double room.")).toBeVisible();

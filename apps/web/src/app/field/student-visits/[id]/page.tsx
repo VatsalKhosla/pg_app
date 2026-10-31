@@ -88,6 +88,9 @@ export default async function StudentVisitPage({
           })}
         </p>
       )}
+      {visit.booking === null ? null : (
+        <p className="text-sm font-medium">{t("detail.reserved", { code: visit.booking })}</p>
+      )}
       {visit.status === "scheduled" ? (
         <StudentVisitActions id={visit.id} checkedIn={visit.checkIn !== null} />
       ) : visit.outcome === null ? null : (

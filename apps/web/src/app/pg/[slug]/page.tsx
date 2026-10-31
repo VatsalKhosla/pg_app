@@ -70,8 +70,24 @@ export async function generateMetadata({ params }: PageProps<"/pg/[slug]">): Pro
  * every charge shown upfront, safety, amenities, rules and where it is, at its display point.
  * Rendered per request for the CSP nonce, from data the server caches for a minute.
  */
-export default async function PgPage({ params }: PageProps<"/pg/[slug]">) {
+// What reserving on the spot can answer, each with its own words (step 5.9).
+const RESERVE_ERRORS = [
+  "generic",
+  "VISIT_NOT_ON_SITE",
+  "HOLD_LIMIT_REACHED",
+  "BED_UNAVAILABLE",
+  "QUOTE_EXPIRED",
+  "QUOTE_USED",
+  "UNAUTHENTICATED",
+] as const;
+
+// A visit id in the link: the student came from their visit to reserve on the spot (step 5.9).
+const VISIT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+
+export default async function PgPage({ params, searchParams }: PageProps<"/pg/[slug]">) {
   const { slug } = await params;
+  const asked = (await searchParams).visit;
+  const onSpotVisit = typeof asked === "string" && VISIT.test(asked) ? asked : null;
   const listing = await listingFor(slug);
   // Without the calendar (the API briefly away), the listed rents show, with no price claims.
   const calendar = await getPriceCalendar(slug).catch(() => null);
@@ -133,7 +149,11 @@ export default async function PgPage({ params }: PageProps<"/pg/[slug]">) {
       <Gallery listing={listing} />
       <Rooms categories={listing.categories} calendar={calendar} />
       {listing.categories.length === 0 ? null : (
-        <CheckPrice categories={listing.categories} stay={calendar?.stayMonths ?? DEFAULT_STAY} />
+        <CheckPrice
+          categories={listing.categories}
+          stay={calendar?.stayMonths ?? DEFAULT_STAY}
+          visit={onSpotVisit}
+        />
       )}
       <Safety listing={listing} />
 
@@ -390,8 +410,19 @@ async function RoomPrice({
   );
 }
 
-/** A student's own price for a room, move-in and stay: a quote, with its full breakdown. */
-async function CheckPrice({ categories, stay }: { categories: Category[]; stay: number }) {
+/**
+ * A student's own price for a room, move-in and stay: a quote, with its full breakdown; and, at
+ * their visit, reserving the bed at that price on the spot.
+ */
+async function CheckPrice({
+  categories,
+  stay,
+  visit,
+}: {
+  categories: Category[];
+  stay: number;
+  visit: string | null;
+}) {
   const t = await getTranslations("Pg.quote");
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
   const errors = [
@@ -407,13 +438,16 @@ async function CheckPrice({ categories, stay }: { categories: Category[]; stay: 
         <h2 id="quote-title" className="text-xl font-semibold">
           {t("title")}
         </h2>
-        <p className="text-sm text-muted-foreground">{t("intro")}</p>
+        <p className="text-sm text-muted-foreground">
+          {visit === null ? t("intro") : t("atYourVisit")}
+        </p>
       </div>
       <QuoteChecker
         rooms={categories.map((category) => ({ id: category.id, label: category.label }))}
         stays={STAYS.map((months) => ({ value: months, label: t("months", { count: months }) }))}
         defaultStay={stay}
         today={today}
+        visit={visit}
         text={{
           room: t("room"),
           chooseRoom: t("chooseRoom"),
@@ -432,6 +466,14 @@ async function CheckPrice({ categories, stay }: { categories: Category[]; stay: 
           validUntil: t.raw("validUntil") as string,
           bookingSoon: t("bookingSoon"),
           errors: Object.fromEntries(errors.map((code) => [code, t(`errors.${code}`)])),
+          reserve: {
+            note: t("reserve.note"),
+            submit: t("reserve.submit"),
+            reserving: t("reserve.reserving"),
+            errors: Object.fromEntries(
+              RESERVE_ERRORS.map((code) => [code, t(`reserve.errors.${code}`)]),
+            ),
+          },
         }}
       />
     </section>
