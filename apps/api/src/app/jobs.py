@@ -16,7 +16,11 @@ from app.core.web_cache import REVALIDATE, revalidate_handler
 from app.modules.booking.jobs import (
     CHECK_WINDOWS,
     CONFIRMATION_TIMEOUTS,
+    EXPIRE_HOLDS,
+    NO_SHOWS,
     NOTIFY,
+    expire_holds,
+    mark_no_shows,
     notify_handler,
     settle_check_windows,
     time_out_confirmations,
@@ -105,14 +109,18 @@ SCHEDULES: Final = (
     ScheduledJob(name=REFRESH_ALL, kind=REFRESH_ALL, schedule=DailyAt(time(0, 30))),
     # Pricing's integrity alerts: the market as it stands, and last week's quotes (ADR 0043).
     ScheduledJob(name=CHECK_INTEGRITY, kind=CHECK_INTEGRITY, schedule=DailyAt(time(1, 0))),
-    # Owners who didn't confirm in time lose the booking, and the student is refunded (§7.5).
+    # Bookings (§7.5, ADR 0052). A hold whose time is up frees its bed for others...
+    ScheduledJob(name=EXPIRE_HOLDS, kind=EXPIRE_HOLDS, schedule=Every(timedelta(minutes=1))),
+    # ...owners who didn't confirm in time lose the booking, and the student is refunded...
     ScheduledJob(
         name=CONFIRMATION_TIMEOUTS,
         kind=CONFIRMATION_TIMEOUTS,
         schedule=Every(timedelta(minutes=5)),
     ),
-    # A check window that ended without a dispute settles the booking (§7.5).
+    # ...a check window that ended without a dispute settles the booking...
     ScheduledJob(name=CHECK_WINDOWS, kind=CHECK_WINDOWS, schedule=Every(timedelta(minutes=5))),
+    # ...and in the morning, a student who never moved in loses the booking.
+    ScheduledJob(name=NO_SHOWS, kind=NO_SHOWS, schedule=DailyAt(time(10, 0))),
 )
 
 
@@ -155,8 +163,10 @@ def build_registry(
     registry.register(TEXT, text_handler(texts))
     # Bookings (step 5.4, ADR 0048): texts about them, and confirmations not given in time.
     registry.register(NOTIFY, notify_handler(texts))
+    registry.register(EXPIRE_HOLDS, expire_holds)
     registry.register(CONFIRMATION_TIMEOUTS, time_out_confirmations)
     registry.register(CHECK_WINDOWS, settle_check_windows)
+    registry.register(NO_SHOWS, mark_no_shows)
     registry.register(GRIEVANCE_TEXT, grievance_text_handler(texts))
     registry.register(ANALYTICS_CAPTURE, capture_handler(analytics))
     return registry

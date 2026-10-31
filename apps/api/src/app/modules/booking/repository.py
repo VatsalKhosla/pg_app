@@ -20,7 +20,7 @@ CONFIRMED_ONWARDS: Final = (
 if TYPE_CHECKING:
     import uuid
     from collections.abc import Collection, Mapping, Sequence
-    from datetime import datetime
+    from datetime import date, datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -54,6 +54,30 @@ class BookingRepository:
             return {}
         rows = await self._db.scalars(select(Booking).where(Booking.id.in_(booking_ids)))
         return {row.id: row for row in rows}
+
+    async def holds_over(self, now: datetime, *, limit: int) -> list[Booking]:
+        """Holds past their expiry, locked, the longest over first; ones another transaction
+        holds are left to it, such as a new hold on the same beds expiring them itself."""
+        rows = await self._db.scalars(
+            select(Booking)
+            .where(Booking.status == BookingStatus.HELD, Booking.hold_expires_at <= now)
+            .order_by(Booking.hold_expires_at, Booking.id)
+            .limit(limit)
+            .with_for_update(skip_locked=True)
+        )
+        return list(rows)
+
+    async def not_moved_in(self, today: date, *, limit: int) -> list[Booking]:
+        """Confirmed bookings whose move-in day has gone, locked, the longest gone first. Each
+        booking's own terms say how long it waits for a no-show; the state machine decides."""
+        rows = await self._db.scalars(
+            select(Booking)
+            .where(Booking.status == BookingStatus.CONFIRMED, Booking.move_in < today)
+            .order_by(Booking.move_in, Booking.id)
+            .limit(limit)
+            .with_for_update(skip_locked=True)
+        )
+        return list(rows)
 
     async def windows_over(self, now: datetime, *, limit: int) -> list[Booking]:
         """Checked-in bookings whose 24 hours to check the room are over, locked, the earliest

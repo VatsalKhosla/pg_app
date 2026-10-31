@@ -12,6 +12,8 @@ A PG that confirms its bookings itself gets its `confirm` straight after.
 
 from typing import TYPE_CHECKING, Final
 
+from opentelemetry import metrics
+
 from app.core import audit
 from app.core.calendar import india_date
 from app.core.errors import InvalidTransitionError
@@ -76,6 +78,11 @@ _REACHED: Final = {
     BookingStatus.ACTIVE: "activated_at",
     BookingStatus.COMPLETED: "completed_at",
 }
+# Bookings by the changes they go through: holds expiring, tokens in, check-ins, no-shows
+# (ARCHITECTURE §19).
+_changed = metrics.get_meter("app.booking").create_counter(
+    "booking.transitions", unit="{transition}", description="Booking status changes"
+)
 _AUDIT_ACTORS: Final[dict[Party, audit.ActorType]] = {
     Party.STUDENT: "user",
     Party.OWNER: "owner",
@@ -151,6 +158,7 @@ class Transitions:
             raise InvalidTransitionError("The booking changed a moment ago. Try again.")
         await self.carry_out(booking, event, step, by=by)
         await self.log(booking, event, was, step, party, by=by, note=note)
+        _changed.add(1, {"event": event, "from": was, "to": step.to, "by": party})
         if AutoConfirm() in step.effects:
             await self.apply(booking, BookingEvent.CONFIRM, Party.SYSTEM, place, by=None)
         return step

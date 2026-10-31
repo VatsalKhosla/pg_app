@@ -127,6 +127,19 @@ class Booking(Model):
             "hold_expires_at",
             postgresql_where=sql("status = 'held'"),
         ),
+        # The other jobs' scans (§7.5, ADR 0052): owners' deadlines, check windows, and the
+        # move-ins still awaited.
+        Index(
+            "ix_bookings_token_secured",
+            "confirm_by",
+            postgresql_where=sql("status = 'token_secured'"),
+        ),
+        Index(
+            "ix_bookings_checked_in",
+            "check_window_ends_at",
+            postgresql_where=sql("status = 'checked_in'"),
+        ),
+        Index("ix_bookings_confirmed", "move_in", postgresql_where=sql("status = 'confirmed'")),
     )
 
 

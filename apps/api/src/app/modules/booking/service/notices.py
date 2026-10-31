@@ -2,10 +2,12 @@
 the job's transaction. Nothing when the booking has moved on since, or when that party gets no
 text for that change."""
 
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from app.config import BRAND_NAME
 from app.core.calendar import spoken_time
+from app.modules.booking.domain.cancellation import late_refund
 from app.modules.booking.domain.state_machine import BookingEvent, BookingStatus, Party
 from app.modules.booking.repository import BookingRepository
 from app.modules.booking.texts import (
@@ -14,6 +16,9 @@ from app.modules.booking.texts import (
     FOR,
     MOVED_IN,
     NEW_CONFIRMED,
+    NO_SHOW_FOR_OWNER,
+    NO_SHOW_KEPT,
+    NO_SHOW_REFUNDED,
     TOKEN_IN,
 )
 from app.modules.catalog.service import CatalogLookup
@@ -82,4 +87,11 @@ class BookingNotices:
         elif template == MOVED_IN:
             assert booking.check_window_ends_at is not None  # noqa: S101 - set as they checked in
             values["window_ends"] = spoken_time(booking.check_window_ends_at)
+        elif template in {NO_SHOW_REFUNDED, NO_SHOW_FOR_OWNER}:
+            terms = await self._terms.of(booking.booking_policy_id)
+            values["last_day"] = _day(booking.move_in + timedelta(days=terms.no_show_days))
+            if template == NO_SHOW_REFUNDED and not late_refund(
+                booking.token_paise, terms.late_cancel_policy
+            ):
+                template = NO_SHOW_KEPT
         return phone, template, values

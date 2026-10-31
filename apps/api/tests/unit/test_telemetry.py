@@ -5,7 +5,7 @@ import sentry_sdk
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config import Settings
-from app.core.telemetry import configure_sentry, configure_tracing, scrub_event
+from app.core.telemetry import configure_metrics, configure_sentry, configure_tracing, scrub_event
 
 if TYPE_CHECKING:
     from sentry_sdk.types import Event
@@ -18,6 +18,10 @@ def test_tracing_stays_off_without_an_otlp_endpoint(make_settings: SettingsFacto
     engine = create_async_engine(settings.database_url.get_secret_value())
 
     assert configure_tracing(settings, engine=engine) is None
+
+
+def test_metrics_stay_off_without_an_otlp_endpoint(make_settings: SettingsFactory) -> None:
+    assert configure_metrics(make_settings(), process="worker") is None
 
 
 def test_sentry_stays_off_without_a_dsn(make_settings: SettingsFactory) -> None:

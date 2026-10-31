@@ -1,4 +1,4 @@
-"""The text messages bookings send (steps 5.4 to 5.7, ADRs 0048, 0050 and 0051): the wording
+"""The text messages bookings send (steps 5.4 to 5.8, ADRs 0048 and 0050 to 0052): the wording
 each DLT template is registered with, and its blanks. A student hears the exact address only once
 the booking is confirmed (CLAUDE.md rule 11)."""
 
@@ -25,6 +25,10 @@ DISPUTE_REFUNDED: Final = "booking_dispute_refunded"
 DISPUTE_REFUNDED_FOR_OWNER: Final = "booking_dispute_refunded_for_owner"
 DISPUTE_UPHELD: Final = "booking_dispute_upheld"
 DISPUTE_UPHELD_FOR_OWNER: Final = "booking_dispute_upheld_for_owner"
+# A student who never moved in (step 5.8): the late-cancel rule says what becomes of the token.
+NO_SHOW_REFUNDED: Final = "booking_no_show_refunded"
+NO_SHOW_KEPT: Final = "booking_no_show_kept"
+NO_SHOW_FOR_OWNER: Final = "booking_no_show_for_owner"
 
 TEMPLATES: Final = {
     TOKEN_IN: (
@@ -89,6 +93,18 @@ TEMPLATES: Final = {
     DISPUTE_UPHELD_FOR_OWNER: (
         "{brand}: after our check, booking {code} at {pg} stands: the student's stay goes ahead."
     ),
+    NO_SHOW_REFUNDED: (
+        "{brand}: you didn't move in to {pg} by {last_day}, so booking {code} has ended and the "
+        "bed is free again. Your token is refunded in full."
+    ),
+    NO_SHOW_KEPT: (
+        "{brand}: you didn't move in to {pg} by {last_day}, so booking {code} has ended and the "
+        "bed is free again. Under the cancellation policy, your token isn't refunded."
+    ),
+    NO_SHOW_FOR_OWNER: (
+        "{brand}: the student didn't move in to {pg} by {last_day}, so booking {code} has ended "
+        "and the bed is free again."
+    ),
 }
 
 # Which text each party gets for each change; ops see theirs on the bookings board (5.10).
@@ -110,4 +126,7 @@ FOR: Final = {
     (Party.OWNER, BookingEvent.RESOLVE_REFUND): DISPUTE_REFUNDED_FOR_OWNER,
     (Party.STUDENT, BookingEvent.RESOLVE_UPHOLD): DISPUTE_UPHELD,
     (Party.OWNER, BookingEvent.RESOLVE_UPHOLD): DISPUTE_UPHELD_FOR_OWNER,
+    # NO_SHOW_KEPT instead when the booking's late-cancel rule keeps the token.
+    (Party.STUDENT, BookingEvent.NO_SHOW): NO_SHOW_REFUNDED,
+    (Party.OWNER, BookingEvent.NO_SHOW): NO_SHOW_FOR_OWNER,
 }

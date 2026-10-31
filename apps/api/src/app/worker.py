@@ -27,6 +27,7 @@ from app.core.db import create_engine, create_sessionmaker
 from app.core.logging import configure_logging
 from app.core.outbox import JobRegistry, OutboxWorker
 from app.core.scheduler import ScheduledJob, Scheduler
+from app.core.telemetry import configure_metrics, configure_sentry
 from app.core.texts import ConsoleTexts, NoTexts
 from app.core.web_cache import NoWebCache, SignedWebCache, WebCache
 from app.jobs import SCHEDULES, build_registry
@@ -178,11 +179,20 @@ def main(argv: list[str] | None = None) -> None:
 
     settings = Settings()
     configure_logging(level=settings.log_level, fmt=settings.log_format)
+    # A job's failure reaches Sentry, and the jobs' metrics their backend, as the API's do.
+    configure_sentry(settings)
+    meter_provider = configure_metrics(settings, process="worker")
     if heartbeat_file is not None:
         heartbeat_file.parent.mkdir(parents=True, exist_ok=True)
-    asyncio.run(
-        _serve_until_signalled(settings, heartbeat_file=heartbeat_file, heartbeat_interval=interval)
-    )
+    try:
+        asyncio.run(
+            _serve_until_signalled(
+                settings, heartbeat_file=heartbeat_file, heartbeat_interval=interval
+            )
+        )
+    finally:
+        if meter_provider is not None:
+            meter_provider.shutdown()
 
 
 if __name__ == "__main__":

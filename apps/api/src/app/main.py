@@ -22,7 +22,12 @@ from app.core.ratelimit import RateLimiter
 from app.core.redis import create_redis
 from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
-from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
+from app.core.telemetry import (
+    SERVICE_VERSION,
+    configure_metrics,
+    configure_sentry,
+    configure_tracing,
+)
 from app.modules.booking.contact import BookingContacts
 from app.modules.booking.router import router as booking_router
 from app.modules.catalog.agreements import FileAgreements
@@ -134,6 +139,7 @@ def create_app(
         turnstile_http = httpx.AsyncClient(timeout=PROVIDER_TIMEOUT)
         google_http = httpx.AsyncClient(timeout=PROVIDER_TIMEOUT)
         tracer_provider = configure_tracing(settings, engine=engine)
+        meter_provider = configure_metrics(settings, process="api")
         app.state.clock = clock
         app.state.engine = engine
         app.state.sessionmaker = sessionmaker
@@ -176,6 +182,8 @@ def create_app(
             await engine.dispose()
             if tracer_provider is not None:
                 tracer_provider.shutdown()
+            if meter_provider is not None:
+                meter_provider.shutdown()
             logger.info("api stopped")
 
     interactive_docs = settings.app_env != "production"
