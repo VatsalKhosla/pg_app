@@ -19,6 +19,7 @@ from tests.staff_api import (
     NOW,
     Staff,
     book,
+    name_first,
     report,
     run_as_staff,
     sign_in,
@@ -64,6 +65,8 @@ async def _publish(ops: Staff, listing_id: str) -> dict[str, Any]:
 def test_a_visit_verifies_a_listing_with_its_report_and_photos(run: Callable[..., Any]) -> None:
     async def scenario(ops: Staff) -> dict[str, Any]:
         agent = await sign_in(ops.app, ops.client, Role.FIELD_AGENT)
+        # Ops' list of agents sorts by name and is capped: other tests leave many unnamed ones.
+        await name_first(agent, "A verification test agent")
         listing = await _sellable(ops, at=spot(1_200))
         visit = await book(ops, agent, listing["id"])
         steps: dict[str, Any] = {

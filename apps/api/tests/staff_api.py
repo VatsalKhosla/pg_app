@@ -167,6 +167,15 @@ async def sign_in(
     return Staff(app, client, user_id=user.id, token=session.token)
 
 
+async def name_first(person: Staff, name: str) -> None:
+    """Gives this person a name that sorts before the many unnamed people other tests leave in
+    the shared database, for lists sorted by name and capped, such as ops' field agents."""
+    async with person.app.state.sessionmaker() as db, db.begin():
+        user = await UserRepository(db).get(person.user_id)
+        assert user is not None
+        user.name = name
+
+
 async def as_owner(ops: Staff, owner: dict[str, Any]) -> Staff:
     """The owner ``ops`` added, signed in with their phone, as the OTP sign-in leaves them."""
     async with ops.app.state.sessionmaker() as db:
