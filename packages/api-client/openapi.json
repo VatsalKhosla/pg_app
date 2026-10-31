@@ -6473,6 +6473,69 @@
         }
       }
     },
+    "/v1/bookings/{code}/disputes": {
+      "post": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Report that your room isn't as shown",
+        "description": "Inside the student's time to check the room, once they've moved in: why, in their own\nwords, with up to six of their own dispute photos, ready. The booking waits for ops, and the\nowner hears. 409 INVALID_TRANSITION outside that time; 422 DISPUTE_INVALID for photos that\naren't theirs or aren't ready.",
+        "operationId": "bookingsOpenDispute",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisputeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentBooking"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/bookings/{code}": {
       "get": {
         "tags": [
@@ -6887,6 +6950,215 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MoveInReminder"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/disputes": {
+      "get": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Reports that a room isn't as shown",
+        "description": "Oldest first, as a queue; of one status if asked.",
+        "operationId": "bookingsOpsDisputes",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DisputeStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsDisputePage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/disputes/{dispute_id}": {
+      "get": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "A report that a room isn't as shown",
+        "description": "The student's words and photos (links signed for five minutes), the booking, and the\nstudent's phone to call them.",
+        "operationId": "bookingsOpsDispute",
+        "parameters": [
+          {
+            "name": "dispute_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Dispute Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsDispute"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/disputes/{dispute_id}/resolve": {
+      "post": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Settle a report",
+        "description": "Refund: the bed is released, the token refunded in full, and the student offered PGs like\nit. Uphold: the stay goes ahead and the token is earned. Both text the student and the owner;\nthe notes stay on the record. 409 INVALID_TRANSITION once it's settled.",
+        "operationId": "bookingsOpsResolveDispute",
+        "parameters": [
+          {
+            "name": "dispute_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Dispute Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsDispute"
                 }
               }
             }
@@ -7559,7 +7831,7 @@
           "media"
         ],
         "summary": "Start an upload",
-        "description": "Staff, in a staff session. The answer has a form to post the file to, straight to\nstorage, within 15 minutes; then say it's done.",
+        "description": "Staff, in a staff session; and people signed in by phone, for a report that their room\nisn't as shown, 20 an hour. The answer has a form to post the file to, straight to storage,\nwithin 15 minutes; then say it's done.",
         "operationId": "mediaStartUpload",
         "requestBody": {
           "content": {
@@ -9720,6 +9992,118 @@
           "rejected"
         ],
         "title": "DataRequestStatus"
+      },
+      "DisputePhotoView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "capturedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capturedat"
+          },
+          "sizes": {
+            "items": {
+              "$ref": "#/components/schemas/PhotoSize"
+            },
+            "type": "array",
+            "title": "Sizes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "capturedAt",
+          "sizes"
+        ],
+        "title": "DisputePhotoView"
+      },
+      "DisputeReason": {
+        "type": "string",
+        "enum": [
+          "not_as_shown",
+          "unsafe",
+          "other"
+        ],
+        "title": "DisputeReason"
+      },
+      "DisputeRequest": {
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/DisputeReason"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 10,
+            "title": "Description"
+          },
+          "photos": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "title": "Photos",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason",
+          "description"
+        ],
+        "title": "DisputeRequest",
+        "description": "The student's report that their room isn't as shown (step 5.7, ADR 0051)."
+      },
+      "DisputeStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "resolved_refund",
+          "resolved_uphold"
+        ],
+        "title": "DisputeStatus"
+      },
+      "DisputeStudent": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "phone"
+        ],
+        "title": "DisputeStudent",
+        "description": "The student, for ops to call."
       },
       "EarlyBirdRuleParams": {
         "properties": {
@@ -12080,6 +12464,156 @@
         ],
         "title": "OneTimeCharge"
       },
+      "OpsDispute": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DisputeStatus"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/DisputeReason"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Openedat"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedat"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "booking": {
+            "$ref": "#/components/schemas/ManagedBooking"
+          },
+          "student": {
+            "$ref": "#/components/schemas/DisputeStudent"
+          },
+          "photos": {
+            "items": {
+              "$ref": "#/components/schemas/DisputePhotoView"
+            },
+            "type": "array",
+            "title": "Photos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "reason",
+          "description",
+          "openedAt",
+          "resolvedAt",
+          "notes",
+          "booking",
+          "student",
+          "photos"
+        ],
+        "title": "OpsDispute",
+        "description": "A dispute as ops settle it: the student's words and photos, the booking, and whom to call."
+      },
+      "OpsDisputeItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DisputeStatus"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/DisputeReason"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Openedat"
+          },
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          },
+          "property": {
+            "$ref": "#/components/schemas/BookingPlace"
+          },
+          "photos": {
+            "type": "integer",
+            "title": "Photos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "reason",
+          "openedAt",
+          "booking",
+          "property",
+          "photos"
+        ],
+        "title": "OpsDisputeItem",
+        "description": "A dispute in ops' queue."
+      },
+      "OpsDisputePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OpsDisputeItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "OpsDisputePage"
+      },
       "OtpChallengeIssued": {
         "properties": {
           "challengeId": {
@@ -12174,7 +12708,7 @@
         ],
         "title": "OtpVerify"
       },
-      "Outcome": {
+      "Outcome-Output": {
         "type": "string",
         "enum": [
           "interested",
@@ -12448,6 +12982,54 @@
         ],
         "title": "Party",
         "description": "Who sends an event. The system is the jobs and the gateway's verified events."
+      },
+      "PhotoSize": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "contentType": {
+            "type": "string",
+            "title": "Contenttype"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "contentType",
+          "url",
+          "width",
+          "height"
+        ],
+        "title": "PhotoSize"
       },
       "PlaceKind": {
         "type": "string",
@@ -13728,7 +14310,8 @@
           "listing_photo",
           "listing_video",
           "document",
-          "verification_photo"
+          "verification_photo",
+          "dispute_photo"
         ],
         "title": "Purpose"
       },
@@ -14106,6 +14689,39 @@
         ],
         "title": "Reason"
       },
+      "RebookSearch": {
+        "properties": {
+          "locality": {
+            "type": "string",
+            "title": "Locality"
+          },
+          "occupancy": {
+            "$ref": "#/components/schemas/Occupancy"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/GenderPolicy"
+          },
+          "moveInMonth": {
+            "type": "string",
+            "title": "Moveinmonth"
+          },
+          "budgetMaxPaise": {
+            "type": "integer",
+            "title": "Budgetmaxpaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "locality",
+          "occupancy",
+          "gender",
+          "moveInMonth",
+          "budgetMaxPaise"
+        ],
+        "title": "RebookSearch",
+        "description": "A search for PGs like this one with a bed free for the student's move-in, once a booking\nended through no fault of theirs: its filters, as the search API takes them (step 5.7)."
+      },
       "RejectRequest": {
         "properties": {
           "reason": {
@@ -14462,6 +15078,26 @@
           "name"
         ],
         "title": "Requester"
+      },
+      "ResolveRequest": {
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/app__modules__booking__domain__disputes__Outcome"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outcome",
+          "notes"
+        ],
+        "title": "ResolveRequest"
       },
       "Role": {
         "type": "string",
@@ -15665,7 +16301,7 @@
           "outcome": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Outcome"
+                "$ref": "#/components/schemas/Outcome-Output"
               },
               {
                 "type": "null"
@@ -16026,6 +16662,30 @@
                 "type": "null"
               }
             ]
+          },
+          "canDispute": {
+            "type": "boolean",
+            "title": "Candispute"
+          },
+          "dispute": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StudentDispute"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rebook": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RebookSearch"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -16052,7 +16712,10 @@
           "oneTimeChargesPaise",
           "createdAt",
           "timeline",
-          "cancellation"
+          "cancellation",
+          "canDispute",
+          "dispute",
+          "rebook"
         ],
         "title": "StudentBooking",
         "description": "A booking as its student sees it: the quote's money, fixed for the stay (rule 5). The\nexact address and the owner's phone show once the owner confirms (rule 11), from the PG's\ncontact."
@@ -16073,6 +16736,43 @@
           "items"
         ],
         "title": "StudentBookingList"
+      },
+      "StudentDispute": {
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/DisputeReason"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DisputeStatus"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Openedat"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason",
+          "status",
+          "openedAt",
+          "resolvedAt"
+        ],
+        "title": "StudentDispute",
+        "description": "The student's report that the room isn't as shown, and where it stands."
       },
       "StudentVisit": {
         "properties": {
@@ -16130,7 +16830,7 @@
           "outcome": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Outcome"
+                "$ref": "#/components/schemas/Outcome-Output"
               },
               {
                 "type": "null"
@@ -16704,7 +17404,7 @@
       "VisitOutcomeRequest": {
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/Outcome"
+            "$ref": "#/components/schemas/app__modules__visits__domain__visits__Outcome"
           },
           "note": {
             "type": "string",
@@ -16890,6 +17590,25 @@
         ],
         "title": "WomenSafety",
         "description": "Features that make a PG safer for women, ticked where the agent saw them."
+      },
+      "app__modules__booking__domain__disputes__Outcome": {
+        "type": "string",
+        "enum": [
+          "refund",
+          "uphold"
+        ],
+        "title": "Outcome",
+        "description": "What ops decide."
+      },
+      "app__modules__visits__domain__visits__Outcome": {
+        "type": "string",
+        "enum": [
+          "interested",
+          "not_interested",
+          "student_no_show"
+        ],
+        "title": "Outcome",
+        "description": "How the visit went, as the agent records it."
       }
     }
   }

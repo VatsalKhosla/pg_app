@@ -1880,6 +1880,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bookings/{code}/disputes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report that your room isn't as shown
+         * @description Inside the student's time to check the room, once they've moved in: why, in their own
+         *     words, with up to six of their own dispute photos, ready. The booking waits for ops, and the
+         *     owner hears. 409 INVALID_TRANSITION outside that time; 422 DISPUTE_INVALID for photos that
+         *     aren't theirs or aren't ready.
+         */
+        post: operations["bookingsOpenDispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bookings/{code}": {
         parameters: {
             query?: never;
@@ -2029,6 +2052,69 @@ export interface paths {
          *     the student's own word. 409 INVALID_TRANSITION unless they may check in now.
          */
         post: operations["bookingsOpsMoveInReminder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/disputes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reports that a room isn't as shown
+         * @description Oldest first, as a queue; of one status if asked.
+         */
+        get: operations["bookingsOpsDisputes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/disputes/{dispute_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A report that a room isn't as shown
+         * @description The student's words and photos (links signed for five minutes), the booking, and the
+         *     student's phone to call them.
+         */
+        get: operations["bookingsOpsDispute"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/disputes/{dispute_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Settle a report
+         * @description Refund: the bed is released, the token refunded in full, and the student offered PGs like
+         *     it. Uphold: the stay goes ahead and the token is earned. Both text the student and the owner;
+         *     the notes stay on the record. 409 INVALID_TRANSITION once it's settled.
+         */
+        post: operations["bookingsOpsResolveDispute"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2241,8 +2327,9 @@ export interface paths {
         put?: never;
         /**
          * Start an upload
-         * @description Staff, in a staff session. The answer has a form to post the file to, straight to
-         *     storage, within 15 minutes; then say it's done.
+         * @description Staff, in a staff session; and people signed in by phone, for a report that their room
+         *     isn't as shown, 20 an hour. The answer has a form to post the file to, straight to storage,
+         *     within 15 minutes; then say it's done.
          */
         post: operations["mediaStartUpload"];
         delete?: never;
@@ -3013,6 +3100,52 @@ export interface components {
          * @enum {string}
          */
         DataRequestStatus: "received" | "ready" | "expired" | "completed" | "rejected";
+        /** DisputePhotoView */
+        DisputePhotoView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Capturedat */
+            capturedAt: string | null;
+            /** Sizes */
+            sizes: components["schemas"]["PhotoSize"][];
+        };
+        /**
+         * DisputeReason
+         * @enum {string}
+         */
+        DisputeReason: "not_as_shown" | "unsafe" | "other";
+        /**
+         * DisputeRequest
+         * @description The student's report that their room isn't as shown (step 5.7, ADR 0051).
+         */
+        DisputeRequest: {
+            reason: components["schemas"]["DisputeReason"];
+            /** Description */
+            description: string;
+            /**
+             * Photos
+             * @default []
+             */
+            photos: string[];
+        };
+        /**
+         * DisputeStatus
+         * @enum {string}
+         */
+        DisputeStatus: "open" | "resolved_refund" | "resolved_uphold";
+        /**
+         * DisputeStudent
+         * @description The student, for ops to call.
+         */
+        DisputeStudent: {
+            /** Name */
+            name: string | null;
+            /** Phone */
+            phone: string;
+        };
         /** EarlyBirdRuleParams */
         EarlyBirdRuleParams: {
             /**
@@ -3904,6 +4037,64 @@ export interface components {
             amountPaise: number;
         };
         /**
+         * OpsDispute
+         * @description A dispute as ops settle it: the student's words and photos, the booking, and whom to call.
+         */
+        OpsDispute: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            status: components["schemas"]["DisputeStatus"];
+            reason: components["schemas"]["DisputeReason"];
+            /** Description */
+            description: string;
+            /**
+             * Openedat
+             * Format: date-time
+             */
+            openedAt: string;
+            /** Resolvedat */
+            resolvedAt: string | null;
+            /** Notes */
+            notes: string | null;
+            booking: components["schemas"]["ManagedBooking"];
+            student: components["schemas"]["DisputeStudent"];
+            /** Photos */
+            photos: components["schemas"]["DisputePhotoView"][];
+        };
+        /**
+         * OpsDisputeItem
+         * @description A dispute in ops' queue.
+         */
+        OpsDisputeItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            status: components["schemas"]["DisputeStatus"];
+            reason: components["schemas"]["DisputeReason"];
+            /**
+             * Openedat
+             * Format: date-time
+             */
+            openedAt: string;
+            /** Booking */
+            booking: string;
+            property: components["schemas"]["BookingPlace"];
+            /** Photos */
+            photos: number;
+        };
+        /** OpsDisputePage */
+        OpsDisputePage: {
+            /** Items */
+            items: components["schemas"]["OpsDisputeItem"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /**
          * OtpChallengeIssued
          * @description A code is on its way. Send it back with ``challengeId`` to sign in.
          */
@@ -3955,7 +4146,7 @@ export interface components {
          * @description How the visit went, as the agent records it.
          * @enum {string}
          */
-        Outcome: "interested" | "not_interested" | "student_no_show";
+        "Outcome-Output": "interested" | "not_interested" | "student_no_show";
         /**
          * OverrideRuleParams
          * @description A fixed monthly rent for move-ins from ``start`` to ``end``, both included.
@@ -4046,6 +4237,19 @@ export interface components {
          * @enum {string}
          */
         Party: "student" | "owner" | "ops" | "system";
+        /** PhotoSize */
+        PhotoSize: {
+            /** Name */
+            name: string;
+            /** Contenttype */
+            contentType: string;
+            /** Url */
+            url: string;
+            /** Width */
+            width: number | null;
+            /** Height */
+            height: number | null;
+        };
         /**
          * PlaceKind
          * @enum {string}
@@ -4468,7 +4672,7 @@ export interface components {
          * Purpose
          * @enum {string}
          */
-        Purpose: "listing_photo" | "listing_video" | "document" | "verification_photo";
+        Purpose: "listing_photo" | "listing_video" | "document" | "verification_photo" | "dispute_photo";
         /** QueuedDataRequest */
         QueuedDataRequest: {
             /**
@@ -4614,6 +4818,21 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * RebookSearch
+         * @description A search for PGs like this one with a bed free for the student's move-in, once a booking
+         *     ended through no fault of theirs: its filters, as the search API takes them (step 5.7).
+         */
+        RebookSearch: {
+            /** Locality */
+            locality: string;
+            occupancy: components["schemas"]["Occupancy"];
+            gender: components["schemas"]["GenderPolicy"];
+            /** Moveinmonth */
+            moveInMonth: string;
+            /** Budgetmaxpaise */
+            budgetMaxPaise: number;
+        };
         /** RejectRequest */
         RejectRequest: {
             /** Reason */
@@ -4742,6 +4961,12 @@ export interface components {
             phone: string;
             /** Name */
             name: string | null;
+        };
+        /** ResolveRequest */
+        ResolveRequest: {
+            outcome: components["schemas"]["app__modules__booking__domain__disputes__Outcome"];
+            /** Notes */
+            notes: string;
         };
         /**
          * Role
@@ -5199,7 +5424,7 @@ export interface components {
             scheduledAt: string | null;
             agent: components["schemas"]["VisitPerson"] | null;
             checkIn: components["schemas"]["VisitCheckIn"] | null;
-            outcome: components["schemas"]["Outcome"] | null;
+            outcome: components["schemas"]["Outcome-Output"] | null;
             /** Outcomenote */
             outcomeNote: string;
             /** Finishedat */
@@ -5328,11 +5553,30 @@ export interface components {
             /** Timeline */
             timeline: components["schemas"]["TimelineEntry"][];
             cancellation: components["schemas"]["CancellationTerms"] | null;
+            /** Candispute */
+            canDispute: boolean;
+            dispute: components["schemas"]["StudentDispute"] | null;
+            rebook: components["schemas"]["RebookSearch"] | null;
         };
         /** StudentBookingList */
         StudentBookingList: {
             /** Items */
             items: components["schemas"]["StudentBooking"][];
+        };
+        /**
+         * StudentDispute
+         * @description The student's report that the room isn't as shown, and where it stands.
+         */
+        StudentDispute: {
+            reason: components["schemas"]["DisputeReason"];
+            status: components["schemas"]["DisputeStatus"];
+            /**
+             * Openedat
+             * Format: date-time
+             */
+            openedAt: string;
+            /** Resolvedat */
+            resolvedAt: string | null;
         };
         /**
          * StudentVisit
@@ -5359,7 +5603,7 @@ export interface components {
             agentName: string | null;
             /** Checkedin */
             checkedIn: boolean;
-            outcome: components["schemas"]["Outcome"] | null;
+            outcome: components["schemas"]["Outcome-Output"] | null;
             /** Cancelledat */
             cancelledAt: string | null;
             cancelledBy: components["schemas"]["CancelledBy"] | null;
@@ -5543,7 +5787,7 @@ export interface components {
         };
         /** VisitOutcomeRequest */
         VisitOutcomeRequest: {
-            outcome: components["schemas"]["Outcome"];
+            outcome: components["schemas"]["app__modules__visits__domain__visits__Outcome"];
             /**
              * Note
              * @default
@@ -5621,6 +5865,18 @@ export interface components {
          * @enum {string}
          */
         WomenSafety: "woman_staff" | "secure_entry" | "lit_approach" | "visitor_log" | "separate_floors";
+        /**
+         * Outcome
+         * @description What ops decide.
+         * @enum {string}
+         */
+        app__modules__booking__domain__disputes__Outcome: "refund" | "uphold";
+        /**
+         * Outcome
+         * @description How the visit went, as the agent records it.
+         * @enum {string}
+         */
+        app__modules__visits__domain__visits__Outcome: "interested" | "not_interested" | "student_no_show";
     };
     responses: never;
     parameters: never;
@@ -9938,6 +10194,50 @@ export interface operations {
             };
         };
     };
+    bookingsOpenDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisputeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBooking"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     bookingsMyBooking: {
         parameters: {
             query?: never;
@@ -10244,6 +10544,133 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MoveInReminder"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookingsOpsDisputes: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["DisputeStatus"] | null;
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsDisputePage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookingsOpsDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dispute_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsDispute"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookingsOpsResolveDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dispute_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsDispute"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */
