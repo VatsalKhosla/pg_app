@@ -242,6 +242,10 @@ web-image: ## Build the web app's image for a container host (WEB_IMAGE; NEXT_PU
 audit: ## Check every locked dependency for known vulnerabilities (pip-audit, pnpm audit)
 	@scripts/audit.sh
 
+.PHONY: staging-smoke
+staging-smoke: ## Check that staging answers as a visitor would: the API, home, search and a PG's page
+	@scripts/staging-smoke.sh
+
 .PHONY: secrets-scan
 secrets-scan: ## Scan the whole git history for committed secrets (gitleaks)
 	docker run --rm --volume "$(CURDIR):/repo:ro" $(GITLEAKS_IMAGE) git --no-banner --redact /repo

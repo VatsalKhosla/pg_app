@@ -1,0 +1,36 @@
+# Staging smoke check (docs/ci.md): does staging answer as a visitor would? The API, the home
+# page, search and a PG's page (scripts/staging-smoke.sh). Every three hours, not more often, so
+# the free instances still sleep most of the day (Render's 750 instance hours a month, ADR 0047),
+# and by hand from the Actions tab. GitHub emails a failed run to whoever last changed its
+# schedule.
+name: Staging smoke
+
+on:
+  schedule:
+    # Every three hours, at 41 minutes past, away from the hour's busy start.
+    - cron: "41 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  smoke:
+    name: Staging answers
+    runs-on: ubuntu-24.04
+    # A host that's down takes about six minutes to give up on (scripts/staging-smoke.sh).
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check the API, the home page, search and a PG's page
+        run: scripts/staging-smoke.sh

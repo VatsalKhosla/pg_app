@@ -76,6 +76,8 @@ GoDaddy's own forwarding and parked page must go, or they answer instead of Rend
 ## Day to day
 
 - **Is it up?** `https://api.fixyourstay.in/readyz` says whether the API reaches the database and the cache. A first visit may take a minute while the services wake.
+  - The **Staging smoke** workflow checks every three hours that the API, the home page, search and a PG's page answer, and emails you when they don't. Run it from the Actions tab, or `make staging-smoke` here.
+  - A page that needs the API failing while the home page loads usually means `api.fixyourstay.in` isn't serving: check its custom domain is verified in Render.
 - **A deploy:** the **Deploy staging** job in the CI run of that commit says what it deployed. Render's **Events** tab shows each deploy and why one failed.
 - **Logs:** each service's **Logs** tab in Render. The API's log has the worker's lines too.
 - **A broken deploy:** in Render, open the service's **Events** tab and roll back to the previous deploy. Then fix `main`, and the next green push deploys again.

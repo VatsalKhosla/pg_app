@@ -16,6 +16,7 @@ Two GitHub Actions workflows guard `main`. Every job runs `make` targets, so any
 | Workflows | actionlint, and zizmor's security audits of the workflows | `make lint-workflows` |
 | Pre-commit hooks | Whitespace, line endings, YAML/TOML, merge markers, large files | `pre-commit run --all-files` |
 | Deploy staging | Pushes to `main` only, once every check above passes: builds the API and web images, publishes them to GitHub's container registry, and deploys them to Render (ADR 0047, [the staging runbook](runbooks/staging.md)) | `make api-image web-image` |
+| Staging smoke | Every three hours and by hand (its own workflow): staging's API, home page, search and a PG's page answer, waking the free instances if they sleep. A failed run emails whoever last changed its schedule ([the staging runbook](runbooks/staging.md)) | `make staging-smoke` |
 
 **Security** (`.github/workflows/security.yml`) runs on every pull request, every push to `main`, and every Monday at 08:47 IST.
 
