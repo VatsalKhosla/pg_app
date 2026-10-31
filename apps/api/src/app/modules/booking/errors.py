@@ -25,3 +25,12 @@ class QuoteUsedError(AppError):
     status = 409
     code = "QUOTE_USED"
     title = "That price was used for a booking already"
+
+
+class RefundChangedError(AppError):
+    """What cancelling gives back isn't what the student was shown: the day turned past the
+    free-cancellation cutoff, say. They look again before cancelling."""
+
+    status = 409
+    code = "REFUND_CHANGED"
+    title = "What cancelling gives back has changed"

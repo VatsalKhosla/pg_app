@@ -23,8 +23,10 @@ from app.core.redis import create_redis
 from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import SERVICE_VERSION, configure_sentry, configure_tracing
+from app.modules.booking.contact import BookingContacts
 from app.modules.booking.router import router as booking_router
 from app.modules.catalog.agreements import FileAgreements
+from app.modules.catalog.contact import AnyOf
 from app.modules.catalog.router import router as catalog_router
 from app.modules.compliance.router import router as compliance_router
 from app.modules.geo.router import router as geo_router
@@ -101,7 +103,8 @@ def _set_shared_state(app: FastAPI, settings: Settings, agreements: AgreementLib
     # Who may see an owner's contact details while hide_owner_contact is on (ADR 0026): visits
     # (step 3.7) and bookings (Phase 5) will say; until then, nobody.
     # A visit booked there shows a student the owner's phone and the address (ADR 0026, 0033).
-    app.state.contact_access = VisitContacts()
+    # A visit booked there, or a booking confirmed, shows a PG's contact (rule 11).
+    app.state.contact_access = AnyOf(VisitContacts(), BookingContacts())
     # How full a room category is on a move-in, for quotes' occupancy rules: booking (Phase 5)
     # answers it; until then no bed is taken (ADR 0039).
     app.state.beds_taken = AllocationsTaken()

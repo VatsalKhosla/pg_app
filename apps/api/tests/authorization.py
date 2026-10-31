@@ -504,6 +504,12 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("GET", "/v1/bookings/{code}"): Rule(
         signed_in(404, field_agent=403, ops=403, admin=403), path={"code": "a_missing_booking"}
     ),
+    ("GET", "/v1/bookings"): Rule(signed_in(200, field_agent=403, ops=403, admin=403)),
+    ("POST", "/v1/bookings/{code}/cancel"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403),
+        lambda: {"json": {"refundPaise": 0}},
+        path={"code": "a_missing_booking"},
+    ),
     # Answering bookings (ADR 0048): an owner answers their own PGs' bookings, and ops answer any.
     # The booking asked for is nobody's.
     ("GET", "/v1/owner/bookings/{code}"): Rule(

@@ -182,8 +182,14 @@ def test_a_student_holds_a_bed_at_their_quotes_price(run: Callable[..., Any]) ->
     assert held.status_code == 201, held.text
     body = held.json()
     assert body["code"].startswith("BK-")
-    assert body | {"code": None, "createdAt": None} == {
+    assert [(step["event"], step["status"], step["by"]) for step in body["timeline"]] == [
+        ("hold", "held", "student")
+    ]
+    assert body | {"code": None, "createdAt": None, "timeline": None} == {
         "code": None,
+        "timeline": None,
+        # Nothing has been paid yet, so cancelling gives nothing back.
+        "cancellation": {"refundPaise": 0, "late": False},
         "status": "held",
         "property": {
             "slug": quote["place"]["slug"],
@@ -195,6 +201,7 @@ def test_a_student_holds_a_bed_at_their_quotes_price(run: Callable[..., Any]) ->
         "stayMonths": 11,
         "plannedMoveOut": "2028-07-20",
         "holdExpiresAt": (NOW + timedelta(minutes=15)).isoformat().replace("+00:00", "Z"),
+        "confirmBy": None,
         "monthlyRentPaise": quote["monthlyRentPaise"],
         "tokenPaise": quote["tokenPaise"],
         "dueAtMoveInPaise": quote["dueAtMoveInPaise"],

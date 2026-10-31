@@ -94,6 +94,19 @@ def fields(effects: Iterable[Effect]) -> dict[str, object]:
     return found
 
 
+def facts_of(booking: Booking, place: BookingPlace) -> BookingFacts:
+    """What the state machine reads about a booking."""
+    return BookingFacts(
+        status=BookingStatus(booking.status),
+        move_in=booking.move_in,
+        token_paise=booking.token_paise,
+        instant_confirm=place.instant_confirm,
+        hold_expires_at=booking.hold_expires_at,
+        confirm_by=booking.confirm_by,
+        check_window_ends_at=booking.check_window_ends_at,
+    )
+
+
 def stamps(
     to: BookingStatus, event: BookingEvent, party: Party, now: datetime
 ) -> dict[str, object]:
@@ -127,15 +140,7 @@ class Transitions:
         """``event`` from ``party`` (the user ``by``, None for the system), as one step."""
         now = self._clock.now()
         terms = await self._terms.of(booking.booking_policy_id)
-        facts = BookingFacts(
-            status=BookingStatus(booking.status),
-            move_in=booking.move_in,
-            token_paise=booking.token_paise,
-            instant_confirm=place.instant_confirm,
-            hold_expires_at=booking.hold_expires_at,
-            confirm_by=booking.confirm_by,
-            check_window_ends_at=booking.check_window_ends_at,
-        )
+        facts = facts_of(booking, place)
         try:
             step = transition(facts, event, party, moment or Moment(now), terms)
         except TransitionRefusedError as refusal:

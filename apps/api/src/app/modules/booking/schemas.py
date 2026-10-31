@@ -7,7 +7,7 @@ from typing import Final
 from pydantic import Field
 
 from app.core.schemas import ApiModel
-from app.modules.booking.domain.state_machine import BookingStatus
+from app.modules.booking.domain.state_machine import BookingStatus, Party
 
 REASON_MAX_LENGTH: Final = 500
 
@@ -23,9 +23,28 @@ class BookingPlace(ApiModel):
     locality: str
 
 
+class TimelineEntry(ApiModel):
+    """One change to the booking, as its history has it."""
+
+    # "hold" for the first, then the state machine's event.
+    event: str
+    status: BookingStatus
+    by: Party
+    at: datetime
+
+
+class CancellationTerms(ApiModel):
+    """What cancelling now would mean (rule 9): the refund, and whether the free-cancellation
+    cutoff has passed, so the late-cancel rule decides it."""
+
+    refund_paise: int
+    late: bool
+
+
 class StudentBooking(ApiModel):
     """A booking as its student sees it: the quote's money, fixed for the stay (rule 5). The
-    exact address shows once the owner confirms (rule 11)."""
+    exact address and the owner's phone show once the owner confirms (rule 11), from the PG's
+    contact."""
 
     code: str
     status: BookingStatus
@@ -36,6 +55,8 @@ class StudentBooking(ApiModel):
     planned_move_out: date
     # While HELD, the token must be paid by then: the one countdown the student sees.
     hold_expires_at: datetime
+    # Once the token is in: the owner confirms by then, or the token comes back in full.
+    confirm_by: datetime | None
     monthly_rent_paise: int
     token_paise: int
     due_at_move_in_paise: int
@@ -43,6 +64,20 @@ class StudentBooking(ApiModel):
     monthly_charges_paise: int
     one_time_charges_paise: int
     created_at: datetime
+    # Oldest first.
+    timeline: list[TimelineEntry]
+    # Null when it can't be cancelled now: checked in, or over.
+    cancellation: CancellationTerms | None
+
+
+class StudentBookingList(ApiModel):
+    # Newest first.
+    items: list[StudentBooking]
+
+
+class CancelRequest(ApiModel):
+    # The refund the student was shown: if cancelling now means something else, nothing changes.
+    refund_paise: int = Field(ge=0)
 
 
 class BookingStudent(ApiModel):

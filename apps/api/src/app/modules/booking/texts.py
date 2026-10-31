@@ -13,6 +13,7 @@ CONFIRMED: Final = "booking_confirmed"
 REJECTED: Final = "booking_rejected"
 NOT_CONFIRMED: Final = "booking_not_confirmed"
 CONFIRMATION_MISSED: Final = "booking_confirmation_missed"
+CANCELLED_BY_STUDENT: Final = "booking_cancelled_by_student"
 
 TEMPLATES: Final = {
     TOKEN_IN: (
@@ -39,6 +40,9 @@ TEMPLATES: Final = {
         "{brand}: booking {code} at {pg} wasn't confirmed in time, so it's cancelled and the "
         "student refunded."
     ),
+    CANCELLED_BY_STUDENT: (
+        "{brand}: the student cancelled booking {code} at {pg}. The bed is free again."
+    ),
 }
 
 # Which text each party gets for each change; ops see theirs on the bookings board (5.10).
@@ -48,4 +52,6 @@ FOR: Final = {
     (Party.STUDENT, BookingEvent.REJECT): REJECTED,
     (Party.STUDENT, BookingEvent.CONFIRM_TIMEOUT): NOT_CONFIRMED,
     (Party.OWNER, BookingEvent.CONFIRM_TIMEOUT): CONFIRMATION_MISSED,
+    (Party.OWNER, BookingEvent.CANCEL): CANCELLED_BY_STUDENT,
+    (Party.OWNER, BookingEvent.CANCEL_LATE): CANCELLED_BY_STUDENT,
 }

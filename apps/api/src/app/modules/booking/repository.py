@@ -1,11 +1,20 @@
 """Queries on bookings and their events. Repositories never commit; services own transactions."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from sqlalchemy import func, select, update
 
 from app.modules.booking.domain.state_machine import BookingStatus
 from app.modules.booking.models import Booking, BookingEventRecord
+
+# Confirmed, and moved in or finished since: the bookings that show the owner's contact (rule 11).
+CONFIRMED_ONWARDS: Final = (
+    BookingStatus.CONFIRMED,
+    BookingStatus.CHECKED_IN,
+    BookingStatus.DISPUTED,
+    BookingStatus.ACTIVE,
+    BookingStatus.COMPLETED,
+)
 
 if TYPE_CHECKING:
     import uuid
@@ -70,6 +79,19 @@ class BookingRepository:
         for row in rows:
             found.setdefault(row.booking_id, []).append(row)
         return found
+
+    async def confirmed_at(self, student_id: int, property_id: int) -> bool:
+        """Whether the student has a booking at the PG that its owner confirmed."""
+        found = await self._db.scalar(
+            select(Booking.id)
+            .where(
+                Booking.student_id == student_id,
+                Booking.property_id == property_id,
+                Booking.status.in_(CONFIRMED_ONWARDS),
+            )
+            .limit(1)
+        )
+        return found is not None
 
     async def lock_holds_of(self, student_id: int) -> None:
         """Until the transaction ends, the student's other holds wait for this one, so two at

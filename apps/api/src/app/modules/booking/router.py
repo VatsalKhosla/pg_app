@@ -15,7 +15,14 @@ from app.core.idempotency import OPENAPI_HEADER, StoredResponse, idempotent_requ
 from app.core.ratelimit import RateLimit, enforce
 from app.modules.booking.domain.state_machine import Party
 from app.modules.booking.policies import can_answer_as_owner, can_book, can_run_bookings
-from app.modules.booking.schemas import HoldRequest, ManagedBooking, RejectRequest, StudentBooking
+from app.modules.booking.schemas import (
+    CancelRequest,
+    HoldRequest,
+    ManagedBooking,
+    RejectRequest,
+    StudentBooking,
+    StudentBookingList,
+)
 from app.modules.booking.service import BookingDesk, BookingService
 
 router = APIRouter(prefix="/v1", tags=["bookings"])
@@ -53,6 +60,34 @@ async def hold_bed(
     await enforce(request.app.state.rate_limiter, HOLDS_PER_USER, f"user:{actor.user_id}")
     outcome = await _service(request, db, clock).hold(actor, body.quote, request=idempotent)
     return replay(outcome) if isinstance(outcome, StoredResponse) else outcome
+
+
+@router.get("/bookings", summary="Your bookings")
+async def my_bookings(
+    request: Request, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> StudentBookingList:
+    """Newest first."""
+    if not can_book(actor):
+        raise ForbiddenError
+    return StudentBookingList(items=await _service(request, db, clock).my_bookings(actor))
+
+
+@router.post("/bookings/{code}/cancel", summary="Cancel your booking")
+async def cancel_my_booking(
+    code: str,
+    body: CancelRequest,
+    *,
+    request: Request,
+    actor: CurrentActor,
+    db: DbSession,
+    clock: ClockDep,
+) -> StudentBooking:
+    """With the refund the student was shown (the booking's ``cancellation``): free until the
+    cutoff, then as the late-cancel rule says. 409 REFUND_CHANGED if cancelling now means
+    something else; 409 INVALID_TRANSITION once it can't be cancelled."""
+    if not can_book(actor):
+        raise ForbiddenError
+    return await _service(request, db, clock).cancel(actor, code, refund_paise=body.refund_paise)
 
 
 @router.get("/bookings/{code}", summary="Your booking")

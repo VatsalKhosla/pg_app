@@ -22,14 +22,20 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core import idempotency
 from app.core.calendar import india_date
-from app.core.errors import NotFoundError
+from app.core.errors import InvalidTransitionError, NotFoundError
 from app.core.flags import Flag
 from app.core.ids import new_booking_code, normalize_booking_code
-from app.modules.booking.domain.state_machine import BookingEvent, Party, hold
-from app.modules.booking.errors import BookingNeedsVisitError, HoldLimitReachedError, QuoteUsedError
+from app.modules.booking.domain.cancellation import cancellation
+from app.modules.booking.domain.state_machine import BookingEvent, Moment, Party, hold
+from app.modules.booking.errors import (
+    BookingNeedsVisitError,
+    HoldLimitReachedError,
+    QuoteUsedError,
+    RefundChangedError,
+)
 from app.modules.booking.models import HOLD, Booking, Channel
 from app.modules.booking.repository import BookingRepository
-from app.modules.booking.service.transitions import Transitions, fields
+from app.modules.booking.service.transitions import Transitions, facts_of, fields
 from app.modules.booking.service.views import BookingViews
 from app.modules.catalog.service import CatalogLookup
 from app.modules.inventory.domain.allocations import stay_period
@@ -47,9 +53,12 @@ if TYPE_CHECKING:
     from app.core.clock import Clock
     from app.core.flags import FlagReader
     from app.modules.booking.schemas import StudentBooking
+    from app.modules.catalog.service import BookingPlace
 
 # A random code clashing with another booking's is rare; three in a row, impossible in practice.
 CODE_ATTEMPTS: Final = 3
+# A student's list: their newest bookings, which is all of them for anyone booking in earnest.
+LIST_LIMIT: Final = 50
 
 
 class BookingService:
@@ -141,7 +150,7 @@ class BookingService:
             await self._add(booking)
             await self._transitions.carry_out(booking, HOLD, step, by=actor.user_id)
             await self._transitions.log(booking, HOLD, None, step, Party.STUDENT, by=actor.user_id)
-            view = await self._views.student(booking, place)
+            view = await self._view(booking, place)
             await idempotency.complete(
                 self._db, request, idempotency.StoredResponse(201, view.model_dump(mode="json"))
             )
@@ -149,14 +158,52 @@ class BookingService:
 
     async def mine(self, actor: Actor, code: str) -> StudentBooking:
         """The student's own booking by its code; anyone else's is a 404."""
-        canonical = normalize_booking_code(code)
-        if canonical is None:
-            raise NotFoundError
         async with self._db.begin():
-            booking = await self._bookings.by_code(canonical)
-            if booking is None or booking.student_id != actor.user_id:
-                raise NotFoundError
-            return await self._views.student(booking, await self._views.place(booking))
+            booking = await self._own(actor, code, lock=False)
+            return await self._view(booking, await self._views.place(booking))
+
+    async def my_bookings(self, actor: Actor) -> list[StudentBooking]:
+        """The student's bookings, newest first."""
+        async with self._db.begin():
+            bookings = (await self._bookings.of_student(actor.user_id))[:LIST_LIMIT]
+            places = await self._catalog.booking_places(
+                {booking.property_id for booking in bookings}, verified_only=False
+            )
+            return [await self._view(booking, places[booking.property_id]) for booking in bookings]
+
+    async def cancel(self, actor: Actor, code: str, *, refund_paise: int) -> StudentBooking:
+        """The student cancels: for free until the cutoff, then as the late-cancel rule says
+        (rule 9). ``refund_paise`` is what they were shown; if cancelling now means something
+        else, nothing changes (409 REFUND_CHANGED)."""
+        async with self._db.begin():
+            booking = await self._own(actor, code, lock=True)
+            place = await self._views.place(booking)
+            terms = await self._terms.of(booking.booking_policy_id)
+            offered = cancellation(facts_of(booking, place), Moment(self._clock.now()), terms)
+            if offered is None:
+                raise InvalidTransitionError("This booking can't be cancelled now.")
+            if offered.refund_paise != refund_paise:
+                msg = "What cancelling gives back has changed since you looked. Look again first."
+                raise RefundChangedError(msg)
+            await self._transitions.apply(
+                booking, offered.event, Party.STUDENT, place, by=actor.user_id
+            )
+            return await self._view(booking, place)
+
+    async def _own(self, actor: Actor, code: str, *, lock: bool) -> Booking:
+        """The student's own booking by its code; anyone else's is a 404."""
+        canonical = normalize_booking_code(code)
+        booking = None if canonical is None else await self._bookings.by_code(canonical, lock=lock)
+        if booking is None or booking.student_id != actor.user_id:
+            raise NotFoundError
+        return booking
+
+    async def _view(self, booking: Booking, place: BookingPlace) -> StudentBooking:
+        """The booking as its student sees it now: its history, and what cancelling means."""
+        terms = await self._terms.of(booking.booking_policy_id)
+        offered = cancellation(facts_of(booking, place), Moment(self._clock.now()), terms)
+        history = (await self._bookings.events_of([booking.id])).get(booking.id, [])
+        return await self._views.student(booking, place, history=history, cancellation=offered)
 
     async def _add(self, booking: Booking) -> None:
         """Adds the booking, with a new code should its random one be taken."""
