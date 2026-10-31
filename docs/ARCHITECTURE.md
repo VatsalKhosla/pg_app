@@ -311,7 +311,7 @@ In the code (ADR 0046): an advisory lock on the student guards the active-hold l
 |---|---|---|
 | expire_holds | 1 min | HELD past expiry → EXPIRED |
 | booking.confirmation_timeouts | 5 min | TOKEN_SECURED past the deadline → REJECTED + refund (refunds are stubs until Phase 6; ADR 0048) |
-| check_windows | 5 min | CHECKED_IN past the window → ACTIVE |
+| booking.check_windows | 5 min | CHECKED_IN past the window's exact end → ACTIVE; earning the token and the owner's invoice are stubs until Phase 6 (ADR 0050) |
 | no_shows | daily 10:00 IST | CONFIRMED past move_in + N days → NO_SHOW |
 | reconcile_payments | 15 min | Fetch status of payments stuck in created/authorized |
 | search.refresh_listing | on `catalog.listing_changed` and `catalog.inventory_changed` + nightly 00:30 IST | Refresh a listing's search entry and `property_price_summaries`; the nightly `search.refresh_all` queues every listing once a day (ADR 0027, 0028) |
@@ -372,7 +372,7 @@ Worked example (₹10,000 base, July move-in, +15% season, −5% early-bird, 11-
 - `GET /v1/properties/{slug}/price-calendar?from=…&weeks=12&stay=11` runs the engine for weekly move-in dates and returns each room's rent per week and its free beds (cached five minutes, and revalidated when the PG's rules go into force; ADRs 0040, 0042).
 - The PG page shows "Move in by 15 Jun: ₹9,500 · from 1 Jul: ₹11,000". Text like "price rises on 1 Jul" is allowed only because the calendar proves it.
 - "Only N beds left" appears only when real availability for the chosen dates is ≤ 3.
-- No countdown timers except the real hold expiry during checkout.
+- No countdown timers except the real hold expiry during checkout, and the real end of a moved-in student's time to report a problem with the room, which protects them and sells nothing (BUILD_PLAN 5.6; ADR 0050).
 
 ### 8.6 Owner and ops pricing editor
 - Edit a draft rule set, see validation errors (overlapping seasons, a band conflict, caps), preview any move-in date and stay with the full breakdown, see a 12-week price chart, then activate. Activation creates an immutable version and is audit-logged.

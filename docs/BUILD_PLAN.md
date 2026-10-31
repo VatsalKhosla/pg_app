@@ -419,8 +419,12 @@ Start the slow ones in week 1.
   - **Web:** `/bookings` and `/bookings/[code]` show what happens next, the money and who it's paid to, where to go once confirmed, the history, help with the booking's code, and cancelling with the refund shown first.
   - **Proof:** component tests for all 12 statuses (axe included) and the cancel flow; API tests for the history, the contact, free and late cancelling at India's day, and a changed refund.
 
-- [ ] **5.6 Check-in and the 24-hour window.** "I've moved in" (or ops-marked with student confirmation), a real countdown for the window, job → ACTIVE at the end.
+- [x] **5.6 Check-in and the 24-hour window.** "I've moved in" (or ops-marked with student confirmation), a real countdown for the window, job → ACTIVE at the end.
   *Done when* time-travel tests cover check-in, window expiry and the edge at exactly 24 h.
+  *Note (2026-10-31):*
+  - **API:** `POST /v1/bookings/{code}/check-in` from midnight in India the day before the move-in, as the state machine says. The window starts on the student's word, and the owner hears its exact end. Ops' `move-in-reminder` texts the student to confirm, once a day at most, and changes nothing itself. `booking.check_windows` settles bookings at the window's exact end, every five minutes (ADR 0050).
+  - **Web:** "I've moved in", asked once more before it's sent, and the window's end with the time left in whole minutes.
+  - **Proof:** time-travel tests for check-in at its first second, the window at 24 h less a second and at exactly 24 h, a second job run, and the nudge; component tests for every status and the countdown.
 
 - [ ] **5.7 Disputes.** "Room not as shown" form with photos inside the window; ops queue; resolve refund (release + rebooking help with similar PGs) or uphold; audited.
   *Done when* both resolutions update booking, allocation and notifications correctly.
