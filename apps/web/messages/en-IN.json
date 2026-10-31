@@ -199,7 +199,8 @@
     "marketing": "Send me offers and news by SMS, WhatsApp or email.",
     "marketingSaved": "Saved.",
     "marketingFailed": "That didn't save. Please try again.",
-    "visits": "Your visits"
+    "visits": "Your visits",
+    "bookings": "Your bookings"
   },
   "Owner": {
     "metaTitle": "Owner area",
@@ -1833,5 +1834,99 @@
       "CSRF_TOKEN_INVALID": "Your session changed in another tab. Please try again.",
       "FORBIDDEN": "Only admins can change these."
     }
+  },
+  "Bookings": {
+    "metaTitle": "Your bookings",
+    "title": "Your bookings",
+    "intro": "The beds you've reserved. A booking keeps the rent it was made at for the whole stay.",
+    "none": "You haven't booked a bed yet.",
+    "find": "Find a PG",
+    "code": "Booking {code}",
+    "moveIn": "Moving in on {date}",
+    "stay": "{months, plural, one {# month} other {# months}}, until {date}",
+    "open": "See booking {code}",
+    "back": "All your bookings",
+    "status": {
+      "held": "Held for you",
+      "token_secured": "Waiting for the owner",
+      "confirmed": "Confirmed",
+      "checked_in": "Moved in",
+      "disputed": "Being looked into",
+      "active": "Living there",
+      "completed": "Finished",
+      "expired": "Hold ended",
+      "cancelled": "Cancelled",
+      "rejected": "Not accepted",
+      "no_show": "Not moved in",
+      "refunded": "Refunded"
+    },
+    "next": {
+      "held": "Pay the token to keep this bed. Your hold ends at {time}. Paying online opens soon.",
+      "token_secured": "Your token is in. The owner confirms by {time}; if they don't, you get it all back.",
+      "confirmed": "You move in on {date}. The address and the owner's phone are below.",
+      "checked_in": "Welcome in. If the room isn't as shown, tell us within 24 hours.",
+      "disputed": "We're looking into what you told us, and will call you.",
+      "active": "Your token now counts toward your rent.",
+      "completed": "Your stay has ended.",
+      "expired": "The hold ended before the token was paid, so the bed is free again.",
+      "cancelled": "This booking is cancelled.",
+      "rejected": "The PG couldn't take this booking. Your token comes back in full.",
+      "no_show": "This booking ended because you didn't move in on time.",
+      "refunded": "Your token was refunded."
+    },
+    "money": {
+      "title": "What you pay",
+      "monthly": "Rent, fixed for your stay",
+      "perMonth": "{amount} a month",
+      "token": "Token, to reserve the bed",
+      "tokenNote": "It counts toward your first month's rent.",
+      "dueAtMoveIn": "Rest of the first month's rent",
+      "deposit": "Security deposit",
+      "monthlyCharges": "Other monthly charges",
+      "oneTimeCharges": "One-time charges",
+      "toOwner": "You pay the rest of the first month's rent, the deposit and the charges to the owner directly when you move in."
+    },
+    "where": {
+      "title": "Where to go",
+      "address": "Address",
+      "ownerPhone": "Owner's phone"
+    },
+    "history": "What happened",
+    "events": {
+      "hold": "You reserved the bed",
+      "token_secured": "Your token came in",
+      "hold_expired": "The hold ended",
+      "cancel": "You cancelled",
+      "cancel_late": "You cancelled",
+      "confirm": "The owner confirmed",
+      "reject": "The owner couldn't take it",
+      "confirm_timeout": "The owner didn't confirm in time",
+      "owner_cancel": "The owner cancelled",
+      "check_in": "You moved in",
+      "no_show": "Marked as not moved in",
+      "dispute": "You told us about a problem",
+      "window_elapsed": "Your 24 hours to check the room passed",
+      "resolve_refund": "Refunded after our check",
+      "resolve_uphold": "Settled after our check",
+      "move_out": "You moved out",
+      "late_payment_revive": "Your token came in after the hold ended",
+      "late_payment_refund": "Your late payment was refunded"
+    },
+    "actions": {
+      "cancel": "Cancel this booking",
+      "confirmTitle": "Cancel booking {code}?",
+      "refundNothing": "Nothing has been paid yet, so nothing comes back.",
+      "refundFull": "You get your {amount} token back in full.",
+      "refundLate": "Free cancellation has ended. Under our cancellation policy you get {amount} back.",
+      "policy": "Read the cancellation policy",
+      "confirm": "Yes, cancel it",
+      "keep": "Keep the booking",
+      "cancelling": "Cancelling…",
+      "changed": "What cancelling gives back has just changed. Look at it again before you cancel.",
+      "failed": "That didn't work. Please try again.",
+      "findAnother": "Find another PG"
+    },
+    "help": "Questions about this booking? Quote {code} when you contact us.",
+    "contactUs": "Contact us"
   }
 }
