@@ -1,29 +1,40 @@
-"""A booking as each side sees it (ADRs 0046, 0048, 0049): the student, and the owner or ops who
-answer it. The exact address isn't here: once the booking is confirmed the student gets it by text,
-and from the PG's contact, which a confirmed booking unlocks (rule 11)."""
+"""A booking as each side sees it (ADRs 0046, 0048 to 0051): the student, and the owner or ops
+who answer it. The exact address isn't here: once the booking is confirmed the student gets it by
+text, and from the PG's contact, which a confirmed booking unlocks (rule 11)."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
+from app.modules.booking.domain.disputes import DisputeReason, DisputeStatus
 from app.modules.booking.domain.state_machine import BookingStatus, Party, check_in_opens_on
 from app.modules.booking.schemas import BookingPlace as PlaceSchema
 from app.modules.booking.schemas import (
     BookingStudent,
     CancellationTerms,
     ManagedBooking,
+    RebookSearch,
     StudentBooking,
+    StudentDispute,
     TimelineEntry,
 )
+from app.modules.catalog.domain.listing import GenderPolicy
+from app.modules.catalog.domain.rooms import Occupancy
 from app.modules.catalog.service import CatalogLookup
 from app.modules.identity.service import Accounts
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from datetime import date
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.modules.booking.domain.cancellation import Cancellation
-    from app.modules.booking.models import Booking, BookingEventRecord
+    from app.modules.booking.models import Booking, BookingEventRecord, Dispute
     from app.modules.catalog.service import BookingPlace
+
+
+# Someone looking again after their booking ended searches up to a fifth above its rent: a
+# filter on what they're shown, never a price.
+REBOOK_BUDGET: Final = (6, 5)
 
 
 class BookingViews:
@@ -45,7 +56,12 @@ class BookingViews:
         cancellation: Cancellation | None,
         can_check_in: bool,
         check_window_hours: int,
+        can_dispute: bool,
+        dispute: Dispute | None,
+        rebook_from: date | None,
     ) -> StudentBooking:
+        """``rebook_from``: the month to look from for PGs like this one, when the booking ended
+        through no fault of the student's; None otherwise."""
         bed = await self._catalog.bed_ref(booking.bed_id)
         status = BookingStatus(booking.status)
         return StudentBooking(
@@ -83,6 +99,24 @@ class BookingViews:
             cancellation=None
             if cancellation is None
             else CancellationTerms(refund_paise=cancellation.refund_paise, late=cancellation.late),
+            can_dispute=can_dispute,
+            dispute=None
+            if dispute is None
+            else StudentDispute(
+                reason=DisputeReason(dispute.reason),
+                status=DisputeStatus(dispute.status),
+                opened_at=dispute.created_at,
+                resolved_at=dispute.resolved_at,
+            ),
+            rebook=None
+            if rebook_from is None
+            else RebookSearch(
+                locality=place.locality_slug,
+                occupancy=Occupancy(bed.occupancy),
+                gender=GenderPolicy(place.gender_policy),
+                move_in_month=f"{rebook_from:%Y-%m}",
+                budget_max_paise=booking.monthly_rent_paise * REBOOK_BUDGET[0] // REBOOK_BUDGET[1],
+            ),
         )
 
     async def managed(self, booking: Booking, place: BookingPlace) -> ManagedBooking:

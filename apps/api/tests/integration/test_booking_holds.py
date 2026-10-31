@@ -207,6 +207,10 @@ def test_a_student_holds_a_bed_at_their_quotes_price(run: Callable[..., Any]) ->
         "canCheckIn": False,
         "checkWindowHours": 24,
         "checkWindowEndsAt": None,
+        # Nothing to report yet, and nothing ended: no help to book again.
+        "canDispute": False,
+        "dispute": None,
+        "rebook": None,
         "monthlyRentPaise": quote["monthlyRentPaise"],
         "tokenPaise": quote["tokenPaise"],
         "dueAtMoveInPaise": quote["dueAtMoveInPaise"],

@@ -1,5 +1,5 @@
-"""The booking module's tables (ARCHITECTURE §6; step 5.3, ADR 0046): bookings, and what
-happened to each."""
+"""The booking module's tables (ARCHITECTURE §6; steps 5.3 and 5.7, ADRs 0046 and 0051):
+bookings, what happened to each, and students' reports that their room isn't as shown."""
 
 import uuid
 from datetime import date, datetime
@@ -14,7 +14,9 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    SmallInteger,
     Text,
+    UniqueConstraint,
     Uuid,
 )
 from sqlalchemy import text as sql
@@ -23,6 +25,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import AppendOnlyModel, Model
 from app.core.ids import new_public_id
+from app.modules.booking.domain.disputes import DisputeReason, DisputeStatus
 from app.modules.booking.domain.state_machine import BookingEvent, BookingStatus, Party
 
 
@@ -153,4 +156,52 @@ class BookingEventRecord(AppendOnlyModel):
         CheckConstraint("(event = 'hold') = (from_status IS NULL)", name="hold"),
         Index("ix_booking_events_booking_id", "booking_id"),
         Index("ix_booking_events_created_at", "created_at", postgresql_using="brin"),
+    )
+
+
+class Dispute(Model):
+    """A student's report, inside their check window, that the room isn't as shown, and how ops
+    settled it (ADR 0051). A booking has one at most: the state machine opens it once."""
+
+    __tablename__ = "disputes"
+
+    public_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, default=new_public_id)
+    booking_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("bookings.id"), unique=True)
+    reason: Mapped[str] = mapped_column(Text)
+    description: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(Text, default=DisputeStatus.OPEN)
+    resolved_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Ops' note on what they found, for the record; never shown to the owner.
+    notes: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        CheckConstraint(_one_of("reason", DisputeReason), name="reason"),
+        CheckConstraint(_one_of("status", DisputeStatus), name="status"),
+        CheckConstraint(
+            "(status = 'open') = (resolved_at IS NULL AND resolved_by IS NULL)", name="resolved"
+        ),
+        # Ops' queue: the open ones, oldest first.
+        Index("ix_disputes_open", "public_id", postgresql_where=sql("status = 'open'")),
+        Index("ix_disputes_resolved_by", "resolved_by"),
+    )
+
+
+class DisputePhoto(Model):
+    """A report's photos, in the student's order: private evidence ops see through short-lived
+    links."""
+
+    __tablename__ = "dispute_photos"
+
+    dispute_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("disputes.id", ondelete="CASCADE")
+    )
+    media_asset_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("media_assets.id"))
+    position: Mapped[int] = mapped_column(SmallInteger)
+
+    __table_args__ = (
+        # Also the index for the dispute's foreign key.
+        UniqueConstraint("dispute_id", "media_asset_id"),
+        CheckConstraint("position >= 0", name="position"),
+        Index("ix_dispute_photos_media_asset_id", "media_asset_id"),
     )

@@ -2,12 +2,15 @@
 it. The file itself goes straight to storage, never through the API."""
 
 import uuid
+from datetime import timedelta
+from typing import Final
 
 from fastapi import APIRouter, Request, status
 
 from app.core.clock import ClockDep
 from app.core.current_actor import CurrentActor
 from app.core.db import DbSession
+from app.core.ratelimit import RateLimit, enforce
 from app.modules.media.domain.assets import AssetStatus, Moderation, Purpose
 from app.modules.media.models import MediaAsset
 from app.modules.media.schemas import (
@@ -20,6 +23,9 @@ from app.modules.media.schemas import (
 from app.modules.media.service import MediaService, RenditionView
 
 router = APIRouter(prefix="/v1", tags=["media"])
+
+# A student's report takes six photos at most; this leaves room for a retake or two (ADR 0051).
+UPLOADS_PER_USER: Final = RateLimit("uploads-per-user", limit=20, window=timedelta(hours=1))
 
 
 def _service(request: Request, db: DbSession, clock: ClockDep) -> MediaService:
@@ -60,8 +66,11 @@ def _info(asset: MediaAsset, renditions: list[RenditionView]) -> MediaInfo:
 async def start_upload(
     body: UploadRequest, request: Request, actor: CurrentActor, db: DbSession, clock: ClockDep
 ) -> UploadStarted:
-    """Staff, in a staff session. The answer has a form to post the file to, straight to
-    storage, within 15 minutes; then say it's done."""
+    """Staff, in a staff session; and people signed in by phone, for a report that their room
+    isn't as shown, 20 an hour. The answer has a form to post the file to, straight to storage,
+    within 15 minutes; then say it's done."""
+    if not actor.is_staff:
+        await enforce(request.app.state.rate_limiter, UPLOADS_PER_USER, f"user:{actor.user_id}")
     started = await _service(request, db, clock).start_upload(
         actor, purpose=body.purpose, content_type=body.content_type, byte_size=body.byte_size
     )

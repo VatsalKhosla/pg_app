@@ -10,9 +10,12 @@ if TYPE_CHECKING:
 
 
 def can_upload(actor: Actor, purpose: Purpose) -> bool:
-    """Staff, in a staff session, upload listing media and documents for now; owners and
-    students get their own uploads with the features that need them."""
-    return actor.is_staff and purpose in Purpose
+    """Staff, in a staff session, upload anything. People signed in by phone, who book, upload
+    the photos for a report that their room isn't as shown (ADR 0051); owners get their own
+    uploads with the features that need them."""
+    if actor.is_staff:
+        return purpose in Purpose
+    return purpose is Purpose.DISPUTE_PHOTO
 
 
 def can_finish(actor: Actor, *, uploaded_by: int | None) -> bool:

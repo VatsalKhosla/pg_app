@@ -177,6 +177,7 @@ class BedPlaceRow(NamedTuple):
     category_id: int
     category_label: str
     property_id: int
+    occupancy: str
 
 
 class RentRow(NamedTuple):
@@ -497,10 +498,17 @@ class CatalogRepository:
         return list(rows)
 
     async def bed_place(self, bed_id: int) -> BedPlaceRow:
-        """Where a bed is: its room's label, its category's id and label, and its PG's id."""
+        """Where a bed is: its room's label, its category's id, label and sharing, and its PG's
+        id."""
         row = (
             await self._db.execute(
-                select(Room.label, RoomCategory.id, RoomCategory.label, RoomCategory.property_id)
+                select(
+                    Room.label,
+                    RoomCategory.id,
+                    RoomCategory.label,
+                    RoomCategory.property_id,
+                    RoomCategory.occupancy,
+                )
                 .join(Bed, Bed.room_id == Room.id)
                 .join(RoomCategory, RoomCategory.id == Room.room_category_id)
                 .where(Bed.id == bed_id)

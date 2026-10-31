@@ -24,11 +24,13 @@ from app.modules.booking.domain.state_machine import (
     BookingFacts,
     BookingStatus,
     CancelPayment,
+    CloseDispute,
     DeactivateAllocation,
     EarnToken,
     IssueOwnerInvoice,
     Moment,
     Notify,
+    OpenDispute,
     Party,
     RecordTokenReceived,
     RefundToken,
@@ -213,7 +215,12 @@ class Transitions:
                     # money moves.
                     pass
                 case SuggestSimilar():
-                    # The student's text says so; finding them similar PGs comes with 5.7.
+                    # The student's booking offers a search for PGs like it, from this change
+                    # (ADR 0051); their text points them there.
+                    pass
+                case OpenDispute() | CloseDispute():
+                    # The dispute's own row, the student's words and photos or ops' answer, is
+                    # written by the dispute service with the change (ADR 0051).
                     pass
                 case _:  # pragma: no cover - each later step carries out the effects it brings
                     msg = f"{type(effect).__name__} isn't carried out yet"

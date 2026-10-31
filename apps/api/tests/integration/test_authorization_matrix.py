@@ -331,6 +331,7 @@ _FIXED: Final[dict[str, Callable[[], str]]] = {
     "a_missing_alert": lambda: str(uuid.uuid7()),
     "a_missing_block": lambda: str(uuid.uuid7()),
     "a_missing_booking": new_booking_code,
+    "a_missing_dispute": lambda: str(uuid.uuid7()),
 }
 
 

@@ -1,30 +1,38 @@
-"""Booking routes (ARCHITECTURE §7, §15; ADRs 0046, 0048 to 0050): a student holds a bed with their
-quote, sees their booking, and says when they've moved in; its owner, or ops for them, sees it and
-confirms or rejects it. Another student's booking, or another owner's, is a 404."""
+"""Booking routes (ARCHITECTURE §7, §15; ADRs 0046, 0048 to 0051): a student holds a bed with their
+quote, sees their booking, says when they've moved in, and reports a room that isn't as shown;
+its owner, or ops for them, sees it and confirms or rejects it; ops settle reports. Another
+student's booking, or another owner's, is a 404."""
 
+import uuid
 from datetime import timedelta
-from typing import Final
+from typing import Annotated, Final
 
-from fastapi import APIRouter, Request, Response, status
+from fastapi import APIRouter, Query, Request, Response, status
 
 from app.core.clock import ClockDep
 from app.core.current_actor import CurrentActor
 from app.core.db import DbSession
 from app.core.errors import ForbiddenError
 from app.core.idempotency import OPENAPI_HEADER, StoredResponse, idempotent_request, replay
+from app.core.pagination import PageParams
 from app.core.ratelimit import RateLimit, enforce
+from app.modules.booking.domain.disputes import DisputeStatus
 from app.modules.booking.domain.state_machine import Party
 from app.modules.booking.policies import can_answer_as_owner, can_book, can_run_bookings
 from app.modules.booking.schemas import (
     CancelRequest,
+    DisputeRequest,
     HoldRequest,
     ManagedBooking,
     MoveInReminder,
+    OpsDispute,
+    OpsDisputePage,
     RejectRequest,
+    ResolveRequest,
     StudentBooking,
     StudentBookingList,
 )
-from app.modules.booking.service import BookingDesk, BookingService
+from app.modules.booking.service import BookingDesk, BookingService, Disputes
 
 router = APIRouter(prefix="/v1", tags=["bookings"])
 
@@ -33,7 +41,15 @@ HOLDS_PER_USER: Final = RateLimit("holds-per-user", limit=10, window=timedelta(h
 
 
 def _service(request: Request, db: DbSession, clock: ClockDep) -> BookingService:
-    return BookingService(db, clock, flags=request.app.state.flags)
+    return BookingService(
+        db, clock, flags=request.app.state.flags, buckets=request.app.state.media_buckets
+    )
+
+
+def _disputes(request: Request, db: DbSession, clock: ClockDep) -> Disputes:
+    return Disputes(
+        db, clock, buckets=request.app.state.media_buckets, storage=request.app.state.storage
+    )
 
 
 @router.post(
@@ -100,6 +116,27 @@ async def check_in(
     if not can_book(actor):
         raise ForbiddenError
     return await _service(request, db, clock).check_in(actor, code)
+
+
+@router.post("/bookings/{code}/disputes", summary="Report that your room isn't as shown")
+async def open_dispute(
+    code: str,
+    body: DisputeRequest,
+    *,
+    request: Request,
+    actor: CurrentActor,
+    db: DbSession,
+    clock: ClockDep,
+) -> StudentBooking:
+    """Inside the student's time to check the room, once they've moved in: why, in their own
+    words, with up to six of their own dispute photos, ready. The booking waits for ops, and the
+    owner hears. 409 INVALID_TRANSITION outside that time; 422 DISPUTE_INVALID for photos that
+    aren't theirs or aren't ready."""
+    if not can_book(actor):
+        raise ForbiddenError
+    return await _service(request, db, clock).dispute(
+        actor, code, reason=body.reason, description=body.description, photos=body.photos
+    )
 
 
 @router.get("/bookings/{code}", summary="Your booking")
@@ -185,3 +222,51 @@ async def ops_move_in_reminder(
     the student's own word. 409 INVALID_TRANSITION unless they may check in now."""
     _ops(actor)
     return MoveInReminder(sent=await BookingDesk(db, clock).move_in_reminder(actor, code))
+
+
+# Ops: students' reports that their room isn't as shown (step 5.7).
+
+
+@router.get("/ops/disputes", summary="Reports that a room isn't as shown")
+async def ops_disputes(
+    request: Request,
+    actor: CurrentActor,
+    *,
+    page: PageParams,
+    db: DbSession,
+    clock: ClockDep,
+    dispute_status: Annotated[DisputeStatus | None, Query(alias="status")] = None,
+) -> OpsDisputePage:
+    """Oldest first, as a queue; of one status if asked."""
+    _ops(actor)
+    items, next_cursor = await _disputes(request, db, clock).page(page, status=dispute_status)
+    return OpsDisputePage(items=items, next_cursor=next_cursor)
+
+
+@router.get("/ops/disputes/{dispute_id}", summary="A report that a room isn't as shown")
+async def ops_dispute(
+    dispute_id: uuid.UUID, request: Request, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> OpsDispute:
+    """The student's words and photos (links signed for five minutes), the booking, and the
+    student's phone to call them."""
+    _ops(actor)
+    return await _disputes(request, db, clock).view(dispute_id)
+
+
+@router.post("/ops/disputes/{dispute_id}/resolve", summary="Settle a report")
+async def ops_resolve_dispute(
+    dispute_id: uuid.UUID,
+    body: ResolveRequest,
+    *,
+    request: Request,
+    actor: CurrentActor,
+    db: DbSession,
+    clock: ClockDep,
+) -> OpsDispute:
+    """Refund: the bed is released, the token refunded in full, and the student offered PGs like
+    it. Uphold: the stay goes ahead and the token is earned. Both text the student and the owner;
+    the notes stay on the record. 409 INVALID_TRANSITION once it's settled."""
+    _ops(actor)
+    return await _disputes(request, db, clock).resolve(
+        actor, dispute_id, outcome=body.outcome, notes=body.notes
+    )

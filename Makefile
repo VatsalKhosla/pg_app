@@ -190,7 +190,7 @@ coverage-money: ## Fail below 95% branch coverage of the money code's pure domai
 		tests/unit/test_pricing_policies.py tests/unit/test_pricing_rule_sets.py \
 		tests/unit/test_pricing_quotes.py tests/unit/test_pricing_alerts.py \
 		tests/unit/test_inventory_allocations.py tests/unit/test_booking_state_machine.py \
-		tests/unit/test_booking_cancellation.py \
+		tests/unit/test_booking_cancellation.py tests/unit/test_booking_disputes.py \
 		--cov=app.modules.pricing.domain --cov=app.modules.inventory.domain \
 		--cov=app.modules.booking.domain --cov-branch \
 		--cov-report=term-missing --cov-fail-under=95

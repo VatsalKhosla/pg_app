@@ -65,6 +65,7 @@ PATH_VALUES: Final = frozenset(
         "a_missing_alert",
         "a_missing_block",
         "a_missing_booking",
+        "a_missing_dispute",
         "an_owner",
         "a_live_listing",
     }
@@ -513,6 +514,21 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     # Moving in (ADR 0050): the student says so on their own booking.
     ("POST", "/v1/bookings/{code}/check-in"): Rule(
         signed_in(404, field_agent=403, ops=403, admin=403), path={"code": "a_missing_booking"}
+    ),
+    # Disputes (ADR 0051): the student reports on their own booking; ops settle any.
+    ("POST", "/v1/bookings/{code}/disputes"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403),
+        lambda: {"json": {"reason": "not_as_shown", "description": "The window is boarded up."}},
+        path={"code": "a_missing_booking"},
+    ),
+    ("GET", "/v1/ops/disputes"): Rule(ops_only(200)),
+    ("GET", "/v1/ops/disputes/{dispute_id}"): Rule(
+        ops_only(404), path={"dispute_id": "a_missing_dispute"}
+    ),
+    ("POST", "/v1/ops/disputes/{dispute_id}/resolve"): Rule(
+        ops_only(404),
+        lambda: {"json": {"outcome": "refund", "notes": "Called the owner"}},
+        path={"dispute_id": "a_missing_dispute"},
     ),
     # Answering bookings (ADR 0048): an owner answers their own PGs' bookings, and ops answer any.
     # The booking asked for is nobody's.

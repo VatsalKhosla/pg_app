@@ -23,6 +23,8 @@ class Purpose(StrEnum):
     # A field agent's evidence from a verification visit (ADR 0024): kept private, like a
     # document, but prepared as a photo.
     VERIFICATION_PHOTO = "verification_photo"
+    # A student's evidence that their room isn't as shown (ADR 0051): private too.
+    DISPUTE_PHOTO = "dispute_photo"
 
 
 class Visibility(StrEnum):
@@ -65,6 +67,7 @@ RULES: Final = {
     Purpose.LISTING_VIDEO: Rules(frozenset({MP4}), 200 * MIB, Visibility.PUBLIC),
     Purpose.DOCUMENT: Rules(frozenset({PDF, JPEG, PNG}), 10 * MIB, Visibility.PRIVATE),
     Purpose.VERIFICATION_PHOTO: Rules(frozenset({JPEG, PNG, WEBP}), 15 * MIB, Visibility.PRIVATE),
+    Purpose.DISPUTE_PHOTO: Rules(frozenset({JPEG, PNG, WEBP}), 15 * MIB, Visibility.PRIVATE),
 }
 
 # How long a presigned upload stays usable, and a signed link to a private file.

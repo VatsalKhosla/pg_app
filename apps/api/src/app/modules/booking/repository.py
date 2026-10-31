@@ -1,11 +1,12 @@
-"""Queries on bookings and their events. Repositories never commit; services own transactions."""
+"""Queries on bookings, their events and their disputes. Repositories never commit; services own
+transactions."""
 
 from typing import TYPE_CHECKING, Final
 
 from sqlalchemy import func, select, update
 
 from app.modules.booking.domain.state_machine import BookingStatus
-from app.modules.booking.models import Booking, BookingEventRecord
+from app.modules.booking.models import Booking, BookingEventRecord, Dispute, DisputePhoto
 
 # Confirmed, and moved in or finished since: the bookings that show the owner's contact (rule 11).
 CONFIRMED_ONWARDS: Final = (
@@ -18,10 +19,12 @@ CONFIRMED_ONWARDS: Final = (
 
 if TYPE_CHECKING:
     import uuid
-    from collections.abc import Collection, Mapping
+    from collections.abc import Collection, Mapping, Sequence
     from datetime import datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.modules.booking.domain.disputes import DisputeStatus
 
 
 class BookingRepository:
@@ -41,6 +44,16 @@ class BookingRepository:
     async def by_public_id(self, public_id: uuid.UUID, *, lock: bool = False) -> Booking | None:
         query = select(Booking).where(Booking.public_id == public_id)
         return await self._db.scalar(query.with_for_update() if lock else query)
+
+    async def by_id(self, booking_id: int, *, lock: bool = False) -> Booking | None:
+        query = select(Booking).where(Booking.id == booking_id)
+        return await self._db.scalar(query.with_for_update() if lock else query)
+
+    async def by_ids(self, booking_ids: Collection[int]) -> dict[int, Booking]:
+        if not booking_ids:
+            return {}
+        rows = await self._db.scalars(select(Booking).where(Booking.id.in_(booking_ids)))
+        return {row.id: row for row in rows}
 
     async def windows_over(self, now: datetime, *, limit: int) -> list[Booking]:
         """Checked-in bookings whose 24 hours to check the room are over, locked, the earliest
@@ -159,3 +172,61 @@ class BookingRepository:
             return False
         await self._db.refresh(booking)
         return True
+
+
+class DisputeRepository:
+    def __init__(self, db: AsyncSession) -> None:
+        self._db = db
+
+    async def add(self, dispute: Dispute, photos: Sequence[int]) -> None:
+        """The dispute, with its photos (media asset ids) in the student's order."""
+        self._db.add(dispute)
+        await self._db.flush()
+        self._db.add_all(
+            DisputePhoto(dispute_id=dispute.id, media_asset_id=media_id, position=position)
+            for position, media_id in enumerate(photos)
+        )
+        await self._db.flush()
+
+    async def by_public_id(self, public_id: uuid.UUID, *, lock: bool = False) -> Dispute | None:
+        query = select(Dispute).where(Dispute.public_id == public_id)
+        return await self._db.scalar(query.with_for_update() if lock else query)
+
+    async def of_bookings(self, booking_ids: Collection[int]) -> dict[int, Dispute]:
+        if not booking_ids:
+            return {}
+        rows = await self._db.scalars(select(Dispute).where(Dispute.booking_id.in_(booking_ids)))
+        return {row.booking_id: row for row in rows}
+
+    async def page(
+        self, *, status: DisputeStatus | None, after: uuid.UUID | None, limit: int
+    ) -> list[Dispute]:
+        """Disputes oldest first, of one status if asked, ``limit + 1`` of them (the extra one
+        says there's more): a queue, worked from its front."""
+        query = select(Dispute)
+        if status is not None:
+            query = query.where(Dispute.status == status)
+        if after is not None:
+            query = query.where(Dispute.public_id > after)
+        rows = await self._db.scalars(query.order_by(Dispute.public_id).limit(limit + 1))
+        return list(rows)
+
+    async def photo_counts(self, dispute_ids: Collection[int]) -> dict[int, int]:
+        """How many photos each dispute has; one with none is left out."""
+        if not dispute_ids:
+            return {}
+        rows = await self._db.execute(
+            select(DisputePhoto.dispute_id, func.count().label("photos"))
+            .where(DisputePhoto.dispute_id.in_(dispute_ids))
+            .group_by(DisputePhoto.dispute_id)
+        )
+        return {row.dispute_id: row.photos for row in rows}
+
+    async def photos_of(self, dispute_id: int) -> list[int]:
+        """The dispute's photos, as media asset ids, in the student's order."""
+        rows = await self._db.scalars(
+            select(DisputePhoto.media_asset_id)
+            .where(DisputePhoto.dispute_id == dispute_id)
+            .order_by(DisputePhoto.position)
+        )
+        return list(rows)

@@ -26,7 +26,7 @@ from app.modules.geo.service import GeoReferenceLoader
 from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.repository import UserRepository
 from app.modules.identity.service import SessionService
-from app.modules.media.domain.assets import AssetStatus, Moderation, Purpose, Visibility
+from app.modules.media.domain.assets import RULES, AssetStatus, Moderation, Purpose, Visibility
 from app.modules.media.models import MediaAsset
 from app.modules.media.repository import MediaRepository
 from tests.conftest import TEST_SECRET_KEY
@@ -123,9 +123,9 @@ class Staff:
         purpose: Purpose = Purpose.LISTING_PHOTO,
         moderation: Moderation = Moderation.APPROVED,
     ) -> str:
-        """A photo of this staff member's that the media pipeline has finished with (or
-        rejected): a listing photo, or a verification photo kept private."""
-        private = purpose is Purpose.VERIFICATION_PHOTO
+        """A photo of this person's that the media pipeline has finished with (or rejected): a
+        listing photo, or a verification or dispute photo kept private."""
+        private = RULES[purpose].visibility is Visibility.PRIVATE
         async with self.app.state.sessionmaker() as db, db.begin():
             asset = await MediaRepository(db).add(
                 MediaAsset(

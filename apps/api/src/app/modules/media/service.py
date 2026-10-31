@@ -232,7 +232,7 @@ def _process(asset: MediaAsset, original: Path, work: Path, now: datetime) -> Pr
         msg = f"the file isn't the {asset.content_type} it was said to be"
         raise UnprocessableError(msg)
     match Purpose(asset.purpose):
-        case Purpose.LISTING_PHOTO | Purpose.VERIFICATION_PHOTO:
+        case Purpose.LISTING_PHOTO | Purpose.VERIFICATION_PHOTO | Purpose.DISPUTE_PHOTO:
             return process_photo(original.read_bytes(), asset.content_type, now=now)
         case Purpose.LISTING_VIDEO:
             return process_video(original, work)

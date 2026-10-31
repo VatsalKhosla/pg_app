@@ -1,4 +1,4 @@
-"""The bookings API's shapes (ARCHITECTURE §15; ADR 0046)."""
+"""The bookings API's shapes (ARCHITECTURE §15; ADRs 0046 to 0051)."""
 
 import uuid
 from datetime import date, datetime
@@ -7,7 +7,18 @@ from typing import Final
 from pydantic import Field
 
 from app.core.schemas import ApiModel
+from app.modules.booking.domain.disputes import (
+    DESCRIPTION_MAX_LENGTH,
+    DESCRIPTION_MIN_LENGTH,
+    MAX_PHOTOS,
+    NOTES_MAX_LENGTH,
+    DisputeReason,
+    DisputeStatus,
+    Outcome,
+)
 from app.modules.booking.domain.state_machine import BookingStatus, Party
+from app.modules.catalog.domain.listing import GenderPolicy
+from app.modules.catalog.domain.rooms import Occupancy
 
 REASON_MAX_LENGTH: Final = 500
 
@@ -39,6 +50,26 @@ class CancellationTerms(ApiModel):
 
     refund_paise: int
     late: bool
+
+
+class StudentDispute(ApiModel):
+    """The student's report that the room isn't as shown, and where it stands."""
+
+    reason: DisputeReason
+    status: DisputeStatus
+    opened_at: datetime
+    resolved_at: datetime | None
+
+
+class RebookSearch(ApiModel):
+    """A search for PGs like this one with a bed free for the student's move-in, once a booking
+    ended through no fault of theirs: its filters, as the search API takes them (step 5.7)."""
+
+    locality: str
+    occupancy: Occupancy
+    gender: GenderPolicy
+    move_in_month: str
+    budget_max_paise: int
 
 
 class StudentBooking(ApiModel):
@@ -76,6 +107,11 @@ class StudentBooking(ApiModel):
     timeline: list[TimelineEntry]
     # Null when it can't be cancelled now: checked in, or over.
     cancellation: CancellationTerms | None
+    # While their time to check the room lasts, they may report that it isn't as shown.
+    can_dispute: bool
+    dispute: StudentDispute | None
+    # Help to book again, once the booking ended through no fault of the student's.
+    rebook: RebookSearch | None
 
 
 class StudentBookingList(ApiModel):
@@ -129,3 +165,74 @@ class MoveInReminder(ApiModel):
 class RejectRequest(ApiModel):
     # Why, for the student's record and ops; never shown to other students.
     reason: str = Field(min_length=1, max_length=REASON_MAX_LENGTH)
+
+
+class DisputeRequest(ApiModel):
+    """The student's report that their room isn't as shown (step 5.7, ADR 0051)."""
+
+    reason: DisputeReason
+    description: str = Field(min_length=DESCRIPTION_MIN_LENGTH, max_length=DESCRIPTION_MAX_LENGTH)
+    # Their own dispute photos, uploaded and ready, in their order.
+    photos: list[uuid.UUID] = Field(default=[], max_length=MAX_PHOTOS)
+
+
+class PhotoSize(ApiModel):
+    name: str
+    content_type: str
+    # A link signed for five minutes: the photos are private.
+    url: str
+    width: int | None
+    height: int | None
+
+
+class DisputePhotoView(ApiModel):
+    id: uuid.UUID
+    captured_at: datetime | None
+    sizes: list[PhotoSize]
+
+
+class DisputeStudent(ApiModel):
+    """The student, for ops to call."""
+
+    name: str | None
+    phone: str
+
+
+class OpsDisputeItem(ApiModel):
+    """A dispute in ops' queue."""
+
+    id: uuid.UUID
+    status: DisputeStatus
+    reason: DisputeReason
+    opened_at: datetime
+    booking: str
+    property: BookingPlace
+    photos: int
+
+
+class OpsDisputePage(ApiModel):
+    # Oldest first: a queue.
+    items: list[OpsDisputeItem]
+    next_cursor: uuid.UUID | None
+
+
+class OpsDispute(ApiModel):
+    """A dispute as ops settle it: the student's words and photos, the booking, and whom to call."""
+
+    id: uuid.UUID
+    status: DisputeStatus
+    reason: DisputeReason
+    description: str
+    opened_at: datetime
+    resolved_at: datetime | None
+    notes: str | None
+    booking: ManagedBooking
+    student: DisputeStudent
+    photos: list[DisputePhotoView]
+
+
+class ResolveRequest(ApiModel):
+    # Refund: the bed is freed and the token refunded in full. Uphold: the stay goes ahead.
+    outcome: Outcome
+    # What ops found, for the record: the student and the owner get the outcome, not this.
+    notes: str = Field(min_length=1, max_length=NOTES_MAX_LENGTH)

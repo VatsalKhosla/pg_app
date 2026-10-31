@@ -26,34 +26,47 @@ from app.core.errors import InvalidTransitionError, NotFoundError
 from app.core.flags import Flag
 from app.core.ids import new_booking_code, normalize_booking_code
 from app.modules.booking.domain.cancellation import cancellation
-from app.modules.booking.domain.state_machine import BookingEvent, Moment, Party, allows, hold
+from app.modules.booking.domain.state_machine import (
+    BookingEvent,
+    Moment,
+    OpenDispute,
+    Party,
+    SuggestSimilar,
+    allows,
+    hold,
+)
 from app.modules.booking.errors import (
     BookingNeedsVisitError,
     HoldLimitReachedError,
     QuoteUsedError,
     RefundChangedError,
 )
-from app.modules.booking.models import HOLD, Booking, Channel
-from app.modules.booking.repository import BookingRepository
+from app.modules.booking.models import HOLD, Booking, Channel, Dispute
+from app.modules.booking.repository import BookingRepository, DisputeRepository
+from app.modules.booking.service.disputes import own_photos
 from app.modules.booking.service.transitions import Transitions, facts_of, fields
 from app.modules.booking.service.views import BookingViews
 from app.modules.catalog.service import CatalogLookup
 from app.modules.inventory.domain.allocations import stay_period
 from app.modules.inventory.errors import BedUnavailableError
 from app.modules.inventory.service import BedHolds
+from app.modules.media.service import MediaLookup
 from app.modules.pricing.errors import QuoteExpiredError
 from app.modules.pricing.service import BookingTerms, QuoteLookup
 
 if TYPE_CHECKING:
     import uuid
+    from collections.abc import Sequence
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.core.actor import Actor
     from app.core.clock import Clock
     from app.core.flags import FlagReader
+    from app.modules.booking.domain.disputes import DisputeReason
     from app.modules.booking.schemas import StudentBooking
     from app.modules.catalog.service import BookingPlace
+    from app.modules.media.service import Buckets
 
 # A random code clashing with another booking's is rare; three in a row, impossible in practice.
 CODE_ATTEMPTS: Final = 3
@@ -62,11 +75,16 @@ LIST_LIMIT: Final = 50
 
 
 class BookingService:
-    def __init__(self, db: AsyncSession, clock: Clock, *, flags: FlagReader) -> None:
+    def __init__(
+        self, db: AsyncSession, clock: Clock, *, flags: FlagReader, buckets: Buckets
+    ) -> None:
         self._db = db
         self._clock = clock
         self._flags = flags
+        # Without storage: a student's own photos are checked here, never shown.
+        self._media = MediaLookup(db, buckets)
         self._bookings = BookingRepository(db)
+        self._disputes = DisputeRepository(db)
         self._catalog = CatalogLookup(db)
         self._quotes = QuoteLookup(db, clock)
         self._terms = BookingTerms(db)
@@ -190,6 +208,32 @@ class BookingService:
             )
             return await self._view(booking, place)
 
+    async def dispute(
+        self,
+        actor: Actor,
+        code: str,
+        *,
+        reason: DisputeReason,
+        description: str,
+        photos: Sequence[uuid.UUID],
+    ) -> StudentBooking:
+        """The student reports that the room isn't as shown, inside their time to check it (409
+        INVALID_TRANSITION otherwise), with their own photos: the booking waits for ops, and the
+        owner hears (ADR 0051)."""
+        async with self._db.begin():
+            booking = await self._own(actor, code, lock=True)
+            media = await own_photos(self._media, actor, photos)
+            place = await self._views.place(booking)
+            step = await self._transitions.apply(
+                booking, BookingEvent.DISPUTE, Party.STUDENT, place, by=actor.user_id
+            )
+            assert OpenDispute() in step.effects  # noqa: S101 - the state machine's own rule
+            await self._disputes.add(
+                Dispute(booking_id=booking.id, reason=reason, description=description.strip()),
+                media,
+            )
+            return await self._view(booking, place)
+
     async def check_in(self, actor: Actor, code: str) -> StudentBooking:
         """The student says they've moved in, from the day before the move-in: their 24 hours to
         tell us if the room isn't as shown start now, and the owner hears."""
@@ -210,11 +254,15 @@ class BookingService:
         return booking
 
     async def _view(self, booking: Booking, place: BookingPlace) -> StudentBooking:
-        """The booking as its student sees it now: its history, what cancelling means, and
-        whether they may say they've moved in."""
+        """The booking as its student sees it now: its history, what cancelling means, whether
+        they may say they've moved in or report a problem, and help to book again once it ended
+        through no fault of theirs (the state machine's SuggestSimilar)."""
         terms = await self._terms.of(booking.booking_policy_id)
         facts, now = facts_of(booking, place), Moment(self._clock.now())
         history = (await self._bookings.events_of([booking.id])).get(booking.id, [])
+        suggested = bool(history) and SuggestSimilar.__name__ in history[-1].payload.get(
+            "effects", []
+        )
         return await self._views.student(
             booking,
             place,
@@ -222,6 +270,9 @@ class BookingService:
             cancellation=cancellation(facts, now, terms),
             can_check_in=allows(facts, BookingEvent.CHECK_IN, Party.STUDENT, now, terms),
             check_window_hours=terms.check_window_hours,
+            can_dispute=allows(facts, BookingEvent.DISPUTE, Party.STUDENT, now, terms),
+            dispute=(await self._disputes.of_bookings([booking.id])).get(booking.id),
+            rebook_from=max(booking.move_in, now.today) if suggested else None,
         )
 
     async def _add(self, booking: Booking) -> None:

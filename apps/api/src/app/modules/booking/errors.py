@@ -1,6 +1,11 @@
 """The booking module's errors (ARCHITECTURE §15)."""
 
+from typing import TYPE_CHECKING
+
 from app.core.errors import AppError
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class BookingNeedsVisitError(AppError):
@@ -34,3 +39,16 @@ class RefundChangedError(AppError):
     status = 409
     code = "REFUND_CHANGED"
     title = "What cancelling gives back has changed"
+
+
+class DisputeInvalidError(AppError):
+    """A report the rules refuse, such as a photo that isn't the student's own or isn't ready
+    yet. The detail names every problem at once."""
+
+    status = 422
+    code = "DISPUTE_INVALID"
+    title = "That report can't be sent as it is"
+
+    def __init__(self, problems: Sequence[str]) -> None:
+        super().__init__("; ".join(problems))
+        self.problems = list(problems)

@@ -97,6 +97,8 @@ class BedRef:
     category_id: int
     category_label: str
     property_id: int
+    # How many share its room: single, double, triple or quad.
+    occupancy: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,6 +192,8 @@ class BookingPlace:
     slug: str
     name: str
     locality: str
+    locality_slug: str
+    gender_policy: str
     owner_id: int
     instant_confirm: bool
     public: bool
@@ -314,6 +318,7 @@ class CatalogLookup:
             category_id=place.category_id,
             category_label=place.category_label,
             property_id=place.property_id,
+            occupancy=place.occupancy,
         )
 
     async def listed_rooms(self) -> list[ListedRoom]:
@@ -471,6 +476,8 @@ class CatalogLookup:
                 slug=row.slug,
                 name=row.name,
                 locality=localities[row.locality_id].name,
+                locality_slug=localities[row.locality_id].slug,
+                gender_policy=row.gender_policy,
                 owner_id=row.owner_id,
                 instant_confirm=row.instant_confirm,
                 public=is_public(
