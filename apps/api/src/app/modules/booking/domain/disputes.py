@@ -21,7 +21,7 @@ class DisputeStatus(StrEnum):
     RESOLVED_UPHOLD = "resolved_uphold"
 
 
-class Outcome(StrEnum):
+class DisputeOutcome(StrEnum):
     """What ops decide."""
 
     REFUND = "refund"
@@ -35,10 +35,10 @@ DESCRIPTION_MAX_LENGTH: Final = 2_000
 NOTES_MAX_LENGTH: Final = 1_000
 
 
-def resolved(outcome: Outcome) -> DisputeStatus:
+def resolved(outcome: DisputeOutcome) -> DisputeStatus:
     return (
         DisputeStatus.RESOLVED_REFUND
-        if outcome is Outcome.REFUND
+        if outcome is DisputeOutcome.REFUND
         else DisputeStatus.RESOLVED_UPHOLD
     )
 

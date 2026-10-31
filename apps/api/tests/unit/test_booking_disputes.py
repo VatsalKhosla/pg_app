@@ -6,8 +6,8 @@ import pytest
 
 from app.modules.booking.domain.disputes import (
     MAX_PHOTOS,
+    DisputeOutcome,
     DisputeStatus,
-    Outcome,
     photo_problems,
     resolved,
 )
@@ -26,5 +26,5 @@ def test_a_report_takes_no_more_than_six_photos_each_once() -> None:
 
 
 def test_each_outcome_settles_the_dispute_its_own_way() -> None:
-    assert resolved(Outcome.REFUND) is DisputeStatus.RESOLVED_REFUND
-    assert resolved(Outcome.UPHOLD) is DisputeStatus.RESOLVED_UPHOLD
+    assert resolved(DisputeOutcome.REFUND) is DisputeStatus.RESOLVED_REFUND
+    assert resolved(DisputeOutcome.UPHOLD) is DisputeStatus.RESOLVED_UPHOLD

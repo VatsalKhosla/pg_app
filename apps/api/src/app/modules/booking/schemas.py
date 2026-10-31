@@ -12,9 +12,9 @@ from app.modules.booking.domain.disputes import (
     DESCRIPTION_MIN_LENGTH,
     MAX_PHOTOS,
     NOTES_MAX_LENGTH,
+    DisputeOutcome,
     DisputeReason,
     DisputeStatus,
-    Outcome,
 )
 from app.modules.booking.domain.state_machine import BookingStatus, Party
 from app.modules.catalog.domain.listing import GenderPolicy
@@ -233,6 +233,6 @@ class OpsDispute(ApiModel):
 
 class ResolveRequest(ApiModel):
     # Refund: the bed is freed and the token refunded in full. Uphold: the stay goes ahead.
-    outcome: Outcome
+    outcome: DisputeOutcome
     # What ops found, for the record: the student and the owner get the outcome, not this.
     notes: str = Field(min_length=1, max_length=NOTES_MAX_LENGTH)

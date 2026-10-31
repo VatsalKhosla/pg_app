@@ -15,9 +15,9 @@ from typing import TYPE_CHECKING
 from app.core.errors import NotFoundError
 from app.core.pagination import split_page
 from app.modules.booking.domain.disputes import (
+    DisputeOutcome,
     DisputeReason,
     DisputeStatus,
-    Outcome,
     photo_problems,
     resolved,
 )
@@ -109,7 +109,7 @@ class Disputes:
             return await self._ops_view(dispute)
 
     async def resolve(
-        self, actor: Actor, dispute_id: uuid.UUID, *, outcome: Outcome, notes: str
+        self, actor: Actor, dispute_id: uuid.UUID, *, outcome: DisputeOutcome, notes: str
     ) -> OpsDispute:
         """Ops settle it: refunded, or upheld. 409 INVALID_TRANSITION once it's settled."""
         async with self._db.begin():
@@ -121,7 +121,7 @@ class Disputes:
             if booking is None:  # pragma: no cover - a dispute always has its booking
                 raise NotFoundError
             place = await self._views.place(booking)
-            refund = outcome is Outcome.REFUND
+            refund = outcome is DisputeOutcome.REFUND
             event = BookingEvent.RESOLVE_REFUND if refund else BookingEvent.RESOLVE_UPHOLD
             step = await self._transitions.apply(
                 booking, event, Party.OPS, place, by=actor.user_id, note=notes.strip()
