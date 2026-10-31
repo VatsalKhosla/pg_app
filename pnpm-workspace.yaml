@@ -49,5 +49,14 @@ auditConfig:
     # ESLint's tooling (eslint-config-next > fast-glob > micromatch), with our own config's
     # patterns. Reviewed 2026-10-19.
     - GHSA-vfj7-8cjw-p6xm
+    # minimatch < 11.0.1: an attacker-chosen pattern can blow up its preprocessing. glob 9-14.0.1:
+    # an aborted walk keeps reading directories. Both need patterns or AbortSignals from someone
+    # else, and we only glob our own build and lint paths: in production they come only through
+    # @sentry/nextjs > @sentry/bundler-plugins, a build plugin our Next config doesn't load, and
+    # no server file traces them. The fixes are new majors (minimatch 11, glob 14) published
+    # 2026-10-27/28, inside the cooldown and not yet taken by Sentry's plugins (glob ^13) or
+    # typescript-eslint (minimatch ^10). Reviewed 2026-10-31; look again from 2026-11-04.
+    - GHSA-g3hv-75wg-m249
+    - GHSA-3g3m-2fjr-6pw4
 # Exact versions in package.json; the lockfile pins everything else.
 savePrefix: ""
