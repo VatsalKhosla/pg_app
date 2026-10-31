@@ -38,26 +38,34 @@ const text: BookingActionsText = {
 const CODE = "BK-7F3K2Q9M";
 const TOKEN = 200_000;
 
-type Shown = Pick<StudentBooking, "code" | "status" | "cancellation" | "canCheckIn">;
+type Shown = Pick<StudentBooking, "code" | "status" | "cancellation" | "canCheckIn" | "canDispute">;
 
 /**
- * Each status with what the API says cancelling it now gives back (null: it can't be), and
- * whether the student may now say they've moved in: a confirmed booking from the day before the
- * move-in.
+ * Each status with what the API says cancelling it now gives back (null: it can't be), whether
+ * the student may now say they've moved in (a confirmed booking from the day before the move-in),
+ * and whether they may report the room isn't as shown (while their time to check it lasts).
  */
-const BOOKINGS: Record<BookingStatus, Pick<Shown, "cancellation" | "canCheckIn">> = {
-  held: { cancellation: { refundPaise: 0, late: false }, canCheckIn: false },
-  token_secured: { cancellation: { refundPaise: TOKEN, late: false }, canCheckIn: false },
-  confirmed: { cancellation: { refundPaise: TOKEN, late: true }, canCheckIn: true },
-  checked_in: { cancellation: null, canCheckIn: false },
-  disputed: { cancellation: null, canCheckIn: false },
-  active: { cancellation: null, canCheckIn: false },
-  completed: { cancellation: null, canCheckIn: false },
-  expired: { cancellation: null, canCheckIn: false },
-  cancelled: { cancellation: null, canCheckIn: false },
-  rejected: { cancellation: null, canCheckIn: false },
-  no_show: { cancellation: null, canCheckIn: false },
-  refunded: { cancellation: null, canCheckIn: false },
+const BOOKINGS: Record<BookingStatus, Pick<Shown, "cancellation" | "canCheckIn" | "canDispute">> = {
+  held: { cancellation: { refundPaise: 0, late: false }, canCheckIn: false, canDispute: false },
+  token_secured: {
+    cancellation: { refundPaise: TOKEN, late: false },
+    canCheckIn: false,
+    canDispute: false,
+  },
+  confirmed: {
+    cancellation: { refundPaise: TOKEN, late: true },
+    canCheckIn: true,
+    canDispute: false,
+  },
+  checked_in: { cancellation: null, canCheckIn: false, canDispute: true },
+  disputed: { cancellation: null, canCheckIn: false, canDispute: false },
+  active: { cancellation: null, canCheckIn: false, canDispute: false },
+  completed: { cancellation: null, canCheckIn: false, canDispute: false },
+  expired: { cancellation: null, canCheckIn: false, canDispute: false },
+  cancelled: { cancellation: null, canCheckIn: false, canDispute: false },
+  rejected: { cancellation: null, canCheckIn: false, canDispute: false },
+  no_show: { cancellation: null, canCheckIn: false, canDispute: false },
+  refunded: { cancellation: null, canCheckIn: false, canDispute: false },
 };
 const STATUSES = Object.keys(BOOKINGS) as BookingStatus[];
 
@@ -87,10 +95,11 @@ describe("BookingActions", () => {
   });
 
   it("lets a student cancel only while they can, and find another PG once it ended early", () => {
-    const allowed = (action: "checkIn" | "cancel" | "findAnother") =>
+    const allowed = (action: "checkIn" | "dispute" | "cancel" | "findAnother") =>
       STATUSES.filter((status) => actionsFor({ status, ...BOOKINGS[status] })[action]);
 
     expect(allowed("checkIn")).toEqual(["confirmed"]);
+    expect(allowed("dispute")).toEqual(["checked_in"]);
     expect(allowed("cancel")).toEqual(["held", "token_secured", "confirmed"]);
     expect(allowed("findAnother")).toEqual([
       "expired",
@@ -99,7 +108,12 @@ describe("BookingActions", () => {
       "no_show",
       "refunded",
     ]);
-    const confirmed = { status: "confirmed", cancellation: null, canCheckIn: false } as const;
+    const confirmed = {
+      status: "confirmed",
+      cancellation: null,
+      canCheckIn: false,
+      canDispute: false,
+    } as const;
     expect(actionsFor(confirmed).contact).toBe(true);
     expect(actionsFor({ ...confirmed, status: "token_secured" }).contact).toBe(false);
   });

@@ -121,7 +121,7 @@ export function BookingActions({
   policyPath,
   text,
 }: {
-  booking: Pick<StudentBooking, "code" | "status" | "cancellation" | "canCheckIn">;
+  booking: Pick<StudentBooking, "code" | "status" | "cancellation" | "canCheckIn" | "canDispute">;
   policyPath: Route;
   text: BookingActionsText;
 }) {

@@ -614,6 +614,7 @@
       "owners": "Owners",
       "staffHome": "Staff tools",
       "visits": "Visits",
+      "disputes": "Disputes",
       "grievances": "Grievances",
       "pricingAlerts": "Pricing alerts"
     },
@@ -1102,6 +1103,69 @@
       "errors": {
         "generic": "That didn't work. Please try again."
       }
+    },
+    "disputes": {
+      "metaTitle": "Disputes",
+      "title": "Rooms not as shown",
+      "intro": "Students who moved in and told us, inside their time to check the room, that it isn't as shown. Each booking waits for you: call the student and the owner, then settle it.",
+      "statusFilter": "Show disputes by status",
+      "all": "All",
+      "none": "Nothing here.",
+      "item": "{code} at {pg}",
+      "openedOn": "Reported {when}",
+      "photoCount": "{count, plural, =0 {no photos} one {# photo} other {# photos}}",
+      "status": {
+        "open": "Open",
+        "resolved_refund": "Refunded",
+        "resolved_uphold": "Upheld"
+      },
+      "reasons": {
+        "not_as_shown": "Not as shown",
+        "unsafe": "Not safe",
+        "other": "Something else"
+      },
+      "back": "All disputes",
+      "student": "The student",
+      "noName": "No name given",
+      "said": "What they told us",
+      "photos": "Their photos",
+      "noPhotos": "They sent no photos.",
+      "photo": "Photo {number}, opens full size",
+      "photoMissing": "This photo isn't available.",
+      "booking": "The booking",
+      "bed": "Bed",
+      "moveIn": "Move-in",
+      "movedIn": "Moved in",
+      "windowEnds": "Their time to check the room ends",
+      "settleTitle": "Settle it",
+      "outcome": "What you found",
+      "outcomes": {
+        "refund": "Not as shown: refund the student",
+        "uphold": "As shown: the stay goes ahead"
+      },
+      "notes": "Notes for the record",
+      "notesHint": "What you found and whom you spoke to. The student and the owner get the outcome, not these notes.",
+      "chooseOutcome": "Choose what you found.",
+      "needNotes": "Add notes, up to 1,000 characters.",
+      "next": "Next",
+      "change": "Go back",
+      "confirm": {
+        "refund": {
+          "title": "Refund booking {code}?",
+          "body": "The bed is released, the token refunded in full, and the student shown PGs like it. The student and the owner get a text. This can't be undone.",
+          "yes": "Yes, refund it"
+        },
+        "uphold": {
+          "title": "Uphold booking {code}?",
+          "body": "The stay goes ahead and the token counts toward the first month's rent. The student and the owner get a text. This can't be undone.",
+          "yes": "Yes, uphold it"
+        }
+      },
+      "saving": "Saving…",
+      "settledAlready": "Someone settled this a moment ago. Here it is as it is now.",
+      "failed": "That didn't work. Please try again.",
+      "settled": "How it was settled",
+      "settledOn": "{when}"
     },
     "pricing": {
       "metaTitle": "Pricing",
@@ -1940,6 +2004,47 @@
       "leftMinutes": "{minutes, plural, one {# minute} other {# minutes}} left",
       "lastMinute": "Less than a minute left",
       "over": "Your time to check the room is over. Your booking settles in a few minutes."
+    },
+    "disputeStatus": "You told us on {date}: {reason}. {status}",
+    "dispute": {
+      "title": "Room not as shown?",
+      "intro": "If the room, the bed or what comes with it isn't what the listing showed, tell us before your time to check it runs out. We'll look into it with the owner and call you. Your photos are seen only by you and our team.",
+      "reason": "What's wrong",
+      "reasons": {
+        "not_as_shown": "Not as shown",
+        "unsafe": "Not safe",
+        "other": "Something else"
+      },
+      "description": "Tell us what you found",
+      "descriptionHint": "What's different from the listing, and where. At least 10 characters.",
+      "photos": "Photos",
+      "photosHint": "Up to 6 photos of what's wrong help us sort it out quickly.",
+      "photo": "Photo {number}",
+      "removePhoto": "Remove photo {number}",
+      "addPhotos": "Add photos",
+      "uploading": "Uploading {name}…",
+      "processing": "Preparing {name}…",
+      "photoFailed": "{name} couldn't be added: {reason}",
+      "tooSlow": "it took too long. Please try again.",
+      "uploadFailed": "the upload didn't work.",
+      "needReason": "Choose what's wrong.",
+      "needDescription": "Tell us what you found, in 10 to 2,000 characters.",
+      "send": "Report the problem",
+      "sending": "Sending…",
+      "tooLate": "Your time to report a problem with the room has passed. If something's wrong, contact us.",
+      "failed": "That didn't work. Please try again.",
+      "photosRefused": "One of the photos can't be used. Remove it and add it again.",
+      "status": {
+        "open": "We're looking into it.",
+        "resolved_refund": "We refunded your token in full.",
+        "resolved_uphold": "We found the room as shown, so your booking stands."
+      }
+    },
+    "similar": {
+      "title": "PGs like this one",
+      "none": "No PG like this one has a bed free that month right now. Search for others.",
+      "card": "{locality} · from {rent} a month",
+      "more": "See more PGs like this one"
     },
     "help": "Questions about this booking? Quote {code} when you contact us.",
     "contactUs": "Contact us"
