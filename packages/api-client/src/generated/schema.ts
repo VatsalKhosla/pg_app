@@ -3100,6 +3100,12 @@ export interface components {
          * @enum {string}
          */
         DataRequestStatus: "received" | "ready" | "expired" | "completed" | "rejected";
+        /**
+         * DisputeOutcome
+         * @description What ops decide.
+         * @enum {string}
+         */
+        DisputeOutcome: "refund" | "uphold";
         /** DisputePhotoView */
         DisputePhotoView: {
             /**
@@ -4146,7 +4152,7 @@ export interface components {
          * @description How the visit went, as the agent records it.
          * @enum {string}
          */
-        "Outcome-Output": "interested" | "not_interested" | "student_no_show";
+        Outcome: "interested" | "not_interested" | "student_no_show";
         /**
          * OverrideRuleParams
          * @description A fixed monthly rent for move-ins from ``start`` to ``end``, both included.
@@ -4964,7 +4970,7 @@ export interface components {
         };
         /** ResolveRequest */
         ResolveRequest: {
-            outcome: components["schemas"]["app__modules__booking__domain__disputes__Outcome"];
+            outcome: components["schemas"]["DisputeOutcome"];
             /** Notes */
             notes: string;
         };
@@ -5424,7 +5430,7 @@ export interface components {
             scheduledAt: string | null;
             agent: components["schemas"]["VisitPerson"] | null;
             checkIn: components["schemas"]["VisitCheckIn"] | null;
-            outcome: components["schemas"]["Outcome-Output"] | null;
+            outcome: components["schemas"]["Outcome"] | null;
             /** Outcomenote */
             outcomeNote: string;
             /** Finishedat */
@@ -5603,7 +5609,7 @@ export interface components {
             agentName: string | null;
             /** Checkedin */
             checkedIn: boolean;
-            outcome: components["schemas"]["Outcome-Output"] | null;
+            outcome: components["schemas"]["Outcome"] | null;
             /** Cancelledat */
             cancelledAt: string | null;
             cancelledBy: components["schemas"]["CancelledBy"] | null;
@@ -5787,7 +5793,7 @@ export interface components {
         };
         /** VisitOutcomeRequest */
         VisitOutcomeRequest: {
-            outcome: components["schemas"]["app__modules__visits__domain__visits__Outcome"];
+            outcome: components["schemas"]["Outcome"];
             /**
              * Note
              * @default
@@ -5865,18 +5871,6 @@ export interface components {
          * @enum {string}
          */
         WomenSafety: "woman_staff" | "secure_entry" | "lit_approach" | "visitor_log" | "separate_floors";
-        /**
-         * Outcome
-         * @description What ops decide.
-         * @enum {string}
-         */
-        app__modules__booking__domain__disputes__Outcome: "refund" | "uphold";
-        /**
-         * Outcome
-         * @description How the visit went, as the agent records it.
-         * @enum {string}
-         */
-        app__modules__visits__domain__visits__Outcome: "interested" | "not_interested" | "student_no_show";
     };
     responses: never;
     parameters: never;

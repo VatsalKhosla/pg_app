@@ -9993,6 +9993,15 @@
         ],
         "title": "DataRequestStatus"
       },
+      "DisputeOutcome": {
+        "type": "string",
+        "enum": [
+          "refund",
+          "uphold"
+        ],
+        "title": "DisputeOutcome",
+        "description": "What ops decide."
+      },
       "DisputePhotoView": {
         "properties": {
           "id": {
@@ -12708,7 +12717,7 @@
         ],
         "title": "OtpVerify"
       },
-      "Outcome-Output": {
+      "Outcome": {
         "type": "string",
         "enum": [
           "interested",
@@ -15082,7 +15091,7 @@
       "ResolveRequest": {
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/app__modules__booking__domain__disputes__Outcome"
+            "$ref": "#/components/schemas/DisputeOutcome"
           },
           "notes": {
             "type": "string",
@@ -16301,7 +16310,7 @@
           "outcome": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Outcome-Output"
+                "$ref": "#/components/schemas/Outcome"
               },
               {
                 "type": "null"
@@ -16830,7 +16839,7 @@
           "outcome": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Outcome-Output"
+                "$ref": "#/components/schemas/Outcome"
               },
               {
                 "type": "null"
@@ -17404,7 +17413,7 @@
       "VisitOutcomeRequest": {
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/app__modules__visits__domain__visits__Outcome"
+            "$ref": "#/components/schemas/Outcome"
           },
           "note": {
             "type": "string",
@@ -17590,25 +17599,6 @@
         ],
         "title": "WomenSafety",
         "description": "Features that make a PG safer for women, ticked where the agent saw them."
-      },
-      "app__modules__booking__domain__disputes__Outcome": {
-        "type": "string",
-        "enum": [
-          "refund",
-          "uphold"
-        ],
-        "title": "Outcome",
-        "description": "What ops decide."
-      },
-      "app__modules__visits__domain__visits__Outcome": {
-        "type": "string",
-        "enum": [
-          "interested",
-          "not_interested",
-          "student_no_show"
-        ],
-        "title": "Outcome",
-        "description": "How the visit went, as the agent records it."
       }
     }
   }
