@@ -60,6 +60,9 @@ class Visit(Model):
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     cancelled_by: Mapped[str | None] = mapped_column(Text)
     cancel_reason: Mapped[str] = mapped_column(Text, server_default="")
+    # The booking the student made on the spot from this visit, the latest if more than one: the
+    # visit log's link to it (step 5.9).
+    booking_code: Mapped[str | None] = mapped_column(Text)
 
     __table_args__ = (
         CheckConstraint(_one_of("status", StudentVisitStatus), name="status"),

@@ -13,6 +13,7 @@ from app.modules.visits.domain.visits import (
     can_move,
     may_check_in,
     next_statuses,
+    on_spot_problem,
     reminders,
     schedule_problems,
     start_problems,
@@ -121,3 +122,48 @@ def test_the_texts_blanks_are_the_ones_filled_in() -> None:
         # A cancelled visit's text has no need of the address.
         "visit_cancelled": {"brand", "pg", "when"},
     }
+
+
+# The agent checked in at 10:50 am in India on 16 July.
+CHECKED_IN = datetime(2027, 7, 16, 10, 50, tzinfo=INDIA)
+
+
+@pytest.mark.parametrize(
+    "now",
+    [CHECKED_IN, datetime(2027, 7, 16, 23, 59, tzinfo=INDIA)],
+)
+def test_a_student_reserves_on_the_spot_until_the_visits_day_ends_in_india(now: datetime) -> None:
+    assert (
+        on_spot_problem(
+            StudentVisitStatus.SCHEDULED, checked_in_at=CHECKED_IN, outcome=None, now=now
+        )
+        is None
+    )
+    # An outcome recorded meanwhile doesn't stop them.
+    assert (
+        on_spot_problem(
+            StudentVisitStatus.COMPLETED,
+            checked_in_at=CHECKED_IN,
+            outcome=Outcome.INTERESTED,
+            now=now,
+        )
+        is None
+    )
+
+
+def test_on_the_spot_needs_the_agents_check_in_the_student_and_the_day() -> None:
+    later = datetime(2027, 7, 17, 0, 0, tzinfo=INDIA)
+    assert on_spot_problem(
+        StudentVisitStatus.SCHEDULED, checked_in_at=None, outcome=None, now=CHECKED_IN
+    ) == ("the agent hasn't checked in at the PG for this visit yet")
+    assert on_spot_problem(
+        StudentVisitStatus.SCHEDULED, checked_in_at=CHECKED_IN, outcome=None, now=later
+    ) == ("reserving on the spot is for the day of the visit")
+    for status, outcome in [
+        (StudentVisitStatus.CANCELLED, None),
+        (StudentVisitStatus.NO_SHOW, Outcome.STUDENT_NO_SHOW),
+        (StudentVisitStatus.SCHEDULED, Outcome.STUDENT_NO_SHOW),
+    ]:
+        assert on_spot_problem(
+            status, checked_in_at=CHECKED_IN, outcome=outcome, now=CHECKED_IN
+        ) == ("this visit didn't happen")

@@ -46,3 +46,12 @@ class CheckInTooEarlyError(AppError):
     status = 409
     code = "CHECK_IN_TOO_EARLY"
     title = "It's too early to check in for this visit"
+
+
+class VisitNotOnSiteError(AppError):
+    """A reservation on the spot needs this student's visit to this PG, checked in by the agent,
+    on the visit's day (step 5.9): the detail says which part is missing."""
+
+    status = 409
+    code = "VISIT_NOT_ON_SITE"
+    title = "That visit can't take a reservation now"

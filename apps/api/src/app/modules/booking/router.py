@@ -66,7 +66,9 @@ async def hold_bed(
     quote's price, until the hold expires. Send an Idempotency-Key, the same on every retry: a
     retry gets the first answer back.
 
-    - 409 BOOKING_NEEDS_VISIT while beds are reserved on visits only.
+    - With ``visit``, on the spot: the student's own visit to the PG, checked in by the agent
+      today; 409 VISIT_NOT_ON_SITE otherwise. Without one, 409 BOOKING_NEEDS_VISIT while beds are
+      reserved on visits only.
     - 409 QUOTE_EXPIRED or QUOTE_USED: ask for a new quote.
     - 409 HOLD_LIMIT_REACHED, and 409 BED_UNAVAILABLE when no bed is free for the stay.
     - 404 for a quote that isn't the student's own.
@@ -75,7 +77,9 @@ async def hold_bed(
         raise ForbiddenError
     idempotent = await idempotent_request(request, scope=f"user:{actor.user_id}")
     await enforce(request.app.state.rate_limiter, HOLDS_PER_USER, f"user:{actor.user_id}")
-    outcome = await _service(request, db, clock).hold(actor, body.quote, request=idempotent)
+    outcome = await _service(request, db, clock).hold(
+        actor, body.quote, visit=body.visit, request=idempotent
+    )
     return replay(outcome) if isinstance(outcome, StoredResponse) else outcome
 
 

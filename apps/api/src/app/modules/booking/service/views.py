@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Final
 
 from app.modules.booking.domain.disputes import DisputeReason, DisputeStatus
 from app.modules.booking.domain.state_machine import BookingStatus, Party, check_in_opens_on
+from app.modules.booking.models import Channel
 from app.modules.booking.schemas import BookingPlace as PlaceSchema
 from app.modules.booking.schemas import (
     BookingStudent,
@@ -67,6 +68,7 @@ class BookingViews:
         return StudentBooking(
             code=booking.code,
             status=status,
+            channel=Channel(booking.channel),
             property=PlaceSchema(slug=place.slug, name=place.name, locality=place.locality),
             room_type=bed.category_label,
             move_in=booking.move_in,
@@ -125,6 +127,7 @@ class BookingViews:
         return ManagedBooking(
             code=booking.code,
             status=BookingStatus(booking.status),
+            channel=Channel(booking.channel),
             property=PlaceSchema(slug=place.slug, name=place.name, locality=place.locality),
             room_type=bed.category_label,
             room=bed.room_label,

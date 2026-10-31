@@ -10,7 +10,7 @@ from datetime import datetime, time, timedelta
 from enum import StrEnum
 from typing import TYPE_CHECKING, Final
 
-from app.core.calendar import INDIA
+from app.core.calendar import INDIA, india_date
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -136,3 +136,24 @@ def reminders(scheduled_at: datetime, *, now: datetime) -> list[tuple[str, datet
     return [
         (name, scheduled_at - before) for name, before in REMINDERS if scheduled_at - before > now
     ]
+
+
+def on_spot_problem(
+    status: StudentVisitStatus,
+    *,
+    checked_in_at: datetime | None,
+    outcome: Outcome | None,
+    now: datetime,
+) -> str | None:
+    """Why a student can't reserve a bed on the spot from this visit, or None if they can (step
+    5.9): the agent checked in at the PG for it, the student came, and it's still the visit's
+    day in India. A reservation made then is linked to the visit, its log the introduction."""
+    if status in {StudentVisitStatus.CANCELLED, StudentVisitStatus.NO_SHOW}:
+        return "this visit didn't happen"
+    if outcome is Outcome.STUDENT_NO_SHOW:
+        return "this visit didn't happen"
+    if checked_in_at is None:
+        return "the agent hasn't checked in at the PG for this visit yet"
+    if india_date(now) != india_date(checked_in_at):
+        return "reserving on the spot is for the day of the visit"
+    return None

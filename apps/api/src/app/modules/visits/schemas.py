@@ -50,6 +50,11 @@ class StudentVisit(ApiModel):
     outcome: Outcome | None
     cancelled_at: datetime | None
     cancelled_by: CancelledBy | None
+    # Whether they may reserve a bed there now, on the spot: the agent checked in, and it's
+    # still the visit's day (step 5.9).
+    can_reserve: bool
+    # The booking they made on the spot from it, if any.
+    booking: str | None
 
 
 class StudentVisitList(ApiModel):
@@ -100,6 +105,8 @@ class StaffVisit(ApiModel):
     cancelled_at: datetime | None
     cancelled_by: CancelledBy | None
     cancel_reason: str
+    # The booking the student made on the spot from this visit: the visit log's link to it.
+    booking: str | None
 
 
 class StaffVisitPage(ApiModel):

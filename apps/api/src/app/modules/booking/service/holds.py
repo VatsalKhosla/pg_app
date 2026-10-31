@@ -2,7 +2,8 @@
 
 A hold, as §7.3 has it, all in one transaction:
 
-1. The Idempotency-Key is claimed, so a retry gets the first answer back.
+1. The Idempotency-Key is claimed, so a retry gets the first answer back. A hold on the spot
+   needs the student's visit, checked in by the agent today; a remote one, remote booking on.
 2. The quote must be the student's own and unexpired, for a move-in still to come, at a PG the
    public may see. The booking takes the terms the quote was made under.
 3. The student's holds are locked and counted against the terms' limit.
@@ -53,10 +54,13 @@ from app.modules.inventory.service import BedHolds
 from app.modules.media.service import MediaLookup
 from app.modules.pricing.errors import QuoteExpiredError
 from app.modules.pricing.service import BookingTerms, QuoteLookup
+from app.modules.visits.errors import VisitNotOnSiteError
+from app.modules.visits.service import OnSpotVisit, VisitLookup
 
 if TYPE_CHECKING:
     import uuid
     from collections.abc import Sequence
+    from datetime import datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -91,12 +95,20 @@ class BookingService:
         self._beds = BedHolds(db, clock)
         self._transitions = Transitions(db, clock)
         self._views = BookingViews(db)
+        self._visits = VisitLookup(db)
 
     async def hold(
-        self, actor: Actor, quote_id: uuid.UUID, *, request: idempotency.IdempotentRequest
+        self,
+        actor: Actor,
+        quote_id: uuid.UUID,
+        *,
+        visit: uuid.UUID | None = None,
+        request: idempotency.IdempotentRequest,
     ) -> StudentBooking | idempotency.StoredResponse:
         """A bed of the quote's room type, held for the stay; or, for a retry of the same
-        request, the answer the first one got."""
+        request, the answer the first one got. With ``visit``, on the spot: the student's own
+        visit to that PG, checked in by the agent today, whatever remote booking's flag says;
+        the visit log then links to the booking (step 5.9)."""
         now = self._clock.now()
         remote = await self._flags.is_enabled(Flag.REMOTE_BOOKING_ENABLED)
         verified_only = await self._flags.is_enabled(Flag.VERIFIED_ONLY)
@@ -104,12 +116,12 @@ class BookingService:
             stored = await idempotency.begin(self._db, request, clock=self._clock)
             if stored is not None:
                 return stored
-            if not remote:
-                msg = "Beds are reserved on a visit to the PG for now. Ask to visit it."
-                raise BookingNeedsVisitError(msg)
+            on_spot = await self._on_spot(actor, visit, remote=remote, now=now)
             quote = await self._quotes.usable(quote_id)
             if quote.user_id is None or quote.user_id != actor.user_id:
                 raise NotFoundError
+            if on_spot is not None and on_spot.property_id != quote.property_id:
+                raise VisitNotOnSiteError("That visit was to another PG.")
             if quote.move_in < india_date(now):
                 msg = "The move-in date has passed since this price was given. Ask for a new one."
                 raise QuoteExpiredError(msg)
@@ -149,7 +161,8 @@ class BookingService:
                 owner_id=place.owner_id,
                 quote_id=quote.id,
                 booking_policy_id=quote.booking_policy_id,
-                channel=Channel.REMOTE,
+                channel=Channel.REMOTE if on_spot is None else Channel.ON_SPOT,
+                visit_id=None if on_spot is None else on_spot.id,
                 move_in=quote.move_in,
                 stay_months=quote.stay_months,
                 planned_move_out=stay.end,
@@ -166,6 +179,8 @@ class BookingService:
                 **fields(step.effects),
             )
             await self._add(booking)
+            if on_spot is not None:
+                await self._visits.reserved(on_spot.id, booking.code)
             await self._transitions.carry_out(booking, HOLD, step, by=actor.user_id)
             await self._transitions.log(booking, HOLD, None, step, Party.STUDENT, by=actor.user_id)
             view = await self._view(booking, place)
@@ -173,6 +188,18 @@ class BookingService:
                 self._db, request, idempotency.StoredResponse(201, view.model_dump(mode="json"))
             )
             return view
+
+    async def _on_spot(
+        self, actor: Actor, visit: uuid.UUID | None, *, remote: bool, now: datetime
+    ) -> OnSpotVisit | None:
+        """The visit a hold is made on the spot from; None for a remote hold, which needs
+        remote booking on."""
+        if visit is not None:
+            return await self._visits.on_spot(visit, student_id=actor.user_id, now=now)
+        if not remote:
+            msg = "Beds are reserved on a visit to the PG for now. Ask to visit it."
+            raise BookingNeedsVisitError(msg)
+        return None
 
     async def mine(self, actor: Actor, code: str) -> StudentBooking:
         """The student's own booking by its code; anyone else's is a 404."""

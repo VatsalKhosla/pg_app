@@ -64,6 +64,8 @@ def _student(view: VisitView) -> StudentVisit:
         outcome=None if visit.outcome is None else Outcome(visit.outcome),
         cancelled_at=visit.cancelled_at,
         cancelled_by=None if visit.cancelled_by is None else CancelledBy(visit.cancelled_by),
+        can_reserve=view.can_reserve,
+        booking=visit.booking_code,
     )
 
 
@@ -112,6 +114,7 @@ def _staff(view: VisitView) -> StaffVisit:
         cancelled_at=visit.cancelled_at,
         cancelled_by=None if visit.cancelled_by is None else CancelledBy(visit.cancelled_by),
         cancel_reason=visit.cancel_reason,
+        booking=visit.booking_code,
     )
 
 

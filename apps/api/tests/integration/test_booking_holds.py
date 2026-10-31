@@ -191,6 +191,8 @@ def test_a_student_holds_a_bed_at_their_quotes_price(run: Callable[..., Any]) ->
         # Nothing has been paid yet, so cancelling gives nothing back.
         "cancellation": {"refundPaise": 0, "late": False},
         "status": "held",
+        # From the PG's page, while remote booking is on: not on the spot at a visit.
+        "channel": "remote",
         "property": {
             "slug": quote["place"]["slug"],
             "name": quote["place"]["name"],

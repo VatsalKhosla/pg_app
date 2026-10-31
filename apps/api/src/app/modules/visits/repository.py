@@ -30,6 +30,11 @@ class VisitRepository:
         query = select(Visit).where(Visit.public_id == public_id)
         return await self._db.scalar(query.with_for_update() if lock else query)
 
+    async def set_booking(self, visit_id: int, booking_code: str) -> None:
+        await self._db.execute(
+            update(Visit).where(Visit.id == visit_id).values(booking_code=booking_code)
+        )
+
     async def lock_student(self, student_id: int) -> None:
         """Until the transaction ends, this student's other requests wait: two at once can't
         both pass the limit on open visits."""

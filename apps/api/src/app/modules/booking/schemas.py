@@ -17,6 +17,7 @@ from app.modules.booking.domain.disputes import (
     DisputeStatus,
 )
 from app.modules.booking.domain.state_machine import BookingStatus, Party
+from app.modules.booking.models import Channel
 from app.modules.catalog.domain.listing import GenderPolicy
 from app.modules.catalog.domain.rooms import Occupancy
 
@@ -26,6 +27,9 @@ REASON_MAX_LENGTH: Final = 500
 class HoldRequest(ApiModel):
     # The student's own quote, unexpired: the booking copies its money.
     quote: uuid.UUID
+    # On the spot (step 5.9): the student's own visit to the quote's PG, checked in by the agent
+    # today. Without one, the booking is remote, which needs remote booking on.
+    visit: uuid.UUID | None = None
 
 
 class BookingPlace(ApiModel):
@@ -79,6 +83,8 @@ class StudentBooking(ApiModel):
 
     code: str
     status: BookingStatus
+    # Made on the spot during a visit, or remotely.
+    channel: Channel
     property: BookingPlace
     room_type: str
     move_in: date
@@ -134,6 +140,7 @@ class ManagedBooking(ApiModel):
 
     code: str
     status: BookingStatus
+    channel: Channel
     property: BookingPlace
     room_type: str
     room: str

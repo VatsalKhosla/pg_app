@@ -27,6 +27,7 @@ from app.modules.visits.domain.visits import (
     StudentVisitStatus,
     can_move,
     may_check_in,
+    on_spot_problem,
     reminders,
     schedule_problems,
     start_problems,
@@ -38,6 +39,7 @@ from app.modules.visits.errors import (
     VisitExistsError,
     VisitInvalidError,
     VisitLimitReachedError,
+    VisitNotOnSiteError,
 )
 from app.modules.visits.models import Visit
 from app.modules.visits.repository import VisitRepository
@@ -71,6 +73,44 @@ class VisitView:
     agent: Account | None
     # Where the agent checked in.
     position: Point | None
+    # Whether the student may reserve a bed there now, on the spot (step 5.9).
+    can_reserve: bool
+
+
+@dataclass(frozen=True, slots=True)
+class OnSpotVisit:
+    """A visit a student may reserve a bed from now, as the booking module needs it."""
+
+    id: int
+    property_id: int
+
+
+class VisitLookup:
+    """Visits for the booking module, inside its transaction (step 5.9, ADR 0053): whether a
+    student may reserve on the spot from one, and the booking it led to, for the visit log."""
+
+    def __init__(self, db: AsyncSession) -> None:
+        self._visits = VisitRepository(db)
+
+    async def on_spot(self, public_id: uuid.UUID, *, student_id: int, now: datetime) -> OnSpotVisit:
+        """The student's own visit, if they may reserve from it now: 404 for anyone else's, 409
+        VISIT_NOT_ON_SITE saying why not."""
+        visit = await self._visits.get(public_id, lock=True)
+        if visit is None or visit.student_id != student_id:
+            raise NotFoundError
+        problem = on_spot_problem(
+            StudentVisitStatus(visit.status),
+            checked_in_at=visit.checked_in_at,
+            outcome=None if visit.outcome is None else Outcome(visit.outcome),
+            now=now,
+        )
+        if problem is not None:
+            raise VisitNotOnSiteError(f"{problem[0].upper()}{problem[1:]}.")
+        return OnSpotVisit(id=visit.id, property_id=visit.property_id)
+
+    async def reserved(self, visit_id: int, booking_code: str) -> None:
+        """The visit led to this booking: its log shows it."""
+        await self._visits.set_booking(visit_id, booking_code)
 
 
 def when(moment: datetime) -> str:
@@ -323,6 +363,7 @@ class VisitService:
         positions = await self._visits.positions(
             [visit.id for visit in visits if visit.checked_in_at is not None]
         )
+        now = self._clock.now()
         return [
             VisitView(
                 visit=visit,
@@ -330,6 +371,13 @@ class VisitService:
                 student=people[visit.student_id],
                 agent=None if visit.agent_id is None else people[visit.agent_id],
                 position=positions.get(visit.id),
+                can_reserve=on_spot_problem(
+                    StudentVisitStatus(visit.status),
+                    checked_in_at=visit.checked_in_at,
+                    outcome=None if visit.outcome is None else Outcome(visit.outcome),
+                    now=now,
+                )
+                is None,
             )
             for visit in visits
         ]
