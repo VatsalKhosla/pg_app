@@ -1825,7 +1825,9 @@ export interface paths {
          *     quote's price, until the hold expires. Send an Idempotency-Key, the same on every retry: a
          *     retry gets the first answer back.
          *
-         *     - 409 BOOKING_NEEDS_VISIT while beds are reserved on visits only.
+         *     - With ``visit``, on the spot: the student's own visit to the PG, checked in by the agent
+         *       today; 409 VISIT_NOT_ON_SITE otherwise. Without one, 409 BOOKING_NEEDS_VISIT while beds are
+         *       reserved on visits only.
          *     - 409 QUOTE_EXPIRED or QUOTE_USED: ask for a new quote.
          *     - 409 HOLD_LIMIT_REACHED, and 409 BED_UNAVAILABLE when no bed is free for the stay.
          *     - 404 for a quote that isn't the student's own.
@@ -2946,6 +2948,11 @@ export interface components {
             name: string | null;
         };
         /**
+         * Channel
+         * @enum {string}
+         */
+        Channel: "on_spot" | "remote";
+        /**
          * ChargeKind
          * @enum {string}
          */
@@ -3367,6 +3374,8 @@ export interface components {
              * Format: uuid
              */
             quote: string;
+            /** Visit */
+            visit?: string | null;
         };
         /** InventoryBed */
         InventoryBed: {
@@ -3690,6 +3699,7 @@ export interface components {
             /** Code */
             code: string;
             status: components["schemas"]["BookingStatus"];
+            channel: components["schemas"]["Channel"];
             property: components["schemas"]["BookingPlace"];
             /** Roomtype */
             roomType: string;
@@ -5440,6 +5450,8 @@ export interface components {
             cancelledBy: components["schemas"]["CancelledBy"] | null;
             /** Cancelreason */
             cancelReason: string;
+            /** Booking */
+            booking: string | null;
         };
         /** StaffVisitList */
         StaffVisitList: {
@@ -5509,6 +5521,7 @@ export interface components {
             /** Code */
             code: string;
             status: components["schemas"]["BookingStatus"];
+            channel: components["schemas"]["Channel"];
             property: components["schemas"]["BookingPlace"];
             /** Roomtype */
             roomType: string;
@@ -5613,6 +5626,10 @@ export interface components {
             /** Cancelledat */
             cancelledAt: string | null;
             cancelledBy: components["schemas"]["CancelledBy"] | null;
+            /** Canreserve */
+            canReserve: boolean;
+            /** Booking */
+            booking: string | null;
         };
         /** StudentVisitList */
         StudentVisitList: {

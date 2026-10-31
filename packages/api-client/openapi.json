@@ -6259,7 +6259,7 @@
           "bookings"
         ],
         "summary": "Hold a bed",
-        "description": "With the student's own quote, unexpired, a bed of its room type held for the stay, at the\nquote's price, until the hold expires. Send an Idempotency-Key, the same on every retry: a\nretry gets the first answer back.\n\n- 409 BOOKING_NEEDS_VISIT while beds are reserved on visits only.\n- 409 QUOTE_EXPIRED or QUOTE_USED: ask for a new quote.\n- 409 HOLD_LIMIT_REACHED, and 409 BED_UNAVAILABLE when no bed is free for the stay.\n- 404 for a quote that isn't the student's own.",
+        "description": "With the student's own quote, unexpired, a bed of its room type held for the stay, at the\nquote's price, until the hold expires. Send an Idempotency-Key, the same on every retry: a\nretry gets the first answer back.\n\n- With ``visit``, on the spot: the student's own visit to the PG, checked in by the agent\n  today; 409 VISIT_NOT_ON_SITE otherwise. Without one, 409 BOOKING_NEEDS_VISIT while beds are\n  reserved on visits only.\n- 409 QUOTE_EXPIRED or QUOTE_USED: ask for a new quote.\n- 409 HOLD_LIMIT_REACHED, and 409 BED_UNAVAILABLE when no bed is free for the stay.\n- 404 for a quote that isn't the student's own.",
         "operationId": "bookingsHoldBed",
         "requestBody": {
           "required": true,
@@ -9567,6 +9567,14 @@
         ],
         "title": "Changer"
       },
+      "Channel": {
+        "type": "string",
+        "enum": [
+          "on_spot",
+          "remote"
+        ],
+        "title": "Channel"
+      },
       "ChargeKind": {
         "type": "string",
         "enum": [
@@ -10585,6 +10593,18 @@
             "type": "string",
             "format": "uuid",
             "title": "Quote"
+          },
+          "visit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visit"
           }
         },
         "additionalProperties": false,
@@ -11480,6 +11500,9 @@
           "status": {
             "$ref": "#/components/schemas/BookingStatus"
           },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
           "property": {
             "$ref": "#/components/schemas/BookingPlace"
           },
@@ -11580,6 +11603,7 @@
         "required": [
           "code",
           "status",
+          "channel",
           "property",
           "roomType",
           "room",
@@ -16358,6 +16382,17 @@
           "cancelReason": {
             "type": "string",
             "title": "Cancelreason"
+          },
+          "booking": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking"
           }
         },
         "additionalProperties": false,
@@ -16378,7 +16413,8 @@
           "finishedAt",
           "cancelledAt",
           "cancelledBy",
-          "cancelReason"
+          "cancelReason",
+          "booking"
         ],
         "title": "StaffVisit"
       },
@@ -16556,6 +16592,9 @@
           "status": {
             "$ref": "#/components/schemas/BookingStatus"
           },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
           "property": {
             "$ref": "#/components/schemas/BookingPlace"
           },
@@ -16702,6 +16741,7 @@
         "required": [
           "code",
           "status",
+          "channel",
           "property",
           "roomType",
           "moveIn",
@@ -16867,6 +16907,21 @@
                 "type": "null"
               }
             ]
+          },
+          "canReserve": {
+            "type": "boolean",
+            "title": "Canreserve"
+          },
+          "booking": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking"
           }
         },
         "additionalProperties": false,
@@ -16882,7 +16937,9 @@
           "checkedIn",
           "outcome",
           "cancelledAt",
-          "cancelledBy"
+          "cancelledBy",
+          "canReserve",
+          "booking"
         ],
         "title": "StudentVisit",
         "description": "A visit as the student sees it. The address shows on the PG's page once it's booked."
