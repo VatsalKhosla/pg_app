@@ -426,8 +426,12 @@ Start the slow ones in week 1.
   - **Web:** "I've moved in", asked once more before it's sent, and the window's end with the time left in whole minutes.
   - **Proof:** time-travel tests for check-in at its first second, the window at 24 h less a second and at exactly 24 h, a second job run, and the nudge; component tests for every status and the countdown.
 
-- [ ] **5.7 Disputes.** "Room not as shown" form with photos inside the window; ops queue; resolve refund (release + rebooking help with similar PGs) or uphold; audited.
+- [x] **5.7 Disputes.** "Room not as shown" form with photos inside the window; ops queue; resolve refund (release + rebooking help with similar PGs) or uphold; audited.
   *Done when* both resolutions update booking, allocation and notifications correctly.
+  *Note (2026-10-31):*
+  - **API:** `POST /v1/bookings/{code}/disputes` takes a reason, the student's words and up to six of their own private dispute photos. The state machine allows it only before the window's exact end. Students may upload dispute photos only, 20 tries an hour. Ops' queue, view (photos behind links signed for five minutes) and resolve go through `resolve_refund` (bed released) or `resolve_uphold` (stay goes ahead), texting both sides with notes audited. A refunded, rejected or timed-out booking carries a `rebook` search for PGs like it (ADR 0051).
+  - **Web:** the report form on the booking page with private photo uploads, the report's status, "PGs like this one", and ops' `/ops/disputes` queue and detail with a confirm step before settling.
+  - **Proof:** API tests for both outcomes (booking, bed, texts, history, audit), the window's exact end, photo ownership, upload limits and the queue's order; component tests for both forms.
 
 - [ ] **5.8 Booking jobs.** expire_holds, confirm_timeouts, check_windows, no_shows (§7.5) — idempotent, observable, with metrics.
   *Done when* running each job twice in a row changes nothing the second time (tested).
