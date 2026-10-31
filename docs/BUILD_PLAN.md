@@ -412,8 +412,12 @@ Start the slow ones in week 1.
   - **Texts** go to the owner and the student for each change, and the address only once confirmed. The student's data export now holds their bookings.
   - **Proof:** all three paths run end to end with their texts, history and stamps, and the deadline is tested at its exact second.
 
-- [ ] **5.5 Student booking pages.** Booking timeline from `booking_events`; what to pay at move-in and to whom; deposit and charges; exact address after confirmation; cancel with the exact policy text and the refund amount shown before confirming; support contact.
+- [x] **5.5 Student booking pages.** Booking timeline from `booking_events`; what to pay at move-in and to whom; deposit and charges; exact address after confirmation; cancel with the exact policy text and the refund amount shown before confirming; support contact.
   *Done when* the UI shows the right actions for every state (component tests per state).
+  *Note (2026-10-31):*
+  - **API:** a student's booking now carries its history, the owner's deadline, and what cancelling now gives back, worked out by a pure rule that asks the state machine which kind applies. `GET /v1/bookings` lists them. Cancelling sends the refund the student was shown, and answers `REFUND_CHANGED` if that's no longer right. A confirmed booking unlocks the PG's contact (ADR 0049).
+  - **Web:** `/bookings` and `/bookings/[code]` show what happens next, the money and who it's paid to, where to go once confirmed, the history, help with the booking's code, and cancelling with the refund shown first.
+  - **Proof:** component tests for all 12 statuses (axe included) and the cancel flow; API tests for the history, the contact, free and late cancelling at India's day, and a changed refund.
 
 - [ ] **5.6 Check-in and the 24-hour window.** "I've moved in" (or ops-marked with student confirmation), a real countdown for the window, job → ACTIVE at the end.
   *Done when* time-travel tests cover check-in, window expiry and the edge at exactly 24 h.
