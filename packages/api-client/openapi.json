@@ -6420,6 +6420,59 @@
         }
       }
     },
+    "/v1/bookings/{code}/check-in": {
+      "post": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Say you've moved in",
+        "description": "On a confirmed booking, from the day before the move-in: the student's 24 hours to tell us\nif the room isn't as shown start now, and the owner hears. 409 INVALID_TRANSITION otherwise.",
+        "operationId": "bookingsCheckIn",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentBooking"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/bookings/{code}": {
       "get": {
         "tags": [
@@ -6781,6 +6834,59 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ManagedBooking"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/bookings/{code}/move-in-reminder": {
+      "post": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Ask a student to say they've moved in",
+        "description": "When ops hear a student has moved in but they haven't said so: the student gets a text\nasking them to, one a day at most. The booking doesn't change, as the check window starts on\nthe student's own word. 409 INVALID_TRANSITION unless they may check in now.",
+        "operationId": "bookingsOpsMoveInReminder",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoveInReminder"
                 }
               }
             }
@@ -11043,6 +11149,30 @@
             ],
             "title": "Confirmby"
           },
+          "checkedInAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkedinat"
+          },
+          "checkWindowEndsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkwindowendsat"
+          },
           "student": {
             "$ref": "#/components/schemas/BookingStudent"
           },
@@ -11070,6 +11200,8 @@
           "depositPaise",
           "holdExpiresAt",
           "confirmBy",
+          "checkedInAt",
+          "checkWindowEndsAt",
           "student",
           "createdAt"
         ],
@@ -11721,6 +11853,21 @@
           "amountPaise"
         ],
         "title": "MonthlyCharge"
+      },
+      "MoveInReminder": {
+        "properties": {
+          "sent": {
+            "type": "boolean",
+            "title": "Sent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sent"
+        ],
+        "title": "MoveInReminder",
+        "description": "Ops' nudge to a student who has moved in to say so (step 5.6)."
       },
       "MyGrievance": {
         "properties": {
@@ -15802,6 +15949,38 @@
             ],
             "title": "Confirmby"
           },
+          "checkInOpensOn": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkinopenson"
+          },
+          "canCheckIn": {
+            "type": "boolean",
+            "title": "Cancheckin"
+          },
+          "checkWindowHours": {
+            "type": "integer",
+            "title": "Checkwindowhours"
+          },
+          "checkWindowEndsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkwindowendsat"
+          },
           "monthlyRentPaise": {
             "type": "integer",
             "title": "Monthlyrentpaise"
@@ -15861,6 +16040,10 @@
           "plannedMoveOut",
           "holdExpiresAt",
           "confirmBy",
+          "checkInOpensOn",
+          "canCheckIn",
+          "checkWindowHours",
+          "checkWindowEndsAt",
           "monthlyRentPaise",
           "tokenPaise",
           "dueAtMoveInPaise",

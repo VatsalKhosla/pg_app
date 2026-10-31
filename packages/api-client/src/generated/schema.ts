@@ -1859,6 +1859,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bookings/{code}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Say you've moved in
+         * @description On a confirmed booking, from the day before the move-in: the student's 24 hours to tell us
+         *     if the room isn't as shown start now, and the owner hears. 409 INVALID_TRANSITION otherwise.
+         */
+        post: operations["bookingsCheckIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bookings/{code}": {
         parameters: {
             query?: never;
@@ -1986,6 +2007,28 @@ export interface paths {
          * @description As the owner's rejection; audited as the ops member's, with the reason.
          */
         post: operations["bookingsOpsReject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/bookings/{code}/move-in-reminder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a student to say they've moved in
+         * @description When ops hear a student has moved in but they haven't said so: the student gets a text
+         *     asking them to, one a day at most. The booking doesn't change, as the check window starts on
+         *     the student's own word. 409 INVALID_TRANSITION unless they may check in now.
+         */
+        post: operations["bookingsOpsMoveInReminder"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3542,6 +3585,10 @@ export interface components {
             holdExpiresAt: string;
             /** Confirmby */
             confirmBy: string | null;
+            /** Checkedinat */
+            checkedInAt: string | null;
+            /** Checkwindowendsat */
+            checkWindowEndsAt: string | null;
             student: components["schemas"]["BookingStudent"];
             /**
              * Createdat
@@ -3764,6 +3811,14 @@ export interface components {
             label: string;
             /** Amountpaise */
             amountPaise: number;
+        };
+        /**
+         * MoveInReminder
+         * @description Ops' nudge to a student who has moved in to say so (step 5.6).
+         */
+        MoveInReminder: {
+            /** Sent */
+            sent: boolean;
         };
         /** MyGrievance */
         MyGrievance: {
@@ -5245,6 +5300,14 @@ export interface components {
             holdExpiresAt: string;
             /** Confirmby */
             confirmBy: string | null;
+            /** Checkinopenson */
+            checkInOpensOn: string | null;
+            /** Cancheckin */
+            canCheckIn: boolean;
+            /** Checkwindowhours */
+            checkWindowHours: number;
+            /** Checkwindowendsat */
+            checkWindowEndsAt: string | null;
             /** Monthlyrentpaise */
             monthlyRentPaise: number;
             /** Tokenpaise */
@@ -9835,6 +9898,46 @@ export interface operations {
             };
         };
     };
+    bookingsCheckIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBooking"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     bookingsMyBooking: {
         parameters: {
             query?: never;
@@ -10101,6 +10204,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ManagedBooking"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookingsOpsMoveInReminder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveInReminder"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */
