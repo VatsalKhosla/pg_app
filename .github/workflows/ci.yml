@@ -235,7 +235,7 @@ jobs:
       # a minute and a half for an API asleep on the free plan (ADR 0055).
       API_PROXY_TARGET: https://fys-staging-api.onrender.com
       NEXT_PUBLIC_APP_ENV: staging
-      NEXT_PUBLIC_SITE_URL: https://fys-staging-web.onrender.com
+      NEXT_PUBLIC_SITE_URL: https://fixyourstay.in
       NEXT_PUBLIC_API_URL: https://fys-staging-api.onrender.com
       NEXT_PUBLIC_API_SAME_ORIGIN: "true"
       NEXT_PUBLIC_API_WAIT_MS: "90000"
@@ -287,4 +287,4 @@ jobs:
           # The API first: it brings the database up to date as it starts.
           deploy "$API_HOOK" "$pg_app_api_DIGEST"
           deploy "$WEB_HOOK" "$pg_app_web_DIGEST"
-          echo "::notice title=Staging::Deploying ${GITHUB_SHA::7} to https://fys-staging-web.onrender.com"
+          echo "::notice title=Staging::Deploying ${GITHUB_SHA::7} to https://fixyourstay.in"

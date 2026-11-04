@@ -41,10 +41,10 @@ Start the slow ones in week 1.
 - Staging on free plans for now (ADR 0047), following `docs/runbooks/staging.md`:
   - [x] make the media bucket public-read in Neon's console;
   - [ ] regenerate Neon's storage keys, which were pasted into a chat, and put the new ones only into Render;
-  - [ ] change the uploads bucket's CORS rule in Neon's console to the site's address;
+  - [ ] change the uploads bucket's CORS rule in Neon's console to `https://fixyourstay.in`;
   - [x] apply the Render blueprint, and save the deploy hooks as GitHub secrets;
   - [x] point fixyourstay.in at Render in GoDaddy, and turn GitHub Pages off;
-  - [ ] attach fixyourstay.in in Render: delete the old `staging.` custom domains, then add it on the web service (ADR 0055).
+  - [x] attach fixyourstay.in in Render: delete the old custom domains, then add it on the web service (ADR 0055).
 - [ ] GitHub repository settings (docs/ci.md): the branch ruleset for `main` with the required checks, secret scanning with push protection, Dependabot alerts, and the free Renovate GitHub App for dependency updates.
 - [ ] Lawyer: Terms, Privacy notice (DPDP), Refund & Cancellation policy, owner agreement (30% fee, 90-day introduction clause, token set-off), E-Commerce Rules seller-disclosure question (hiding owner contacts), grievance officer. The drafts are in `apps/web/src/content/legal`, with the open questions in brackets.
 - [ ] The facts the trust pages state (`apps/web/src/config/company.ts`): the registered name and office address, the phone line a person answers and its hours, the help email, the founders' names, roles and photos, and the grievance officer's name, designation and contact details. A production build waits for them (ADR 0034).

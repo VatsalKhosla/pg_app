@@ -5,7 +5,7 @@
 # API_URL default to staging's own.
 set -euo pipefail
 
-site="${SITE_URL:-https://fys-staging-web.onrender.com}"
+site="${SITE_URL:-https://fixyourstay.in}"
 api="${API_URL:-https://fys-staging-api.onrender.com}"
 failed=0
 answer=""

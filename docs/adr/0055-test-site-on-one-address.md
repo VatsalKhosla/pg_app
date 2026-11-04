@@ -28,11 +28,11 @@
    - **What limits it:** staff roles never come with a phone sign-in (an existing test), so the ops console stays out of reach. Turnstile and every rate limit still apply. The site holds fictional PGs under a banner saying so.
    - **Production refuses it:** the API won't start with `OTP_SENDER=screen` when `APP_ENV=production` (tested).
 4. **Custom domains leave `render.yaml`** and are added in Render's dashboard, so a domain the plan doesn't include can't fail a sync and hold back its settings. `fixyourstay.in` goes on the web service only; there's no `api.` domain to pay for.
-5. **The smoke check** uses Render's own addresses, which work whatever the DNS says, and also asks for the API through the site.
+5. **The smoke check** also asks for the API through the site.
 
 ## Consequences
 
 - **Tested:** the whole browser suite passed in this mode on a local production build, sign-in included. CI's browser tests run the direct mode, and the smoke check covers the rewrite on the live site every three hours.
 - **Browser calls on staging take one more hop.** That's fine for a test site, and production doesn't have it.
-- **Attaching `fixyourstay.in`** takes the founders' steps in the staging runbook, then one commit here: the site's address and the cookie domain name the new address. `SESSION_COOKIE_DOMAIN` names the site's own host for now, because Render keeps a value a Blueprint stops listing.
+- **Attaching `fixyourstay.in`** took the founders' steps in the staging runbook, on 2026-11-05, then one commit here: the site's address and the cookie domain name the new address. `SESSION_COOKIE_DOMAIN` has to name a host, because Render keeps a value a Blueprint stops listing, and its docs don't say whether it accepts an empty one. So Render's own address still opens the pages, but sign-in works only at the domain. The smoke check now asks for the site at the domain, so a broken record or certificate shows up there.
 - **Before anything real goes on this site,** whether real listings or real people's numbers, `OTP_SENDER=screen` has to go, along with the rest of what ADR 0047 calls a test copy. A real launch needs the SMS provider the founders choose, and production's settings already insist on that.
