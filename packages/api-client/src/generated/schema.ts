@@ -1981,6 +1981,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ops/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The bookings board
+         * @description Bookings still moving come oldest first, as a queue; the others newest first.
+         */
+        get: operations["bookingsOpsBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/bookings/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The board's counts
+         * @description Every status, and what needs a person now: owners past their two hours, open disputes,
+         *     and move-ins due.
+         */
+        get: operations["bookingsOpsBookingsSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ops/bookings/{code}": {
         parameters: {
             query?: never;
@@ -1988,7 +2029,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A booking */
+        /**
+         * A booking, to run it
+         * @description Whom to call, the money, what it's waiting for, what ops may do now, and everything that
+         *     happened, with who did it and why.
+         */
         get: operations["bookingsOpsBooking"];
         put?: never;
         post?: never;
@@ -2009,7 +2054,7 @@ export interface paths {
         put?: never;
         /**
          * Confirm a booking for its owner
-         * @description As the owner's confirmation; audited as the ops member's.
+         * @description As the owner's confirmation, saying why ops gave it; audited as the ops member's.
          */
         post: operations["bookingsOpsConfirm"];
         delete?: never;
@@ -2032,6 +2077,49 @@ export interface paths {
          * @description As the owner's rejection; audited as the ops member's, with the reason.
          */
         post: operations["bookingsOpsReject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/bookings/{code}/owner-cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a booking for its owner
+         * @description With the token in, or once confirmed: the owner can't take it after all. The bed is freed,
+         *     the token refunded in full, and the student told and shown PGs like it. It counts against the
+         *     owner on the board. 409 INVALID_TRANSITION otherwise.
+         */
+        post: operations["bookingsOpsOwnerCancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/bookings/{code}/move-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record that a student has moved out
+         * @description The booking is over, and the bed free from that day, which must be after the move-in and
+         *     not still to come. 409 INVALID_TRANSITION otherwise.
+         */
+        post: operations["bookingsOpsMoveOut"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2664,6 +2752,65 @@ export interface components {
              * @default
              */
             note: string;
+        };
+        /**
+         * BoardTimerView
+         * @description What a booking is waiting for: an owner's answer, a dispute's settling or a move-in.
+         */
+        BoardTimerView: {
+            kind: components["schemas"]["TimerKind"];
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /**
+             * Due
+             * Format: date-time
+             */
+            due: string;
+            /** Late */
+            late: boolean;
+        };
+        /**
+         * BookingContact
+         * @description Whom ops call.
+         */
+        BookingContact: {
+            /** Name */
+            name: string | null;
+            /** Phone */
+            phone: string;
+        };
+        /** BookingDisputeRef */
+        BookingDisputeRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            status: components["schemas"]["DisputeStatus"];
+            reason: components["schemas"]["DisputeReason"];
+        };
+        /**
+         * BookingHistoryEntry
+         * @description One change to the booking, as ops read it: who, and the reason they gave.
+         */
+        BookingHistoryEntry: {
+            /** Event */
+            event: string;
+            fromStatus: components["schemas"]["BookingStatus"] | null;
+            toStatus: components["schemas"]["BookingStatus"];
+            by: components["schemas"]["Party"];
+            /** Byname */
+            byName: string | null;
+            /** Note */
+            note: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
         };
         /** BookingPlace */
         BookingPlace: {
@@ -3969,6 +4116,16 @@ export interface components {
             /** Sent */
             sent: boolean;
         };
+        /** MoveOutRequest */
+        MoveOutRequest: {
+            /** Reason */
+            reason: string;
+            /**
+             * Movedouton
+             * Format: date
+             */
+            movedOutOn: string;
+        };
         /** MyGrievance */
         MyGrievance: {
             /** Ticketnumber */
@@ -4051,6 +4208,147 @@ export interface components {
             label: string;
             /** Amountpaise */
             amountPaise: number;
+        };
+        /**
+         * OpsAction
+         * @description What ops may do with a booking now, each as the state machine allows it.
+         * @enum {string}
+         */
+        OpsAction: "confirm" | "reject" | "owner_cancel" | "remind_move_in" | "move_out";
+        /**
+         * OpsBooking
+         * @description A booking as ops run it, from one page (step 5.10, ADR 0054): whom to call, the money, what
+         *     it's waiting for, what may be done now, and everything that happened, with reasons.
+         */
+        OpsBooking: {
+            /** Code */
+            code: string;
+            status: components["schemas"]["BookingStatus"];
+            channel: components["schemas"]["Channel"];
+            property: components["schemas"]["BookingPlace"];
+            /** Roomtype */
+            roomType: string;
+            /** Room */
+            room: string;
+            /** Bed */
+            bed: string;
+            /**
+             * Movein
+             * Format: date
+             */
+            moveIn: string;
+            /** Staymonths */
+            stayMonths: number;
+            /**
+             * Plannedmoveout
+             * Format: date
+             */
+            plannedMoveOut: string;
+            /** Monthlyrentpaise */
+            monthlyRentPaise: number;
+            /** Tokenpaise */
+            tokenPaise: number;
+            /** Dueatmoveinpaise */
+            dueAtMoveInPaise: number;
+            /** Depositpaise */
+            depositPaise: number;
+            /**
+             * Holdexpiresat
+             * Format: date-time
+             */
+            holdExpiresAt: string;
+            /** Confirmby */
+            confirmBy: string | null;
+            /** Checkedinat */
+            checkedInAt: string | null;
+            /** Checkwindowendsat */
+            checkWindowEndsAt: string | null;
+            student: components["schemas"]["BookingStudent"];
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            studentContact: components["schemas"]["BookingContact"];
+            ownerContact: components["schemas"]["BookingContact"];
+            /** Ownercancellations */
+            ownerCancellations: number;
+            /** Monthlychargespaise */
+            monthlyChargesPaise: number;
+            /** Onetimechargespaise */
+            oneTimeChargesPaise: number;
+            /** Feepaise */
+            feePaise: number;
+            /** Gstpaise */
+            gstPaise: number;
+            /** Ownerfeetotalpaise */
+            ownerFeeTotalPaise: number;
+            /** Movedouton */
+            movedOutOn: string | null;
+            /** Cancelledat */
+            cancelledAt: string | null;
+            /** Cancellationkind */
+            cancellationKind: string | null;
+            timer: components["schemas"]["BoardTimerView"] | null;
+            /** Attention */
+            attention: boolean;
+            /** Actions */
+            actions: components["schemas"]["OpsAction"][];
+            dispute: components["schemas"]["BookingDisputeRef"] | null;
+            /** Visit */
+            visit: string | null;
+            /** History */
+            history: components["schemas"]["BookingHistoryEntry"][];
+        };
+        /**
+         * OpsBookingItem
+         * @description A booking on the board.
+         */
+        OpsBookingItem: {
+            /** Code */
+            code: string;
+            status: components["schemas"]["BookingStatus"];
+            channel: components["schemas"]["Channel"];
+            property: components["schemas"]["BookingPlace"];
+            /** Roomtype */
+            roomType: string;
+            /**
+             * Movein
+             * Format: date
+             */
+            moveIn: string;
+            student: components["schemas"]["BookingStudent"];
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            timer: components["schemas"]["BoardTimerView"] | null;
+            /** Attention */
+            attention: boolean;
+        };
+        /** OpsBookingPage */
+        OpsBookingPage: {
+            /** Items */
+            items: components["schemas"]["OpsBookingItem"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /**
+         * OpsBookingSummary
+         * @description The board's counts: every status, and what needs a person now.
+         */
+        OpsBookingSummary: {
+            /** Statuses */
+            statuses: components["schemas"]["StatusCount"][];
+            /** Attention */
+            attention: number;
+            /** Unconfirmedlate */
+            unconfirmedLate: number;
+            /** Disputesopen */
+            disputesOpen: number;
+            /** Moveinsdue */
+            moveInsDue: number;
         };
         /**
          * OpsDispute
@@ -4834,6 +5132,11 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** ReasonRequest */
+        ReasonRequest: {
+            /** Reason */
+            reason: string;
+        };
         /**
          * RebookSearch
          * @description A search for PGs like this one with a bed free for the student's move-in, once a booking
@@ -4848,11 +5151,6 @@ export interface components {
             moveInMonth: string;
             /** Budgetmaxpaise */
             budgetMaxPaise: number;
-        };
-        /** RejectRequest */
-        RejectRequest: {
-            /** Reason */
-            reason: string;
         };
         /** Rendition */
         Rendition: {
@@ -5504,6 +5802,12 @@ export interface components {
         StatusChange: {
             status: components["schemas"]["PropertyStatus"];
         };
+        /** StatusCount */
+        StatusCount: {
+            status: components["schemas"]["BookingStatus"];
+            /** Count */
+            count: number;
+        };
         /** StayRuleTier */
         StayRuleTier: {
             /** Minmonths */
@@ -5674,6 +5978,11 @@ export interface components {
              */
             at: string;
         };
+        /**
+         * TimerKind
+         * @enum {string}
+         */
+        TimerKind: "unconfirmed" | "dispute" | "move_in";
         /**
          * UploadForm
          * @description Post the file here as multipart/form-data: every field, then the file as ``file``.
@@ -10380,7 +10689,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RejectRequest"];
+                "application/json": components["schemas"]["ReasonRequest"];
             };
         };
         responses: {
@@ -10391,6 +10700,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ManagedBooking"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookingsOpsBookings: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["BookingStatus"] | null;
+                channel?: components["schemas"]["Channel"] | null;
+                /** @description Only those needing a person now: see the summary. */
+                attention?: boolean;
+                /** @description A booking's code, a student's phone, or part of a PG's name. */
+                q?: string | null;
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsBookingPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookingsOpsBookingsSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsBookingSummary"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */
@@ -10430,7 +10825,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ManagedBooking"];
+                    "application/json": components["schemas"]["OpsBooking"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */
@@ -10462,7 +10857,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -10504,7 +10903,95 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RejectRequest"];
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedBooking"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookingsOpsOwnerCancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedBooking"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    bookingsOpsMoveOut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveOutRequest"];
             };
         };
         responses: {

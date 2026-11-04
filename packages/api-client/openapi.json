@@ -6717,7 +6717,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RejectRequest"
+                "$ref": "#/components/schemas/ReasonRequest"
               }
             }
           }
@@ -6756,12 +6756,194 @@
         }
       }
     },
+    "/v1/ops/bookings": {
+      "get": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "The bookings board",
+        "description": "Bookings still moving come oldest first, as a queue; the others newest first.",
+        "operationId": "bookingsOpsBookings",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BookingStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Channel"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channel"
+            }
+          },
+          {
+            "name": "attention",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only those needing a person now: see the summary.",
+              "default": false,
+              "title": "Attention"
+            },
+            "description": "Only those needing a person now: see the summary."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A booking's code, a student's phone, or part of a PG's name.",
+              "title": "Q"
+            },
+            "description": "A booking's code, a student's phone, or part of a PG's name."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsBookingPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/bookings/summary": {
+      "get": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "The board's counts",
+        "description": "Every status, and what needs a person now: owners past their two hours, open disputes,\nand move-ins due.",
+        "operationId": "bookingsOpsBookingsSummary",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsBookingSummary"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/ops/bookings/{code}": {
       "get": {
         "tags": [
           "bookings"
         ],
-        "summary": "A booking",
+        "summary": "A booking, to run it",
+        "description": "Whom to call, the money, what it's waiting for, what ops may do now, and everything that\nhappened, with who did it and why.",
         "operationId": "bookingsOpsBooking",
         "parameters": [
           {
@@ -6780,7 +6962,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ManagedBooking"
+                  "$ref": "#/components/schemas/OpsBooking"
                 }
               }
             }
@@ -6814,7 +6996,7 @@
           "bookings"
         ],
         "summary": "Confirm a booking for its owner",
-        "description": "As the owner's confirmation; audited as the ops member's.",
+        "description": "As the owner's confirmation, saying why ops gave it; audited as the ops member's.",
         "operationId": "bookingsOpsConfirm",
         "parameters": [
           {
@@ -6827,6 +7009,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -6885,7 +7077,133 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RejectRequest"
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedBooking"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/bookings/{code}/owner-cancel": {
+      "post": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Cancel a booking for its owner",
+        "description": "With the token in, or once confirmed: the owner can't take it after all. The bed is freed,\nthe token refunded in full, and the student told and shown PGs like it. It counts against the\nowner on the board. 409 INVALID_TRANSITION otherwise.",
+        "operationId": "bookingsOpsOwnerCancel",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedBooking"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/bookings/{code}/move-out": {
+      "post": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Record that a student has moved out",
+        "description": "The booking is over, and the bed free from that day, which must be after the move-in and\nnot still to come. 409 INVALID_TRANSITION otherwise.",
+        "operationId": "bookingsOpsMoveOut",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveOutRequest"
               }
             }
           }
@@ -8686,6 +9004,151 @@
         ],
         "title": "BlockInput",
         "description": "A bed held for an offline tenant or maintenance from ``start``, until ``end`` (the bed\nis free that day) or, without one, until further notice."
+      },
+      "BoardTimerView": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/TimerKind"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
+          },
+          "due": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Due"
+          },
+          "late": {
+            "type": "boolean",
+            "title": "Late"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "since",
+          "due",
+          "late"
+        ],
+        "title": "BoardTimerView",
+        "description": "What a booking is waiting for: an owner's answer, a dispute's settling or a move-in."
+      },
+      "BookingContact": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "phone"
+        ],
+        "title": "BookingContact",
+        "description": "Whom ops call."
+      },
+      "BookingDisputeRef": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DisputeStatus"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/DisputeReason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "reason"
+        ],
+        "title": "BookingDisputeRef"
+      },
+      "BookingHistoryEntry": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "title": "Event"
+          },
+          "fromStatus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BookingStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "toStatus": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "by": {
+            "$ref": "#/components/schemas/Party"
+          },
+          "byName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Byname"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event",
+          "fromStatus",
+          "toStatus",
+          "by",
+          "byName",
+          "note",
+          "at"
+        ],
+        "title": "BookingHistoryEntry",
+        "description": "One change to the booking, as ops read it: who, and the reason they gave."
       },
       "BookingPlace": {
         "properties": {
@@ -12286,6 +12749,28 @@
         "title": "MoveInReminder",
         "description": "Ops' nudge to a student who has moved in to say so (step 5.6)."
       },
+      "MoveOutRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "movedOutOn": {
+            "type": "string",
+            "format": "date",
+            "title": "Movedouton"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason",
+          "movedOutOn"
+        ],
+        "title": "MoveOutRequest"
+      },
       "MyGrievance": {
         "properties": {
           "ticketNumber": {
@@ -12496,6 +12981,416 @@
           "amountPaise"
         ],
         "title": "OneTimeCharge"
+      },
+      "OpsAction": {
+        "type": "string",
+        "enum": [
+          "confirm",
+          "reject",
+          "owner_cancel",
+          "remind_move_in",
+          "move_out"
+        ],
+        "title": "OpsAction",
+        "description": "What ops may do with a booking now, each as the state machine allows it."
+      },
+      "OpsBooking": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "property": {
+            "$ref": "#/components/schemas/BookingPlace"
+          },
+          "roomType": {
+            "type": "string",
+            "title": "Roomtype"
+          },
+          "room": {
+            "type": "string",
+            "title": "Room"
+          },
+          "bed": {
+            "type": "string",
+            "title": "Bed"
+          },
+          "moveIn": {
+            "type": "string",
+            "format": "date",
+            "title": "Movein"
+          },
+          "stayMonths": {
+            "type": "integer",
+            "title": "Staymonths"
+          },
+          "plannedMoveOut": {
+            "type": "string",
+            "format": "date",
+            "title": "Plannedmoveout"
+          },
+          "monthlyRentPaise": {
+            "type": "integer",
+            "title": "Monthlyrentpaise"
+          },
+          "tokenPaise": {
+            "type": "integer",
+            "title": "Tokenpaise"
+          },
+          "dueAtMoveInPaise": {
+            "type": "integer",
+            "title": "Dueatmoveinpaise"
+          },
+          "depositPaise": {
+            "type": "integer",
+            "title": "Depositpaise"
+          },
+          "holdExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Holdexpiresat"
+          },
+          "confirmBy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmby"
+          },
+          "checkedInAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkedinat"
+          },
+          "checkWindowEndsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkwindowendsat"
+          },
+          "student": {
+            "$ref": "#/components/schemas/BookingStudent"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "studentContact": {
+            "$ref": "#/components/schemas/BookingContact"
+          },
+          "ownerContact": {
+            "$ref": "#/components/schemas/BookingContact"
+          },
+          "ownerCancellations": {
+            "type": "integer",
+            "title": "Ownercancellations"
+          },
+          "monthlyChargesPaise": {
+            "type": "integer",
+            "title": "Monthlychargespaise"
+          },
+          "oneTimeChargesPaise": {
+            "type": "integer",
+            "title": "Onetimechargespaise"
+          },
+          "feePaise": {
+            "type": "integer",
+            "title": "Feepaise"
+          },
+          "gstPaise": {
+            "type": "integer",
+            "title": "Gstpaise"
+          },
+          "ownerFeeTotalPaise": {
+            "type": "integer",
+            "title": "Ownerfeetotalpaise"
+          },
+          "movedOutOn": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Movedouton"
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelledat"
+          },
+          "cancellationKind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancellationkind"
+          },
+          "timer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BoardTimerView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attention": {
+            "type": "boolean",
+            "title": "Attention"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/OpsAction"
+            },
+            "type": "array",
+            "title": "Actions"
+          },
+          "dispute": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BookingDisputeRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visit"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/BookingHistoryEntry"
+            },
+            "type": "array",
+            "title": "History"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "status",
+          "channel",
+          "property",
+          "roomType",
+          "room",
+          "bed",
+          "moveIn",
+          "stayMonths",
+          "plannedMoveOut",
+          "monthlyRentPaise",
+          "tokenPaise",
+          "dueAtMoveInPaise",
+          "depositPaise",
+          "holdExpiresAt",
+          "confirmBy",
+          "checkedInAt",
+          "checkWindowEndsAt",
+          "student",
+          "createdAt",
+          "studentContact",
+          "ownerContact",
+          "ownerCancellations",
+          "monthlyChargesPaise",
+          "oneTimeChargesPaise",
+          "feePaise",
+          "gstPaise",
+          "ownerFeeTotalPaise",
+          "movedOutOn",
+          "cancelledAt",
+          "cancellationKind",
+          "timer",
+          "attention",
+          "actions",
+          "dispute",
+          "visit",
+          "history"
+        ],
+        "title": "OpsBooking",
+        "description": "A booking as ops run it, from one page (step 5.10, ADR 0054): whom to call, the money, what\nit's waiting for, what may be done now, and everything that happened, with reasons."
+      },
+      "OpsBookingItem": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "property": {
+            "$ref": "#/components/schemas/BookingPlace"
+          },
+          "roomType": {
+            "type": "string",
+            "title": "Roomtype"
+          },
+          "moveIn": {
+            "type": "string",
+            "format": "date",
+            "title": "Movein"
+          },
+          "student": {
+            "$ref": "#/components/schemas/BookingStudent"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "timer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BoardTimerView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attention": {
+            "type": "boolean",
+            "title": "Attention"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "status",
+          "channel",
+          "property",
+          "roomType",
+          "moveIn",
+          "student",
+          "createdAt",
+          "timer",
+          "attention"
+        ],
+        "title": "OpsBookingItem",
+        "description": "A booking on the board."
+      },
+      "OpsBookingPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OpsBookingItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "OpsBookingPage"
+      },
+      "OpsBookingSummary": {
+        "properties": {
+          "statuses": {
+            "items": {
+              "$ref": "#/components/schemas/StatusCount"
+            },
+            "type": "array",
+            "title": "Statuses"
+          },
+          "attention": {
+            "type": "integer",
+            "title": "Attention"
+          },
+          "unconfirmedLate": {
+            "type": "integer",
+            "title": "Unconfirmedlate"
+          },
+          "disputesOpen": {
+            "type": "integer",
+            "title": "Disputesopen"
+          },
+          "moveInsDue": {
+            "type": "integer",
+            "title": "Moveinsdue"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "statuses",
+          "attention",
+          "unconfirmedLate",
+          "disputesOpen",
+          "moveInsDue"
+        ],
+        "title": "OpsBookingSummary",
+        "description": "The board's counts: every status, and what needs a person now."
       },
       "OpsDispute": {
         "properties": {
@@ -14722,6 +15617,22 @@
         ],
         "title": "Reason"
       },
+      "ReasonRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "ReasonRequest"
+      },
       "RebookSearch": {
         "properties": {
           "locality": {
@@ -14754,22 +15665,6 @@
         ],
         "title": "RebookSearch",
         "description": "A search for PGs like this one with a bed free for the student's move-in, once a booking\nended through no fault of theirs: its filters, as the search API takes them (step 5.7)."
-      },
-      "RejectRequest": {
-        "properties": {
-          "reason": {
-            "type": "string",
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Reason"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "reason"
-        ],
-        "title": "RejectRequest"
       },
       "Rendition": {
         "properties": {
@@ -16560,6 +17455,24 @@
         ],
         "title": "StatusChange"
       },
+      "StatusCount": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "count"
+        ],
+        "title": "StatusCount"
+      },
       "StayRuleTier": {
         "properties": {
           "minMonths": {
@@ -17063,6 +17976,15 @@
         ],
         "title": "TimelineEntry",
         "description": "One change to the booking, as its history has it."
+      },
+      "TimerKind": {
+        "type": "string",
+        "enum": [
+          "unconfirmed",
+          "dispute",
+          "move_in"
+        ],
+        "title": "TimerKind"
       },
       "UploadForm": {
         "properties": {
