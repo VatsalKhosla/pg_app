@@ -306,6 +306,8 @@ In the code (ADR 0046): an advisory lock on the student guards the active-hold l
 - **Move-in beyond mandate validity** (UPI mode): use payment mode or ask the student to book closer to move-in.
 - **Stay extension**: update the allocation's upper bound in a transaction (the constraint re-checks).
 
+Ops run bookings from the board (step 5.10, ADR 0054): what needs a person now (an owner past two hours, an open dispute, a move-in due), a page per booking with its whole history, and exactly the actions the state machine would take from them, each with a reason.
+
 ### 7.5 Scheduled jobs (worker)
 | Job | Every | Does |
 |---|---|---|

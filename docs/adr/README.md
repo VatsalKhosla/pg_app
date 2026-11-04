@@ -57,6 +57,7 @@ One file per real decision: the context, what was decided and what follows from 
 | [0051](0051-disputes.md) | Disputes: a student reports a room that isn't as shown inside their 24 hours, with their own private photos; ops settle it as a refund or an upheld booking; and a refund offers PGs like it | Accepted |
 | [0052](0052-booking-jobs.md) | The booking jobs: four scheduled runs that each move a batch of due bookings through the state machine at the exact moment, change nothing when run twice, and count what they moved | Accepted |
 | [0053](0053-on-spot-booking.md) | Reserving on the spot: at the visit, once the agent has checked in, the student reserves a bed from their own phone on the visit's day, whatever remote booking's flag says, and the visit log links to the booking | Accepted |
+| [0054](0054-bookings-board.md) | The bookings board: what needs a person now and since when, a page per booking with whom to call and everything that happened, and every action the state machine would take from ops, each with a reason | Accepted |
 | [0055](0055-test-site-on-one-address.md) | The test site serves the API at its own address, waits for a sleeping API, and shows sign-in codes on screen, which production refuses | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

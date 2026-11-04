@@ -451,8 +451,12 @@ Start the slow ones in week 1.
   - **Web:** "Reserve a bed here" on the student's visit, "Reserve this bed" after checking a price at that PG (one Idempotency-Key per quote), and the booking in ops' and the agent's visit logs.
   - **Proof:** the phone browser test goes on from the check-in to a held booking and ops' log; API tests for the link both ways and each refusal; unit tests for the rule at the day's end; component tests for reserving.
 
-- [ ] **5.10 Ops bookings board.** Board by state with filters, SLA timers (unconfirmed > 2 h, disputes), actions with reasons, full event history.
+- [x] **5.10 Ops bookings board.** Board by state with filters, SLA timers (unconfirmed > 2 h, disputes), actions with reasons, full event history.
   *Done when* ops can run a day of bookings from it without database access.
+  *Note (2026-11-04):*
+  - **API:** `GET /v1/ops/bookings` (status, way made, what needs a person, a search by code, phone or PG name) and `/summary` (every status's count, and each kind of waiting). `GET /v1/ops/bookings/{code}` has both phones, the money, the timer, what the state machine would take from ops now, and the whole history with who and why. `owner-cancel` and `move-out` are new, and each change takes a reason (ADR 0054).
+  - **Web:** the console's Bookings section, opening on what needs a person, and a page per booking whose changes ask why and then say what they'll do. Both stay current while open. `docs/runbooks/bookings-board.md` says how to run a day from it.
+  - **Proof:** each timer at its edge in India, finding and paging, the query count, both new actions with bed, texts, history and audit; every action's flow with axe; the phone browser test from a booking made on the spot to its history on the board.
 
 ## Phase 6 — Payments and ledger → **Milestone B**
 
