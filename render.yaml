@@ -1,6 +1,6 @@
 # Staging on Render's free plan (ADR 0047; docs/runbooks/staging.md), in Ohio, beside the Neon
 # project's database and object storage (AWS us-east-2). Until launch it is what fixyourstay.in
-# shows, under a banner saying it's a test copy:
+# will show, under a banner saying it's a test copy (ADR 0055 on how it's reached):
 # - the web app;
 # - the API, with its worker and migrations in one container (the free plan has no background
 #   workers);
@@ -24,14 +24,13 @@ services:
       url: ghcr.io/vatsalkhosla/pg_app-web:staging
     # Answered by the web server alone, without the API.
     healthCheckPath: /robots.txt
-    # Render adds www.fixyourstay.in too, redirecting to it.
-    domains:
-      - fixyourstay.in
+    # Custom domains are added in Render's dashboard, not here: the free workspace includes two,
+    # and a sync that asks for more fails whole, its settings with it (ADR 0055).
     envVars:
       # The server reaches the API at its public address: the free plan's services can't take
       # private network traffic.
       - key: API_URL
-        value: https://api.fixyourstay.in
+        value: https://fys-staging-api.onrender.com
       - fromGroup: fys-staging-shared
 
   - type: web
@@ -44,8 +43,6 @@ services:
     dockerCommand: python -m app.all_in_one
     # Liveness only: /readyz would restart the service while Neon's database wakes up.
     healthCheckPath: /healthz
-    domains:
-      - api.fixyourstay.in
     envVars:
       - key: APP_ENV
         value: staging
@@ -61,19 +58,21 @@ services:
           property: connectionString
       - key: SECRET_KEY
         generateValue: true
+      # The web app serves the API at its own address (ADR 0055), so that's the API's public
+      # address too, and the browser is on one site, whose cookies these are.
       - key: SITE_URL
-        value: https://fixyourstay.in
+        value: https://fys-staging-web.onrender.com
       - key: API_URL
-        value: https://api.fixyourstay.in
+        value: https://fys-staging-web.onrender.com
       - key: CORS_ALLOWED_ORIGINS
-        value: https://fixyourstay.in
-      # The web app and the API share the domain, so the session cookie covers both.
+        value: https://fys-staging-web.onrender.com,https://fixyourstay.in
       - key: SESSION_COOKIE_DOMAIN
-        value: fixyourstay.in
-      # No SMS provider yet (a paid vendor the founders choose): sign-in codes and visit texts
-      # are off.
+        value: fys-staging-web.onrender.com
+      # No SMS provider yet (a paid vendor the founders choose). Sign-in codes show on the
+      # sign-in page: anyone can sign in as anyone, which only a test copy can allow, and the API
+      # refuses this in production (ADR 0055). Visit and booking texts are off.
       - key: OTP_SENDER
-        value: unavailable
+        value: screen
       - key: TEXT_SENDER
         value: unavailable
       # Cloudflare's published test secret, which always passes; the API refuses it in

@@ -18,8 +18,10 @@ E2E_PORT ?= 3100
 E2E_API_PORT ?= 8100
 API_IMAGE ?= pg-platform/api:local
 WEB_IMAGE ?= pg-platform/web:local
-# What a web image inlines from the environment at build time (apps/web/src/config/env.ts).
-WEB_PUBLIC_VARS := NEXT_PUBLIC_APP_ENV NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_API_URL \
+# What a web image takes from the environment at build time (apps/web/src/config/env.ts, and the
+# API it serves itself, if any: apps/web/src/config/api-proxy.ts).
+WEB_PUBLIC_VARS := API_PROXY_TARGET NEXT_PUBLIC_APP_ENV NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_API_URL \
+	NEXT_PUBLIC_API_SAME_ORIGIN NEXT_PUBLIC_API_WAIT_MS \
 	NEXT_PUBLIC_MEDIA_URL NEXT_PUBLIC_UPLOAD_ORIGIN NEXT_PUBLIC_TURNSTILE_SITE_KEY \
 	NEXT_PUBLIC_SENTRY_DSN NEXT_PUBLIC_MAP_TILES_URL NEXT_PUBLIC_MAP_TILES_ATTRIBUTION
 # Git ref that `make api-breaking` compares the API schema against.

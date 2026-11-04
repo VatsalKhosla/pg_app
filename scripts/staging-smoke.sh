@@ -5,8 +5,8 @@
 # API_URL default to staging's own.
 set -euo pipefail
 
-site="${SITE_URL:-https://fixyourstay.in}"
-api="${API_URL:-https://api.fixyourstay.in}"
+site="${SITE_URL:-https://fys-staging-web.onrender.com}"
+api="${API_URL:-https://fys-staging-api.onrender.com}"
 failed=0
 answer=""
 # Hosts that never answered: their other pages aren't asked for, so a site that's down fails in
@@ -54,6 +54,8 @@ check() {
 check "$api/readyz"
 check "$site/"
 check "$site/search"
+# The API through the site, as the browser's map, filters and sign-in reach it (ADR 0055).
+check "$site/v1/search/properties?limit=1"
 
 found="$(mktemp)"
 trap 'rm -f "$found"' EXIT
