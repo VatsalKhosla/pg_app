@@ -38,7 +38,9 @@ def run(make_settings: Callable[..., Settings], database_url: str) -> Callable[.
 async def _audited(ops: Ops, action: str, entity_id: str) -> list[dict[str, Any]]:
     async with ops.app.state.sessionmaker() as db:
         rows = await db.scalars(
-            select(AuditLog).where(AuditLog.action == action, AuditLog.entity_id == entity_id)
+            select(AuditLog)
+            .where(AuditLog.action == action, AuditLog.entity_id == entity_id)
+            .order_by(AuditLog.id)
         )
         return [{"actor": row.actor_type, "details": row.details} for row in rows]
 

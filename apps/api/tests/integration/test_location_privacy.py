@@ -346,9 +346,9 @@ async def _property_id(ops: Ops, slug: str) -> int:
 async def _shown_to(ops: Ops, listing: dict[str, Any]) -> list[tuple[int | None, str]]:
     async with ops.app.state.sessionmaker() as db:
         rows = await db.scalars(
-            select(AuditLog).where(
-                AuditLog.action == "catalog.contact_shown", AuditLog.entity_id == listing["id"]
-            )
+            select(AuditLog)
+            .where(AuditLog.action == "catalog.contact_shown", AuditLog.entity_id == listing["id"])
+            .order_by(AuditLog.id)
         )
         return [(row.actor_id, row.details["because"]) for row in rows]
 

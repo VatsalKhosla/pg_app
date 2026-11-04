@@ -136,9 +136,9 @@ def test_anyone_complains_and_the_officer_acknowledges_and_resolves_it(  # noqa:
         seen["not a ticket"] = (await ops.call("GET", "/v1/ops/grievances/nonsense")).status_code
         async with ops.app.state.sessionmaker() as db:
             rows = await db.scalars(
-                select(AuditLog.action).where(
-                    AuditLog.entity_type == "grievance", AuditLog.entity_id == ticket
-                )
+                select(AuditLog.action)
+                .where(AuditLog.entity_type == "grievance", AuditLog.entity_id == ticket)
+                .order_by(AuditLog.id)
             )
             seen["audited"] = list(rows)
         seen["typed"] = typed
