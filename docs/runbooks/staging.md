@@ -1,27 +1,27 @@
 # Staging
 
-Staging is a test copy of the site that follows `main`: every push that passes every check is deployed to it within about 15 minutes. It runs on free plans for now, which the founders chose on 2026-10-31 (ADR 0047). Until launch it is what the main domain shows, under a banner saying it's a test copy. Before launch it moves to the planned Vercel and AWS (ARCHITECTURE §3), and to `staging.` addresses of its own.
+Staging is a test copy of the site that follows `main`: every push that passes every check is deployed to it within about 15 minutes. It runs on free plans for now, which the founders chose on 2026-10-31 (ADR 0047). Until launch it is what the main domain will show, under a banner saying it's a test copy. Before launch it moves to the planned Vercel and AWS (ARCHITECTURE §3), and to `staging.` addresses of its own.
 
-- **Web:** https://fixyourstay.in (`www.` redirects to it)
-- **API:** https://api.fixyourstay.in (its interactive docs are at `/docs`)
-- **Render's own addresses**, which work whatever the DNS says: https://fys-staging-web.onrender.com and https://fys-staging-api.onrender.com
+- **Web:** https://fys-staging-web.onrender.com, and https://fixyourstay.in once it's attached ([step 4](#4-the-domain))
+- **API:** served by the web app at the same address, under `/v1/...` (ADR 0055). Its own address is https://fys-staging-api.onrender.com, with its interactive docs at `/docs`.
 
 Everything runs in the US East (Ohio) region, where the Neon project is, so the API sits beside its database and storage.
 
 | Part | Where | Free plan limits that matter |
 |---|---|---|
-| Web app | Render, free web service `fys-staging-web` | Sleeps after 15 idle minutes. The first visit after that waits about a minute. |
+| Web app | Render, free web service `fys-staging-web` | Sleeps after 15 idle minutes. The first visit after that waits about a minute, and a little longer if the API is asleep too. |
 | API, worker and migrations, in one container | Render, free web service `fys-staging-api` | Sleeps the same way, and jobs wait while it sleeps. Render's free plan has no background workers. Each start brings the database up to date, loads the geo data and checks the samples are there, which adds a few seconds to waking. |
 | Cache (rate limits, short-lived data) | Render, free Key Value `fys-staging-cache` | Kept in memory only, so it starts empty after a restart. That's fine for a cache. |
 | Database (Postgres with PostGIS) | Neon, free plan, project `fixyourstay-staging` | 0.5 GB. It pauses when idle and wakes in about a second. |
-| Photos | Neon's object storage on the same project: buckets `pg-platform-private` (uploads) and `pg-platform-media` (public photos) | 5 GB. It's addressed by path. Its CORS rule still names the old `staging.` address, and uploads (staff only) need it changed to `https://fixyourstay.in` before staff sign in. |
+| Photos | Neon's object storage on the same project: buckets `pg-platform-private` (uploads) and `pg-platform-media` (public photos) | 5 GB. It's addressed by path. Its CORS rule still names the old `staging.` address. Uploads (students' dispute photos, and staff's) need it changed to the site's address, in Neon's console. |
 | Images | GitHub's container registry: `pg_app-api` and `pg_app-web` | Free for a public repository. |
 
 The services are described in `render.yaml`; the deploy is the **Deploy staging** job in `.github/workflows/ci.yml`.
 
 ## What staging can't do yet
 
-- **Phone sign-in** answers "unavailable", because there is no SMS provider yet (a paid vendor the founders choose). Students can browse but can't sign in.
+- **Texts:** there's no SMS provider yet (a paid vendor the founders choose). Sign-in codes show on the sign-in page instead (`OTP_SENDER=screen`, ADR 0055), and visit and booking texts aren't sent.
+  - Anyone can sign in with any number here, so never put real people's details on this site. Staff roles never come with a phone sign-in, and production refuses this setting.
 - **Staff sign-in** needs a Google OAuth client for staging (see [Later](#later)).
 - **Real listings:** staging shows the six fictional sample PGs, added on its first start. A banner on every page says they're samples (see [Later](#later)).
 - **Map:** it uses OpenStreetMap's tiles, which their policy allows for a site this lightly used. The live site needs a map provider the founders choose.
@@ -55,29 +55,34 @@ In the repository, go to **Settings**, then **Secrets and variables**, then **Ac
 
 From then on, every green push to `main` deploys.
 
-### 4. GoDaddy (the addresses)
+### 4. The domain
+
+The site works at Render's address without this. To show it at `fixyourstay.in`:
 
 GoDaddy's own forwarding and parked page must go, or they answer instead of Render.
 
 1. In GoDaddy, open **My Products**, then **fixyourstay.in**. Under **Forwarding**, delete any forwarding of the domain.
 2. Open **DNS**. Delete every `A` record for `@` (the parked page's, GitHub's `185.199.x.x`), every `AAAA` record, and the `CNAME` for `www`.
-3. Add three records:
+3. Add two records:
 
    | Type | Name | Value |
    |---|---|---|
    | A | `@` | `216.24.57.1` (Render's address for a main domain) |
    | CNAME | `www` | `fys-staging-web.onrender.com` |
-   | CNAME | `api` | `fys-staging-api.onrender.com` |
 
-   The value is a host name only: no `https://`. If Render's custom-domain page shows a different target, use that.
-4. In Render, choose **Verify** on each domain. Render issues the HTTPS certificates itself, which can take up to an hour after the records are added.
-5. In the GitHub repository, open **Settings**, then **Pages**, and turn GitHub Pages off: the site isn't served from there.
+   The value is a host name only: no `https://`. If Render's custom-domain page shows a different target, use that. An `api` record does no harm, but nothing uses it now.
+4. In the GitHub repository, open **Settings**, then **Pages**, and turn GitHub Pages off: the site isn't served from there.
+5. In Render, delete any old custom domains on both services (`staging.fixyourstay.in`, `api.staging.fixyourstay.in`). The free workspace includes two.
+6. On `fys-staging-web`, open **Settings**, then **Custom Domains**, and add `fixyourstay.in`; Render adds `www` itself. Choose **Verify**. Render issues the HTTPS certificates itself, which can take up to an hour after the records are added. If it asks for a card, stop: that's a paid choice for the founders.
+7. Then change the site's address in the repository (`NEXT_PUBLIC_SITE_URL` in the **Deploy staging** job; `SITE_URL`, `API_URL` and `SESSION_COOKIE_DOMAIN` in `render.yaml`), so sign-in's cookies and the site's links follow it.
+
+`render.yaml` doesn't list custom domains: a sync asking for more than the plan includes fails whole, and takes its settings with it (ADR 0055).
 
 ## Day to day
 
-- **Is it up?** `https://api.fixyourstay.in/readyz` says whether the API reaches the database and the cache. A first visit may take a minute while the services wake.
-  - The **Staging smoke** workflow checks every three hours that the API, the home page, search and a PG's page answer, and emails you when they don't. Run it from the Actions tab, or `make staging-smoke` here.
-  - A page that needs the API failing while the home page loads usually means `api.fixyourstay.in` isn't serving: check its custom domain is verified in Render.
+- **Is it up?** `https://fys-staging-api.onrender.com/readyz` says whether the API reaches the database and the cache. A first visit may take a minute while the services wake.
+  - The **Staging smoke** workflow checks every three hours that the API, the home page, search, a PG's page and the API through the site all answer, and emails you when they don't. Run it from the Actions tab, or `make staging-smoke` here.
+  - **Settings not taking effect?** Open the Blueprint in Render. Its last sync says whether it failed and why. **Manual Sync** tries again.
 - **A deploy:** the **Deploy staging** job in the CI run of that commit says what it deployed. Render's **Events** tab shows each deploy and why one failed.
 - **Logs:** each service's **Logs** tab in Render. The API's log has the worker's lines too.
 - **A broken deploy:** in Render, open the service's **Events** tab and roll back to the previous deploy. Then fix `main`, and the next green push deploys again.
@@ -87,7 +92,7 @@ GoDaddy's own forwarding and parked page must go, or they answer instead of Rend
 
 - **Real listings** come through the ops console, once staff can sign in. To stop adding the samples, set `SEED_SAMPLES` to `false` on `fys-staging-api`; the ones already there stay until they're unpublished in the ops console.
 - **Staff sign-in:**
-  1. Create a Google OAuth client in a Google Cloud project, with the redirect URI `https://api.fixyourstay.in/v1/auth/staff/google/callback`.
+  1. Create a Google OAuth client in a Google Cloud project, with the redirect URI `https://fys-staging-web.onrender.com/v1/auth/staff/google/callback` (the site's address, as it serves the API).
   2. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `STAFF_GOOGLE_EMAILS` on `fys-staging-api`.
   3. Make the founders staff with `python -m app.manage staff add`, run with staging's settings ([staff access](staff-access.md)).
 - **The move:** the planned Vercel and AWS staging replaces this one (BUILD_PLAN 8.5). Its images and deploy job stay much the same.

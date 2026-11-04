@@ -32,15 +32,19 @@ The order to build the platform in. Each step is sized for one focused Claude Co
 ## Founders' parallel tasks (Claude Code can't do these)
 
 Start the slow ones in week 1.
-- [ ] Incorporate the company (needed for Razorpay, GST, DLT); pick the brand name and buy the domain.
+- [ ] Incorporate the company (needed for Razorpay, GST, DLT).
+- [x] Pick the brand name and buy the domain (Fix Your Stay; fixyourstay.in at GoDaddy).
 - [ ] **SMS DLT registration**: entity, sender ID and OTP/notification templates. This takes time, so start early.
 - [ ] Razorpay account and KYC. Activation needs the site's About, Contact, Pricing, Terms, Privacy and Refund pages (step 3.8). Later, ask Razorpay to enable UPI one-time mandates and Route.
 - [ ] Google Maps Platform project, API keys restricted by HTTP referrer and API, billing budget alerts.
 - [ ] Accounts: GitHub, Vercel, AWS (Mumbai), Cloudflare, Sentry, PostHog, an email sender (SES or Resend). Google Workspace for staff sign-in.
-- [ ] Staging on free plans for now (ADR 0047), following `docs/runbooks/staging.md`:
-  - make the media bucket public-read in Neon's console, and regenerate its keys;
-  - apply the Render blueprint, and save the deploy hooks as GitHub secrets;
-  - point fixyourstay.in at Render in GoDaddy, and turn GitHub Pages off.
+- Staging on free plans for now (ADR 0047), following `docs/runbooks/staging.md`:
+  - [x] make the media bucket public-read in Neon's console;
+  - [ ] regenerate Neon's storage keys, which were pasted into a chat, and put the new ones only into Render;
+  - [ ] change the uploads bucket's CORS rule in Neon's console to the site's address;
+  - [x] apply the Render blueprint, and save the deploy hooks as GitHub secrets;
+  - [x] point fixyourstay.in at Render in GoDaddy, and turn GitHub Pages off;
+  - [ ] attach fixyourstay.in in Render: delete the old `staging.` custom domains, then add it on the web service (ADR 0055).
 - [ ] GitHub repository settings (docs/ci.md): the branch ruleset for `main` with the required checks, secret scanning with push protection, Dependabot alerts, and the free Renovate GitHub App for dependency updates.
 - [ ] Lawyer: Terms, Privacy notice (DPDP), Refund & Cancellation policy, owner agreement (30% fee, 90-day introduction clause, token set-off), E-Commerce Rules seller-disclosure question (hiding owner contacts), grievance officer. The drafts are in `apps/web/src/content/legal`, with the open questions in brackets.
 - [ ] The facts the trust pages state (`apps/web/src/config/company.ts`): the registered name and office address, the phone line a person answers and its hours, the help email, the founders' names, roles and photos, and the grievance officer's name, designation and contact details. A production build waits for them (ADR 0034).
