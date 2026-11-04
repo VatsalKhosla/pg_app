@@ -36,5 +36,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # The columns go with the previous migration; the rows hold nothing else to put back.
-    pass
+    # As it was before the fill; running this migration again fills them from the history. A
+    # dispute's opened_at can't be unset, and goes with its column in the previous migration.
+    op.execute("UPDATE bookings SET token_secured_at = NULL")

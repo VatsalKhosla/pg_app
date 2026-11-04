@@ -7,15 +7,20 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import pytest
-from sqlalchemy import event, select
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
+from alembic.script import ScriptDirectory
+from sqlalchemy import Connection, event, func, select, update
 
 from app.config import Settings
 from app.core.audit import AuditLog
 from app.core.outbox import enqueue
 from app.modules.booking.jobs import CHECK_WINDOWS
+from app.modules.booking.models import Booking, BookingEventRecord, Dispute
 from app.modules.identity.domain.sessions import SessionKind
 from app.modules.inventory.models import InventoryAllocation
 from tests.flags import FixedFlags
+from tests.integration.conftest import alembic_config
 from tests.integration.test_booking_check_in import MOVED_IN, OPENS, _confirmed
 from tests.integration.test_booking_confirmation import (
     _about,
@@ -525,3 +530,77 @@ def test_ops_confirming_for_an_owner_say_why(run: Callable[..., Any]) -> None:
         }
 
     assert run(scenario) == {"no body": 422, "blank": 422, "extra": 422, "said": "confirmed"}
+
+
+def _fill_timers(connection: Connection, database_url: str, direction: str) -> None:
+    """The data migration on its own, in the caller's transaction, so a test can roll it back."""
+    script = ScriptDirectory.from_config(alembic_config(database_url)).get_revision("3f8a6b5d2c71")
+    assert script is not None
+    with Operations.context(MigrationContext.configure(connection)):
+        getattr(script.module, direction)()
+
+
+def test_rows_from_before_the_timers_get_them_from_what_happened(
+    run: Callable[..., Any], database_url: str
+) -> None:
+    """A token came in when the booking's history says it did, and a dispute opened when its row
+    was made. A booking whose token hasn't come in has no stamp to fill, and one that has its stamp
+    keeps it."""
+
+    async def scenario(ops: Staff) -> dict[str, Any]:
+        old_token, new_token = await _token_in(ops), await _token_in(ops)
+        _, unpaid = await _held(ops, await _listing(ops, beds=1))
+        student, _, disputed = await _confirmed(ops)
+        ops.app.state.clock.set(MOVED_IN)
+        student = await _again(student)
+        await student.ok("POST", f"/v1/bookings/{disputed}/check-in")
+        await student.ok("POST", f"/v1/bookings/{disputed}/disputes", json=REPORT)
+
+        async with ops.app.state.sessionmaker() as db:
+
+            async def stamp(code: str) -> object:
+                return await db.scalar(select(Booking.token_secured_at).where(Booking.code == code))
+
+            async def reached(code: str) -> object:
+                return await db.scalar(
+                    select(func.max(BookingEventRecord.created_at))
+                    .join(Booking, Booking.id == BookingEventRecord.booking_id)
+                    .where(Booking.code == code, BookingEventRecord.to_status == "token_secured")
+                )
+
+            kept = await stamp(new_token)
+            await db.execute(
+                update(Booking)
+                .where(Booking.code.in_([old_token, disputed]))
+                .values(token_secured_at=None)
+            )
+            the_dispute = Dispute.booking_id == (
+                select(Booking.id).where(Booking.code == disputed).scalar_subquery()
+            )
+            connection = await db.connection()
+            await connection.run_sync(_fill_timers, database_url, "upgrade")
+            dispute = (
+                await db.execute(select(Dispute.opened_at, Dispute.created_at).where(the_dispute))
+            ).one()
+            seen = {
+                "an old token": await stamp(old_token) == await reached(old_token),
+                "an old token, later on": await stamp(disputed) == await reached(disputed),
+                "a token with its stamp": await stamp(new_token) == kept,
+                "that stamp is the app's": kept != await reached(new_token),
+                "no token yet": await stamp(unpaid["code"]),
+                "a dispute": dispute.opened_at == dispute.created_at,
+            }
+            await connection.run_sync(_fill_timers, database_url, "downgrade")
+            seen["undone"] = await stamp(old_token)
+            await db.rollback()
+        return seen
+
+    assert run(scenario) == {
+        "an old token": True,
+        "an old token, later on": True,
+        "a token with its stamp": True,
+        "that stamp is the app's": True,
+        "no token yet": None,
+        "a dispute": True,
+        "undone": None,
+    }
