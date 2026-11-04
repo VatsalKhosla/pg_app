@@ -20,6 +20,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 from testcontainers.community.postgres import PostgresContainer
+from testcontainers.core.config import testcontainers_config
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.wait_strategies import HttpWaitStrategy, LogMessageWaitStrategy
 
@@ -28,6 +29,12 @@ API_ROOT = REPO_ROOT / "apps" / "api"
 COMPOSE_FILE = REPO_ROOT / "infra" / "docker-compose.yml"
 SEAWEEDFS_CONFIG = REPO_ROOT / "infra" / "seaweedfs" / "s3.json"
 VALKEY_PASSWORD = "test"
+
+# Docker can publish a container's IPv4 and IPv6 ports under different numbers, so another
+# container's IPv6 port may carry the number this one's IPv4 port has. "localhost" tries IPv6 first
+# and would reach the wrong service: a database client then waits out its whole timeout on an S3
+# server that never answers. The ports testcontainers reports are IPv4's, so tests stay on IPv4.
+testcontainers_config.tc_host_override = testcontainers_config.tc_host_override or "127.0.0.1"
 
 type Sessionmaker = async_sessionmaker[AsyncSession]
 type RunDb = Callable[[Callable[[Sessionmaker], Awaitable[Any]]], Any]
