@@ -210,6 +210,17 @@ def test_the_revalidation_secret_is_long_and_empty_means_unset(
         Settings()
 
 
+def test_only_a_test_site_may_show_sign_in_codes_on_screen(
+    environment: pytest.MonkeyPatch,
+) -> None:
+    _deployed(environment, "staging").setenv("OTP_SENDER", "screen")
+    assert Settings().otp_sender == "screen"
+
+    _deployed(environment, "production").setenv("OTP_SENDER", "screen")
+    with pytest.raises(ValidationError, match="OTP_SENDER=screen"):
+        Settings()
+
+
 @pytest.mark.parametrize("secret", sorted(TURNSTILE_TEST_SECRETS))
 def test_production_refuses_cloudflares_turnstile_test_secrets(
     environment: pytest.MonkeyPatch, secret: str

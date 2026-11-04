@@ -111,8 +111,9 @@ class OtpChallengeIssued(ApiModel):
     expires_at: datetime
     # When another code may be asked for.
     resend_after: datetime
-    # The code itself, in local development only: OTP_SENDER=console sends no text message, and
-    # deployed environments refuse that sender. Null wherever codes are really sent.
+    # The code itself, where nothing really sends it: local development (OTP_SENDER=console) and a
+    # test site with no SMS yet (OTP_SENDER=screen). Production refuses both, so this is null
+    # wherever codes are really sent.
     development_code: str | None = None
 
 

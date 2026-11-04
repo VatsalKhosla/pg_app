@@ -11,7 +11,8 @@ class OtpSender(Protocol):
     template (the founders choose it); development writes the code to the log."""
 
     # Whether the code may go back to whoever asked for it, because nothing really sends it: only
-    # the console sender, which settings refuse in every deployed environment.
+    # the console sender, refused in every deployed environment, and the screen sender for a test
+    # site, refused in production (ADR 0055).
     shows_code: bool
 
     async def send(self, phone_e164: str, code: str) -> None:

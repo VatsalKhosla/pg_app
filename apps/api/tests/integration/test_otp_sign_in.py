@@ -414,6 +414,19 @@ def test_local_development_shows_the_code_it_never_sends(run: Callable[..., Any]
     assert signed_in.status_code == 200
 
 
+def test_a_test_site_shows_the_code_it_never_sends(run: Callable[..., Any]) -> None:
+    async def scenario(app: FastAPI, client: httpx.AsyncClient) -> tuple[str, httpx.Response]:
+        requested = (await _request_code(client, _new_mobile())).json()
+        code = requested["developmentCode"]
+        return code, await _verify(client, requested["challengeId"], code)
+
+    code, signed_in = run(scenario, otp_sender="screen")
+
+    assert len(code) == 6
+    assert code.isdigit()
+    assert signed_in.status_code == 200
+
+
 def test_phone_sign_in_is_off_without_an_sms_provider(run: Callable[..., Any]) -> None:
     async def scenario(app: FastAPI, client: httpx.AsyncClient) -> None:
         mobile = _new_mobile()

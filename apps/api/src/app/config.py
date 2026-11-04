@@ -103,9 +103,11 @@ class Settings(DatabaseSettings):
     otel_exporter_otlp_endpoint: str | None = None
     otel_service_name: str = "pg-platform-api"
     # How sign-in codes reach phones. "console" writes them to the log, for local development and
-    # tests only. "unavailable" turns phone sign-in off (503), for a deployed environment until the
-    # founders choose the SMS provider (DLT-registered), whose adapter then joins this list.
-    otp_sender: Literal["console", "unavailable"] = "console"
+    # tests only. "screen" hands them back to the sign-in page, for a test site with no SMS yet:
+    # anyone could then sign in as anyone, so production refuses it (ADR 0055). "unavailable" turns
+    # phone sign-in off (503). The SMS provider's adapter (DLT-registered, the founders' choice)
+    # joins this list once they choose one.
+    otp_sender: Literal["console", "screen", "unavailable"] = "console"
     # Visit confirmations and reminders (ADR 0033). "console" writes them to the worker's log
     # (local only); "unavailable" sends nothing until the founders choose an SMS provider.
     text_sender: Literal["console", "unavailable"] = "console"
@@ -305,6 +307,9 @@ class Settings(DatabaseSettings):
             raise ValueError(msg)
         if self.otp_sender == "console":
             msg = f"OTP_SENDER=console logs sign-in codes; not allowed in {self.app_env}"
+            raise ValueError(msg)
+        if self.otp_sender == "screen" and self.app_env == "production":
+            msg = "OTP_SENDER=screen gives sign-in codes to whoever asks; not allowed in production"
             raise ValueError(msg)
         if self.text_sender == "console":
             msg = f"TEXT_SENDER=console writes messages to the log; not allowed in {self.app_env}"

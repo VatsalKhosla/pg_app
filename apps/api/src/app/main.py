@@ -37,6 +37,7 @@ from app.modules.compliance.router import router as compliance_router
 from app.modules.geo.router import router as geo_router
 from app.modules.identity.adapters.console_otp import ConsoleOtpSender
 from app.modules.identity.adapters.google_oidc import GoogleOidc
+from app.modules.identity.adapters.screen_otp import ScreenOtpSender
 from app.modules.identity.adapters.unavailable_otp import UnavailableOtpSender
 from app.modules.identity.auth import authenticate_session
 from app.modules.identity.router import GOOGLE_CALLBACK_PATH
@@ -66,6 +67,11 @@ CORS_ALLOWED_HEADERS = ["Content-Type", CSRF_HEADER, "Idempotency-Key", REQUEST_
 CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
 # Outside providers: connect within 3 s, answer within 10 s (the backend rules).
 PROVIDER_TIMEOUT = httpx.Timeout(10.0, connect=3.0)
+_OTP_SENDERS: Final = {
+    "console": ConsoleOtpSender,
+    "screen": ScreenOtpSender,
+    "unavailable": UnavailableOtpSender,
+}
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -157,9 +163,7 @@ def create_app(
                 turnstile_http, settings.turnstile_secret_key, hostnames=settings.web_hostnames
             )
         )
-        app.state.otp_sender = (
-            ConsoleOtpSender() if settings.otp_sender == "console" else UnavailableOtpSender()
-        )
+        app.state.otp_sender = _OTP_SENDERS[settings.otp_sender]()
         app.state.google_sign_in = (
             None
             if settings.google_client_id is None or settings.google_client_secret is None
