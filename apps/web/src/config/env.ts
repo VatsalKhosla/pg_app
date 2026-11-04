@@ -29,8 +29,18 @@ export function parseUrl(name: string, value: string | undefined, fallback: stri
   }
 }
 
-function optional(value: string | undefined): string | undefined {
+export function optional(value: string | undefined): string | undefined {
   return value === undefined || value === "" ? undefined : value;
+}
+
+/** `value` as a whole number of milliseconds, or undefined when it's unset. */
+export function parseWaitMs(name: string, value: string | undefined): number | undefined {
+  if (value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a whole number of milliseconds`);
+  }
+  return parsed;
 }
 
 /** Raster map tiles and the credit their licence requires. */
@@ -91,6 +101,20 @@ export const publicEnv = {
    * from the web server.
    */
   apiUrl: parseUrl("NEXT_PUBLIC_API_URL", process.env.NEXT_PUBLIC_API_URL, "http://localhost:8000"),
+  /**
+   * Where the browser finds the API: its own address, or, for a site built to serve the API itself
+   * (ADR 0055; src/config/api-proxy.ts), nothing, so its calls stay on this site.
+   */
+  browserApiOrigin:
+    process.env.NEXT_PUBLIC_API_SAME_ORIGIN === "true"
+      ? ""
+      : parseUrl("NEXT_PUBLIC_API_URL", process.env.NEXT_PUBLIC_API_URL, "http://localhost:8000")
+          .origin,
+  /**
+   * How long to wait for the API where it may be asleep and need a minute to wake, as on a free
+   * plan (ADR 0055). Unset, the usual short waits apply.
+   */
+  apiWaitMs: parseWaitMs("NEXT_PUBLIC_API_WAIT_MS", process.env.NEXT_PUBLIC_API_WAIT_MS),
   /** Browser error reporting; Sentry stays off while this is empty. */
   sentryDsn: optional(process.env.NEXT_PUBLIC_SENTRY_DSN),
   /**

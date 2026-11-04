@@ -26,18 +26,24 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 COPY tsconfig.base.json ./
 COPY packages/api-client packages/api-client
 COPY apps/web apps/web
-ARG NEXT_PUBLIC_APP_ENV \
+ARG API_PROXY_TARGET \
+    NEXT_PUBLIC_APP_ENV \
     NEXT_PUBLIC_SITE_URL \
     NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_API_SAME_ORIGIN \
+    NEXT_PUBLIC_API_WAIT_MS \
     NEXT_PUBLIC_MEDIA_URL \
     NEXT_PUBLIC_UPLOAD_ORIGIN \
     NEXT_PUBLIC_TURNSTILE_SITE_KEY \
     NEXT_PUBLIC_SENTRY_DSN \
     NEXT_PUBLIC_MAP_TILES_URL \
     NEXT_PUBLIC_MAP_TILES_ATTRIBUTION
-ENV NEXT_PUBLIC_APP_ENV=$NEXT_PUBLIC_APP_ENV \
+ENV API_PROXY_TARGET=$API_PROXY_TARGET \
+    NEXT_PUBLIC_APP_ENV=$NEXT_PUBLIC_APP_ENV \
     NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
     NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_API_SAME_ORIGIN=$NEXT_PUBLIC_API_SAME_ORIGIN \
+    NEXT_PUBLIC_API_WAIT_MS=$NEXT_PUBLIC_API_WAIT_MS \
     NEXT_PUBLIC_MEDIA_URL=$NEXT_PUBLIC_MEDIA_URL \
     NEXT_PUBLIC_UPLOAD_ORIGIN=$NEXT_PUBLIC_UPLOAD_ORIGIN \
     NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY \
@@ -52,10 +58,13 @@ LABEL org.opencontainers.image.title="pg-platform-web" \
       org.opencontainers.image.description="Web app for the PG booking platform (staging)" \
       org.opencontainers.image.source="https://github.com/VatsalKhosla/pg_app" \
       org.opencontainers.image.licenses="Apache-2.0"
+# The API this image serves, if it was built to (ADR 0055): the server reaches it there too.
+ARG API_PROXY_TARGET
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \
-    PORT=3000
+    PORT=3000 \
+    API_PROXY_TARGET=$API_PROXY_TARGET
 WORKDIR /app
 # Owned by root and only readable by the node user, so a compromised process can't change code.
 COPY --from=build /repo/apps/web/.next/standalone ./

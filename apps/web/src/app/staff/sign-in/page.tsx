@@ -56,7 +56,7 @@ export default async function StaffSignInPage({ searchParams }: PageProps<"/staf
       <div className="space-y-2">
         {/* A full navigation to the API, which sends the browser on to Google and back. */}
         <a
-          href={`${publicEnv.apiUrl.origin}/v1/auth/staff/google`}
+          href={`${publicEnv.browserApiOrigin}/v1/auth/staff/google`}
           className={buttonVariants({ size: "lg", className: "w-full" })}
         >
           {t("google")}

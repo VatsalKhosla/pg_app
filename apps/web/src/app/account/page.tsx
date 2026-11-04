@@ -93,7 +93,7 @@ export default async function AccountPage() {
         </div>
         <DataRequests
           initial={requests.items}
-          apiOrigin={publicEnv.apiUrl.origin}
+          apiOrigin={publicEnv.browserApiOrigin}
           formatDate={formatDate}
           text={{
             exportButton: t("exportButton"),

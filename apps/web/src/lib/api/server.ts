@@ -3,6 +3,7 @@ import "server-only";
 import type { ApiClient } from "@pg-platform/api-client";
 import { headers } from "next/headers";
 
+import { publicEnv } from "@/config/env";
 import { serverEnv } from "@/config/server-env";
 
 import { createWebApiClient } from "./client";
@@ -13,8 +14,8 @@ import { createWebApiClient } from "./client";
  */
 export const API_COOKIES: readonly string[] = ["__Secure-session", "__Secure-csrf"];
 
-/** Server rendering waits at most this long for the API. */
-export const SERVER_TIMEOUT_MS = 3_000;
+/** Server rendering waits at most this long for the API, unless it may be asleep (ADR 0055). */
+export const SERVER_TIMEOUT_MS = publicEnv.apiWaitMs ?? 3_000;
 
 /** The visitor's cookies that the API owns, exactly as the browser sent them. */
 export function pickCookies(cookieHeader: string | null, names: readonly string[]): string {

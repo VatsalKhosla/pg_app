@@ -21,6 +21,14 @@ const securityHeaders = [
 // The container image (apps/web/Dockerfile) builds Next.js's standalone server, traced from the
 // repository's root so the workspace's API client comes along. Vercel builds need neither.
 const standalone = process.env.NEXT_OUTPUT === "standalone";
+// A site that serves the API at its own address (ADR 0055): `/v1/...` here is the API. It's for a
+// test site on a host that can't share cookies with the API's, such as two onrender.com addresses,
+// which browsers treat as separate sites. The browser then talks only to this site, so sign-in's
+// cookies are first-party and there's nothing for CORS to allow, whatever address the site is on.
+// Read while building: Next.js writes its rewrites into the build.
+const apiProxyTarget = (process.env.API_PROXY_TARGET ?? "").replace(/\/+$/u, "");
+// How long the API may take to answer through this site, when it may be asleep.
+const apiWaitMs = Number(process.env.NEXT_PUBLIC_API_WAIT_MS ?? "") || undefined;
 
 const nextConfig: NextConfig = {
   ...(standalone && {
@@ -36,9 +44,17 @@ const nextConfig: NextConfig = {
     // radix-ui re-exports every primitive from one entry point, and webpack kept them all (about
     // 60 KB gzipped on every page) for the two this app uses; this imports each one directly.
     optimizePackageImports: ["radix-ui"],
+    ...(apiWaitMs !== undefined && { proxyTimeout: apiWaitMs }),
   },
   headers() {
     return Promise.resolve([{ source: "/:path*", headers: securityHeaders }]);
+  },
+  rewrites() {
+    return Promise.resolve(
+      apiProxyTarget === ""
+        ? []
+        : [{ source: "/v1/:path*", destination: `${apiProxyTarget}/v1/:path*` }],
+    );
   },
 };
 
