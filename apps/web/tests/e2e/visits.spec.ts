@@ -178,6 +178,23 @@ test.describe("a visit", () => {
     await expect(log.getByText(/: Interested$/)).toBeVisible();
     await expect(log.getByText("Agent's note: Liked the double room.")).toBeVisible();
 
+    // Ops: the bookings board finds it by its code, with whom to call and what happened (BUILD_PLAN
+    // 5.10).
+    await opsPage.goto("/ops/bookings?status=held");
+    await expect(opsPage.getByRole("heading", { level: 1 })).toHaveText("Bookings");
+    expect(await wcagViolations(opsPage)).toEqual([]);
+    await opsPage.getByLabel("Find a booking").fill(code);
+    await opsPage.getByRole("button", { name: "Find" }).click();
+    await opsPage.getByRole("link", { name: code, exact: true }).click();
+    await expect(opsPage.getByRole("heading", { level: 1 })).toContainText(code);
+    await expect(opsPage.getByRole("link", { name: /See the visit/ })).toBeVisible();
+    await expect(
+      opsPage
+        .getByRole("region", { name: "What happened" })
+        .getByText("The student reserved the bed"),
+    ).toBeVisible();
+    expect(await wcagViolations(opsPage)).toEqual([]);
+
     // The funnel, as PostHog will have it: one anonymous journey from search to the visit done,
     // the last step reported by the API under the id the student's tab asked with.
     const journey = await page.evaluate(() => sessionStorage.getItem("analytics-id"));
