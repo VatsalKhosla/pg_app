@@ -489,6 +489,14 @@ class CatalogLookup:
             for row in found.values()
         }
 
+    async def category_labels(self, ids: Collection[int]) -> dict[int, str]:
+        """Room types' labels by internal id: one query, however many."""
+        return await self._catalog.category_labels(ids)
+
+    async def property_ids_named(self, text: str, *, limit: int) -> list[int]:
+        """The PGs whose names contain ``text``, for ops looking one up."""
+        return await self._catalog.property_ids_named(text, limit=limit)
+
     async def owner_id_of_user(self, user_id: int) -> int | None:
         """The owner record of a person signed in by phone, if they're an owner."""
         owner = await self._catalog.owner_of_user(user_id)

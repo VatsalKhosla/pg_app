@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.outbox import enqueue
 from app.modules.catalog.service import CatalogLookup
-from app.modules.inventory.domain.allocations import AllocationKind, RoomBeds, choose_bed
+from app.modules.inventory.domain.allocations import AllocationKind, Period, RoomBeds, choose_bed
 from app.modules.inventory.errors import BedUnavailableError
 from app.modules.inventory.models import InventoryAllocation
 from app.modules.inventory.repository import AllocationRepository, to_period, to_range
@@ -21,11 +21,11 @@ from app.modules.inventory.service.allocations import ALLOCATIONS_CHANGED
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from datetime import date
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.core.clock import Clock
-    from app.modules.inventory.domain.allocations import Period
 
 
 class BedHolds:
@@ -74,6 +74,20 @@ class BedHolds:
         row.is_active = False
         row.ended_at, row.ended_by = self._clock.now(), by
         await self._changed(property_id, row, "released")
+
+    async def cut_short(
+        self, booking_id: int, on: date, *, property_id: int, by: int | None
+    ) -> None:
+        """The student moved out on ``on``: the bed is free from that day. A stay that ran past
+        its planned end keeps its planned period, so another booking's days are never touched."""
+        row = await self._allocations.of_booking(booking_id)
+        if row is None or not row.is_active:
+            return
+        period = to_period(row.period)
+        if period.end is None or on < period.end:
+            row.period = to_range(Period(period.start, on))
+        row.ended_at, row.ended_by = self._clock.now(), by
+        await self._changed(property_id, row, "cut_short")
 
     async def _changed(self, property_id: int, row: InventoryAllocation, action: str) -> None:
         await self._db.flush()

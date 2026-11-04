@@ -256,7 +256,12 @@ class BookingService:
             )
             assert OpenDispute() in step.effects  # noqa: S101 - the state machine's own rule
             await self._disputes.add(
-                Dispute(booking_id=booking.id, reason=reason, description=description.strip()),
+                Dispute(
+                    booking_id=booking.id,
+                    reason=reason,
+                    description=description.strip(),
+                    opened_at=self._clock.now(),
+                ),
                 media,
             )
             return await self._view(booking, place)

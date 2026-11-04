@@ -545,7 +545,22 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ),
     ("GET", "/v1/ops/bookings/{code}"): Rule(ops_only(404), path={"code": "a_missing_booking"}),
     ("POST", "/v1/ops/bookings/{code}/confirm"): Rule(
-        ops_only(404), path={"code": "a_missing_booking"}
+        ops_only(404),
+        lambda: {"json": {"reason": "The owner confirmed by phone"}},
+        path={"code": "a_missing_booking"},
+    ),
+    # The board (ADR 0054): ops run every booking from it.
+    ("GET", "/v1/ops/bookings"): Rule(ops_only(200)),
+    ("GET", "/v1/ops/bookings/summary"): Rule(ops_only(200)),
+    ("POST", "/v1/ops/bookings/{code}/owner-cancel"): Rule(
+        ops_only(404),
+        lambda: {"json": {"reason": "The room is under repair"}},
+        path={"code": "a_missing_booking"},
+    ),
+    ("POST", "/v1/ops/bookings/{code}/move-out"): Rule(
+        ops_only(404),
+        lambda: {"json": {"movedOutOn": "2027-08-03", "reason": "The student left"}},
+        path={"code": "a_missing_booking"},
     ),
     ("POST", "/v1/ops/bookings/{code}/reject"): Rule(
         ops_only(404),

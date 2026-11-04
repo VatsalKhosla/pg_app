@@ -278,7 +278,9 @@ def test_who_may_answer_a_booking_and_with_what_token(run: Callable[..., Any]) -
         seen["the student"] = (await student.call("POST", path)).status_code
         seen["ops on the owner's route"] = (await ops.call("POST", path)).status_code
         seen["the owner on ops' route"] = (
-            await owner.call("POST", f"/v1/ops/bookings/{code}/confirm")
+            await owner.call(
+                "POST", f"/v1/ops/bookings/{code}/confirm", json={"reason": "Not theirs to say"}
+            )
         ).status_code
         seen["no such booking"] = (
             await owner.call("POST", "/v1/owner/bookings/BK-0000ZZZZ/confirm")

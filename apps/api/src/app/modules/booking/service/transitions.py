@@ -10,7 +10,7 @@ transaction:
 A PG that confirms its bookings itself gets its `confirm` straight after.
 """
 
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, assert_never
 
 from opentelemetry import metrics
 
@@ -29,6 +29,7 @@ from app.modules.booking.domain.state_machine import (
     CloseDispute,
     DeactivateAllocation,
     EarnToken,
+    FlagOwner,
     IssueOwnerInvoice,
     Moment,
     Notify,
@@ -42,6 +43,7 @@ from app.modules.booking.domain.state_machine import (
     SetHoldExpiry,
     SuggestSimilar,
     TransitionRefusedError,
+    TruncateAllocation,
     transition,
 )
 from app.modules.booking.models import BookingEventRecord
@@ -73,6 +75,7 @@ ENDED_EARLY: Final = frozenset(
     }
 )
 _REACHED: Final = {
+    BookingStatus.TOKEN_SECURED: "token_secured_at",
     BookingStatus.CONFIRMED: "confirmed_at",
     BookingStatus.CHECKED_IN: "checked_in_at",
     BookingStatus.ACTIVE: "activated_at",
@@ -101,6 +104,8 @@ def fields(effects: Iterable[Effect]) -> dict[str, object]:
                 found["confirm_by"] = at
             case SetCheckWindowEnd(at=at):
                 found["check_window_ends_at"] = at
+            case TruncateAllocation(on=on):
+                found["moved_out_on"] = on
             case _:
                 pass
     return found
@@ -202,6 +207,10 @@ class Transitions:
                     )
                 case DeactivateAllocation():
                     await self._beds.release(booking.id, property_id=booking.property_id, by=by)
+                case TruncateAllocation(on=on):
+                    await self._beds.cut_short(
+                        booking.id, on, property_id=booking.property_id, by=by
+                    )
                 case Notify(who=who):
                     await self._notify(
                         booking, event, who, step.to, instant=AutoConfirm() in step.effects
@@ -230,9 +239,12 @@ class Transitions:
                     # The dispute's own row, the student's words and photos or ops' answer, is
                     # written by the dispute service with the change (ADR 0051).
                     pass
-                case _:  # pragma: no cover - each later step carries out the effects it brings
-                    msg = f"{type(effect).__name__} isn't carried out yet"
-                    raise NotImplementedError(msg)
+                case FlagOwner():
+                    # The row says so, cancelled by whom and how, and the board counts each
+                    # owner's cancellations from those (ADR 0054).
+                    pass
+                case _:
+                    assert_never(effect)
 
     async def log(
         self,

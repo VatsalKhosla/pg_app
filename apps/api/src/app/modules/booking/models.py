@@ -71,6 +71,8 @@ class Booking(Model):
     planned_move_out: Mapped[date] = mapped_column(Date)
     status: Mapped[str] = mapped_column(Text)
     hold_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # When the token came in: ops' two hours for the owner to answer run from then (ADR 0054).
+    token_secured_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # When the owner must confirm by, once the token is in.
     confirm_by: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -183,6 +185,8 @@ class Dispute(Model):
     reason: Mapped[str] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(Text, default=DisputeStatus.OPEN)
+    # When the student reported it, by the app's clock: it's to be settled that day (rule 8).
+    opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     resolved_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Ops' note on what they found, for the record; never shown to the owner.

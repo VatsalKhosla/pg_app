@@ -1,11 +1,13 @@
 """Queries on bookings, their events and their disputes. Repositories never commit; services own
 transactions."""
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
-from sqlalchemy import func, select, update
+from sqlalchemy import ColumnElement, and_, func, or_, select, update
 
-from app.modules.booking.domain.state_machine import BookingStatus
+from app.modules.booking.domain.board import QUEUES, UNCONFIRMED_SLA
+from app.modules.booking.domain.state_machine import BookingEvent, BookingStatus
 from app.modules.booking.models import Booking, BookingEventRecord, Dispute, DisputePhoto
 
 # Confirmed, and moved in or finished since: the bookings that show the owner's contact (rule 11).
@@ -25,6 +27,39 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.modules.booking.domain.disputes import DisputeStatus
+
+
+@dataclass(frozen=True, slots=True)
+class BoardFilter:
+    """Which bookings the board shows (step 5.10, ADR 0054)."""
+
+    status: BookingStatus | None = None
+    channel: str | None = None
+    # Only those needing a person at this moment: (now, today in India).
+    attention_at: tuple[datetime, date] | None = None
+    # A search found this booking, this student's or these PGs'.
+    code: str | None = None
+    student_id: int | None = None
+    property_ids: Collection[int] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class BoardCounts:
+    by_status: dict[BookingStatus, int]
+    unconfirmed_late: int
+    disputes: int
+    move_ins: int
+
+
+def _unconfirmed_late(now: datetime) -> ColumnElement[bool]:
+    return and_(
+        Booking.status == BookingStatus.TOKEN_SECURED,
+        Booking.token_secured_at <= now - UNCONFIRMED_SLA,
+    )
+
+
+def _move_in_due(today: date) -> ColumnElement[bool]:
+    return and_(Booking.status == BookingStatus.CONFIRMED, Booking.move_in <= today)
 
 
 class BookingRepository:
@@ -175,6 +210,70 @@ class BookingRepository:
             .with_for_update()
         )
         return list(rows)
+
+    async def board(
+        self, found: BoardFilter, *, after: uuid.UUID | None, limit: int
+    ) -> list[Booking]:
+        """The board's bookings, ``limit + 1`` of them (the extra one says there's more). Ones
+        still moving come oldest first, as a queue; the others newest first."""
+        query = select(Booking)
+        if found.status is not None:
+            query = query.where(Booking.status == found.status)
+        if found.channel is not None:
+            query = query.where(Booking.channel == found.channel)
+        if found.attention_at is not None:
+            now, today = found.attention_at
+            query = query.where(
+                or_(
+                    _unconfirmed_late(now),
+                    Booking.status == BookingStatus.DISPUTED,
+                    _move_in_due(today),
+                )
+            )
+        if found.code is not None:
+            query = query.where(Booking.code == found.code)
+        if found.student_id is not None:
+            query = query.where(Booking.student_id == found.student_id)
+        if found.property_ids is not None:
+            query = query.where(Booking.property_id.in_(found.property_ids))
+        oldest_first = found.attention_at is not None or found.status in QUEUES
+        if after is not None:
+            query = query.where(
+                Booking.public_id > after if oldest_first else Booking.public_id < after
+            )
+        order = Booking.public_id if oldest_first else Booking.public_id.desc()
+        return list(await self._db.scalars(query.order_by(order).limit(limit + 1)))
+
+    async def board_counts(self, *, now: datetime, today: date) -> BoardCounts:
+        rows = await self._db.execute(
+            select(Booking.status, func.count().label("bookings")).group_by(Booking.status)
+        )
+        waiting = (
+            await self._db.execute(
+                select(
+                    func.count().filter(_unconfirmed_late(now)).label("unconfirmed_late"),
+                    func.count().filter(Booking.status == BookingStatus.DISPUTED).label("disputes"),
+                    func.count().filter(_move_in_due(today)).label("move_ins"),
+                )
+            )
+        ).one()
+        return BoardCounts(
+            by_status={BookingStatus(row.status): row.bookings for row in rows},
+            unconfirmed_late=waiting.unconfirmed_late,
+            disputes=waiting.disputes,
+            move_ins=waiting.move_ins,
+        )
+
+    async def owner_cancellations(self, owner_id: int) -> int:
+        """How many bookings this owner has cancelled after taking them: the state machine's
+        FlagOwner, as the rows record it."""
+        count = await self._db.scalar(
+            select(func.count()).where(
+                Booking.owner_id == owner_id,
+                Booking.cancellation_kind == BookingEvent.OWNER_CANCEL,
+            )
+        )
+        return count or 0
 
     async def compare_and_set(
         self, booking: Booking, *, to: BookingStatus, values: Mapping[str, object]

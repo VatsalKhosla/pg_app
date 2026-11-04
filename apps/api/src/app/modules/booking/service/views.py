@@ -107,7 +107,7 @@ class BookingViews:
             else StudentDispute(
                 reason=DisputeReason(dispute.reason),
                 status=DisputeStatus(dispute.status),
-                opened_at=dispute.created_at,
+                opened_at=dispute.opened_at,
                 resolved_at=dispute.resolved_at,
             ),
             rebook=None

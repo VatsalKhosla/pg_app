@@ -15,3 +15,4 @@ Any public client outside this repository would need a new API version instead, 
 - 2026-10-31 POST /v1/media added the new `dispute_photo` enum value to the `media/purpose` response property for the response status `201`. A student's private evidence that their room isn't as shown (ADR 0051); the web app, the only client, was regenerated in the same push. Recorded after CI flagged it.
 - 2026-10-31 GET /v1/media/{media_id} added the new `dispute_photo` enum value to the `purpose` response property for the response status `200`. Same change (ADR 0051).
 - 2026-10-31 POST /v1/media/{media_id}/uploaded added the new `dispute_photo` enum value to the `purpose` response property for the response status `202`. Same change (ADR 0051).
+- 2026-11-04 POST /v1/ops/bookings/{code}/confirm added required request body. Confirming for an owner now needs a reason for the booking's history (ADR 0054). Only ops could call it, and the web app had no such button until this change.

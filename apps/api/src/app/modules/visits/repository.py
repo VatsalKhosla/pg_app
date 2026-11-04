@@ -30,6 +30,12 @@ class VisitRepository:
         query = select(Visit).where(Visit.public_id == public_id)
         return await self._db.scalar(query.with_for_update() if lock else query)
 
+    async def public_id(self, visit_id: int) -> uuid.UUID | None:
+        found: uuid.UUID | None = await self._db.scalar(
+            select(Visit.public_id).where(Visit.id == visit_id)
+        )
+        return found
+
     async def set_booking(self, visit_id: int, booking_code: str) -> None:
         await self._db.execute(
             update(Visit).where(Visit.id == visit_id).values(booking_code=booking_code)

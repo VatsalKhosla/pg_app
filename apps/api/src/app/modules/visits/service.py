@@ -108,6 +108,10 @@ class VisitLookup:
             raise VisitNotOnSiteError(f"{problem[0].upper()}{problem[1:]}.")
         return OnSpotVisit(id=visit.id, property_id=visit.property_id)
 
+    async def public_id(self, visit_id: int) -> uuid.UUID | None:
+        """A visit's id as the API gives it."""
+        return await self._visits.public_id(visit_id)
+
     async def reserved(self, visit_id: int, booking_code: str) -> None:
         """The visit led to this booking: its log shows it."""
         await self._visits.set_booking(visit_id, booking_code)

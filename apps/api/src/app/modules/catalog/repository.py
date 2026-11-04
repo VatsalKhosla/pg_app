@@ -252,6 +252,24 @@ class CatalogRepository:
         query = select(Property).where(Property.id == property_id)
         return (await self._db.execute(query.with_for_update() if lock else query)).scalar_one()
 
+    async def category_labels(self, ids: Collection[int]) -> dict[int, str]:
+        if not ids:
+            return {}
+        rows = await self._db.execute(
+            select(RoomCategory.id, RoomCategory.label).where(RoomCategory.id.in_(ids))
+        )
+        return {row.id: row.label for row in rows}
+
+    async def property_ids_named(self, text: str, *, limit: int) -> list[int]:
+        """The PGs whose names contain ``text``, whatever its case."""
+        rows = await self._db.scalars(
+            select(Property.id)
+            .where(Property.name.icontains(text, autoescape=True))
+            .order_by(Property.id)
+            .limit(limit)
+        )
+        return list(rows)
+
     async def properties_by_id(self, ids: Collection[int]) -> dict[int, Property]:
         if not ids:
             return {}

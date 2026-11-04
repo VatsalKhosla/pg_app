@@ -1,4 +1,4 @@
-"""The bookings API's shapes (ARCHITECTURE §15; ADRs 0046 to 0051)."""
+"""The bookings API's shapes (ARCHITECTURE §15; ADRs 0046 to 0054)."""
 
 import uuid
 from datetime import date, datetime
@@ -7,6 +7,7 @@ from typing import Final
 from pydantic import Field
 
 from app.core.schemas import ApiModel
+from app.modules.booking.domain.board import OpsAction, TimerKind
 from app.modules.booking.domain.disputes import (
     DESCRIPTION_MAX_LENGTH,
     DESCRIPTION_MIN_LENGTH,
@@ -169,9 +170,112 @@ class MoveInReminder(ApiModel):
     sent: bool
 
 
-class RejectRequest(ApiModel):
-    # Why, for the student's record and ops; never shown to other students.
+class ReasonRequest(ApiModel):
+    # Why, for the record: the booking's history and the audit log.
     reason: str = Field(min_length=1, max_length=REASON_MAX_LENGTH)
+
+
+class MoveOutRequest(ReasonRequest):
+    # The day the student left, in India: the bed is free from then.
+    moved_out_on: date
+
+
+class BoardTimerView(ApiModel):
+    """What a booking is waiting for: an owner's answer, a dispute's settling or a move-in."""
+
+    kind: TimerKind
+    since: datetime
+    # Late from then.
+    due: datetime
+    late: bool
+
+
+class OpsBookingItem(ApiModel):
+    """A booking on the board."""
+
+    code: str
+    status: BookingStatus
+    channel: Channel
+    property: BookingPlace
+    room_type: str
+    move_in: date
+    student: BookingStudent
+    created_at: datetime
+    timer: BoardTimerView | None
+    attention: bool
+
+
+class OpsBookingPage(ApiModel):
+    items: list[OpsBookingItem]
+    next_cursor: uuid.UUID | None
+
+
+class StatusCount(ApiModel):
+    status: BookingStatus
+    count: int
+
+
+class OpsBookingSummary(ApiModel):
+    """The board's counts: every status, and what needs a person now."""
+
+    statuses: list[StatusCount]
+    attention: int
+    # Owners past their two hours.
+    unconfirmed_late: int
+    disputes_open: int
+    # Confirmed, with the move-in day here or gone, and the student hasn't said so.
+    move_ins_due: int
+
+
+class BookingContact(ApiModel):
+    """Whom ops call."""
+
+    name: str | None
+    phone: str
+
+
+class BookingHistoryEntry(ApiModel):
+    """One change to the booking, as ops read it: who, and the reason they gave."""
+
+    event: str
+    from_status: BookingStatus | None
+    to_status: BookingStatus
+    by: Party
+    by_name: str | None
+    note: str | None
+    at: datetime
+
+
+class BookingDisputeRef(ApiModel):
+    id: uuid.UUID
+    status: DisputeStatus
+    reason: DisputeReason
+
+
+class OpsBooking(ManagedBooking):
+    """A booking as ops run it, from one page (step 5.10, ADR 0054): whom to call, the money, what
+    it's waiting for, what may be done now, and everything that happened, with reasons."""
+
+    student_contact: BookingContact
+    owner_contact: BookingContact
+    # Bookings this owner cancelled after taking them.
+    owner_cancellations: int
+    monthly_charges_paise: int
+    one_time_charges_paise: int
+    fee_paise: int
+    gst_paise: int
+    owner_fee_total_paise: int
+    moved_out_on: date | None
+    cancelled_at: datetime | None
+    cancellation_kind: str | None
+    timer: BoardTimerView | None
+    attention: bool
+    actions: list[OpsAction]
+    dispute: BookingDisputeRef | None
+    # The visit it was reserved from, on the spot.
+    visit: uuid.UUID | None
+    # Oldest first.
+    history: list[BookingHistoryEntry]
 
 
 class DisputeRequest(ApiModel):
