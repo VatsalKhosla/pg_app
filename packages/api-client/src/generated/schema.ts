@@ -2277,6 +2277,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/webhooks/razorpay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * What Razorpay tells us
+         * @description Razorpay's events, signed over the raw body: anyone may call this, and only a good signature
+         *     gets anywhere. Each is stored once and answered at once, and a job does the work, so what
+         *     Razorpay sends twice, or out of order, changes nothing twice. 400 WEBHOOK_INVALID otherwise.
+         */
+        post: operations["paymentsRazorpayWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visits": {
         parameters: {
             query?: never;
@@ -6315,6 +6337,14 @@ export interface components {
          * @enum {string}
          */
         VisitStatus: "scheduled" | "submitted" | "cancelled";
+        /**
+         * WebhookReceipt
+         * @description Whether this event is new: Razorpay gets a 200 either way, and stops sending it.
+         */
+        WebhookReceipt: {
+            /** New */
+            new: boolean;
+        };
         /**
          * WomenSafety
          * @description Features that make a PG safer for women, ticked where the agent saw them.
@@ -11417,6 +11447,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckoutCallback"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsRazorpayWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookReceipt"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

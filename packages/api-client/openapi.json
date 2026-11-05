@@ -7675,6 +7675,48 @@
         }
       }
     },
+    "/v1/webhooks/razorpay": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "What Razorpay tells us",
+        "description": "Razorpay's events, signed over the raw body: anyone may call this, and only a good signature\ngets anywhere. Each is stored once and answered at once, and a job does the work, so what\nRazorpay sends twice, or out of order, changes nothing twice. 400 WEBHOOK_INVALID otherwise.",
+        "operationId": "paymentsRazorpayWebhook",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookReceipt"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/visits": {
       "get": {
         "tags": [
@@ -18881,6 +18923,21 @@
           "cancelled"
         ],
         "title": "VisitStatus"
+      },
+      "WebhookReceipt": {
+        "properties": {
+          "new": {
+            "type": "boolean",
+            "title": "New"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "new"
+        ],
+        "title": "WebhookReceipt",
+        "description": "Whether this event is new: Razorpay gets a 200 either way, and stops sending it."
       },
       "WomenSafety": {
         "type": "string",
