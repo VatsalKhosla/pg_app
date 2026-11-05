@@ -7717,6 +7717,394 @@
         }
       }
     },
+    "/v1/bookings/{code}/payments": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "What you paid for your booking",
+        "description": "What came in, and what's coming back.",
+        "operationId": "paymentsMyBookingPayments",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentPayments"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/bookings/{code}/payments": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "What a booking paid and got back",
+        "operationId": "paymentsOpsBookingPayments",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsPayments"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/refunds": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Refunds",
+        "description": "Oldest first, as a queue; of one status if asked.",
+        "operationId": "paymentsOpsRefunds",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RefundStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsRefundPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/payments/{payment_id}/refunds": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Give money back",
+        "description": "With a reason. Above the threshold it waits for a second person. Send an Idempotency-Key, the\nsame on every retry. 409 REFUND_TOO_MUCH past what's left of the payment.",
+        "operationId": "paymentsOpsRefund",
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "The same key on every retry of a request: a retry gets the first answer back.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,255}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsRefund"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/refunds/{refund_id}/approve": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Approve a refund as the second person",
+        "description": "409 REFUND_NEEDS_SECOND_PERSON for whoever asked for it.",
+        "operationId": "paymentsOpsApproveRefund",
+        "parameters": [
+          {
+            "name": "refund_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Refund Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsRefund"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/refunds/{refund_id}/decline": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Decline a refund, with a reason",
+        "description": "Nothing goes back. Whoever asked for it may withdraw it this way too.",
+        "operationId": "paymentsOpsDeclineRefund",
+        "parameters": [
+          {
+            "name": "refund_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Refund Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundDecline"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsRefund"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/visits": {
       "get": {
         "tags": [
@@ -13833,6 +14221,254 @@
         ],
         "title": "OpsDisputePage"
       },
+      "OpsPayment": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "providerOrderId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerorderid"
+          },
+          "providerPaymentId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerpaymentid"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "title": "Amountpaise"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "capturedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capturedat"
+          },
+          "refundablePaise": {
+            "type": "integer",
+            "title": "Refundablepaise"
+          },
+          "refunds": {
+            "items": {
+              "$ref": "#/components/schemas/OpsRefund"
+            },
+            "type": "array",
+            "title": "Refunds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "purpose",
+          "provider",
+          "providerOrderId",
+          "providerPaymentId",
+          "amountPaise",
+          "status",
+          "capturedAt",
+          "refundablePaise",
+          "refunds"
+        ],
+        "title": "OpsPayment"
+      },
+      "OpsPayments": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OpsPayment"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "OpsPayments"
+      },
+      "OpsRefund": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RefundKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RefundStatus"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "title": "Amountpaise"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "providerRefundId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerrefundid"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "requestedBy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestedby"
+          },
+          "approvedBy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approvedby"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Requestedat"
+          },
+          "processedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processedat"
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "booking",
+          "kind",
+          "status",
+          "amountPaise",
+          "reason",
+          "providerRefundId",
+          "reference",
+          "requestedBy",
+          "approvedBy",
+          "requestedAt",
+          "processedAt",
+          "failure"
+        ],
+        "title": "OpsRefund"
+      },
+      "OpsRefundPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OpsRefund"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "OpsRefundPage"
+      },
       "OtpChallengeIssued": {
         "properties": {
           "challengeId": {
@@ -14255,6 +14891,16 @@
         ],
         "title": "PaymentStart",
         "description": "What the browser's checkout opens with."
+      },
+      "PaymentStatus": {
+        "type": "string",
+        "enum": [
+          "created",
+          "authorized",
+          "captured"
+        ],
+        "title": "PaymentStatus",
+        "description": "Our payment: an order waiting to be paid, the bank's yes, and the money in."
       },
       "PhotoSize": {
         "properties": {
@@ -16022,6 +16668,65 @@
         ],
         "title": "RebookSearch",
         "description": "A search for PGs like this one with a bed free for the student's move-in, once a booking\nended through no fault of theirs: its filters, as the search API takes them (step 5.7)."
+      },
+      "RefundDecline": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "RefundDecline"
+      },
+      "RefundKind": {
+        "type": "string",
+        "enum": [
+          "automatic",
+          "manual",
+          "gateway"
+        ],
+        "title": "RefundKind"
+      },
+      "RefundRequest": {
+        "properties": {
+          "amountPaise": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Amountpaise"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "amountPaise",
+          "reason"
+        ],
+        "title": "RefundRequest"
+      },
+      "RefundStatus": {
+        "type": "string",
+        "enum": [
+          "awaiting_approval",
+          "requested",
+          "pending",
+          "processed",
+          "failed",
+          "declined"
+        ],
+        "title": "RefundStatus"
       },
       "Rendition": {
         "properties": {
@@ -18097,6 +18802,111 @@
         ],
         "title": "StudentDispute",
         "description": "The student's report that the room isn't as shown, and where it stands."
+      },
+      "StudentPayment": {
+        "properties": {
+          "amountPaise": {
+            "type": "integer",
+            "title": "Amountpaise"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "capturedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capturedat"
+          },
+          "refunds": {
+            "items": {
+              "$ref": "#/components/schemas/StudentRefund"
+            },
+            "type": "array",
+            "title": "Refunds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "amountPaise",
+          "status",
+          "capturedAt",
+          "refunds"
+        ],
+        "title": "StudentPayment"
+      },
+      "StudentPayments": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StudentPayment"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "StudentPayments"
+      },
+      "StudentRefund": {
+        "properties": {
+          "amountPaise": {
+            "type": "integer",
+            "title": "Amountpaise"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RefundStatus"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Requestedat"
+          },
+          "processedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processedat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "amountPaise",
+          "status",
+          "reference",
+          "requestedAt",
+          "processedAt"
+        ],
+        "title": "StudentRefund"
       },
       "StudentVisit": {
         "properties": {

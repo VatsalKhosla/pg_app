@@ -2299,6 +2299,124 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bookings/{code}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What you paid for your booking
+         * @description What came in, and what's coming back.
+         */
+        get: operations["paymentsMyBookingPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/bookings/{code}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What a booking paid and got back */
+        get: operations["paymentsOpsBookingPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Refunds
+         * @description Oldest first, as a queue; of one status if asked.
+         */
+        get: operations["paymentsOpsRefunds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/payments/{payment_id}/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give money back
+         * @description With a reason. Above the threshold it waits for a second person. Send an Idempotency-Key, the
+         *     same on every retry. 409 REFUND_TOO_MUCH past what's left of the payment.
+         */
+        post: operations["paymentsOpsRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/refunds/{refund_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a refund as the second person
+         * @description 409 REFUND_NEEDS_SECOND_PERSON for whoever asked for it.
+         */
+        post: operations["paymentsOpsApproveRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/refunds/{refund_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline a refund, with a reason
+         * @description Nothing goes back. Whoever asked for it may withdraw it this way too.
+         */
+        post: operations["paymentsOpsDeclineRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visits": {
         parameters: {
             query?: never;
@@ -4525,6 +4643,76 @@ export interface components {
             /** Nextcursor */
             nextCursor: string | null;
         };
+        /** OpsPayment */
+        OpsPayment: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Purpose */
+            purpose: string;
+            /** Provider */
+            provider: string;
+            /** Providerorderid */
+            providerOrderId: string | null;
+            /** Providerpaymentid */
+            providerPaymentId: string | null;
+            /** Amountpaise */
+            amountPaise: number;
+            status: components["schemas"]["PaymentStatus"];
+            /** Capturedat */
+            capturedAt: string | null;
+            /** Refundablepaise */
+            refundablePaise: number;
+            /** Refunds */
+            refunds: components["schemas"]["OpsRefund"][];
+        };
+        /** OpsPayments */
+        OpsPayments: {
+            /** Items */
+            items: components["schemas"]["OpsPayment"][];
+        };
+        /** OpsRefund */
+        OpsRefund: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Booking */
+            booking: string;
+            kind: components["schemas"]["RefundKind"];
+            status: components["schemas"]["RefundStatus"];
+            /** Amountpaise */
+            amountPaise: number;
+            /** Reason */
+            reason: string;
+            /** Providerrefundid */
+            providerRefundId: string | null;
+            /** Reference */
+            reference: string | null;
+            /** Requestedby */
+            requestedBy: string | null;
+            /** Approvedby */
+            approvedBy: string | null;
+            /**
+             * Requestedat
+             * Format: date-time
+             */
+            requestedAt: string;
+            /** Processedat */
+            processedAt: string | null;
+            /** Failure */
+            failure: string | null;
+        };
+        /** OpsRefundPage */
+        OpsRefundPage: {
+            /** Items */
+            items: components["schemas"]["OpsRefund"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
         /**
          * OtpChallengeIssued
          * @description A code is on its way. Send it back with ``challengeId`` to sign in.
@@ -4693,6 +4881,12 @@ export interface components {
             expiresInSeconds: number;
             prefill: components["schemas"]["CheckoutPrefill"];
         };
+        /**
+         * PaymentStatus
+         * @description Our payment: an order waiting to be paid, the bank's yes, and the money in.
+         * @enum {string}
+         */
+        PaymentStatus: "created" | "authorized" | "captured";
         /** PhotoSize */
         PhotoSize: {
             /** Name */
@@ -5298,6 +5492,28 @@ export interface components {
             /** Budgetmaxpaise */
             budgetMaxPaise: number;
         };
+        /** RefundDecline */
+        RefundDecline: {
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * RefundKind
+         * @enum {string}
+         */
+        RefundKind: "automatic" | "manual" | "gateway";
+        /** RefundRequest */
+        RefundRequest: {
+            /** Amountpaise */
+            amountPaise: number;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * RefundStatus
+         * @enum {string}
+         */
+        RefundStatus: "awaiting_approval" | "requested" | "pending" | "processed" | "failed" | "declined";
         /** Rendition */
         Rendition: {
             /** Name */
@@ -6048,6 +6264,36 @@ export interface components {
             openedAt: string;
             /** Resolvedat */
             resolvedAt: string | null;
+        };
+        /** StudentPayment */
+        StudentPayment: {
+            /** Amountpaise */
+            amountPaise: number;
+            status: components["schemas"]["PaymentStatus"];
+            /** Capturedat */
+            capturedAt: string | null;
+            /** Refunds */
+            refunds: components["schemas"]["StudentRefund"][];
+        };
+        /** StudentPayments */
+        StudentPayments: {
+            /** Items */
+            items: components["schemas"]["StudentPayment"][];
+        };
+        /** StudentRefund */
+        StudentRefund: {
+            /** Amountpaise */
+            amountPaise: number;
+            status: components["schemas"]["RefundStatus"];
+            /** Reference */
+            reference: string | null;
+            /**
+             * Requestedat
+             * Format: date-time
+             */
+            requestedAt: string;
+            /** Processedat */
+            processedAt: string | null;
         };
         /**
          * StudentVisit
@@ -11487,6 +11733,260 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WebhookReceipt"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsMyBookingPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentPayments"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsOpsBookingPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsPayments"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsOpsRefunds: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["RefundStatus"] | null;
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsRefundPage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsOpsRefund: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The same key on every retry of a request: a retry gets the first answer back. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsRefund"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsOpsApproveRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsRefund"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsOpsDeclineRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundDecline"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsRefund"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */
