@@ -11,6 +11,7 @@ import {
   OPS_DISPUTES_PATH,
   OPS_GRIEVANCES_PATH,
   OPS_PRICING_ALERTS_PATH,
+  OPS_REFUNDS_PATH,
   OPS_VISITS_PATH,
   STAFF_HOME_PATH,
 } from "@/lib/auth/routes";
@@ -43,6 +44,7 @@ export default async function OpsLayout({ children }: LayoutProps<"/ops">) {
             { href: OPS_BOOKINGS_PATH, label: t("bookings") },
             { href: OPS_VISITS_PATH, label: t("visits") },
             { href: OPS_DISPUTES_PATH, label: t("disputes") },
+            { href: OPS_REFUNDS_PATH, label: t("refunds") },
             { href: OPS_GRIEVANCES_PATH, label: t("grievances") },
             { href: OPS_PRICING_ALERTS_PATH, label: t("pricingAlerts") },
             { href: STAFF_HOME_PATH, label: t("staffHome"), exact: true },

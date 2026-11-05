@@ -49,3 +49,50 @@ export function payAtTestBank(id: string): Promise<CheckoutCallback> {
     ),
   );
 }
+
+export type OpsRefund = Schemas["OpsRefund"];
+export type OpsPayment = Schemas["OpsPayment"];
+export type RefundStatus = OpsRefund["status"];
+
+/** Ops give money back, with a reason. ``idempotencyKey`` is the same on every retry of one. */
+export function requestRefund(
+  paymentId: string,
+  amountPaise: number,
+  reason: string,
+  idempotencyKey: string,
+): Promise<OpsRefund> {
+  return withCsrf((headers) =>
+    unwrap(
+      browserApi.POST("/v1/ops/payments/{payment_id}/refunds", {
+        params: { path: { payment_id: paymentId }, header: { "Idempotency-Key": idempotencyKey } },
+        body: { amountPaise, reason },
+        headers,
+      }),
+    ),
+  );
+}
+
+/** A second person says yes. */
+export function approveRefund(id: string): Promise<OpsRefund> {
+  return withCsrf((headers) =>
+    unwrap(
+      browserApi.POST("/v1/ops/refunds/{refund_id}/approve", {
+        params: { path: { refund_id: id } },
+        headers,
+      }),
+    ),
+  );
+}
+
+/** Nothing goes back; whoever asked may withdraw it this way too. */
+export function declineRefund(id: string, reason: string): Promise<OpsRefund> {
+  return withCsrf((headers) =>
+    unwrap(
+      browserApi.POST("/v1/ops/refunds/{refund_id}/decline", {
+        params: { path: { refund_id: id } },
+        body: { reason },
+        headers,
+      }),
+    ),
+  );
+}

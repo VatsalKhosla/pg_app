@@ -217,6 +217,27 @@ test.describe("a visit", () => {
     ).toBeVisible();
     expect(await wcagViolations(opsPage)).toEqual([]);
 
+    // Ops turn the booking down for the owner, and the student's token goes back, which they can
+    // follow on their booking (BUILD_PLAN 6.3).
+    await opsPage.getByRole("button", { name: "Reject for the owner" }).click();
+    await opsPage.getByLabel("Why").fill("The owner has no bed after all.");
+    await opsPage.getByRole("button", { name: "Next" }).click();
+    await opsPage.getByRole("button", { name: "Yes, reject it" }).click();
+    await expect(opsPage.getByRole("heading", { level: 1 })).toContainText(code);
+    await expect
+      .poll(
+        async () => {
+          await page.reload();
+          return await page.getByRole("region", { name: "Your payments" }).textContent();
+        },
+        { timeout: 30_000 },
+      )
+      .toContain("went back to your bank");
+    expect(await wcagViolations(page)).toEqual([]);
+    await opsPage.reload();
+    await expect(opsPage.getByRole("region", { name: "Payments" })).toContainText("Done");
+    expect(await wcagViolations(opsPage)).toEqual([]);
+
     // The funnel, as PostHog will have it: one anonymous journey from search to the visit done,
     // the last step reported by the API under the id the student's tab asked with.
     const journey = await page.evaluate(() => sessionStorage.getItem("analytics-id"));

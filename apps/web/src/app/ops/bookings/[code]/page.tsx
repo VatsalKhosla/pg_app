@@ -5,13 +5,22 @@ import { getFormatter, getTranslations } from "next-intl/server";
 
 import { BookingDesk } from "@/components/ops/booking-desk";
 import { LiveRefresh } from "@/components/ops/live-refresh";
+import { RefundDesk } from "@/components/ops/refund-desk";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getServerApi } from "@/lib/api/server";
-import { OPS_BOOKINGS_PATH, OPS_DISPUTES_PATH, OPS_VISITS_PATH } from "@/lib/auth/routes";
+import {
+  OPS_BOOKINGS_PATH,
+  OPS_DISPUTES_PATH,
+  OPS_REFUNDS_PATH,
+  OPS_VISITS_PATH,
+} from "@/lib/auth/routes";
 import { requireOps } from "@/lib/auth/session";
 import { dayText } from "@/lib/format/days";
 import { formatINR } from "@/lib/money";
+
+// The form's hint only; the API decides (ARCHITECTURE §17).
+const SECOND_PERSON_ABOVE_PAISE = 500_000;
 
 export async function generateMetadata({
   params,
@@ -37,7 +46,15 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
-  const [t, format] = await Promise.all([getTranslations("Ops.bookings"), getFormatter()]);
+  const payments = await unwrap(
+    api.GET("/v1/ops/bookings/{code}/payments", { params: { path: { code } } }),
+  );
+  const [t, format, desk, refunds] = await Promise.all([
+    getTranslations("Ops.bookings"),
+    getFormatter(),
+    getTranslations("Ops.refunds.desk"),
+    getTranslations("Ops.refunds"),
+  ]);
   const when = (moment: string) =>
     format.dateTime(new Date(moment), { dateStyle: "medium", timeStyle: "short" });
   // Today in India: a move-out can't be later.
@@ -208,6 +225,101 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
             </div>
           ))}
         </dl>
+      </section>
+
+      <section aria-labelledby="payments" className="space-y-3">
+        <h2 id="payments" className="text-lg font-semibold">
+          {desk("title")}
+        </h2>
+        {payments.items.length === 0 ? (
+          <p className="text-muted-foreground">{desk("none")}</p>
+        ) : (
+          payments.items.map((payment) => (
+            <div key={payment.id} className="space-y-2 rounded-lg border p-3">
+              <p className="font-medium">
+                {desk("payment", {
+                  amount: formatINR(payment.amountPaise),
+                  status: desk(`paymentStatus.${payment.status}`),
+                })}
+              </p>
+              {payment.capturedAt === null ? null : (
+                <p className="text-sm text-muted-foreground">
+                  {desk("paidOn", {
+                    when: format.dateTime(new Date(payment.capturedAt), {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    }),
+                  })}
+                </p>
+              )}
+              {payment.providerOrderId === null ? null : (
+                <p className="text-sm break-all text-muted-foreground">
+                  {desk("gatewayIds", {
+                    provider: payment.provider,
+                    order: payment.providerOrderId,
+                    payment: payment.providerPaymentId ?? "—",
+                  })}
+                </p>
+              )}
+              {payment.refunds.length === 0 ? null : (
+                <ul className="space-y-2">
+                  {payment.refunds.map((refund) => (
+                    <li key={refund.id} className="text-sm">
+                      <p className="font-medium">
+                        {desk("refund", {
+                          amount: formatINR(refund.amountPaise),
+                          status: refunds(`status.${refund.status}`),
+                        })}
+                      </p>
+                      <p>{desk("refundWhy", { reason: refund.reason })}</p>
+                      {refund.failure === null ? null : (
+                        <p className="text-destructive">{refund.failure}</p>
+                      )}
+                      {refund.reference === null ? null : (
+                        <p>{desk("refundBank", { reference: refund.reference })}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {payment.refunds.some((refund) => refund.status === "awaiting_approval") ? (
+                <Link
+                  href={OPS_REFUNDS_PATH}
+                  className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+                >
+                  {refunds("status.awaiting_approval")}
+                </Link>
+              ) : null}
+              {payment.refundablePaise <= 0 ? null : (
+                <RefundDesk
+                  paymentId={payment.id}
+                  refundablePaise={payment.refundablePaise}
+                  secondPersonAbovePaise={SECOND_PERSON_ABOVE_PAISE}
+                  text={{
+                    open: desk("open"),
+                    title: desk("formTitle"),
+                    amount: desk("amount"),
+                    left: desk("left", { amount: formatINR(payment.refundablePaise) }),
+                    reason: desk("reason"),
+                    needAmount: desk("needAmount"),
+                    needReason: desk("needReason"),
+                    next: desk("next"),
+                    confirmTitle: desk("confirmTitle", { amount: "{amount}" }),
+                    confirmBody: desk("confirmBody"),
+                    confirmWaits: desk("confirmWaits"),
+                    yes: desk("yes"),
+                    back: desk("back"),
+                    close: desk("close"),
+                    sent: desk("sent"),
+                    waits: desk("waits"),
+                    tooMuch: desk("tooMuch"),
+                    failed: desk("failed"),
+                  }}
+                />
+              )}
+            </div>
+          ))
+        )}
       </section>
 
       <section aria-labelledby="history" className="space-y-3">

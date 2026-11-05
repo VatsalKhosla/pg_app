@@ -75,6 +75,9 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
+  const paid = await unwrap(
+    api.GET("/v1/bookings/{code}/payments", { params: { path: { code } } }),
+  );
   const t = await getTranslations("Bookings");
   const messages = await getMessages();
   const format = await getFormatter();
@@ -299,6 +302,43 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
           </dl>
         </section>
       )}
+
+      {paid.items.some((payment) => payment.capturedAt !== null) ? (
+        <section aria-labelledby="paid-title" className="space-y-2">
+          <h2 id="paid-title" className="text-lg font-semibold">
+            {t("paid.title")}
+          </h2>
+          <ul className="space-y-2">
+            {paid.items.map((payment) =>
+              payment.capturedAt === null ? null : (
+                <li key={payment.capturedAt} className="space-y-1">
+                  <p>
+                    {t("paid.token", {
+                      amount: formatINR(payment.amountPaise),
+                      date: when(payment.capturedAt),
+                    })}
+                  </p>
+                  {payment.refunds.map((refund) => (
+                    <div key={refund.requestedAt + String(refund.amountPaise)}>
+                      <p>
+                        {t(`paid.refund.${refund.status as "requested"}`, {
+                          amount: formatINR(refund.amountPaise),
+                          date: when(refund.processedAt ?? refund.requestedAt),
+                        })}
+                      </p>
+                      {refund.reference === null ? null : (
+                        <p className="text-sm text-muted-foreground">
+                          {t("paid.reference", { reference: refund.reference })}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </li>
+              ),
+            )}
+          </ul>
+        </section>
+      ) : null}
 
       <section aria-labelledby="money-title" className="space-y-3">
         <h2 id="money-title" className="text-lg font-semibold">

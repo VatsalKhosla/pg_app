@@ -635,6 +635,7 @@
       "bookings": "Bookings",
       "visits": "Visits",
       "disputes": "Disputes",
+      "refunds": "Refunds",
       "grievances": "Grievances",
       "pricingAlerts": "Pricing alerts"
     },
@@ -1123,6 +1124,71 @@
       "needText": "Write something for them.",
       "errors": {
         "generic": "That didn't work. Please try again."
+      }
+    },
+    "refunds": {
+      "metaTitle": "Refunds",
+      "title": "Refunds",
+      "intro": "Money going back to students, oldest first. A refund above ₹5,000 waits here for a second person. To start one, open its booking.",
+      "statusFilter": "Show refunds that are",
+      "status": {
+        "awaiting_approval": "Waiting for a second person",
+        "failed": "Failed",
+        "requested": "Being sent",
+        "pending": "With the bank",
+        "processed": "Done",
+        "declined": "Declined"
+      },
+      "none": "None here.",
+      "line": "{amount} for booking {code}",
+      "asked": "Asked for by {who}, {when}",
+      "nobody": "the system",
+      "open": "See booking {code}",
+      "answer": {
+        "approve": "Approve and send it",
+        "decline": "Decline",
+        "declineTitle": "Decline this {amount} refund?",
+        "reason": "Why",
+        "needReason": "Say why, for the record.",
+        "confirmDecline": "Yes, decline it",
+        "back": "Go back",
+        "secondPerson": "You asked for this refund, so someone else has to approve it.",
+        "answered": "Someone has answered this refund already.",
+        "failed": "That didn't work. Please try again."
+      },
+      "desk": {
+        "title": "Payments",
+        "none": "Nothing has been paid for this booking.",
+        "payment": "{amount} token: {status}",
+        "paidOn": "Came in {when}",
+        "gatewayIds": "{provider}: order {order}, payment {payment}",
+        "refunds": "Refunds",
+        "refund": "{amount}: {status}",
+        "refundWhy": "Why: {reason}",
+        "refundBank": "Bank's reference: {reference}",
+        "paymentStatus": {
+          "created": "not paid yet",
+          "authorized": "the bank said yes, not captured yet",
+          "captured": "came in"
+        },
+        "open": "Give money back",
+        "formTitle": "Give money back",
+        "amount": "Amount, in rupees",
+        "left": "Up to {amount} of this payment can go back.",
+        "reason": "Why",
+        "needAmount": "Enter an amount up to what can go back.",
+        "needReason": "Say why, for the record.",
+        "next": "Next",
+        "confirmTitle": "Give {amount} back?",
+        "confirmBody": "It goes to the student's bank, and can't be undone.",
+        "confirmWaits": "It's above ₹5,000, so it waits for a second person on the Refunds page before anything is sent.",
+        "yes": "Yes, go ahead",
+        "back": "Go back",
+        "close": "Close",
+        "sent": "It's on its way to the student's bank.",
+        "waits": "It's waiting for a second person on the Refunds page.",
+        "tooMuch": "That's more than can go back.",
+        "failed": "That didn't work. Please try again."
       }
     },
     "disputes": {
@@ -2123,7 +2189,7 @@
       "waiting": "Your bank hasn't finished yet. We'll keep checking, and move on once it has.",
       "checkAgain": "Check again",
       "notPaid": "That payment didn't go through. You can try again.",
-      "late": "Your payment came in after this booking had ended. Contact us quoting {code}, and we'll sort it out.",
+      "late": "Your payment came in after booking {code} had ended, so it's going back to you. You can follow it on your booking.",
       "unverified": "We couldn't verify that payment, so your booking hasn't changed. If money left your account, contact us quoting {code}.",
       "changed": "This booking isn't waiting for its token any more.",
       "failed": "Payments can't be reached right now. Please try again in a moment.",
@@ -2134,6 +2200,17 @@
         "pay": "Pay {amount} at the test bank",
         "cancel": "Not now"
       }
+    },
+    "paid": {
+      "title": "Your payments",
+      "token": "{amount} token paid on {date}",
+      "refund": {
+        "requested": "{amount} is being sent back to you.",
+        "pending": "{amount} is on its way back to you. It can take up to 7 working days to show in your account.",
+        "processed": "{amount} went back to your bank on {date}. It can take up to 7 working days to show in your account.",
+        "failed": "We couldn't send {amount} back to you. We're looking into it. If you contact us, quote your booking code."
+      },
+      "reference": "Your bank's reference: {reference}"
     },
     "money": {
       "title": "What you pay",
