@@ -223,10 +223,12 @@ def test_an_upheld_report_lets_the_stay_go_ahead(run: Callable[..., Any]) -> Non
         "resolved": "resolved_uphold",
         "booking": ("active", MOVED_IN),
         "bed held": True,
+        # Upheld, the stay goes ahead and settles: its owner's invoice follows (step 6.5).
         "texts": [
             "booking_dispute_upheld",
             "booking_dispute_upheld_for_owner",
             "booking_disputed_for_owner",
+            "owner_invoice_issued",
         ],
         "history": [("dispute", "student"), ("resolve_uphold", "ops")],
         "student sees": ("active", "resolved_uphold", None),

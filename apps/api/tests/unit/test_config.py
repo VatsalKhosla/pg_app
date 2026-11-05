@@ -71,6 +71,11 @@ def _deployed(environment: pytest.MonkeyPatch, app_env: str = "production") -> p
         environment.setenv("RAZORPAY_KEY_ID", "rzp_live_abc")
         environment.setenv("RAZORPAY_KEY_SECRET", "a-razorpay-secret")
         environment.setenv("RAZORPAY_WEBHOOK_SECRET", "a-razorpay-webhook-secret")
+        # Fictional: no state has the code 00.
+        environment.setenv("INVOICE_SELLER_NAME", "Fictional Stays Private Limited")
+        environment.setenv("INVOICE_SELLER_ADDRESS", "1 A Fictional Road, New Delhi")
+        environment.setenv("INVOICE_SELLER_GSTIN", "00ABCDE0000F0Z0")
+        environment.setenv("INVOICE_SAC_CODE", "0000")
     return environment
 
 

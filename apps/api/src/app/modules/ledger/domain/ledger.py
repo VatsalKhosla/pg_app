@@ -56,6 +56,13 @@ class PostingKind(StrEnum):
     TOKEN_REFUNDED = "token_refunded"  # noqa: S105 - a kind of posting
     OWNER_INVOICED = "owner_invoiced"
     TOKEN_APPLIED = "token_applied"  # noqa: S105 - a kind of posting
+    # Step 6.5: the owner pays the balance, or the gateway gives it back.
+    OWNER_PAID = "owner_paid"
+    OWNER_REFUNDED = "owner_refunded"
+    # Step 6.6: what the gateway's settlement report says it kept, paid out and took back.
+    GATEWAY_FEE = "gateway_fee"
+    SETTLED = "settled"
+    REFUND_SETTLED = "refund_settled"
 
 
 class UnbalancedPostingError(ValueError):
@@ -133,12 +140,69 @@ def owner_invoiced(fee_paise: int, gst_paise: int) -> Posting:
     )
 
 
-def token_applied(amount_paise: int) -> Posting:
-    """The token is earned: what we held for the student now pays part of what the owner owes."""
+def token_applied(applied_paise: int, over_paise: int = 0) -> Posting:
+    """The token is earned: what we held for the student now pays what the owner owes, and any of
+    it beyond that is owed to the owner (step 6.5), for split settlement to pay (rule 10)."""
     return Posting(
         PostingKind.TOKEN_APPLIED,
         (
-            _debit(Account.STUDENT_TOKENS_HELD, amount_paise),
+            _debit(Account.STUDENT_TOKENS_HELD, applied_paise + over_paise),
+            *((_credit(Account.OWNER_RECEIVABLE, applied_paise),) if applied_paise > 0 else ()),
+            *((_credit(Account.OWNER_PAYABLE, over_paise),) if over_paise > 0 else ()),
+        ),
+    )
+
+
+def owner_paid(amount_paise: int) -> Posting:
+    """The owner paid their invoice's balance, through the gateway."""
+    return Posting(
+        PostingKind.OWNER_PAID,
+        (
+            _debit(Account.GATEWAY_CLEARING, amount_paise),
             _credit(Account.OWNER_RECEIVABLE, amount_paise),
+        ),
+    )
+
+
+def owner_refunded(amount_paise: int) -> Posting:
+    """The gateway gave an owner's payment back: they owe it again."""
+    return Posting(
+        PostingKind.OWNER_REFUNDED,
+        (
+            _debit(Account.OWNER_RECEIVABLE, amount_paise),
+            _credit(Account.GATEWAY_CLEARING, amount_paise),
+        ),
+    )
+
+
+def gateway_fee(amount_paise: int) -> Posting:
+    """What the gateway kept of a payment, its GST included."""
+    return Posting(
+        PostingKind.GATEWAY_FEE,
+        (
+            _debit(Account.PAYMENT_FEES, amount_paise),
+            _credit(Account.GATEWAY_CLEARING, amount_paise),
+        ),
+    )
+
+
+def settled(amount_paise: int) -> Posting:
+    """The gateway paid what was left of a payment into our bank."""
+    return Posting(
+        PostingKind.SETTLED,
+        (
+            _debit(Account.BANK, amount_paise),
+            _credit(Account.GATEWAY_CLEARING, amount_paise),
+        ),
+    )
+
+
+def refund_settled(amount_paise: int) -> Posting:
+    """The gateway took a refund it had sent out of what it paid our bank."""
+    return Posting(
+        PostingKind.REFUND_SETTLED,
+        (
+            _debit(Account.GATEWAY_CLEARING, amount_paise),
+            _credit(Account.BANK, amount_paise),
         ),
     )

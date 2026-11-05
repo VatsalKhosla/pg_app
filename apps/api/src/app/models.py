@@ -39,9 +39,10 @@ from app.modules.identity.models import (
     UserSession,
 )
 from app.modules.inventory.models import InventoryAllocation
+from app.modules.invoices.models import InvoiceSequence, OwnerInvoice
 from app.modules.ledger.models import LedgerAccount, LedgerEntry, LedgerTransaction
 from app.modules.media.models import MediaAsset
-from app.modules.payments.models import Payment, PaymentEvent, Refund
+from app.modules.payments.models import Payment, PaymentEvent, ReconciliationIssue, Refund
 from app.modules.pricing.models import (
     BookingPolicyVersion,
     FeePolicyVersion,
@@ -73,6 +74,7 @@ __all__ = [
     "Grievance",
     "IdempotencyRecord",
     "InventoryAllocation",
+    "InvoiceSequence",
     "LedgerAccount",
     "LedgerEntry",
     "LedgerTransaction",
@@ -85,6 +87,7 @@ __all__ = [
     "OutboxJob",
     "Owner",
     "OwnerAgreement",
+    "OwnerInvoice",
     "Payment",
     "PaymentEvent",
     "PriceQuote",
@@ -96,6 +99,7 @@ __all__ = [
     "PropertyAmenity",
     "PropertyMedia",
     "PropertyPriceSummary",
+    "ReconciliationIssue",
     "Refund",
     "RentBand",
     "Room",

@@ -50,12 +50,14 @@ async def run_due_jobs(
     web_cache: WebCache | None = None,
     texts: Texts | None = None,
     analytics: Analytics | None = None,
+    storage: MemoryStorage | None = None,
 ) -> None:
-    """Every job that's due at the app's clock, until none is left."""
+    """Every job that's due at the app's clock, until none is left. ``storage`` keeps what the jobs
+    stored, for a test to look at."""
     worker = OutboxWorker(
         sessionmaker=app.state.sessionmaker,
         registry=build_registry(
-            storage=MemoryStorage(),
+            storage=storage or MemoryStorage(),
             buckets=BUCKETS,
             web_cache=web_cache or RecordedWebCache(),
             texts=texts or ConsoleTexts(),

@@ -51,8 +51,11 @@ from app.modules.booking.models import BookingEventRecord
 from app.modules.booking.repository import BookingRepository
 from app.modules.inventory.domain.allocations import Period
 from app.modules.inventory.service import BedHolds
-from app.modules.ledger.domain.ledger import owner_invoiced, token_applied
+from app.modules.invoices.domain.invoices import invoice_amounts
+from app.modules.invoices.service import InvoiceRequest, OwnerInvoices
+from app.modules.ledger.domain.ledger import token_applied
 from app.modules.ledger.service import Ledger
+from app.modules.pricing.domain.policies import GstMode
 from app.modules.pricing.service import BookingTerms
 
 if TYPE_CHECKING:
@@ -149,6 +152,7 @@ class Transitions:
         self._terms = BookingTerms(db)
         self._ledger = Ledger(db, clock)
         self._beds = BedHolds(db, clock)
+        self._invoices = OwnerInvoices(db, clock)
 
     async def apply(
         self,
@@ -241,13 +245,20 @@ class Transitions:
                     pass
                 case EarnToken():
                     if booking.token_paise > 0:
-                        await self._post(booking, token_applied(booking.token_paise))
-                case IssueOwnerInvoice():
-                    # What the owner owes: the invoice itself comes with step 6.5.
-                    if booking.fee_paise > 0:
-                        await self._post(
-                            booking, owner_invoiced(booking.fee_paise, booking.gst_paise)
+                        # The token pays the owner's fee; beyond it, it's owed to the owner.
+                        split = invoice_amounts(
+                            total_paise=booking.owner_fee_total_paise,
+                            gst_paise=booking.gst_paise,
+                            token_paise=booking.token_paise,
                         )
+                        await self._post(
+                            booking,
+                            token_applied(split.token_applied_paise, split.token_over_paise),
+                        )
+                case IssueOwnerInvoice():
+                    # The invoice posts what the owner owes, with its number (step 6.5).
+                    if booking.owner_fee_total_paise > booking.gst_paise:
+                        await self._issue_invoice(booking)
                 case SuggestSimilar():
                     # The student's booking offers a search for PGs like it, from this change
                     # (ADR 0051); their text points them there.
@@ -262,6 +273,24 @@ class Transitions:
                     pass
                 case _:
                     assert_never(effect)
+
+    async def _issue_invoice(self, booking: Booking) -> None:
+        terms = await self._terms.fee_of(booking.quote_id)
+        await self._invoices.issue(
+            InvoiceRequest(
+                owner_id=booking.owner_id,
+                property_id=booking.property_id,
+                booking_id=booking.id,
+                booking_code=booking.code,
+                base_rent_paise=terms.base_rent_paise,
+                fee_rate_bps=terms.policy.rate_bps,
+                gst_rate_bps=terms.policy.gst_rate_bps,
+                gst_included=terms.policy.gst_mode is GstMode.INCLUSIVE,
+                total_paise=booking.owner_fee_total_paise,
+                gst_paise=booking.gst_paise,
+                token_paise=booking.token_paise,
+            )
+        )
 
     async def _post(self, booking: Booking, posting: Posting) -> None:
         await self._ledger.post(

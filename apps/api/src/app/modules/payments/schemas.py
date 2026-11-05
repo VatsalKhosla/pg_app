@@ -10,6 +10,7 @@ from pydantic import Field
 
 from app.core.schemas import ApiModel
 from app.modules.payments.domain.payments import PaymentStatus, Provider
+from app.modules.payments.domain.reconciliation import IssueKind
 from app.modules.payments.domain.refunds import RefundKind, RefundStatus
 
 GATEWAY_ID_MAX_LENGTH: Final = 64
@@ -138,3 +139,39 @@ class RefundRequest(ApiModel):
 
 class RefundDecline(ApiModel):
     reason: Annotated[str, Field(min_length=1, max_length=REASON_MAX_LENGTH)]
+
+
+class IssueView(ApiModel):
+    """Something reconciliation found that a person has to look at (step 6.6, ADR 0062)."""
+
+    id: uuid.UUID
+    kind: IssueKind
+    provider: str
+    # The gateway's id for what it's about, or our payment's or refund's.
+    reference: str
+    booking: str | None
+    amount_paise: int | None
+    detail: str
+    found_at: datetime
+    resolved_at: datetime | None
+    resolved_by: str | None
+    resolution: str | None
+
+
+class IssuePage(ApiModel):
+    items: list[IssueView]
+    next_cursor: uuid.UUID | None
+
+
+class IssueResolution(ApiModel):
+    resolution: Annotated[str, Field(min_length=1, max_length=REASON_MAX_LENGTH)]
+
+
+class ReconciliationSummary(ApiModel):
+    open_issues: int
+    # Payments the bank said yes to that aren't captured yet.
+    tokens_authorized: int
+    # Owners' invoice links that can still be paid.
+    links_open: int
+    # Refunds asked for or sent, not yet at the student's bank.
+    refunds_waiting: int

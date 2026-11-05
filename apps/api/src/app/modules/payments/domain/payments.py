@@ -18,6 +18,8 @@ INR: Final = "INR"
 
 class PaymentPurpose(StrEnum):
     TOKEN = "token"  # noqa: S105 - a booking's token, not a password
+    # The balance of an owner's invoice, through a payment link (step 6.5).
+    OWNER_INVOICE = "owner_invoice"
 
 
 class PaymentMode(StrEnum):

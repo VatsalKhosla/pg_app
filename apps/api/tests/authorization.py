@@ -67,6 +67,8 @@ PATH_VALUES: Final = frozenset(
         "a_missing_booking",
         "a_missing_payment",
         "a_missing_refund",
+        "a_missing_invoice",
+        "a_missing_issue",
         "a_missing_dispute",
         "an_owner",
         "a_live_listing",
@@ -589,6 +591,30 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     # The books (ADR 0060): ops read them, and nothing writes through the API.
     ("GET", "/v1/ops/ledger/trial-balance"): Rule(ops_only(200)),
     ("GET", "/v1/ops/ledger/transactions"): Rule(ops_only(200)),
+    # Owners' invoices (ADR 0061): an owner reads their own, ops everyone's; the test bank pays
+    # only an owner's own, and only with the fake gateway.
+    ("GET", "/v1/owner/invoices"): Rule(signed_in(403, owner=200)),
+    ("GET", "/v1/owner/invoices/{invoice_id}/file"): Rule(
+        signed_in(403, owner=404), path={"invoice_id": "a_missing_invoice"}
+    ),
+    ("POST", "/v1/owner/invoices/{invoice_id}/test-payment"): Rule(
+        signed_in(403, owner=404), path={"invoice_id": "a_missing_invoice"}
+    ),
+    ("GET", "/v1/ops/invoices"): Rule(ops_only(200)),
+    ("GET", "/v1/ops/invoices/{invoice_id}/file"): Rule(
+        ops_only(404), path={"invoice_id": "a_missing_invoice"}
+    ),
+    ("POST", "/v1/ops/invoices/{invoice_id}/payment-link"): Rule(
+        ops_only(404), path={"invoice_id": "a_missing_invoice"}
+    ),
+    # Reconciliation (ADR 0062): ops only.
+    ("GET", "/v1/ops/reconciliation"): Rule(ops_only(200)),
+    ("GET", "/v1/ops/reconciliation/issues"): Rule(ops_only(200)),
+    ("POST", "/v1/ops/reconciliation/issues/{issue_id}/resolve"): Rule(
+        ops_only(404),
+        lambda: {"json": {"resolution": "Looked, and it's fine."}},
+        path={"issue_id": "a_missing_issue"},
+    ),
     # A gateway's word (ADR 0057): anyone may call it, and only a good signature gets anywhere.
     ("POST", "/v1/webhooks/razorpay"): Rule(everyone(400), lambda: {"json": {"event": "x"}}),
     # The board (ADR 0054): ops run every booking from it.

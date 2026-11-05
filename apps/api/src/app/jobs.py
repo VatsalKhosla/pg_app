@@ -43,6 +43,14 @@ from app.modules.identity.service import (
     personal_data,
 )
 from app.modules.inventory.service import ALLOCATIONS_CHANGED
+from app.modules.invoices.jobs import (
+    INVOICE_TEXT,
+    RENDER_PDF,
+    invoice_text_handler,
+    render_pdf_handler,
+)
+from app.modules.invoices.pdf import InvoiceSeller
+from app.modules.invoices.service import invoices_part
 from app.modules.media.jobs import (
     DISCARD_UPLOAD,
     PROCESS,
@@ -50,10 +58,18 @@ from app.modules.media.jobs import (
     process_handler,
 )
 from app.modules.payments.jobs import (
+    BALANCE_DUE,
+    CHECK_STUCK,
+    MAKE_LINK,
+    MATCH_SETTLEMENTS,
     PROCESS_EVENT,
     REFUND_DUE,
     REFUND_TEXT,
     SEND_REFUND,
+    balance_due_handler,
+    check_stuck_handler,
+    make_link_handler,
+    match_settlements_handler,
     process_event,
     refund_due,
     refund_text_handler,
@@ -93,6 +109,7 @@ EXPORTERS: Final = (
     visits_part,
     bookings_part,
     payments_part,
+    invoices_part,
     grievances_part,
 )
 
@@ -134,6 +151,10 @@ SCHEDULES: Final = (
     ScheduledJob(name=CHECK_WINDOWS, kind=CHECK_WINDOWS, schedule=Every(timedelta(minutes=5))),
     # ...and in the morning, a student who never moved in loses the booking.
     ScheduledJob(name=NO_SHOWS, kind=NO_SHOWS, schedule=DailyAt(time(10, 0))),
+    # Payments against the gateway's word (§9.6, ADR 0062): what hasn't come back, every quarter of
+    # an hour, and the settlement reports every morning.
+    ScheduledJob(name=CHECK_STUCK, kind=CHECK_STUCK, schedule=Every(timedelta(minutes=15))),
+    ScheduledJob(name=MATCH_SETTLEMENTS, kind=MATCH_SETTLEMENTS, schedule=DailyAt(time(9, 30))),
 )
 
 
@@ -146,6 +167,7 @@ def build_registry(
     analytics: Analytics,
     beds: BedsTaken,
     gateway: PaymentGateway,
+    seller: InvoiceSeller | None = None,
 ) -> JobRegistry:
     """Every handler, with what it needs from outside: the object storage media jobs use, the
     web app whose cached pages are revalidated, the texts visits, bookings and grievances send,
@@ -160,6 +182,14 @@ def build_registry(
     registry.register(REFUND_DUE, refund_due)
     registry.register(SEND_REFUND, send_refund_handler(gateway))
     registry.register(REFUND_TEXT, refund_text_handler(texts))
+    # Owners' invoices (step 6.5): the PDF, the owner's text, and the balance's payment link. Until
+    # the company's details are set, an invoice is a draft (ADR 0061).
+    registry.register(RENDER_PDF, render_pdf_handler(storage, buckets, seller or InvoiceSeller()))
+    registry.register(INVOICE_TEXT, invoice_text_handler(texts))
+    registry.register(BALANCE_DUE, balance_due_handler(gateway))
+    registry.register(MAKE_LINK, make_link_handler(gateway))
+    registry.register(CHECK_STUCK, check_stuck_handler(gateway))
+    registry.register(MATCH_SETTLEMENTS, match_settlements_handler(gateway))
     registry.register(PROCESS, process_handler(storage, buckets))
     registry.register(DISCARD_UPLOAD, discard_upload_handler(storage, buckets))
     # A listing changed, its rooms and rents included: its search entry and price summaries

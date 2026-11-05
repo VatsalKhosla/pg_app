@@ -166,7 +166,13 @@ def test_the_booking_settles_when_the_24_hours_are_over_and_not_before(
     assert seen["run again"] == ("active", 5)
     assert seen["activated at"] == MOVED_IN + timedelta(hours=24)
     assert seen["history"][-2:] == [("check_in", "student"), ("window_elapsed", "system")]
-    assert seen["texts"] == ["booking_moved_in", "booking_settled", "booking_settled_for_owner"]
+    # The owner hears of the booking settling, and of its invoice (step 6.5).
+    assert seen["texts"] == [
+        "booking_moved_in",
+        "booking_settled",
+        "booking_settled_for_owner",
+        "owner_invoice_issued",
+    ]
     assert seen["student sees"] == "active"
 
 

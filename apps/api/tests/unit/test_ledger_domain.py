@@ -14,8 +14,13 @@ from app.modules.ledger.domain.ledger import (
     Posting,
     PostingKind,
     UnbalancedPostingError,
+    gateway_fee,
     net,
     owner_invoiced,
+    owner_paid,
+    owner_refunded,
+    refund_settled,
+    settled,
     token_applied,
     token_received,
     token_refunded,
@@ -134,3 +139,63 @@ def test_the_books_add_up_after_any_events_in_any_order(
     postings = [made[event] for event in events]
 
     assert sum(_totals(postings).values()) == 0
+
+
+def _balances(*postings: Posting) -> dict[Account, int]:
+    """Debits less credits on each account, leaving out what's nothing."""
+    found: dict[Account, int] = {}
+    for posting in postings:
+        for line in posting.lines:
+            signed = line.amount_paise if line.direction is Direction.DEBIT else -line.amount_paise
+            found[line.account] = found.get(line.account, 0) + signed
+    return {account: balance for account, balance in found.items() if balance}
+
+
+def test_an_owner_who_pays_the_balance_owes_nothing_and_the_gateway_holds_the_fee() -> None:
+    """Step 6.5, the ₹10,000 example: the token pays ₹2,000 of the ₹3,540, the owner the rest."""
+    books = _balances(
+        token_received(rupees(2_000)),
+        token_applied(rupees(2_000)),
+        owner_invoiced(rupees(3_000), rupees(540)),
+        owner_paid(rupees(1_540)),
+    )
+
+    assert books == {
+        Account.GATEWAY_CLEARING: rupees(3_540),
+        Account.PLACEMENT_FEE_REVENUE: -rupees(3_000),
+        Account.GST_PAYABLE: -rupees(540),
+    }
+
+
+def test_a_token_above_the_fee_is_owed_to_the_owner() -> None:
+    books = _balances(
+        token_received(rupees(2_000)),
+        token_applied(rupees(1_770), rupees(230)),
+        owner_invoiced(rupees(1_500), rupees(270)),
+    )
+
+    assert books == {
+        Account.GATEWAY_CLEARING: rupees(2_000),
+        Account.OWNER_PAYABLE: -rupees(230),
+        Account.PLACEMENT_FEE_REVENUE: -rupees(1_500),
+        Account.GST_PAYABLE: -rupees(270),
+    }
+
+
+def test_an_owners_payment_given_back_is_owed_again() -> None:
+    books = _balances(owner_paid(rupees(1_540)), owner_refunded(rupees(1_540)))
+
+    assert books == {}
+
+
+def test_the_settlement_report_empties_the_gateways_account_into_the_bank() -> None:
+    """Step 6.6: a token in, then refunded, then settled: the bank is short only the fee."""
+    books = _balances(
+        token_received(rupees(2_000)),
+        token_refunded(rupees(2_000)),
+        gateway_fee(rupees(47)),
+        settled(rupees(1_953)),
+        refund_settled(rupees(2_000)),
+    )
+
+    assert books == {Account.PAYMENT_FEES: rupees(47), Account.BANK: -rupees(47)}

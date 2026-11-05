@@ -5,8 +5,11 @@ from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from datetime import date
 
+    from app.modules.payments.domain.links import GatewayLink
     from app.modules.payments.domain.payments import GatewayOrder, GatewayPayment, Provider
+    from app.modules.payments.domain.reconciliation import SettlementItem
     from app.modules.payments.domain.refunds import GatewayRefund
     from app.modules.payments.domain.webhooks import GatewayEvent
 
@@ -19,6 +22,8 @@ class PaymentGateway(Protocol):
     name: Provider
     # The public half of the key, which the browser's checkout needs.
     key_id: str
+    # Whether it pays a bank, so a payment no report has settled means something (step 6.6).
+    settles: bool
 
     async def create_order(
         self, *, amount_paise: int, receipt: str, notes: Mapping[str, str]
@@ -50,4 +55,29 @@ class PaymentGateway(Protocol):
         """``amount_paise`` of the payment goes back. ``receipt`` is unique to the refund: asking
         again, after an answer that got lost, gives back the same refund. Raises
         PaymentGatewayRefusedError when the gateway says no, which asking again won't change."""
+        ...
+
+    async def create_payment_link(
+        self, *, amount_paise: int, reference: str, description: str, notes: Mapping[str, str]
+    ) -> GatewayLink:
+        """A link to pay exactly ``amount_paise``, which the gateway itself sends no message about.
+        ``reference`` is unique to it: asking again, after an answer that got lost, gives back the
+        same link. Raises PaymentGatewayRefusedError when the gateway says no."""
+        ...
+
+    async def fetch_payment_link(self, link_id: str) -> GatewayLink:
+        """The link as the gateway has it now."""
+        ...
+
+    async def order_payments(self, order_id: str) -> list[GatewayPayment]:
+        """Every attempt at paying our order, as the gateway has them now (step 6.6)."""
+        ...
+
+    async def payment_refunds(self, payment_id: str) -> list[GatewayRefund]:
+        """Every refund of a payment, as the gateway has them now (step 6.6)."""
+        ...
+
+    async def settlement_items(self, on: date) -> list[SettlementItem]:
+        """The settlement report for a day in India: every payment, refund, fee and payout the
+        gateway settled that day (step 6.6)."""
         ...

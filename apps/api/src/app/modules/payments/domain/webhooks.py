@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import TYPE_CHECKING, Final, cast
 
+from app.modules.payments.domain.links import GatewayLink, LinkStatus
 from app.modules.payments.domain.payments import GatewayPayment, GatewayStatus
 from app.modules.payments.domain.refunds import GatewayRefund, GatewayRefundStatus
 
@@ -40,6 +41,8 @@ class GatewayEvent:
     unreadable: bool = False
     # The refund it's about, if it's a refund event.
     refund: GatewayRefund | None = None
+    # The payment link it's about, if it's a link event (step 6.5).
+    link: GatewayLink | None = None
 
 
 def too_old(event: GatewayEvent, now: datetime) -> bool:
@@ -50,9 +53,25 @@ def kept_payload(event: GatewayEvent) -> dict[str, object]:
     """All that's stored of an event."""
     payment = event.payment
     refund = event.refund
+    link = event.link
     return {
         "createdAt": event.created_at.isoformat(),
         **({"unreadable": True} if event.unreadable else {}),
+        **(
+            {}
+            if link is None
+            else {
+                "link": {
+                    "id": link.id,
+                    "reference": link.reference,
+                    "amountPaise": link.amount_paise,
+                    "amountPaidPaise": link.amount_paid_paise,
+                    "status": link.status,
+                    "url": link.url,
+                    "paymentId": link.payment_id,
+                }
+            }
+        ),
         **(
             {}
             if refund is None
@@ -115,4 +134,21 @@ def refund_in(payload: Mapping[str, object]) -> GatewayRefund | None:
         status=GatewayRefundStatus(str(stored["status"])),
         receipt=_text_or_none(stored["receipt"]),
         reference=_text_or_none(stored["reference"]),
+    )
+
+
+def link_in(payload: Mapping[str, object]) -> GatewayLink | None:
+    """The payment link a stored event is about, if any."""
+    found = payload.get("link")
+    if found is None:
+        return None
+    stored = cast("Mapping[str, object]", found)
+    return GatewayLink(
+        id=str(stored["id"]),
+        reference=_text_or_none(stored["reference"]),
+        amount_paise=int(str(stored["amountPaise"])),
+        amount_paid_paise=int(str(stored["amountPaidPaise"])),
+        status=LinkStatus(str(stored["status"])),
+        url=str(stored["url"]),
+        payment_id=_text_or_none(stored["paymentId"]),
     )

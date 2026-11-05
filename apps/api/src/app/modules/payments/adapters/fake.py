@@ -19,6 +19,7 @@ from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Final
 
 from app.modules.payments.adapters.razorpay import read_razorpay_webhook
+from app.modules.payments.domain.links import GatewayLink, LinkStatus
 from app.modules.payments.domain.payments import (
     INR,
     GatewayOrder,
@@ -35,13 +36,15 @@ from app.modules.payments.errors import (
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
-    from datetime import datetime
+    from datetime import date, datetime
 
+    from app.modules.payments.domain.reconciliation import SettlementItem
     from app.modules.payments.domain.webhooks import GatewayEvent
 
 _KEY_SECRET: Final = "fake-gateway-key-secret"  # noqa: S105 - not a secret: it signs fake payments
 _WEBHOOK_SECRET: Final = "fake-gateway-webhook-secret"  # noqa: S105 - as above
 _PAYMENT_ID: Final = re.compile(r"pay_fake_(?P<amount>[0-9]+)_(?P<digest>[0-9a-f]+)")
+_LINK_ID: Final = re.compile(r"plink_fake_(?P<amount>[0-9]+)_(?P<digest>[0-9a-f]+)")
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,10 +70,21 @@ class FakeGateway:
 
     def __init__(self) -> None:
         self.unreachable = False
+        # It pays no bank; a test can make it say it does.
+        self.settles = False
         self.orders_made = 0
         self.refunds_made = 0
         # Each refund asked for, by its receipt: a test can count its own among others'.
         self.refund_receipts: list[str] = []
+        self.links_made = 0
+        self.refuses_links = False
+        # What tests make the gateway say: about a link, an order's attempts, a payment's refunds,
+        # and a day's settlement report. It says nothing about anything else: on the test site, an
+        # abandoned checkout stays unpaid.
+        self.links: dict[str, GatewayLink] = {}
+        self.order_attempts: dict[str, list[GatewayPayment]] = {}
+        self.refunds_said: dict[str, list[GatewayRefund]] = {}
+        self.settlements: dict[date, list[SettlementItem]] = {}
         self.refund_status = GatewayRefundStatus.PROCESSED
         self.refuses_refunds = False
         self._said: dict[str, GatewayPayment] = {}
@@ -118,6 +132,110 @@ class FakeGateway:
             status=self.refund_status,
             receipt=receipt,
             reference="ARN-FAKE-0001",
+        )
+
+    async def create_payment_link(
+        self, *, amount_paise: int, reference: str, description: str, notes: Mapping[str, str]
+    ) -> GatewayLink:
+        _ = description, notes
+        self._check_reachable()
+        if self.refuses_links:
+            msg = "The test bank won't make this link."
+            raise PaymentGatewayRefusedError(msg)
+        self.links_made += 1
+        digest = hashlib.sha256(reference.encode()).hexdigest()[:16]
+        return _new_link(f"plink_fake_{amount_paise}_{digest}", reference)
+
+    async def fetch_payment_link(self, link_id: str) -> GatewayLink:
+        self._check_reachable()
+        said = self.links.get(link_id)
+        return said if said is not None else _new_link(link_id, None)
+
+    async def order_payments(self, order_id: str) -> list[GatewayPayment]:
+        self._check_reachable()
+        return list(self.order_attempts.get(order_id, []))
+
+    async def payment_refunds(self, payment_id: str) -> list[GatewayRefund]:
+        self._check_reachable()
+        return list(self.refunds_said.get(payment_id, []))
+
+    async def settlement_items(self, on: date) -> list[SettlementItem]:
+        self._check_reachable()
+        return list(self.settlements.get(on, []))
+
+    def link_paid(self, link_id: str, *, reference: str | None, at: datetime) -> SignedWebhook:
+        """The test bank pays a link in full: Razorpay's ``payment_link.paid``, signed. The same
+        link always gets the same payment."""
+        found = _LINK_ID.fullmatch(link_id)
+        if found is None:
+            raise PaymentGatewayUnavailableError
+        amount, digest = int(found["amount"]), found["digest"]
+        paid = GatewayLink(
+            id=link_id,
+            reference=reference,
+            amount_paise=amount,
+            amount_paid_paise=amount,
+            status=LinkStatus.PAID,
+            url=_link_url(link_id),
+        )
+        payment = GatewayPayment(
+            id=f"pay_fake_{amount}_{digest}",
+            order_id=f"order_fake_{amount}_{digest}",
+            amount_paise=amount,
+            currency=INR,
+            status=GatewayStatus.CAPTURED,
+        )
+        return self.link_webhook("payment_link.paid", paid, at=at, payment=payment)
+
+    def link_webhook(
+        self,
+        event: str,
+        link: GatewayLink,
+        *,
+        at: datetime,
+        payment: GatewayPayment | None = None,
+        event_id: str = "",
+    ) -> SignedWebhook:
+        """A signed webhook about ``link``, in the shape of Razorpay's."""
+        payload: dict[str, object] = {
+            "payment_link": {
+                "entity": {
+                    "id": link.id,
+                    "entity": "payment_link",
+                    "reference_id": link.reference,
+                    "amount": link.amount_paise,
+                    "amount_paid": link.amount_paid_paise,
+                    "currency": INR,
+                    "status": link.status,
+                    "short_url": link.url,
+                    "order_id": None if payment is None else payment.order_id,
+                }
+            }
+        }
+        if payment is not None:
+            payload["payment"] = {
+                "entity": {
+                    "id": payment.id,
+                    "entity": "payment",
+                    "amount": payment.amount_paise,
+                    "currency": payment.currency,
+                    "status": payment.status,
+                    "order_id": payment.order_id,
+                    "method": "upi",
+                    "contact": "+919000000001",
+                    "fee": 0,
+                    "tax": 0,
+                }
+            }
+        return self.signed(
+            {
+                "entity": "event",
+                "event": event,
+                "contains": list(payload),
+                "created_at": int(at.timestamp()),
+                "payload": payload,
+            },
+            event_id=event_id,
         )
 
     def checkout(self, order_id: str) -> CheckoutProof:
@@ -247,3 +365,21 @@ class FakeGateway:
     def _check_reachable(self) -> None:
         if self.unreachable:
             raise PaymentGatewayUnavailableError
+
+
+def _link_url(link_id: str) -> str:
+    return f"https://pay.fake.test/{link_id}"
+
+
+def _new_link(link_id: str, reference: str | None) -> GatewayLink:
+    found = _LINK_ID.fullmatch(link_id)
+    if found is None:
+        raise PaymentGatewayUnavailableError
+    return GatewayLink(
+        id=link_id,
+        reference=reference,
+        amount_paise=int(found["amount"]),
+        amount_paid_paise=0,
+        status=LinkStatus.CREATED,
+        url=_link_url(link_id),
+    )

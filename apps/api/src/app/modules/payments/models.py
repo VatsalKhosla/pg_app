@@ -21,6 +21,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.db import Model
 from app.core.ids import new_public_id
 from app.modules.payments.domain.payments import PaymentMode, PaymentPurpose, PaymentStatus
+from app.modules.payments.domain.reconciliation import IssueKind
 from app.modules.payments.domain.refunds import RefundKind, RefundStatus
 
 if TYPE_CHECKING:
@@ -51,8 +52,15 @@ class Payment(Model):
     provider_payment_id: Mapped[str | None] = mapped_column(Text)
     amount_paise: Mapped[int] = mapped_column(BigInteger)
     status: Mapped[str] = mapped_column(Text, server_default=PaymentStatus.CREATED.value)
-    # By the app's clock, like the booking's own stamps.
+    # By the app's clock, like the booking's own stamps. Made: when it was asked for (step 6.6;
+    # empty on rows from before).
+    made_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     captured_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # An owner's invoice it pays the balance of, through a payment link (step 6.5).
+    invoice_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("owner_invoices.id"))
+    provider_link_id: Mapped[str | None] = mapped_column(Text)
+    # When its link stopped being payable: expired, cancelled, or refused. Another can follow.
+    link_ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (
         CheckConstraint(_one_of("purpose", PaymentPurpose), name="purpose"),
@@ -64,6 +72,25 @@ class Payment(Model):
             "status = 'created' OR provider_payment_id IS NOT NULL", name="provider_payment"
         ),
         Index("ix_payments_booking_id", "booking_id"),
+        CheckConstraint("(purpose = 'owner_invoice') = (invoice_id IS NOT NULL)", name="invoice"),
+        CheckConstraint("provider_link_id IS NULL OR purpose = 'owner_invoice'", name="link"),
+        Index("ix_payments_invoice_id", "invoice_id"),
+        Index(
+            "uq_payments_provider_link_id",
+            "provider",
+            "provider_link_id",
+            unique=True,
+            postgresql_where=sql("provider_link_id IS NOT NULL"),
+        ),
+        # One link an invoice can be paid by at a time.
+        Index(
+            "uq_payments_open_invoice_link",
+            "invoice_id",
+            unique=True,
+            postgresql_where=sql("invoice_id IS NOT NULL AND link_ended_at IS NULL"),
+        ),
+        # What reconciliation asks about.
+        Index("ix_payments_status_made_at", "status", "made_at"),
         Index(
             "uq_payments_provider_order_id",
             "provider",
@@ -142,4 +169,39 @@ class Refund(Model):
             unique=True,
             postgresql_where=sql("provider_refund_id IS NOT NULL"),
         ),
+    )
+
+
+class ReconciliationIssue(Model):
+    """Something reconciliation found that a person has to look at (step 6.6, ADR 0062): raised
+    once, however often it's found again, and closed by ops with what they did."""
+
+    __tablename__ = "reconciliation_issues"
+
+    public_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, default=new_public_id)
+    kind: Mapped[str] = mapped_column(Text)
+    provider: Mapped[str] = mapped_column(Text)
+    # The gateway's id for what it's about (pay_, rfnd_, plink_ ...), or our payment's.
+    reference: Mapped[str] = mapped_column(Text)
+    booking_code: Mapped[str | None] = mapped_column(Text)
+    amount_paise: Mapped[int | None] = mapped_column(BigInteger)
+    detail: Mapped[str] = mapped_column(Text)
+    found_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolved_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
+    resolution: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        CheckConstraint(_one_of("kind", IssueKind), name="kind"),
+        CheckConstraint(
+            "(resolved_at IS NULL) = (resolved_by IS NULL)"
+            " AND (resolved_at IS NULL) = (resolution IS NULL)",
+            name="resolved",
+        ),
+        UniqueConstraint(
+            "kind", "provider", "reference", name="uq_reconciliation_issues_kind_reference"
+        ),
+        # Ops' list: open ones first, newest first.
+        Index("ix_reconciliation_issues_resolved_at", "resolved_at", "public_id"),
+        Index("ix_reconciliation_issues_resolved_by", "resolved_by"),
     )

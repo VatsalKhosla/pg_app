@@ -200,6 +200,18 @@ class BookingPlace:
 
 
 @dataclass(frozen=True, slots=True)
+class InvoiceParty:
+    """Who an invoice is to, and for which PG, as the invoice prints it (step 6.5). The owner sees
+    their own PG's address on it."""
+
+    legal_name: str
+    business_name: str
+    gstin: str | None
+    pg_name: str
+    pg_address: str
+
+
+@dataclass(frozen=True, slots=True)
 class SellableRoom:
     """A room with its beds that can be sold, by internal id, for a hold to choose from."""
 
@@ -501,6 +513,23 @@ class CatalogLookup:
         """The owner record of a person signed in by phone, if they're an owner."""
         owner = await self._catalog.owner_of_user(user_id)
         return None if owner is None else owner.id
+
+    async def owner_names(self, owner_ids: Collection[int]) -> dict[int, str]:
+        """Owners' business names by owner id: one query, however many."""
+        found = await self._catalog.owners_by_id(owner_ids)
+        return {owner_id: owner.business_name for owner_id, owner in found.items()}
+
+    async def invoice_party(self, owner_id: int, property_id: int) -> InvoiceParty:
+        owner = (await self._catalog.owners_by_id({owner_id}))[owner_id]
+        place = (await self._catalog.properties_by_id({property_id}))[property_id]
+        locality = (await self._geo.localities({place.locality_id}))[place.locality_id]
+        return InvoiceParty(
+            legal_name=owner.legal_name,
+            business_name=owner.business_name,
+            gstin=owner.gstin,
+            pg_name=place.name,
+            pg_address=f"{place.address_line}, {locality.name}",
+        )
 
     async def owner_user_ids(self, owner_ids: Collection[int]) -> dict[int, int]:
         """Each owner's account, by owner id: who an owner's texts go to."""

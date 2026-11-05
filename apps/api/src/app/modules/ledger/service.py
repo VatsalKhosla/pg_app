@@ -22,6 +22,7 @@ from app.modules.ledger.schemas import (
 
 if TYPE_CHECKING:
     import uuid
+    from collections.abc import Collection
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -64,6 +65,10 @@ class Ledger:
         await self._ledger.add_entries(transaction, posting.lines)
         _postings.add(1, {"kind": posting.kind})
         return True
+
+    async def posted(self, keys: Collection[str]) -> set[str]:
+        """Which of these postings' keys are on the books already."""
+        return await self._ledger.posted_keys(keys)
 
 
 class LedgerReader:

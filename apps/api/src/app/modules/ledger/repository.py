@@ -23,6 +23,15 @@ class LedgerRepository:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
+    async def posted_keys(self, keys: Collection[str]) -> set[str]:
+        """Which of ``keys`` were posted already."""
+        if not keys:
+            return set()
+        rows = await self._db.scalars(
+            select(LedgerTransaction.key).where(LedgerTransaction.key.in_(keys))
+        )
+        return set(rows)
+
     async def add_transaction_once(
         self,
         *,

@@ -44,6 +44,7 @@ from app.modules.identity.router import GOOGLE_CALLBACK_PATH
 from app.modules.identity.router import router as identity_router
 from app.modules.inventory.router import router as inventory_router
 from app.modules.inventory.service import AllocationsTaken
+from app.modules.invoices.router import router as invoices_router
 from app.modules.ledger.router import router as ledger_router
 from app.modules.media.adapters.s3 import S3Storage
 from app.modules.media.router import router as media_router
@@ -96,6 +97,7 @@ ROUTERS: Final = (
     booking_router,
     payments_router,
     ledger_router,
+    invoices_router,
     visits_router,
     media_router,
 )

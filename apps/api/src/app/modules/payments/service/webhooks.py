@@ -15,11 +15,18 @@ from opentelemetry import metrics
 
 from app.core import audit
 from app.core.outbox import enqueue
-from app.modules.payments.domain.payments import Settlement
-from app.modules.payments.domain.webhooks import kept_payload, payment_in, refund_in, too_old
+from app.modules.payments.domain.payments import PaymentPurpose, Settlement
+from app.modules.payments.domain.webhooks import (
+    kept_payload,
+    link_in,
+    payment_in,
+    refund_in,
+    too_old,
+)
 from app.modules.payments.errors import WebhookInvalidError
 from app.modules.payments.repository import PaymentRepository
 from app.modules.payments.schemas import WebhookReceipt
+from app.modules.payments.service.invoice_links import InvoiceLinks
 from app.modules.payments.service.refunds import Refunds
 from app.modules.payments.service.settlement import PaymentSettlements
 
@@ -27,6 +34,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.core.clock import Clock
+    from app.modules.payments.domain.payments import GatewayPayment
     from app.modules.payments.ports import PaymentGateway
 
 PROCESS_EVENT: Final = "payments.process_event"
@@ -51,6 +59,7 @@ class PaymentWebhooks:
         self._payments = PaymentRepository(db)
         self._settlements = PaymentSettlements(db, clock)
         self._refunds = Refunds(db, clock)
+        self._links = InvoiceLinks(db, clock)
 
     async def receive(
         self, gateway: PaymentGateway, *, raw_body: bytes, signature: str, event_id: str
@@ -97,21 +106,28 @@ class PaymentWebhooks:
             return
         found = payment_in(event.payload)
         refund = refund_in(event.payload)
+        link = link_in(event.payload)
         if refund is not None:
             event.error = await self._refunds.settle(event.provider, refund, found)
-            return
-        if found is None:
-            return  # an event we don't act on
+        elif link is not None:
+            event.error = await self._links.settle(event.provider, link, found)
+        elif found is not None:
+            event.error = await self._payment(event.provider, event.event_type, found)
+
+    async def _payment(self, provider: str, kind: str, found: GatewayPayment) -> str | None:
+        """An order's payment, as a checkout would settle it. Why it moved nothing, when someone
+        should look."""
         payment = (
             None
             if found.order_id is None
-            else await self._payments.by_order(event.provider, found.order_id)
+            else await self._payments.by_order(provider, found.order_id)
         )
         if payment is None:
-            # Another environment's, on the same Razorpay account, or a payment link.
-            logger.info("a webhook about no order of ours", event_type=event.event_type)
-            event.error = "unknown_order"
-            return
+            # Another environment's, on the same Razorpay account, or a payment link's, whose
+            # order we learn as the link is paid.
+            logger.info("a webhook about no order of ours", event_type=kind)
+            return "unknown_order"
+        if payment.purpose != PaymentPurpose.TOKEN:
+            return None  # a link's payment: its link's own event moves it
         settled = await self._settlements.apply(payment, found, by=audit.SYSTEM)
-        if settled is Settlement.MISMATCH:
-            event.error = "mismatch"
+        return "mismatch" if settled is Settlement.MISMATCH else None

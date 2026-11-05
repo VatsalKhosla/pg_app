@@ -32,6 +32,7 @@ from app.core.texts import ConsoleTexts, NoTexts
 from app.core.web_cache import NoWebCache, SignedWebCache, WebCache
 from app.jobs import SCHEDULES, build_registry
 from app.modules.inventory.service import AllocationsTaken
+from app.modules.invoices.pdf import InvoiceSeller
 from app.modules.media.adapters.s3 import S3Storage
 from app.modules.media.service import Buckets
 from app.modules.payments.gateways import build_gateway
@@ -146,6 +147,7 @@ async def _serve_until_signalled(
                 web_cache=web_cache(settings, http),
                 texts=ConsoleTexts() if settings.text_sender == "console" else NoTexts(),
                 gateway=build_gateway(settings, http),
+                seller=InvoiceSeller.from_settings(settings),
                 analytics=analytics(settings, http),
                 beds=AllocationsTaken(),
             ),

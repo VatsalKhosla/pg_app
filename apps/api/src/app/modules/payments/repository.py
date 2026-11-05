@@ -2,11 +2,11 @@
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from app.modules.payments.domain.payments import PaymentPurpose, PaymentStatus
-from app.modules.payments.models import Payment, PaymentEvent, Refund
+from app.modules.payments.models import Payment, PaymentEvent, ReconciliationIssue, Refund
 
 if TYPE_CHECKING:
     import uuid
@@ -85,6 +85,8 @@ class PaymentRepository:
         provider: str,
         key: str,
         amount_paise: int,
+        made_at: datetime,
+        invoice_id: int | None = None,
     ) -> Payment:
         """The payment with this key, added if there isn't one yet. Two requests at once get the
         same row."""
@@ -97,6 +99,8 @@ class PaymentRepository:
                 provider=provider,
                 idempotency_key=key,
                 amount_paise=amount_paise,
+                made_at=made_at,
+                invoice_id=invoice_id,
             )
             .on_conflict_do_nothing(index_elements=[Payment.idempotency_key])
         )
@@ -121,13 +125,188 @@ class PaymentRepository:
             select(Payment.provider_order_id).where(Payment.public_id == public_id)
         )
 
-    async def of_bookings(self, booking_ids: Collection[int]) -> list[Payment]:
+    async def of_bookings(
+        self, booking_ids: Collection[int], *, purpose: PaymentPurpose | None = None
+    ) -> list[Payment]:
         if not booking_ids:
             return []
+        query = select(Payment).where(Payment.booking_id.in_(booking_ids))
+        if purpose is not None:
+            query = query.where(Payment.purpose == purpose)
+        rows = await self._db.scalars(query.order_by(Payment.id))
+        return list(rows)
+
+    # Payment links (step 6.5).
+
+    async def open_link_of(self, invoice_id: int) -> Payment | None:
+        """The invoice's payment whose link can still be paid, or is being made."""
+        return await self._db.scalar(
+            select(Payment).where(Payment.invoice_id == invoice_id, Payment.link_ended_at.is_(None))
+        )
+
+    async def ended_links_of(self, invoice_id: int) -> int:
+        return int(
+            await self._db.scalar(
+                select(func.count())
+                .select_from(Payment)
+                .where(Payment.invoice_id == invoice_id, Payment.link_ended_at.is_not(None))
+            )
+            or 0
+        )
+
+    async def by_link(self, provider: str, link_id: str) -> Payment | None:
+        """The payment the gateway's link belongs to, locked, as it is now."""
+        return await self._db.scalar(
+            select(Payment)
+            .where(Payment.provider == provider, Payment.provider_link_id == link_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+
+    # Reconciliation (step 6.6).
+
+    async def waiting_tokens(
+        self, *, made_after: datetime, made_before: datetime, limit: int
+    ) -> list[Payment]:
+        """Tokens whose checkout hasn't come back, oldest first."""
         rows = await self._db.scalars(
-            select(Payment).where(Payment.booking_id.in_(booking_ids)).order_by(Payment.id)
+            select(Payment)
+            .where(
+                Payment.purpose == PaymentPurpose.TOKEN,
+                Payment.status.in_([PaymentStatus.CREATED, PaymentStatus.AUTHORIZED]),
+                Payment.provider_order_id.is_not(None),
+                Payment.made_at >= made_after,
+                Payment.made_at <= made_before,
+            )
+            .order_by(Payment.made_at)
+            .limit(limit)
         )
         return list(rows)
+
+    async def open_links(self, *, made_after: datetime | None, limit: int) -> list[Payment]:
+        """Links not yet paid, ended or refused, oldest first."""
+        query = select(Payment).where(
+            Payment.purpose == PaymentPurpose.OWNER_INVOICE,
+            Payment.status == PaymentStatus.CREATED,
+            Payment.provider_link_id.is_not(None),
+            Payment.link_ended_at.is_(None),
+        )
+        if made_after is not None:
+            query = query.where(Payment.made_at >= made_after)
+        rows = await self._db.scalars(query.order_by(Payment.id).limit(limit))
+        return list(rows)
+
+    async def captured_between(
+        self, *, after: datetime, before: datetime, limit: int
+    ) -> list[Payment]:
+        rows = await self._db.scalars(
+            select(Payment)
+            .where(
+                Payment.status == PaymentStatus.CAPTURED,
+                Payment.captured_at >= after,
+                Payment.captured_at < before,
+            )
+            .order_by(Payment.captured_at)
+            .limit(limit)
+        )
+        return list(rows)
+
+    async def refunds_waiting(self, *, limit: int) -> list[Refund]:
+        """Refunds asked for or sent, and not yet back from the bank, oldest first."""
+        rows = await self._db.scalars(
+            select(Refund)
+            .where(Refund.status.in_(["requested", "pending"]))
+            .order_by(Refund.requested_at)
+            .limit(limit)
+        )
+        return list(rows)
+
+    async def counts_waiting(self) -> tuple[int, int, int]:
+        """How many tokens, links and refunds are waiting on the gateway."""
+        tokens = await self._db.scalar(
+            select(func.count())
+            .select_from(Payment)
+            .where(
+                Payment.purpose == PaymentPurpose.TOKEN,
+                Payment.status == PaymentStatus.AUTHORIZED,
+            )
+        )
+        links = await self._db.scalar(
+            select(func.count())
+            .select_from(Payment)
+            .where(
+                Payment.purpose == PaymentPurpose.OWNER_INVOICE,
+                Payment.status == PaymentStatus.CREATED,
+                Payment.link_ended_at.is_(None),
+            )
+        )
+        refunds = await self._db.scalar(
+            select(func.count())
+            .select_from(Refund)
+            .where(Refund.status.in_(["requested", "pending"]))
+        )
+        return int(tokens or 0), int(links or 0), int(refunds or 0)
+
+    async def add_issue_once(
+        self,
+        *,
+        kind: str,
+        provider: str,
+        reference: str,
+        booking_code: str | None,
+        amount_paise: int | None,
+        detail: str,
+        found_at: datetime,
+    ) -> bool:
+        """Whether this raised it: False if it was raised before, open or not."""
+        added = await self._db.scalar(
+            insert(ReconciliationIssue)
+            .values(
+                kind=kind,
+                provider=provider,
+                reference=reference,
+                booking_code=booking_code,
+                amount_paise=amount_paise,
+                detail=detail,
+                found_at=found_at,
+            )
+            .on_conflict_do_nothing(constraint="uq_reconciliation_issues_kind_reference")
+            .returning(ReconciliationIssue.id)
+        )
+        return added is not None
+
+    async def issue_page(
+        self, *, open_only: bool, after: uuid.UUID | None, limit: int
+    ) -> list[ReconciliationIssue]:
+        """Newest first, ``limit + 1`` of them (the extra says there's more)."""
+        query = select(ReconciliationIssue)
+        if open_only:
+            query = query.where(ReconciliationIssue.resolved_at.is_(None))
+        if after is not None:
+            query = query.where(ReconciliationIssue.public_id < after)
+        rows = await self._db.scalars(
+            query.order_by(ReconciliationIssue.public_id.desc()).limit(limit + 1)
+        )
+        return list(rows)
+
+    async def issue(self, public_id: uuid.UUID) -> ReconciliationIssue | None:
+        """The issue, locked, as it is now."""
+        return await self._db.scalar(
+            select(ReconciliationIssue)
+            .where(ReconciliationIssue.public_id == public_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+
+    async def open_issues(self) -> int:
+        return int(
+            await self._db.scalar(
+                select(func.count())
+                .select_from(ReconciliationIssue)
+                .where(ReconciliationIssue.resolved_at.is_(None))
+            )
+            or 0
+        )
 
     async def add_event_once(
         self,

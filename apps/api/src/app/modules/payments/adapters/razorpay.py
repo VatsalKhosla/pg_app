@@ -16,6 +16,7 @@ import httpx
 import structlog
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from app.modules.payments.domain.links import LINK_EVENTS, GatewayLink, LinkStatus
 from app.modules.payments.domain.payments import (
     INR,
     GatewayOrder,
@@ -23,6 +24,7 @@ from app.modules.payments.domain.payments import (
     GatewayStatus,
     Provider,
 )
+from app.modules.payments.domain.reconciliation import SettlementItem
 from app.modules.payments.domain.refunds import GatewayRefund, GatewayRefundStatus
 from app.modules.payments.domain.signatures import checkout_signature, same, webhook_signature
 from app.modules.payments.domain.webhooks import PAYMENT_EVENTS, REFUND_EVENTS, GatewayEvent
@@ -33,6 +35,7 @@ from app.modules.payments.errors import (
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from datetime import date
 
     from pydantic import SecretStr
 
@@ -43,6 +46,10 @@ EVENT_ID_HEADER: Final = "X-Razorpay-Event-Id"
 FETCH_ATTEMPTS: Final = 3
 # Razorpay answers every error, a repeated receipt included, with a code and these words.
 _DUPLICATE: Final = "duplicate"
+# ...and a payment link's reference used before with these.
+_ATTEMPTED: Final = "already attempted"
+# The most report items Razorpay gives in one answer.
+_REPORT_PAGE: Final = 1000
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -89,6 +96,47 @@ class _Refunds(_Answer):
     items: list[_Refund]
 
 
+class _Payments(_Answer):
+    items: list[_Payment]
+
+
+class _LinkPayment(_Answer):
+    payment_id: str
+    status: str = ""
+
+
+class _Link(_Answer):
+    id: str
+    reference_id: str | None = None
+    amount: int
+    amount_paid: int = 0
+    status: LinkStatus
+    short_url: str = ""
+    payments: list[_LinkPayment] | None = None
+
+
+class _Links(_Answer):
+    payment_links: list[_Link]
+
+
+class _ReportItem(_Answer):
+    entity_id: str
+    type: str
+    amount: int
+    fee: int | None = None
+    tax: int | None = None
+    credit: int = 0
+    debit: int = 0
+    currency: str = INR
+    settled: bool = False
+    settlement_id: str | None = None
+    payment_id: str | None = None
+
+
+class _Report(_Answer):
+    items: list[_ReportItem]
+
+
 class _ErrorBody(_Answer):
     code: str = ""
     description: str = ""
@@ -110,6 +158,14 @@ class _PaymentEntity(_Answer):
 
 class _WithPayment(_Answer):
     payment: _PaymentEntity
+
+
+class _LinkEntity(_Answer):
+    entity: _Link
+
+
+class _WithLink(_Answer):
+    payment_link: _LinkEntity
 
 
 class _RefundEntity(_Answer):
@@ -142,6 +198,48 @@ def _as_refund(found: _Refund) -> GatewayRefund:
     )
 
 
+def _as_link(found: _Link, *, paid_by: str | None = None) -> GatewayLink:
+    captured = [each.payment_id for each in found.payments or [] if each.status == "captured"]
+    return GatewayLink(
+        id=found.id,
+        reference=found.reference_id or None,
+        amount_paise=found.amount,
+        amount_paid_paise=found.amount_paid,
+        status=found.status,
+        url=found.short_url,
+        payment_id=captured[0] if captured else paid_by,
+    )
+
+
+def _as_item(found: _ReportItem) -> SettlementItem:
+    return SettlementItem(
+        entity_id=found.entity_id,
+        kind=found.type,
+        amount_paise=found.amount,
+        fee_paise=found.fee or 0,
+        tax_paise=found.tax or 0,
+        credit_paise=found.credit,
+        debit_paise=found.debit,
+        currency=found.currency,
+        settled=found.settled,
+        settlement_id=found.settlement_id,
+        payment_id=found.payment_id,
+    )
+
+
+def _link_event(found: _Webhook, created_at: datetime) -> GatewayEvent:
+    try:
+        link = _WithLink.model_validate(found.payload).payment_link.entity
+    except ValidationError:
+        return GatewayEvent(found.event, created_at, None, unreadable=True)
+    try:
+        payment = _as_payment(_WithPayment.model_validate(found.payload).payment.entity)
+    except ValidationError:
+        payment = None  # an expired or cancelled link has none
+    paid_by = None if payment is None else payment.id
+    return GatewayEvent(found.event, created_at, payment, link=_as_link(link, paid_by=paid_by))
+
+
 def _refund_event(found: _Webhook, created_at: datetime) -> GatewayEvent:
     try:
         refund = _WithRefund.model_validate(found.payload).refund.entity
@@ -166,6 +264,8 @@ def read_razorpay_webhook(raw_body: bytes) -> GatewayEvent | None:
     created_at = datetime.fromtimestamp(found.created_at, tz=UTC)
     if found.event in REFUND_EVENTS:
         return _refund_event(found, created_at)
+    if found.event in LINK_EVENTS:
+        return _link_event(found, created_at)
     if found.event not in PAYMENT_EVENTS:
         return GatewayEvent(found.event, created_at, None)
     try:
@@ -184,6 +284,7 @@ def _error_of(response: httpx.Response) -> _ErrorBody:
 
 class RazorpayGateway:
     name: Provider = "razorpay"
+    settles = True
 
     def __init__(
         self,
@@ -271,18 +372,112 @@ class RazorpayGateway:
         raise PaymentGatewayRefusedError(said.description or "Razorpay refused this refund.")
 
     async def _refund_with_receipt(self, payment_id: str, receipt: str) -> GatewayRefund:
+        for refund in await self.payment_refunds(payment_id):
+            if refund.receipt == receipt:
+                return refund
+        logger.error("razorpay has no refund for a receipt it called a duplicate")
+        raise PaymentGatewayUnavailableError
+
+    async def create_payment_link(
+        self, *, amount_paise: int, reference: str, description: str, notes: Mapping[str, str]
+    ) -> GatewayLink:
+        response = await self._send(
+            "POST",
+            "/payment_links",
+            json={
+                "amount": amount_paise,
+                "currency": INR,
+                "accept_partial": False,
+                "reference_id": reference,
+                "description": description,
+                # We tell the owner ourselves (step 6.5).
+                "notify": {"sms": False, "email": False},
+                "reminder_enable": False,
+                "notes": dict(notes),
+            },
+        )
+        if response.is_success:
+            return self._link(response, "create_payment_link")
+        said = _error_of(response)
+        words = said.description.lower()
+        if _ATTEMPTED in words or _DUPLICATE in words:
+            return await self._link_with_reference(reference)
+        if self._may_pass(response):
+            raise self._refused("create_payment_link", response)
+        logger.error(
+            "razorpay won't make a payment link", status=response.status_code, code=said.code
+        )
+        raise PaymentGatewayRefusedError(said.description or "Razorpay refused this payment link.")
+
+    async def fetch_payment_link(self, link_id: str) -> GatewayLink:
+        response = await self._fetch(f"/payment_links/{link_id}")
+        if not response.is_success:
+            raise self._refused("fetch_payment_link", response)
+        return self._link(response, "fetch_payment_link")
+
+    async def order_payments(self, order_id: str) -> list[GatewayPayment]:
+        response = await self._fetch(f"/orders/{order_id}/payments")
+        if not response.is_success:
+            raise self._refused("order_payments", response)
+        try:
+            payments = _Payments.model_validate_json(response.content).items
+        except ValidationError as error:
+            raise self._malformed("order_payments") from error
+        return [_as_payment(payment) for payment in payments]
+
+    async def payment_refunds(self, payment_id: str) -> list[GatewayRefund]:
         response = await self._fetch(f"/payments/{payment_id}/refunds", params={"count": "100"})
         if not response.is_success:
-            raise self._refused("find_refund", response)
+            raise self._refused("payment_refunds", response)
         try:
             refunds = _Refunds.model_validate_json(response.content).items
         except ValidationError as error:
-            raise self._malformed("find_refund") from error
-        for refund in refunds:
-            if refund.receipt == receipt:
-                return _as_refund(refund)
-        logger.error("razorpay has no refund for a receipt it called a duplicate")
-        raise PaymentGatewayUnavailableError
+            raise self._malformed("payment_refunds") from error
+        return [_as_refund(refund) for refund in refunds]
+
+    async def settlement_items(self, on: date) -> list[SettlementItem]:
+        items: list[SettlementItem] = []
+        while True:
+            response = await self._fetch(
+                "/settlements/recon/combined",
+                params={
+                    "year": str(on.year),
+                    "month": f"{on.month:02d}",
+                    "day": f"{on.day:02d}",
+                    "count": str(_REPORT_PAGE),
+                    "skip": str(len(items)),
+                },
+            )
+            if not response.is_success:
+                raise self._refused("settlement_items", response)
+            try:
+                page = _Report.model_validate_json(response.content).items
+            except ValidationError as error:
+                raise self._malformed("settlement_items") from error
+            items += [_as_item(item) for item in page]
+            if len(page) < _REPORT_PAGE:
+                return items
+
+    def _link(self, response: httpx.Response, call: str) -> GatewayLink:
+        try:
+            return _as_link(_Link.model_validate_json(response.content))
+        except ValidationError as error:
+            raise self._malformed(call) from error
+
+    async def _link_with_reference(self, reference: str) -> GatewayLink:
+        response = await self._fetch("/payment_links", params={"reference_id": reference})
+        if not response.is_success:
+            raise self._refused("find_payment_link", response)
+        try:
+            links = _Links.model_validate_json(response.content).payment_links
+        except ValidationError as error:
+            raise self._malformed("find_payment_link") from error
+        for link in links:
+            if link.reference_id == reference:
+                return _as_link(link)
+        # The reference was spent on an attempt that made nothing: the next try needs another.
+        logger.error("razorpay has no payment link for a reference it called used")
+        raise PaymentGatewayRefusedError("Razorpay has no payment link for this reference.")
 
     async def _order_with_receipt(self, receipt: str) -> GatewayOrder:
         response = await self._fetch("/orders", params={"receipt": receipt})

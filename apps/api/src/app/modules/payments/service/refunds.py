@@ -25,9 +25,9 @@ from app.core.outbox import enqueue
 from app.core.pagination import split_page
 from app.modules.booking.service import BookingTokens
 from app.modules.identity.service import Accounts
-from app.modules.ledger.domain.ledger import token_refunded
+from app.modules.ledger.domain.ledger import owner_refunded, token_refunded
 from app.modules.ledger.service import Ledger
-from app.modules.payments.domain.payments import PaymentStatus
+from app.modules.payments.domain.payments import PaymentPurpose, PaymentStatus
 from app.modules.payments.domain.refunds import (
     GatewayRefund,
     RefundKind,
@@ -174,6 +174,9 @@ class Refunds:
                 raise NotFoundError
             if payment.status != PaymentStatus.CAPTURED:
                 raise InvalidTransitionError("Only money that came in can go back.")
+            if payment.purpose != PaymentPurpose.TOKEN:
+                # An owner's invoice is corrected as the accountant says, not refunded from here.
+                raise InvalidTransitionError("Only a student's token goes back from here.")
             await self._check_left(payment, amount_paise)
             waits = needs_second_person(amount_paise, second_person_above)
             refund = await self._payments.add_refund_once(
@@ -250,7 +253,7 @@ class Refunds:
         """What the student paid for this booking, and what's coming back. 404 for anyone else's."""
         async with self._db.begin():
             booking = await self._tokens.own(actor, code)
-            payments = await self._payments.of_bookings([booking])
+            payments = await self._payments.of_bookings([booking], purpose=PaymentPurpose.TOKEN)
             refunds = await self._payments.refunds_of([payment.id for payment in payments])
         return [
             StudentPayment(
@@ -291,6 +294,7 @@ class Refunds:
                 captured_at=payment.captured_at,
                 refundable_paise=0
                 if payment.status != PaymentStatus.CAPTURED
+                or payment.purpose != PaymentPurpose.TOKEN
                 else refundable(
                     payment.amount_paise,
                     [
@@ -309,6 +313,8 @@ class Refunds:
         if refund is None or refund.status != RefundStatus.PROCESSED:
             return None
         payment = await self._payments.by_id(refund.payment_id)
+        if payment.purpose != PaymentPurpose.TOKEN:
+            return None  # the gateway gave an owner's payment back: not the student's news
         student, code = await self._tokens.student_and_code(payment.booking_id)
         phone = (await self._accounts.many([student]))[student].phone_e164
         return (
@@ -374,9 +380,13 @@ class Refunds:
         payment = await self._payments.by_id(refund.payment_id)
         if payment.status != PaymentStatus.CAPTURED:
             return
+        token = payment.purpose == PaymentPurpose.TOKEN
+        if not token:
+            logger.error("the gateway gave an owner's payment back", refund=str(refund.public_id))
+        posting = token_refunded if token else owner_refunded
         await self._ledger.post(
-            token_refunded(refund.amount_paise),
-            key=f"token_refunded:{refund.public_id}",
+            posting(refund.amount_paise),
+            key=f"{'token' if token else 'owner'}_refunded:{refund.public_id}",
             booking_id=payment.booking_id,
             booking_code=await self._tokens.code_of(payment.booking_id),
             payment_id=payment.id,

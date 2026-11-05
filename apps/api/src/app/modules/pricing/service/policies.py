@@ -36,6 +36,7 @@ from app.modules.pricing.models import (
     BookingPolicyVersion,
     FeePolicyVersion,
     PolicyVersion,
+    PriceQuote,
     PricingCapsVersion,
 )
 from app.modules.pricing.models import RentBand as RentBandRow
@@ -139,16 +140,32 @@ def _plain(values: dict[str, Any]) -> dict[str, object]:
     return {name: str(value) if isinstance(value, str) else value for name, value in values.items()}
 
 
+@dataclass(frozen=True, slots=True)
+class FeeTerms:
+    """What a booking's fee was worked out on: the listed rent and the fee policy (rules 2, 3)."""
+
+    base_rent_paise: int
+    policy: FeePolicy
+
+
 class BookingTerms:
     """The booking terms a quote was made under: a booking keeps them for good, so a later
     change to the terms never alters a booking already made (ADR 0046). In the caller's
     transaction."""
 
     def __init__(self, db: AsyncSession) -> None:
+        self._db = db
         self._policies = PolicyRepository(db)
 
     async def of(self, booking_policy_id: int) -> BookingPolicy:
         return booking_policy(await self._policies.version(BookingPolicyVersion, booking_policy_id))
+
+    async def fee_of(self, quote_id: int) -> FeeTerms:
+        """The fee terms the booking's quote was made under, for its owner's invoice (step 6.5)."""
+        quote = await self._db.get(PriceQuote, quote_id)
+        assert quote is not None  # noqa: S101 - asked for by the booking that refers to it
+        version = await self._policies.version(FeePolicyVersion, quote.fee_policy_id)
+        return FeeTerms(base_rent_paise=quote.base_rent_paise, policy=fee_policy(version))
 
 
 class PolicyService:

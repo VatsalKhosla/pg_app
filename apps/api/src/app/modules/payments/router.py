@@ -11,26 +11,37 @@ from fastapi import APIRouter, Query, Request, Response, status
 from app.core.clock import ClockDep
 from app.core.current_actor import CurrentActor
 from app.core.db import DbSession
-from app.core.errors import ForbiddenError
+from app.core.errors import ForbiddenError, NotFoundError
 from app.core.idempotency import OPENAPI_HEADER, StoredResponse, idempotent_request, replay
 from app.core.pagination import PageParams
 from app.core.ratelimit import RateLimit, enforce
+from app.modules.payments.adapters.fake import FakeGateway
 from app.modules.payments.adapters.razorpay import EVENT_ID_HEADER, SIGNATURE_HEADER
 from app.modules.payments.domain.refunds import RefundStatus
-from app.modules.payments.policies import can_pay, can_refund
+from app.modules.payments.policies import can_pay, can_pay_invoices, can_reconcile, can_refund
 from app.modules.payments.schemas import (
     CheckoutCallback,
     CheckoutResult,
+    IssuePage,
+    IssueResolution,
+    IssueView,
     OpsPayments,
     OpsRefund,
     OpsRefundPage,
     PaymentStart,
+    ReconciliationSummary,
     RefundDecline,
     RefundRequest,
     StudentPayments,
     WebhookReceipt,
 )
-from app.modules.payments.service import PaymentWebhooks, Refunds, TokenCheckout
+from app.modules.payments.service import (
+    InvoiceLinks,
+    PaymentWebhooks,
+    Reconciliation,
+    Refunds,
+    TokenCheckout,
+)
 
 router = APIRouter(prefix="/v1", tags=["payments"])
 
@@ -187,3 +198,84 @@ async def ops_decline_refund(
     """Nothing goes back. Whoever asked for it may withdraw it this way too."""
     _ops(actor)
     return await Refunds(db, clock).decline(actor, refund_id, reason=body.reason)
+
+
+# Owners' invoices (step 6.5, ADR 0061).
+
+
+@router.post(
+    "/ops/invoices/{invoice_id}/payment-link",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Ask for a new payment link",
+)
+async def ask_for_invoice_link(
+    invoice_id: uuid.UUID, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> None:
+    """After a link was cancelled or the gateway refused one: a job asks the gateway for another.
+    409 INVALID_TRANSITION once the invoice is paid, or while a link can still be paid."""
+    if not can_reconcile(actor):
+        raise ForbiddenError
+    await InvoiceLinks(db, clock).ask(actor, invoice_id)
+
+
+@router.post("/owner/invoices/{invoice_id}/test-payment", summary="Pay an invoice at the test bank")
+async def pay_invoice_at_test_bank(
+    invoice_id: uuid.UUID, request: Request, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> WebhookReceipt:
+    """With the fake gateway only, which moves no money and which production refuses: the test bank
+    pays the owner's own invoice's link, and tells us as Razorpay would, by a signed webhook. A 404
+    with a real gateway."""
+    if not can_pay_invoices(actor):
+        raise ForbiddenError
+    gateway = request.app.state.payment_gateway
+    if not isinstance(gateway, FakeGateway):
+        raise NotFoundError
+    signed = await InvoiceLinks(db, clock).test_bank(gateway, actor, invoice_id)
+    return await PaymentWebhooks(db, clock).receive(
+        gateway, raw_body=signed.raw_body, signature=signed.signature, event_id=signed.event_id
+    )
+
+
+# Reconciliation (step 6.6, ADR 0062).
+
+
+@router.get("/ops/reconciliation", summary="What's waiting on the gateway")
+async def reconciliation_summary(
+    actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> ReconciliationSummary:
+    if not can_reconcile(actor):
+        raise ForbiddenError
+    return await Reconciliation(db, clock).summary()
+
+
+@router.get("/ops/reconciliation/issues", summary="What reconciliation found")
+async def reconciliation_issues(
+    actor: CurrentActor,
+    *,
+    page: PageParams,
+    db: DbSession,
+    clock: ClockDep,
+    open_only: Annotated[bool, Query(alias="open")] = True,
+) -> IssuePage:
+    """Newest first; only the open ones unless asked."""
+    if not can_reconcile(actor):
+        raise ForbiddenError
+    items, next_cursor = await Reconciliation(db, clock).issues(page, open_only=open_only)
+    return IssuePage(items=items, next_cursor=next_cursor)
+
+
+@router.post(
+    "/ops/reconciliation/issues/{issue_id}/resolve", summary="Close an issue with what was done"
+)
+async def resolve_reconciliation_issue(
+    issue_id: uuid.UUID,
+    body: IssueResolution,
+    *,
+    actor: CurrentActor,
+    db: DbSession,
+    clock: ClockDep,
+) -> IssueView:
+    """409 INVALID_TRANSITION if it's closed already."""
+    if not can_reconcile(actor):
+        raise ForbiddenError
+    return await Reconciliation(db, clock).resolve(actor, issue_id, resolution=body.resolution)

@@ -19,6 +19,7 @@ dependencies = [
     "pillow==13.0.0",
     "pydantic-settings==2.15.0",
     "redis==8.1.0",
+    "reportlab==5.1.0",
     "sentry-sdk==2.71.0",
     "sqlalchemy[asyncio]==2.1.4",
     "structlog==26.1.0",
@@ -38,6 +39,7 @@ dev = [
     "ruff==0.17.0",
     "testcontainers==4.15.0",
     "types-boto3[s3]==1.43.113",
+    "types-reportlab==5.0.0.20261008",
 ]
 
 [build-system]
@@ -240,6 +242,12 @@ forbidden_modules = [
 name = "The ledger knows no other module: they post to it (ADR 0060)"
 type = "forbidden"
 source_modules = ["app.modules.ledger"]
+forbidden_modules = ["app.modules.booking", "app.modules.payments"]
+
+[[tool.importlinter.contracts]]
+name = "Invoices know neither bookings nor payments: they call it (ADR 0061)"
+type = "forbidden"
+source_modules = ["app.modules.invoices"]
 forbidden_modules = ["app.modules.booking", "app.modules.payments"]
 
 [[tool.importlinter.contracts]]

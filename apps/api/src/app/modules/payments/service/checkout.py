@@ -95,6 +95,7 @@ class TokenCheckout:
                 provider=self._gateway.name,
                 key=key,
                 amount_paise=due.amount_paise,
+                made_at=self._clock.now(),
             )
             public_id, order_id = payment.public_id, payment.provider_order_id
             student = (await self._accounts.many([actor.user_id]))[actor.user_id]
@@ -197,6 +198,10 @@ class TokenCheckout:
     async def _own(self, actor: Actor, payment_id: uuid.UUID) -> Payment:
         """The student's own payment; anyone else's is a 404."""
         payment = await self._payments.by_public_id(payment_id)
-        if payment is None or not await self._tokens.is_theirs(actor, payment.booking_id):
+        if (
+            payment is None
+            or payment.purpose != PaymentPurpose.TOKEN
+            or not await self._tokens.is_theirs(actor, payment.booking_id)
+        ):
             raise NotFoundError
         return payment

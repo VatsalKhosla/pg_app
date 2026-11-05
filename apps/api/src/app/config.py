@@ -123,6 +123,13 @@ class Settings(DatabaseSettings):
     refund_speed: Literal["normal", "optimum"] = "normal"
     # Ops' refunds above this wait for a second person (ARCHITECTURE §17): ₹5,000.
     refund_second_person_above_paise: int = Field(default=500_000, gt=0)
+    # Who invoices owners (step 6.5, ADR 0061): the company's registered name and address, its
+    # GSTIN and the service's SAC code, as its accountant gives them. Until all four are set an
+    # invoice says it's a draft and not a tax invoice; production refuses to start without them.
+    invoice_seller_name: str | None = Field(default=None, min_length=1, max_length=200)
+    invoice_seller_address: str | None = Field(default=None, min_length=1, max_length=500)
+    invoice_seller_gstin: str | None = Field(default=None, pattern=r"^[0-9A-Z]{15}$")
+    invoice_sac_code: str | None = Field(default=None, pattern=r"^[0-9]{4,8}$")
     # Visit confirmations and reminders (ADR 0033). "console" writes them to the worker's log
     # (local only); "unavailable" sends nothing until the founders choose an SMS provider.
     text_sender: Literal["console", "unavailable"] = "console"
@@ -359,6 +366,22 @@ class Settings(DatabaseSettings):
         if self.revalidate_secret is None:
             # Without it, a listing's change would wait for the web app's caches to expire.
             msg = f"REVALIDATE_SECRET (shared with the web app) is required in {self.app_env}"
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def _invoice_seller_in_production(self) -> Self:
+        seller = (
+            self.invoice_seller_name,
+            self.invoice_seller_address,
+            self.invoice_seller_gstin,
+            self.invoice_sac_code,
+        )
+        if self.app_env == "production" and None in seller:
+            msg = (
+                "production invoices are tax invoices: set INVOICE_SELLER_NAME, "
+                "INVOICE_SELLER_ADDRESS, INVOICE_SELLER_GSTIN and INVOICE_SAC_CODE"
+            )
             raise ValueError(msg)
         return self
 
