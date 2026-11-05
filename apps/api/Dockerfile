@@ -30,8 +30,10 @@ LABEL org.opencontainers.image.title="pg-platform-api" \
       org.opencontainers.image.source="https://github.com/VatsalKhosla/pg_app" \
       org.opencontainers.image.licenses="Apache-2.0"
 # The base image's pip is never used at run time (uv built the environment), and it carries its
-# own older copies of urllib3 and msgpack, so it goes.
+# own older copies of urllib3 and msgpack, so it goes. So does apt: nothing installs a package in
+# this image, and a package manager's own advisories are then no concern of a running API.
 RUN python -m pip uninstall --yes --root-user-action=ignore pip \
+    && dpkg --purge apt libapt-pkg7.0 \
     && groupadd --system --gid 10001 app \
     && useradd --system --uid 10001 --gid app --home-dir /app --shell /usr/sbin/nologin app
 ENV PATH="/opt/venv/bin:$PATH" \

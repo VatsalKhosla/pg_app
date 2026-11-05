@@ -58,6 +58,8 @@ LABEL org.opencontainers.image.title="pg-platform-web" \
       org.opencontainers.image.description="Web app for the PG booking platform (staging)" \
       org.opencontainers.image.source="https://github.com/VatsalKhosla/pg_app" \
       org.opencontainers.image.licenses="Apache-2.0"
+# Nothing installs a package in this image, so its package manager goes.
+RUN dpkg --purge apt libapt-pkg7.0
 # The API this image serves, if it was built to (ADR 0055): the server reaches it there too.
 ARG API_PROXY_TARGET
 ENV NODE_ENV=production \
