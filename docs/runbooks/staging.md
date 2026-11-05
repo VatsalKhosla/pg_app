@@ -35,6 +35,10 @@ The test site uses a fake gateway: **Pay** opens a test bank, and no money moves
 
 Razorpay's test card is `4100 2800 0000 1007`, with any CVV and a future date, and its test UPI id is `success@razorpay`.
 
+## Booking without a visit
+
+Season one is visit-first, so anywhere else a bed is reserved only from a visit an agent has checked in to. Here, `TEST_SITE_REMOTE_BOOKING=true` in `render.yaml` lets anyone reserve a bed and pay at the test bank, because staging has no staff sign-in or agents yet, and nobody could reach a booking otherwise (ADR 0058). Set it to `false` and restart to go back.
+
 ## What staging can't do yet
 
 - **Texts:** there's no SMS provider yet (a paid vendor the founders choose). Sign-in codes show on the sign-in page instead (`OTP_SENDER=screen`, ADR 0055), and visit and booking texts aren't sent.

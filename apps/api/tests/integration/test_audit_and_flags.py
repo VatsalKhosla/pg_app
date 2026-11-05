@@ -1,15 +1,18 @@
+import io
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import pytest
-from sqlalchemy import select, text, update
+from sqlalchemy import delete, select, text, update
 from sqlalchemy.exc import DBAPIError
 
+from app.config import Settings
 from app.core.audit import Actor, AuditLog, record
 from app.core.clock import FrozenClock
-from app.core.flags import FLAGS, FeatureFlag, FeatureFlags, Flag
+from app.core.flags import FLAGS, FeatureFlag, FeatureFlags, Flag, set_flag
+from app.manage import main
 
 if TYPE_CHECKING:
     from tests.integration.conftest import RunDb, Sessionmaker
@@ -138,3 +141,60 @@ def test_a_stored_value_of_the_wrong_type_falls_back_to_the_default(
         return await flags.choice(Flag.TOKEN_MODE), await flags.is_enabled(Flag.HIDE_OWNER_CONTACT)
 
     assert run_db(scenario) == ("payment", True)
+
+
+def test_an_operator_sets_a_flag_with_an_audit_entry_and_a_restart_adds_no_more(
+    make_settings: Callable[..., Settings],
+    database_url: str,
+    run_db: RunDb,
+    restore_flags: None,
+) -> None:
+    settings = make_settings(database_url=database_url)
+    clock = FrozenClock(START)
+
+    def manage(*args: str) -> tuple[int, str]:
+        out = io.StringIO()
+        code = main(["flags", "set", *args], settings=settings, clock=clock, out=out)
+        return code, out.getvalue()
+
+    async def audited(sessionmaker: Sessionmaker) -> list[dict[str, object]]:
+        async with sessionmaker() as session:
+            rows = await session.scalars(
+                select(AuditLog.details)
+                .where(AuditLog.entity_id == "reviews_enabled", AuditLog.occurred_at == START)
+                .order_by(AuditLog.id)
+            )
+            return list(rows)
+
+    async def current(sessionmaker: Sessionmaker) -> bool:
+        return await FeatureFlags(sessionmaker, clock).is_enabled(Flag.REVIEWS_ENABLED)
+
+    assert manage("reviews_enabled", "true") == (0, "reviews_enabled is true.\n")
+    assert run_db(current) is True
+    assert manage("reviews_enabled", "true") == (0, "reviews_enabled was true already.\n")
+    assert manage("reviews_enabled", "maybe") == (
+        1,
+        "Not done: reviews_enabled doesn't take 'maybe'.\n",
+    )
+    assert manage("token_mode", "nonsense") == (
+        1,
+        "Not done: token_mode doesn't take 'nonsense'.\n",
+    )
+    assert manage("reviews_enabled", "false") == (0, "reviews_enabled is false.\n")
+    assert run_db(current) is False
+    assert run_db(audited) == [{"from": False, "to": True}, {"from": True, "to": False}]
+
+
+def test_a_flag_with_no_row_gets_one_when_its_set(run_db: RunDb, restore_flags: None) -> None:
+    async def scenario(sessionmaker: Sessionmaker) -> tuple[bool, object]:
+        async with sessionmaker() as session, session.begin():
+            await session.execute(delete(FeatureFlag).where(FeatureFlag.key == "reviews_enabled"))
+        async with sessionmaker() as session, session.begin():
+            changed = await set_flag(session, Flag.REVIEWS_ENABLED, False, clock=FrozenClock(START))
+        async with sessionmaker() as session:
+            value = await session.scalar(
+                select(FeatureFlag.value).where(FeatureFlag.key == "reviews_enabled")
+            )
+        return changed, value
+
+    assert run_db(scenario) == (True, False)

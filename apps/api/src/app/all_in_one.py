@@ -6,7 +6,8 @@ staging for now (ADR 0047). Production runs the API and the worker as services o
 
 It brings the database up to date and loads the geo reference data, which changes only what
 differs. With ``SEED_SAMPLES=true`` (staging) it adds the fictional sample PGs, which a second run
-leaves alone and production refuses. Then it runs the worker and the API side by side. When either
+leaves alone and production refuses. ``TEST_SITE_REMOTE_BOOKING`` sets whether beds can be booked
+without a visit. Then it runs the worker and the API side by side. When either
 stops, so does the other and the container exits, for the host to start it again. A SIGTERM from
 the host stops both gracefully.
 """
@@ -70,6 +71,11 @@ def main() -> int:
     # The samples are a nicety: the site starts without them if they can't be made.
     if os.environ.get("SEED_SAMPLES") == "true":
         _run("app.manage", "catalog", "samples")
+    # A test site can let people try booking without a visit first (ADR 0058). Nothing here starts
+    # or stops the site, so a failure only leaves the flag as it was.
+    remote_booking = os.environ.get("TEST_SITE_REMOTE_BOOKING")
+    if remote_booking is not None:
+        _run("app.manage", "flags", "set", "remote_booking_enabled", remote_booking)
     port = os.environ.get("PORT", "8000")
     return supervise(
         [

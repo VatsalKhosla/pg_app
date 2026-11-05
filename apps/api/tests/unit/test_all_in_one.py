@@ -46,6 +46,7 @@ class _Recorder:
 MIGRATE = ("alembic", "upgrade", "head")
 GEO = ("app.manage", "geo", "load")
 SAMPLES = ("app.manage", "catalog", "samples")
+REMOTE_BOOKING = ("app.manage", "flags", "set", "remote_booking_enabled")
 
 
 def test_the_database_and_geo_data_come_first_and_samples_only_when_asked(
@@ -62,6 +63,36 @@ def test_the_database_and_geo_data_come_first_and_samples_only_when_asked(
 
     serve = ("supervise",)
     assert recorder.ran == [MIGRATE, GEO, SAMPLES, serve, MIGRATE, GEO, serve]
+
+
+def test_a_test_site_can_open_booking_without_a_visit_only_when_it_says_so(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    recorder = _Recorder()
+    monkeypatch.setattr(all_in_one, "_run", recorder.run)
+    monkeypatch.setattr(all_in_one, "supervise", recorder.supervise)
+
+    monkeypatch.setenv("TEST_SITE_REMOTE_BOOKING", "true")
+    assert all_in_one.main() == 0
+    monkeypatch.setenv("TEST_SITE_REMOTE_BOOKING", "false")
+    assert all_in_one.main() == 0
+    monkeypatch.delenv("TEST_SITE_REMOTE_BOOKING")
+    assert all_in_one.main() == 0
+
+    serve = ("supervise",)
+    assert recorder.ran == [
+        MIGRATE,
+        GEO,
+        (*REMOTE_BOOKING, "true"),
+        serve,
+        MIGRATE,
+        GEO,
+        (*REMOTE_BOOKING, "false"),
+        serve,
+        MIGRATE,
+        GEO,
+        serve,
+    ]
 
 
 def test_a_failed_migration_starts_nothing(monkeypatch: pytest.MonkeyPatch) -> None:

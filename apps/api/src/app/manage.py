@@ -44,6 +44,7 @@ from app.config import Settings, get_settings
 from app.core.actor import STAFF_ROLES, Role
 from app.core.clock import Clock, SystemClock
 from app.core.db import create_engine, create_sessionmaker
+from app.core.flags import Flag, parse_flag_value, set_flag
 from app.core.pagination import MAX_PAGE_SIZE, PageRequest
 from app.modules.geo.reference import DATA_PATH, read_reference_data
 from app.modules.geo.service import GeoReferenceLoader
@@ -117,6 +118,13 @@ def _parser() -> argparse.ArgumentParser:
         dest="command", required=True
     )
     media.add_parser("buckets", help="create the buckets (local development only)")
+
+    flags = groups.add_parser("flags", help="feature flags").add_subparsers(
+        dest="command", required=True
+    )
+    set_flag_command = flags.add_parser("set", help="set a feature flag, audited")
+    set_flag_command.add_argument("name", choices=[flag.value for flag in Flag])
+    set_flag_command.add_argument("value", help="true or false, or one of the flag's choices")
 
     catalog = groups.add_parser("catalog", help="listings").add_subparsers(
         dest="command", required=True
@@ -294,6 +302,22 @@ async def _main(
         await engine.dispose()
 
 
+async def _set_flag(settings: Settings, name: str, raw: str, *, clock: Clock, out: TextIO) -> int:
+    flag = Flag(name)
+    value = parse_flag_value(flag, raw)
+    if value is None:
+        out.write(f"Not done: {name} doesn't take {raw!r}.\n")
+        return 1
+    engine = create_engine(settings, application_name=f"{settings.otel_service_name}-manage")
+    try:
+        async with create_sessionmaker(engine)() as db, db.begin():
+            changed = await set_flag(db, flag, value, clock=clock)
+    finally:
+        await engine.dispose()
+    out.write(f"{name} is {raw}.\n" if changed else f"{name} was {raw} already.\n")
+    return 0
+
+
 async def _samples(settings: Settings, *, clock: Clock, out: TextIO) -> int:
     if settings.app_env == "production":
         out.write("Not done: sample listings never go to production.\n")
@@ -346,6 +370,16 @@ def main(
     args = _parser().parse_args(argv)
     if args.group == "media":
         return _media_buckets(settings or get_settings(), out)
+    if args.group == "flags":
+        return asyncio.run(
+            _set_flag(
+                settings or get_settings(),
+                args.name,
+                args.value,
+                clock=clock or SystemClock(),
+                out=out,
+            )
+        )
     if args.group == "catalog":
         return asyncio.run(
             _samples(settings or get_settings(), clock=clock or SystemClock(), out=out)

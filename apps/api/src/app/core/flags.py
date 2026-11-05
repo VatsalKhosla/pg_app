@@ -21,6 +21,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core import audit
 from app.core.db import Model
 
 if TYPE_CHECKING:
@@ -103,6 +104,14 @@ class FlagReader(Protocol):
     async def is_enabled(self, flag: Flag) -> bool: ...
 
 
+def parse_flag_value(flag: Flag, raw: str) -> FlagValue | None:
+    """A value as an operator typed it, if this flag takes it: true or false for an on/off flag,
+    one of its choices otherwise."""
+    spec = FLAGS[flag]
+    value = {"true": True, "false": False}.get(raw) if isinstance(spec.default, bool) else raw
+    return value if spec.accepts(value) else None
+
+
 class FeatureFlag(Model):
     __tablename__ = "feature_flags"
 
@@ -174,3 +183,27 @@ class FeatureFlags:
 def get_flags(request: Request) -> FeatureFlags:
     flags: FeatureFlags = request.app.state.flags
     return flags
+
+
+async def set_flag(session: AsyncSession, flag: Flag, value: FlagValue, *, clock: Clock) -> bool:
+    """Sets the flag in the caller's transaction, audited: whether that changed it. Processes see
+    it within ``CACHE_TTL``."""
+    stored = await session.scalar(select(FeatureFlag).where(FeatureFlag.key == flag.value))
+    if stored is None:
+        was = FLAGS[flag].default
+        session.add(FeatureFlag(key=flag.value, value=value, description=FLAGS[flag].description))
+    elif stored.value == value:
+        return False
+    else:
+        was = stored.value
+        stored.value = value
+    await audit.record(
+        session,
+        clock=clock,
+        actor=audit.SYSTEM,
+        action="feature_flag.set",
+        entity_type="feature_flag",
+        entity_id=flag.value,
+        details={"from": was, "to": value},
+    )
+    return True
