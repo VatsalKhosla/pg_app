@@ -216,7 +216,9 @@
       "changes": "To change any of these, ask our team: they keep your records up to date.",
       "agreementTitle": "Owner agreement",
       "accepted": "You've accepted version {version} of the owner agreement.",
-      "read": "Read the owner agreement"
+      "read": "Read the owner agreement",
+      "invoicesTitle": "Invoices",
+      "invoicesLink": "See your invoices"
     },
     "agreement": {
       "metaTitle": "Owner agreement",
@@ -248,6 +250,42 @@
       "SERVICE_UNAVAILABLE": "That's not working right now. Please try again soon.",
       "API_UNREACHABLE": "Couldn't reach the server. Please check your connection.",
       "API_TIMEOUT": "The server took too long. Please try again."
+    },
+    "invoices": {
+      "metaTitle": "Your invoices",
+      "title": "Invoices",
+      "intro": "Our placement fee for each tenant you've taken through us: the fee and its GST, what the student's token paid of it, and what's left for you to pay.",
+      "none": "No invoices yet. One comes when a tenant has moved in and their 24 hours to check the room have passed.",
+      "number": "Invoice {number}",
+      "issued": "Issued {date}",
+      "booking": "Booking {code} at {place}",
+      "fee": "{rate} of the listed monthly rent of {rent}",
+      "feeIncluded": "{rate} of the listed monthly rent of {rent}, GST included",
+      "amounts": "What it comes to",
+      "taxable": "Placement fee",
+      "gst": "GST at {rate}",
+      "total": "Total",
+      "token": "Paid by the student's token",
+      "balance": "Balance due",
+      "over": "The student's token came to {amount} more than this invoice. That's owed to you, and reaches you through the payment gateway, never through our own account.",
+      "status": {
+        "issued": "To pay",
+        "paid": "Paid"
+      },
+      "paidOn": "Paid on {date}",
+      "download": "Download the PDF",
+      "preparing": "The PDF is being made. Reload in a minute to download it.",
+      "pay": "Pay {amount}",
+      "payNote": "Opens our payment partner's page in a new tab. Once you've paid, this page shows it within a minute.",
+      "noLink": "The link to pay is being made. Reload in a minute.",
+      "test": {
+        "title": "A test payment",
+        "body": "This is a test copy of the site: no money moves.",
+        "pay": "Pay {amount} at the test bank",
+        "cancel": "Not now",
+        "paid": "The test bank has paid it. This page shows it as soon as we've recorded it.",
+        "failed": "That didn't go through. Try again."
+      }
     }
   },
   "Search": {
@@ -638,7 +676,9 @@
       "refunds": "Refunds",
       "ledger": "Ledger",
       "grievances": "Grievances",
-      "pricingAlerts": "Pricing alerts"
+      "pricingAlerts": "Pricing alerts",
+      "invoices": "Invoices",
+      "reconciliation": "Reconciliation"
     },
     "listings": {
       "title": "Listings",
@@ -1155,7 +1195,12 @@
           "token_received": "Token received",
           "token_refunded": "Token refunded",
           "owner_invoiced": "Owner invoiced",
-          "token_applied": "Token applied to what the owner owes"
+          "token_applied": "Token applied to what the owner owes",
+          "owner_paid": "Owner paid their invoice",
+          "owner_refunded": "Owner's payment given back",
+          "gateway_fee": "Gateway's fee",
+          "settled": "Paid into our bank",
+          "refund_settled": "Refund taken from a payout"
         }
       }
     },
@@ -1740,6 +1785,79 @@
           "date": "Choose a date.",
           "order": "Free again only after it's held: a later date."
         }
+      }
+    },
+    "invoices": {
+      "metaTitle": "Invoices",
+      "title": "Owners' invoices",
+      "intro": "Each owner's invoice for a tenant placed, newest first. An invoice is issued as its booking settles, and paid through a payment link.",
+      "statusFilter": "Show invoices that are",
+      "status": {
+        "all": "All",
+        "issued": "To pay",
+        "paid": "Paid"
+      },
+      "search": "Booking code",
+      "searchHint": "BK-7F3K2Q9M",
+      "find": "Find",
+      "none": "No invoices to show.",
+      "line": "{number}: {owner}",
+      "booking": "Booking {code} at {place}, issued {date}",
+      "amounts": "Total {total}, token {token}, balance {balance}",
+      "over": "The token came to {amount} more than the invoice: owed to the owner.",
+      "paidOn": "Paid on {date}",
+      "linkOut": "A payment link is out.",
+      "noLink": "No payment link can be paid now.",
+      "download": "Download the PDF",
+      "preparing": "PDF being made",
+      "newLink": "Ask for a new payment link",
+      "asked": "Asked. The link appears here in a minute.",
+      "linkFailed": "That didn't work. Try again.",
+      "linkExists": "This invoice is paid, or has a link already."
+    },
+    "reconciliation": {
+      "metaTitle": "Reconciliation",
+      "title": "Reconciliation",
+      "intro": "Our payments against the gateway's word: anything that hasn't come back is asked about every 15 minutes, and every morning the settlement reports are matched line by line. What doesn't add up waits here for a person.",
+      "summary": {
+        "title": "Waiting on the gateway",
+        "openIssues": "Open issues",
+        "tokensAuthorized": "Payments the bank said yes to, not yet captured",
+        "linksOpen": "Owners' payment links not yet paid",
+        "refundsWaiting": "Refunds on their way"
+      },
+      "show": {
+        "label": "Show",
+        "open": "Open issues",
+        "all": "All issues"
+      },
+      "none": "Nothing to look at.",
+      "found": "Found {when}",
+      "booking": "Booking {code}",
+      "amount": "Amount {amount}",
+      "reference": "Gateway reference {reference}",
+      "resolved": "Closed by {name} on {when}: {resolution}",
+      "someone": "someone",
+      "kind": {
+        "unknown_payment": "A payment we have no record of",
+        "unknown_refund": "A refund we have no record of",
+        "amount_mismatch": "The amounts don't match",
+        "not_captured_here": "Settled, but not captured here",
+        "refund_not_processed_here": "Settled, but the refund isn't done here",
+        "unexpected_item": "Something else in the report",
+        "not_settled": "Captured, never settled",
+        "stuck_authorized": "The bank said yes, but it wasn't captured",
+        "refund_stuck": "A refund that's stuck",
+        "link_mismatch": "A payment link paid, but not as asked"
+      },
+      "resolve": {
+        "open": "Close it",
+        "label": "What you did",
+        "confirm": "Close the issue",
+        "back": "Back",
+        "need": "Say what you did.",
+        "closed": "Someone has closed it already.",
+        "failed": "That didn't work. Try again."
       }
     }
   },

@@ -81,6 +81,13 @@ test.describe("owner agreement", () => {
     ).toBeVisible();
     expect(await wcagViolations(owner)).toEqual([]);
     const browserName = await owner.evaluate(() => navigator.userAgent);
+
+    // Their invoices (BUILD_PLAN 6.5): none until a tenant placed through us has settled in.
+    await owner.getByRole("link", { name: "See your invoices" }).click();
+    await expect(owner).toHaveURL(/\/owner\/invoices$/);
+    await expect(owner.getByRole("heading", { name: "Invoices", level: 1 })).toBeVisible();
+    await expect(owner.getByText(/^No invoices yet\./)).toBeVisible();
+    expect(await wcagViolations(owner)).toEqual([]);
     await phone.close();
 
     // Ops see what was accepted, when, from where and in which browser.

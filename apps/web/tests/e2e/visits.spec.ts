@@ -250,6 +250,17 @@ test.describe("a visit", () => {
     await expect(balance.getByRole("row", { name: /^Total/ })).toBeVisible();
     expect(await wcagViolations(opsPage)).toEqual([]);
 
+    // What's waiting on the gateway, and owners' invoices (BUILD_PLAN 6.5 and 6.6): the refunded
+    // booking never settled, so it has no invoice.
+    await opsPage.goto("/ops/reconciliation");
+    await expect(opsPage.getByRole("heading", { level: 1 })).toHaveText("Reconciliation");
+    await expect(opsPage.getByRole("region", { name: "Waiting on the gateway" })).toBeVisible();
+    expect(await wcagViolations(opsPage)).toEqual([]);
+    await opsPage.goto(`/ops/invoices?booking=${code}`);
+    await expect(opsPage.getByRole("heading", { level: 1 })).toHaveText("Owners' invoices");
+    await expect(opsPage.getByText("No invoices to show.")).toBeVisible();
+    expect(await wcagViolations(opsPage)).toEqual([]);
+
     // The funnel, as PostHog will have it: one anonymous journey from search to the visit done,
     // the last step reported by the API under the id the student's tab asked with.
     const journey = await page.evaluate(() => sessionStorage.getItem("analytics-id"));
