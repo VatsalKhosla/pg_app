@@ -486,8 +486,13 @@ Start the slow ones in week 1.
   - **Students:** their booking shows what came in, each refund's status and the bank's reference, and they're texted once it's processed. `docs/runbooks/refunds.md` is for ops.
   - **Proof:** every way a booking ends, a late token, a gateway out of reach or refusing, webhooks in either order, the two-person rule, what's left of a payment, and a phone browser test from a rejected booking to the student's page.
 
-- [ ] **6.4 Ledger.** Chart of accounts and postings per §9.4 for every money event, in the same transaction; deferred balance check; ops ledger view.
+- [x] **6.4 Ledger.** Chart of accounts and postings per §9.4 for every money event, in the same transaction; deferred balance check; ops ledger view.
   *Done when* a test replays a full booking life cycle and the trial balance is zero.
+  *Note (2026-11-05):*
+  - **Postings:** a token received as its payment is captured, refunded as its refund is processed, and the owner's invoice and the token applied as a booking settles, each in that change's own transaction, and once whatever reports it again (ADR 0060). Gateway fees, bank settlement and the owner's balance come with 6.5 and 6.6.
+  - **The database guards it:** a deferred trigger refuses a transaction that doesn't balance, and nothing posted can be changed or removed.
+  - **Ops** read the trial balance and what was posted at `/ops/ledger`, all of it or one booking's.
+  - **Proof:** a booking from token to living there comes to exactly §9.4's balances and sums to zero; a refund leaves nothing behind; a property test holds any order of events to zero. The accounting is for the CA to confirm.
 
 - [ ] **6.5 Owner invoices.** On ACTIVE: fee, GST (per `gst_mode`), token applied, balance due; sequential numbering per financial year; PDF; balance via Razorpay payment link; paid by webhook.
   *Done when* the ₹10,000 example produces an invoice of ₹3,540 with ₹2,000 applied and ₹1,540 due.

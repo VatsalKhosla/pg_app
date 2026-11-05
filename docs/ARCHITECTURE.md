@@ -234,7 +234,7 @@ This constraint is the double-booking guarantee. Never work around it. The inven
 - `payments` (public_id, booking_id, purpose: `token | rent | owner_invoice`, mode: `payment | upi_mandate`, provider, provider_order_id, provider_payment_id, provider_mandate_id, amount_paise, status, idempotency_key unique).
 - `payment_events` (provider, provider_event_id, event_type, payload jsonb, received_at, processed_at, error) — **unique (provider, provider_event_id)**. Only verified events are stored, without the personal details in the gateway's copy (ADR 0057).
 - `refunds` (payment_id, amount_paise, reason, provider_refund_id, status, requested_by, approved_by).
-- `ledger_accounts` (code, name, type: `asset | liability | revenue | expense`), `ledger_transactions` (kind, booking_id, payment_id, memo), `ledger_entries` (transaction_id, account_id, direction: `debit | credit`, amount_paise > 0). Sum of debits = sum of credits per transaction, enforced by a deferred constraint trigger and tests.
+- `ledger_accounts` (code, name, type: `asset | liability | revenue | expense`), `ledger_transactions` (kind, key, booking_id, booking_code, payment_id, memo, posted_at), `ledger_entries` (transaction_id, account_id, direction: `debit | credit`, amount_paise > 0). Sum of debits = sum of credits per transaction, enforced by a deferred constraint trigger and tests.
 - `owner_invoices` (owner_id, booking_id, invoice_number unique per financial year, fee_paise, gst_paise, total_paise, token_applied_paise, balance_due_paise, status: `draft | issued | paid | void`, issued_at, pdf_key).
 
 **Platform**
@@ -447,6 +447,8 @@ Chart of accounts (seeded): `gateway_clearing` (asset), `bank` (asset), `owner_r
 
 Amounts shown in rupees for the ₹10,000 example. Every money-moving use case posts its entries in the same transaction as the state change. The accounting treatment must be confirmed with a CA; the ledger design supports changes.
 
+In the code (step 6.4, ADR 0060): the `ledger` module knows no other module, and each posting has a unique key, so an event posts once. A deferred trigger refuses a transaction that doesn't balance, and triggers refuse any change to what's posted. A token is received as its payment is captured and refunded as its refund is processed.
+
 ### 9.5 Owner invoices
 Issued on ACTIVE: fee, GST, token applied, balance due; sequential invoice numbers per financial year (`FY2027-28/000123`); a PDF stored privately; balance collected through a Razorpay payment link and marked paid by webhook.
 
@@ -592,6 +594,7 @@ Ops      /v1/ops/owners  /v1/ops/owners/{id} (GET, PATCH; + /agreements)   (ADR 
 Field    GET /v1/field/visits   GET /v1/field/visits/{id}   POST /v1/field/visits/{id}/check-in | /outcome
          /v1/ops/disputes… /v1/ops/refunds (+ /approve /decline) /v1/ops/reconciliation
          /v1/ops/bookings/{code}/payments   POST /v1/ops/payments/{id}/refunds   (ADR 0059)
+         /v1/ops/ledger/trial-balance   /v1/ops/ledger/transactions   (ADR 0060)
 Admin    GET /v1/admin/policies (+ /history)   POST /v1/admin/policies/fee | /booking | /caps   (ADR 0036)
          GET/POST /v1/admin/rent-bands   POST /v1/admin/rent-bands/{id}/end   (ADR 0036)
          /v1/admin/staff /v1/admin/flags /v1/admin/audit-logs
