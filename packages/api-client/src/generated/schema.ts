@@ -2211,6 +2211,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bookings/{code}/payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start paying your booking's token
+         * @description What the browser opens checkout with, for exactly the booking's token. A booking has one
+         *     order, so asking again gets the same one, with no key needed. 409 INVALID_TRANSITION once the
+         *     booking isn't waiting for its token; 503 PAYMENT_GATEWAY_UNAVAILABLE: try again.
+         */
+        post: operations["paymentsStartTokenPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payments/{payment_id}/checkout-callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Checkout has finished
+         * @description Send what checkout handed the browser, as often as needed: a payment moves its booking
+         *     once. 400 PAYMENT_SIGNATURE_INVALID for a signature the gateway didn't make; 409
+         *     PAYMENT_MISMATCH for a payment that isn't this order's or its amount.
+         */
+        post: operations["paymentsCheckoutCallback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payments/{payment_id}/test-checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pay at the test bank
+         * @description With the fake gateway only, which moves no money and which production refuses: what a
+         *     checkout that went through hands the browser, to send to the checkout callback. A 404 with a
+         *     real gateway.
+         */
+        post: operations["paymentsTestCheckout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visits": {
         parameters: {
             query?: never;
@@ -3104,6 +3170,35 @@ export interface components {
          * @enum {string}
          */
         ChargeKind: "electricity" | "water" | "maintenance" | "internet" | "laundry" | "food" | "registration" | "other";
+        /**
+         * CheckoutCallback
+         * @description What checkout handed the browser. The order is ours, so it isn't taken from here.
+         */
+        CheckoutCallback: {
+            /** Providerpaymentid */
+            providerPaymentId: string;
+            /** Signature */
+            signature: string;
+        };
+        /**
+         * CheckoutOutcome
+         * @description What the gateway's answer meant for the student's booking.
+         * @enum {string}
+         */
+        CheckoutOutcome: "paid" | "waiting" | "not_paid" | "late";
+        /** CheckoutPrefill */
+        CheckoutPrefill: {
+            /** Name */
+            name: string | null;
+            /** Contact */
+            contact: string;
+        };
+        /** CheckoutResult */
+        CheckoutResult: {
+            outcome: components["schemas"]["CheckoutOutcome"];
+            /** Booking */
+            booking: string;
+        };
         /** CityInfo */
         CityInfo: {
             /** Slug */
@@ -4551,6 +4646,31 @@ export interface components {
          * @enum {string}
          */
         Party: "student" | "owner" | "ops" | "system";
+        /**
+         * PaymentStart
+         * @description What the browser's checkout opens with.
+         */
+        PaymentStart: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            provider: components["schemas"]["Provider"];
+            /** Keyid */
+            keyId: string;
+            /** Orderid */
+            orderId: string;
+            /** Booking */
+            booking: string;
+            /** Amountpaise */
+            amountPaise: number;
+            /** Currency */
+            currency: string;
+            /** Expiresinseconds */
+            expiresInSeconds: number;
+            prefill: components["schemas"]["CheckoutPrefill"];
+        };
         /** PhotoSize */
         PhotoSize: {
             /** Name */
@@ -4891,6 +5011,8 @@ export interface components {
             /** Instantconfirm */
             instantConfirm?: boolean | null;
         };
+        /** @enum {string} */
+        Provider: "razorpay" | "fake";
         /** PublicCategory */
         PublicCategory: {
             /**
@@ -5850,6 +5972,8 @@ export interface components {
             confirmBy: string | null;
             /** Checkinopenson */
             checkInOpensOn: string | null;
+            /** Canpay */
+            canPay: boolean;
             /** Cancheckin */
             canCheckIn: boolean;
             /** Checkwindowhours */
@@ -11169,6 +11293,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpsDispute"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsStartTokenPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentStart"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsCheckoutCallback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckoutCallback"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutResult"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsTestCheckout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutCallback"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

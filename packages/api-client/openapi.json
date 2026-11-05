@@ -7504,6 +7504,177 @@
         }
       }
     },
+    "/v1/bookings/{code}/payment": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Start paying your booking's token",
+        "description": "What the browser opens checkout with, for exactly the booking's token. A booking has one\norder, so asking again gets the same one, with no key needed. 409 INVALID_TRANSITION once the\nbooking isn't waiting for its token; 503 PAYMENT_GATEWAY_UNAVAILABLE: try again.",
+        "operationId": "paymentsStartTokenPayment",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentStart"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{payment_id}/checkout-callback": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Checkout has finished",
+        "description": "Send what checkout handed the browser, as often as needed: a payment moves its booking\nonce. 400 PAYMENT_SIGNATURE_INVALID for a signature the gateway didn't make; 409\nPAYMENT_MISMATCH for a payment that isn't this order's or its amount.",
+        "operationId": "paymentsCheckoutCallback",
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutCallback"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResult"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{payment_id}/test-checkout": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Pay at the test bank",
+        "description": "With the fake gateway only, which moves no money and which production refuses: what a\ncheckout that went through hands the browser, to send to the checkout callback. A 404 with a\nreal gateway.",
+        "operationId": "paymentsTestCheckout",
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutCallback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/visits": {
       "get": {
         "tags": [
@@ -10051,6 +10222,84 @@
           "other"
         ],
         "title": "ChargeKind"
+      },
+      "CheckoutCallback": {
+        "properties": {
+          "providerPaymentId": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^pay_[A-Za-z0-9_]+$",
+            "title": "Providerpaymentid"
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Signature"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "providerPaymentId",
+          "signature"
+        ],
+        "title": "CheckoutCallback",
+        "description": "What checkout handed the browser. The order is ours, so it isn't taken from here."
+      },
+      "CheckoutOutcome": {
+        "type": "string",
+        "enum": [
+          "paid",
+          "waiting",
+          "not_paid",
+          "late"
+        ],
+        "title": "CheckoutOutcome",
+        "description": "What the gateway's answer meant for the student's booking."
+      },
+      "CheckoutPrefill": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "contact": {
+            "type": "string",
+            "title": "Contact"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "contact"
+        ],
+        "title": "CheckoutPrefill"
+      },
+      "CheckoutResult": {
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/CheckoutOutcome"
+          },
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outcome",
+          "booking"
+        ],
+        "title": "CheckoutResult"
       },
       "CityInfo": {
         "properties": {
@@ -13911,6 +14160,60 @@
         "title": "Party",
         "description": "Who sends an event. The system is the jobs and the gateway's verified events."
       },
+      "PaymentStart": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/Provider"
+          },
+          "keyId": {
+            "type": "string",
+            "title": "Keyid"
+          },
+          "orderId": {
+            "type": "string",
+            "title": "Orderid"
+          },
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "title": "Amountpaise"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "title": "Expiresinseconds"
+          },
+          "prefill": {
+            "$ref": "#/components/schemas/CheckoutPrefill"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "provider",
+          "keyId",
+          "orderId",
+          "booking",
+          "amountPaise",
+          "currency",
+          "expiresInSeconds",
+          "prefill"
+        ],
+        "title": "PaymentStart",
+        "description": "What the browser's checkout opens with."
+      },
       "PhotoSize": {
         "properties": {
           "name": {
@@ -14971,6 +15274,13 @@
         "type": "object",
         "title": "PropertyUpdate",
         "description": "Only the fields sent change; ``licenceNumber: null`` clears it."
+      },
+      "Provider": {
+        "type": "string",
+        "enum": [
+          "razorpay",
+          "fake"
+        ]
       },
       "PublicCategory": {
         "properties": {
@@ -17558,6 +17868,10 @@
             ],
             "title": "Checkinopenson"
           },
+          "canPay": {
+            "type": "boolean",
+            "title": "Canpay"
+          },
           "canCheckIn": {
             "type": "boolean",
             "title": "Cancheckin"
@@ -17663,6 +17977,7 @@
           "holdExpiresAt",
           "confirmBy",
           "checkInOpensOn",
+          "canPay",
           "canCheckIn",
           "checkWindowHours",
           "checkWindowEndsAt",
