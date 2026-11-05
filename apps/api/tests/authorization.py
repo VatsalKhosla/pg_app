@@ -586,6 +586,9 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
         lambda: {"json": {"reason": "Not ours to refund"}},
         path={"refund_id": "a_missing_refund"},
     ),
+    # The books (ADR 0060): ops read them, and nothing writes through the API.
+    ("GET", "/v1/ops/ledger/trial-balance"): Rule(ops_only(200)),
+    ("GET", "/v1/ops/ledger/transactions"): Rule(ops_only(200)),
     # A gateway's word (ADR 0057): anyone may call it, and only a good signature gets anywhere.
     ("POST", "/v1/webhooks/razorpay"): Rule(everyone(400), lambda: {"json": {"event": "x"}}),
     # The board (ADR 0054): ops run every booking from it.
