@@ -60,5 +60,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0054](0054-bookings-board.md) | The bookings board: what needs a person now and since when, a page per booking with whom to call and everything that happened, and every action the state machine would take from ops, each with a reason | Accepted |
 | [0055](0055-test-site-on-one-address.md) | The test site serves the API at its own address, waits for a sleeping API, and shows sign-in codes on screen, which production refuses | Accepted |
 | [0056](0056-token-checkout.md) | Paying a token: an order made when the student taps, checkout on a page of its own, and only the gateway's own word moving a booking; a fake gateway for everything without keys, which production refuses | Accepted |
+| [0057](0057-webhooks.md) | Webhooks: each event stored once and answered at once, a job doing the work, one settlement for checkouts and webhooks, and a late token taking the bed back or going back | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

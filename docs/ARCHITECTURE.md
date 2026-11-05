@@ -232,7 +232,7 @@ This constraint is the double-booking guarantee. Never work around it. The inven
 
 **Payments and ledger**
 - `payments` (public_id, booking_id, purpose: `token | rent | owner_invoice`, mode: `payment | upi_mandate`, provider, provider_order_id, provider_payment_id, provider_mandate_id, amount_paise, status, idempotency_key unique).
-- `payment_events` (provider, provider_event_id, event_type, payload jsonb, signature_valid, received_at, processed_at, error) — **unique (provider, provider_event_id)**.
+- `payment_events` (provider, provider_event_id, event_type, payload jsonb, received_at, processed_at, error) — **unique (provider, provider_event_id)**. Only verified events are stored, without the personal details in the gateway's copy (ADR 0057).
 - `refunds` (payment_id, amount_paise, reason, provider_refund_id, status, requested_by, approved_by).
 - `ledger_accounts` (code, name, type: `asset | liability | revenue | expense`), `ledger_transactions` (kind, booking_id, payment_id, memo), `ledger_entries` (transaction_id, account_id, direction: `debit | credit`, amount_paise > 0). Sum of debits = sum of credits per transaction, enforced by a deferred constraint trigger and tests.
 - `owner_invoices` (owner_id, booking_id, invoice_number unique per financial year, fee_paise, gst_paise, total_paise, token_applied_paise, balance_due_paise, status: `draft | issued | paid | void`, issued_at, pdf_key).
@@ -299,7 +299,7 @@ Required test: 50 concurrent hold requests for the last free bed → exactly one
 In the code (ADR 0046): an advisory lock on the student guards the active-hold limit; the beds are locked in id order; stale holds expire through the state machine; `choose_bed` prefers partly held rooms, then the fewest free beds; and a hold answers `QUOTE_EXPIRED`, `QUOTE_USED`, `HOLD_LIMIT_REACHED`, `BED_UNAVAILABLE` or, while remote booking is off, `BOOKING_NEEDS_VISIT`.
 
 ### 7.4 Edge cases (must be handled and tested)
-- **Payment after the hold expired**: if the bed is still free, re-allocate and move to TOKEN_SECURED (`late_payment_revive`); otherwise refund automatically and notify the student with alternatives.
+- **Payment after the hold expired**: if the bed is still free, re-allocate and move to TOKEN_SECURED (`late_payment_revive`); otherwise refund automatically and notify the student with alternatives. Once the move-in has passed, the bed counts as gone (ADR 0057).
 - **Duplicate or out-of-order webhooks**: processing is idempotent per `provider_event_id` and per payment status; states only move forward.
 - **Quote expired at hold time**: `409 QUOTE_EXPIRED`; the client re-quotes and shows any price change before retrying.
 - **Owner marks a bed occupied offline** while a hold exists: the offline block insert fails with the constraint; the owner sees which booking holds the bed.
@@ -427,6 +427,8 @@ In the code (step 6.1, ADR 0056): the order is made when the student taps Pay, o
 
 ### 9.3 Webhooks
 `POST /v1/webhooks/razorpay`: read the raw body → verify HMAC with the webhook secret → insert into `payment_events` (unique provider event id; a duplicate returns 200 and stops) → enqueue `process_payment_event` → return 200 within 1 s. The worker maps events to payment status changes and booking transitions, idempotently. Unknown events are stored and ignored.
+
+In the code (step 6.2, ADR 0057): checkouts and webhooks reach the same settlement. Events more than 48 hours old are refused as replays, and an order that isn't ours is kept and goes no further.
 
 ### 9.4 Ledger
 Chart of accounts (seeded): `gateway_clearing` (asset), `bank` (asset), `owner_receivable` (asset), `student_tokens_held` (liability), `owner_payable` (liability, Phase 9), `gst_payable` (liability), `placement_fee_revenue` (revenue), `payment_fees` (expense).

@@ -45,7 +45,7 @@ Start the slow ones in week 1.
   - [x] apply the Render blueprint, and save the deploy hooks as GitHub secrets;
   - [x] point fixyourstay.in at Render in GoDaddy, and turn GitHub Pages off;
   - [x] attach fixyourstay.in in Render: delete the old custom domains, then add it on the web service (ADR 0055);
-  - [ ] Razorpay test keys, to finish step 6.1: `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` on `fys-staging-api` in Render, never in a chat (runbook's "Payments"). Test mode moves no real money.
+  - [ ] Razorpay test keys and a test webhook, to finish step 6.1: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` on `fys-staging-api` in Render, never in a chat (runbook's "Payments"). Test mode moves no real money.
 - [ ] GitHub repository settings (docs/ci.md): the branch ruleset for `main` with the required checks, secret scanning with push protection, Dependabot alerts, and the free Renovate GitHub App for dependency updates.
 - [ ] Lawyer: Terms, Privacy notice (DPDP), Refund & Cancellation policy, owner agreement (30% fee, 90-day introduction clause, token set-off), E-Commerce Rules seller-disclosure question (hiding owner contacts), grievance officer. The drafts are in `apps/web/src/content/legal`, with the open questions in brackets.
 - [ ] The facts the trust pages state (`apps/web/src/config/company.ts`): the registered name and office address, the phone line a person answers and its hours, the help email, the founders' names, roles and photos, and the grievance officer's name, designation and contact details. A production build waits for them (ADR 0034).
@@ -469,8 +469,13 @@ Start the slow ones in week 1.
   - **Staging:** the fake gateway moves no money, and production refuses it. Test and live keys can't mix.
   - **Proof:** Razorpay's documented requests and answers against its adapter, the whole way through the API over a stand-in for its API, forged signatures, wrong amounts, requests at once, a gateway out of reach, and a phone browser test that pays at the test bank.
 
-- [ ] **6.2 Webhooks and event processing.** Raw-body HMAC verification, `payment_events` with a unique provider event id, fast 200 response, outbox processing, idempotent status mapping, late-payment revive or auto-refund (§7.4).
+- [x] **6.2 Webhooks and event processing.** Raw-body HMAC verification, `payment_events` with a unique provider event id, fast 200 response, outbox processing, idempotent status mapping, late-payment revive or auto-refund (§7.4).
   *Done when* duplicate, out-of-order and late webhooks are all handled correctly in tests.
+  *Note (2026-11-05):*
+  - **API:** `POST /v1/webhooks/razorpay` checks the signature on the raw body, stores each event once without the personal details in Razorpay's copy, queues a job and answers. Anything over 48 hours old is refused as a replay (ADR 0057).
+  - **Settlement:** checkouts and webhooks reach the same code, with the payment's row locked. A payment only moves forward, and captured money moves its booking once.
+  - **A late token:** it takes the bed back if the bed is free and the move-in hasn't passed; otherwise the booking stays ended and the student is texted. The refund itself is step 6.3's.
+  - **Proof:** the same event twice and at once, two events about one payment, events out of order, a webhook and a checkout at once, forged and tampered events, replays, and every late path including a lost race for the bed.
 
 - [ ] **6.3 Refunds.** Automatic refunds on reject, timeout, free cancellation, hold-expired payments and resolved disputes; manual refunds by ops with a reason and two-person approval above the threshold; refund webhooks.
   *Done when* every refund path is tested and visible to the student with a status.
