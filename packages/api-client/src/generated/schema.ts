@@ -2417,6 +2417,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ops/ledger/trial-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What every account holds
+         * @description Debits and credits for each account, of one booking if asked. They always add up: the
+         *     database refuses anything else.
+         */
+        get: operations["ledgerTrialBalance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/ledger/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What was posted
+         * @description Newest first, of one booking if asked.
+         */
+        get: operations["ledgerLedgerTransactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visits": {
         parameters: {
             query?: never;
@@ -2711,6 +2752,16 @@ export interface components {
             /** Items */
             items: components["schemas"]["AcceptanceInfo"][];
         };
+        /**
+         * Account
+         * @enum {string}
+         */
+        Account: "gateway_clearing" | "bank" | "owner_receivable" | "student_tokens_held" | "owner_payable" | "gst_payable" | "placement_fee_revenue" | "payment_fees";
+        /**
+         * AccountType
+         * @enum {string}
+         */
+        AccountType: "asset" | "liability" | "revenue" | "expense";
         /**
          * AdminPolicies
          * @description Each policy's version in force.
@@ -3490,6 +3541,11 @@ export interface components {
          */
         DataRequestStatus: "received" | "ready" | "expired" | "completed" | "rejected";
         /**
+         * Direction
+         * @enum {string}
+         */
+        Direction: "debit" | "credit";
+        /**
          * DisputeOutcome
          * @description What ops decide.
          * @enum {string}
@@ -3855,6 +3911,42 @@ export interface components {
          * @enum {string}
          */
         LateCancelPolicy: "refund_full" | "forfeit_to_owner" | "split";
+        /** LedgerEntryView */
+        LedgerEntryView: {
+            account: components["schemas"]["Account"];
+            /** Name */
+            name: string;
+            direction: components["schemas"]["Direction"];
+            /** Amountpaise */
+            amountPaise: number;
+        };
+        /** LedgerPage */
+        LedgerPage: {
+            /** Items */
+            items: components["schemas"]["LedgerTransactionView"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** LedgerTransactionView */
+        LedgerTransactionView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["PostingKind"];
+            /** Booking */
+            booking: string | null;
+            /** Memo */
+            memo: string;
+            /**
+             * Postedat
+             * Format: date-time
+             */
+            postedAt: string;
+            /** Entries */
+            entries: components["schemas"]["LedgerEntryView"][];
+        };
         /**
          * LengthOfStayRuleParams
          * @description A discount from the highest tier the stay reaches.
@@ -4939,6 +5031,11 @@ export interface components {
             /** Caps */
             caps: components["schemas"]["PricingCapsVersionInfo"][];
         };
+        /**
+         * PostingKind
+         * @enum {string}
+         */
+        PostingKind: "token_received" | "token_refunded" | "owner_invoiced" | "token_applied";
         /**
          * PriceCalendar
          * @description What each room costs a month for a move-in each week, as quotes say (ARCHITECTURE §8.5):
@@ -6377,6 +6474,33 @@ export interface components {
          * @enum {string}
          */
         TimerKind: "unconfirmed" | "dispute" | "move_in";
+        /**
+         * TrialBalance
+         * @description Every account, or what one booking did to each. Debits always equal credits.
+         */
+        TrialBalance: {
+            /** Booking */
+            booking: string | null;
+            /** Lines */
+            lines: components["schemas"]["TrialBalanceLine"][];
+            /** Totaldebitpaise */
+            totalDebitPaise: number;
+            /** Totalcreditpaise */
+            totalCreditPaise: number;
+        };
+        /** TrialBalanceLine */
+        TrialBalanceLine: {
+            account: components["schemas"]["Account"];
+            /** Name */
+            name: string;
+            type: components["schemas"]["AccountType"];
+            /** Debitpaise */
+            debitPaise: number;
+            /** Creditpaise */
+            creditPaise: number;
+            /** Balancepaise */
+            balancePaise: number;
+        };
         /**
          * UploadForm
          * @description Post the file here as multipart/form-data: every field, then the file as ``file``.
@@ -11987,6 +12111,89 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpsRefund"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    ledgerTrialBalance: {
+        parameters: {
+            query?: {
+                booking?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialBalance"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    ledgerLedgerTransactions: {
+        parameters: {
+            query?: {
+                booking?: string | null;
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerPage"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

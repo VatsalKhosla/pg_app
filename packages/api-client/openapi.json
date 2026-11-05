@@ -8105,6 +8105,159 @@
         }
       }
     },
+    "/v1/ops/ledger/trial-balance": {
+      "get": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "What every account holds",
+        "description": "Debits and credits for each account, of one booking if asked. They always add up: the\ndatabase refuses anything else.",
+        "operationId": "ledgerTrialBalance",
+        "parameters": [
+          {
+            "name": "booking",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Booking"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialBalance"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/ledger/transactions": {
+      "get": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "What was posted",
+        "description": "Newest first, of one booking if asked.",
+        "operationId": "ledgerLedgerTransactions",
+        "parameters": [
+          {
+            "name": "booking",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Booking"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/visits": {
       "get": {
         "tags": [
@@ -8987,6 +9140,30 @@
           "items"
         ],
         "title": "AcceptanceList"
+      },
+      "Account": {
+        "type": "string",
+        "enum": [
+          "gateway_clearing",
+          "bank",
+          "owner_receivable",
+          "student_tokens_held",
+          "owner_payable",
+          "gst_payable",
+          "placement_fee_revenue",
+          "payment_fees"
+        ],
+        "title": "Account"
+      },
+      "AccountType": {
+        "type": "string",
+        "enum": [
+          "asset",
+          "liability",
+          "revenue",
+          "expense"
+        ],
+        "title": "AccountType"
       },
       "AdminPolicies": {
         "properties": {
@@ -11143,6 +11320,14 @@
         ],
         "title": "DataRequestStatus"
       },
+      "Direction": {
+        "type": "string",
+        "enum": [
+          "debit",
+          "credit"
+        ],
+        "title": "Direction"
+      },
       "DisputeOutcome": {
         "type": "string",
         "enum": [
@@ -11969,6 +12154,113 @@
         ],
         "title": "LateCancelPolicy",
         "description": "Who keeps the token when a student cancels later than the free-cancellation days before\nmoving in."
+      },
+      "LedgerEntryView": {
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "title": "Amountpaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "account",
+          "name",
+          "direction",
+          "amountPaise"
+        ],
+        "title": "LedgerEntryView"
+      },
+      "LedgerPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LedgerTransactionView"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "LedgerPage"
+      },
+      "LedgerTransactionView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PostingKind"
+          },
+          "booking": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking"
+          },
+          "memo": {
+            "type": "string",
+            "title": "Memo"
+          },
+          "postedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Postedat"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntryView"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "booking",
+          "memo",
+          "postedAt",
+          "entries"
+        ],
+        "title": "LedgerTransactionView"
       },
       "LengthOfStayRuleParams": {
         "properties": {
@@ -15043,6 +15335,16 @@
         ],
         "title": "PolicyHistory",
         "description": "Each policy's latest versions, newest first."
+      },
+      "PostingKind": {
+        "type": "string",
+        "enum": [
+          "token_received",
+          "token_refunded",
+          "owner_invoiced",
+          "token_applied"
+        ],
+        "title": "PostingKind"
       },
       "PriceCalendar": {
         "properties": {
@@ -19157,6 +19459,83 @@
           "move_in"
         ],
         "title": "TimerKind"
+      },
+      "TrialBalance": {
+        "properties": {
+          "booking": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/TrialBalanceLine"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "totalDebitPaise": {
+            "type": "integer",
+            "title": "Totaldebitpaise"
+          },
+          "totalCreditPaise": {
+            "type": "integer",
+            "title": "Totalcreditpaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "booking",
+          "lines",
+          "totalDebitPaise",
+          "totalCreditPaise"
+        ],
+        "title": "TrialBalance",
+        "description": "Every account, or what one booking did to each. Debits always equal credits."
+      },
+      "TrialBalanceLine": {
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
+          "debitPaise": {
+            "type": "integer",
+            "title": "Debitpaise"
+          },
+          "creditPaise": {
+            "type": "integer",
+            "title": "Creditpaise"
+          },
+          "balancePaise": {
+            "type": "integer",
+            "title": "Balancepaise"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "account",
+          "name",
+          "type",
+          "debitPaise",
+          "creditPaise",
+          "balancePaise"
+        ],
+        "title": "TrialBalanceLine"
       },
       "UploadForm": {
         "properties": {
