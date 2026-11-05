@@ -34,6 +34,7 @@ from app.jobs import SCHEDULES, build_registry
 from app.modules.inventory.service import AllocationsTaken
 from app.modules.media.adapters.s3 import S3Storage
 from app.modules.media.service import Buckets
+from app.modules.payments.gateways import build_gateway
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -144,6 +145,7 @@ async def _serve_until_signalled(
                 buckets=Buckets.from_settings(settings),
                 web_cache=web_cache(settings, http),
                 texts=ConsoleTexts() if settings.text_sender == "console" else NoTexts(),
+                gateway=build_gateway(settings, http),
                 analytics=analytics(settings, http),
                 beds=AllocationsTaken(),
             ),

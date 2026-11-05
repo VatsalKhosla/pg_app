@@ -18,6 +18,7 @@ from app.core import audit
 from app.core.calendar import india_date
 from app.core.errors import InvalidTransitionError
 from app.core.outbox import enqueue
+from app.modules.booking.domain.cancellation import late_refund
 from app.modules.booking.domain.state_machine import (
     ActivateAllocation,
     ApplyLateCancelPolicy,
@@ -65,6 +66,8 @@ if TYPE_CHECKING:
 
 # A text about a booking, to the party a transition names (step 5.4, ADR 0048).
 NOTIFY: Final = "booking.notify"
+# Money goes back: the payments module takes it from here, since bookings never call payments.
+REFUND_DUE: Final = "booking.refund_due"
 # Rejected, cancelled, a no-show or refunded: the booking ended early, and the row says how.
 ENDED_EARLY: Final = frozenset(
     {
@@ -193,7 +196,7 @@ class Transitions:
         )
         return sent
 
-    async def carry_out(
+    async def carry_out(  # noqa: PLR0912 - a case for each effect
         self, booking: Booking, event: str, step: Transition, *, by: int | None
     ) -> None:
         for effect in step.effects:
@@ -218,18 +221,18 @@ class Transitions:
                 case SetHoldExpiry() | SetConfirmDeadline() | SetCheckWindowEnd() | AutoConfirm():
                     # Saved with the status; a confirmation of its own follows.
                     pass
-                case (
-                    RequestPayment()
-                    | CancelPayment()
-                    | RecordTokenReceived()
-                    | RefundToken()
-                    | ApplyLateCancelPolicy()
-                    | EarnToken()
-                    | IssueOwnerInvoice()
-                ):
-                    # The gateway's orders and refunds, the token earned, the owner's invoice and
-                    # the ledger come with payments (Phase 6); until then these are stubs, and no
-                    # money moves.
+                case RefundToken():
+                    await self._refund(booking, event, booking.token_paise)
+                case ApplyLateCancelPolicy():
+                    terms = await self._terms.of(booking.booking_policy_id)
+                    amount = late_refund(booking.token_paise, terms.late_cancel_policy)
+                    await self._refund(booking, event, amount)
+                case RequestPayment() | CancelPayment():
+                    # The order is made when the student taps Pay, and a gateway's order can't be
+                    # withdrawn: a token that still comes in goes back (ADRs 0056, 0057).
+                    pass
+                case RecordTokenReceived() | EarnToken() | IssueOwnerInvoice():
+                    # The ledger and the owner's invoice come with steps 6.4 and 6.5.
                     pass
                 case SuggestSimilar():
                     # The student's booking offers a search for PGs like it, from this change
@@ -245,6 +248,18 @@ class Transitions:
                     pass
                 case _:
                     assert_never(effect)
+
+    async def _refund(self, booking: Booking, event: str, amount_paise: int) -> None:
+        """Asks for the money back, in this transaction, for the payments module to send."""
+        if amount_paise <= 0:
+            return
+        await enqueue(
+            self._db,
+            REFUND_DUE,
+            {"booking": str(booking.public_id), "amountPaise": amount_paise, "reason": event},
+            clock=self._clock,
+            dedupe_key=f"{REFUND_DUE}:{booking.public_id}:{event}:{booking.version}",
+        )
 
     async def log(
         self,

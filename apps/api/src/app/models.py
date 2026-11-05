@@ -40,7 +40,7 @@ from app.modules.identity.models import (
 )
 from app.modules.inventory.models import InventoryAllocation
 from app.modules.media.models import MediaAsset
-from app.modules.payments.models import Payment, PaymentEvent
+from app.modules.payments.models import Payment, PaymentEvent, Refund
 from app.modules.pricing.models import (
     BookingPolicyVersion,
     FeePolicyVersion,
@@ -92,6 +92,7 @@ __all__ = [
     "PropertyAmenity",
     "PropertyMedia",
     "PropertyPriceSummary",
+    "Refund",
     "RentBand",
     "Room",
     "RoomCategory",

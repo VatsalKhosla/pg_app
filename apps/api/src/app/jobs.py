@@ -49,7 +49,16 @@ from app.modules.media.jobs import (
     discard_upload_handler,
     process_handler,
 )
-from app.modules.payments.jobs import PROCESS_EVENT, process_event
+from app.modules.payments.jobs import (
+    PROCESS_EVENT,
+    REFUND_DUE,
+    REFUND_TEXT,
+    SEND_REFUND,
+    process_event,
+    refund_due,
+    refund_text_handler,
+    send_refund_handler,
+)
 from app.modules.payments.service import payments_part
 from app.modules.pricing.jobs import CHECK_INTEGRITY, check_integrity_handler
 from app.modules.pricing.service import BAND_CHANGED, CAPS_CHANGED, RULES_CHANGED
@@ -72,6 +81,7 @@ if TYPE_CHECKING:
     from app.core.web_cache import WebCache
     from app.modules.media.ports import ObjectStorage
     from app.modules.media.service import Buckets
+    from app.modules.payments.ports import PaymentGateway
     from app.modules.pricing.occupancy import BedsTaken
 
 # A person's data export (DPDP): one part from every module that holds personal data. A module
@@ -135,17 +145,21 @@ def build_registry(
     texts: Texts,
     analytics: Analytics,
     beds: BedsTaken,
+    gateway: PaymentGateway,
 ) -> JobRegistry:
     """Every handler, with what it needs from outside: the object storage media jobs use, the
     web app whose cached pages are revalidated, the texts visits, bookings and grievances send,
-    where the funnel's server-side steps go, and how full rooms are for the prices search
-    keeps."""
+    where the funnel's server-side steps go, how full rooms are for the prices search keeps, and
+    the gateway refunds go to."""
     registry = JobRegistry()
     registry.register(OUTBOX_CLEANUP, delete_finished_jobs)
     registry.register(IDEMPOTENCY_CLEANUP, delete_expired_keys)
     registry.register(BUILD_EXPORT, build_export_handler(EXPORTERS))
     registry.register(RETENTION, retention_handler(RETENTION_RULES))
     registry.register(PROCESS_EVENT, process_event)
+    registry.register(REFUND_DUE, refund_due)
+    registry.register(SEND_REFUND, send_refund_handler(gateway))
+    registry.register(REFUND_TEXT, refund_text_handler(texts))
     registry.register(PROCESS, process_handler(storage, buckets))
     registry.register(DISCARD_UPLOAD, discard_upload_handler(storage, buckets))
     # A listing changed, its rooms and rents included: its search entry and price summaries

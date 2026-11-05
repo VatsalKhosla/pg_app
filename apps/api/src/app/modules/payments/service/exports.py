@@ -12,9 +12,11 @@ if TYPE_CHECKING:
 
 async def payments_part(db: AsyncSession, user_id: int) -> dict[str, object]:
     codes = await booking_codes_of(db, user_id)
-    payments = await PaymentRepository(db).of_bookings(codes.keys())
+    repository = PaymentRepository(db)
+    payments = await repository.of_bookings(codes.keys())
     if not payments:
         return {}
+    refunds = await repository.refunds_of([payment.id for payment in payments])
     return {
         "payments": [
             {
@@ -28,6 +30,18 @@ async def payments_part(db: AsyncSession, user_id: int) -> dict[str, object]:
                 "capturedAt": None
                 if payment.captured_at is None
                 else payment.captured_at.isoformat(),
+                "refunds": [
+                    {
+                        "amountPaise": refund.amount_paise,
+                        "status": refund.status,
+                        "reference": refund.reference,
+                        "requestedAt": refund.requested_at.isoformat(),
+                        "processedAt": None
+                        if refund.processed_at is None
+                        else refund.processed_at.isoformat(),
+                    }
+                    for refund in refunds.get(payment.id, [])
+                ],
             }
             for payment in payments
         ]

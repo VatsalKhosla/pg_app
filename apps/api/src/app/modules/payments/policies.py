@@ -2,8 +2,15 @@
 
 from typing import TYPE_CHECKING
 
+from app.core.actor import Role
+
 if TYPE_CHECKING:
     from app.core.actor import Actor
+
+
+def can_refund(actor: Actor) -> bool:
+    """Ops and admins see every payment, and give money back with a reason."""
+    return actor.has_role(Role.OPS) or actor.has_role(Role.ADMIN)
 
 
 def can_pay(actor: Actor) -> bool:

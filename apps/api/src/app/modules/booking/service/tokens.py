@@ -25,6 +25,8 @@ from app.modules.inventory.errors import BedUnavailableError
 from app.modules.inventory.service import BedHolds
 
 if TYPE_CHECKING:
+    import uuid
+    from collections.abc import Collection
     from datetime import datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -76,6 +78,36 @@ class BookingTokens:
         if not token_due(facts_of(booking, place), now) or booking.hold_expires_at is None:
             raise InvalidTransitionError("This booking isn't waiting for its token any more.")
         return TokenDue(booking.id, booking.code, booking.token_paise, booking.hold_expires_at)
+
+    async def id_of(self, public_id: uuid.UUID) -> int | None:
+        booking = await self._bookings.by_public_id(public_id)
+        return None if booking is None else booking.id
+
+    async def own(self, actor: Actor, code: str) -> int:
+        """The student's own booking; anyone else's is a 404."""
+        canonical = normalize_booking_code(code)
+        booking = None if canonical is None else await self._bookings.by_code(canonical)
+        if booking is None or booking.student_id != actor.user_id:
+            raise NotFoundError
+        return booking.id
+
+    async def found(self, code: str) -> int:
+        """The booking with this code; none is a 404."""
+        canonical = normalize_booking_code(code)
+        booking = None if canonical is None else await self._bookings.by_code(canonical)
+        if booking is None:
+            raise NotFoundError
+        return booking.id
+
+    async def codes_by_id(self, booking_ids: Collection[int]) -> dict[int, str]:
+        bookings = await self._bookings.by_ids(booking_ids)
+        return {booking_id: booking.code for booking_id, booking in bookings.items()}
+
+    async def student_and_code(self, booking_id: int) -> tuple[int, str]:
+        booking = await self._bookings.by_id(booking_id)
+        if booking is None:  # pragma: no cover - a payment always has its booking
+            raise NotFoundError
+        return booking.student_id, booking.code
 
     async def is_theirs(self, actor: Actor, booking_id: int) -> bool:
         booking = await self._bookings.by_id(booking_id)

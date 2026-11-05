@@ -560,7 +560,7 @@ def test_a_token_after_the_hold_ended_goes_back_if_the_bed_has_gone(
             ("hold_expired", "system"),
             ("late_payment_refund", "system"),
         ],
-        "texts": ["booking_late_refund"],
+        "texts": ["booking_late_refund", "payment_refund_processed"],
         "audit": ["payment.order_created", "payment.captured", "payment.late"],
         "the other's": "held",
         "what the browser hears": "late",

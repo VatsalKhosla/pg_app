@@ -118,6 +118,11 @@ class Settings(DatabaseSettings):
     razorpay_key_id: str | None = None
     razorpay_key_secret: SecretStr | None = None
     razorpay_webhook_secret: SecretStr | None = None
+    # How a refund reaches a student's bank: "normal" takes 5-7 working days; "optimum" is instant
+    # where it can be, and any extra it costs is the founders' choice (ADR 0059).
+    refund_speed: Literal["normal", "optimum"] = "normal"
+    # Ops' refunds above this wait for a second person (ARCHITECTURE §17): ₹5,000.
+    refund_second_person_above_paise: int = Field(default=500_000, gt=0)
     # Visit confirmations and reminders (ADR 0033). "console" writes them to the worker's log
     # (local only); "unavailable" sends nothing until the founders choose an SMS provider.
     text_sender: Literal["console", "unavailable"] = "console"

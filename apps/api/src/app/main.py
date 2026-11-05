@@ -106,6 +106,7 @@ def _set_shared_state(app: FastAPI, settings: Settings, agreements: AgreementLib
     # Who a request's session belongs to, for every module's CurrentActor.
     app.state.authenticate = authenticate_session
     app.state.site_url = settings.site_url
+    app.state.refund_second_person_above_paise = settings.refund_second_person_above_paise
     app.state.privacy_notice_version = settings.privacy_notice_version
     # The owner agreement's versions, and the one owners accept now; a version without its text
     # stops the API starting rather than failing owners later.

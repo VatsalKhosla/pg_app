@@ -632,6 +632,7 @@ def test_a_students_payments_are_in_their_data_export(run: Callable[..., Any]) -
                 "gatewayPaymentId": seen["payment"],
                 "madeAt": seen["theirs"]["payments"][0]["madeAt"],
                 "capturedAt": NOW.isoformat(),
+                "refunds": [],
             }
         ]
     }

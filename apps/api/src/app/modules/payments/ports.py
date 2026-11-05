@@ -1,5 +1,5 @@
-"""What the payments module needs from a gateway (ARCHITECTURE §9.1). Refunds join this in step
-6.3, UPI mandates in 6.7 and split settlement in Phase 9, each as its step builds it."""
+"""What the payments module needs from a gateway (ARCHITECTURE §9.1). UPI mandates join this in
+step 6.7 and split settlement in Phase 9, each as its step builds it."""
 
 from typing import TYPE_CHECKING, Protocol
 
@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from app.modules.payments.domain.payments import GatewayOrder, GatewayPayment, Provider
+    from app.modules.payments.domain.refunds import GatewayRefund
     from app.modules.payments.domain.webhooks import GatewayEvent
 
 
@@ -41,4 +42,12 @@ class PaymentGateway(Protocol):
 
     async def fetch_payment(self, payment_id: str) -> GatewayPayment:
         """The payment as the gateway has it now."""
+        ...
+
+    async def refund(
+        self, *, payment_id: str, amount_paise: int, receipt: str, notes: Mapping[str, str]
+    ) -> GatewayRefund:
+        """``amount_paise`` of the payment goes back. ``receipt`` is unique to the refund: asking
+        again, after an answer that got lost, gives back the same refund. Raises
+        PaymentGatewayRefusedError when the gateway says no, which asking again won't change."""
         ...

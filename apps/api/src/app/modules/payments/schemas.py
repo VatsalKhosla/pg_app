@@ -2,17 +2,20 @@
 the amount is the booking's, fixed by its quote (rule 12's server-side money)."""
 
 import uuid
+from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Final
 
 from pydantic import Field
 
 from app.core.schemas import ApiModel
-from app.modules.payments.domain.payments import Provider
+from app.modules.payments.domain.payments import PaymentStatus, Provider
+from app.modules.payments.domain.refunds import RefundKind, RefundStatus
 
 GATEWAY_ID_MAX_LENGTH: Final = 64
 _GATEWAY_PAYMENT_ID: Final = r"^pay_[A-Za-z0-9_]+$"
 _SIGNATURE: Final = r"^[0-9a-f]{64}$"
+REASON_MAX_LENGTH: Final = 500
 
 
 class CheckoutOutcome(StrEnum):
@@ -65,3 +68,73 @@ class WebhookReceipt(ApiModel):
     """Whether this event is new: Razorpay gets a 200 either way, and stops sending it."""
 
     new: bool
+
+
+class StudentRefund(ApiModel):
+    amount_paise: int
+    status: RefundStatus
+    # What they can quote to their bank, once there is one.
+    reference: str | None
+    requested_at: datetime
+    processed_at: datetime | None
+
+
+class StudentPayment(ApiModel):
+    amount_paise: int
+    status: PaymentStatus
+    captured_at: datetime | None
+    refunds: list[StudentRefund]
+
+
+class StudentPayments(ApiModel):
+    items: list[StudentPayment]
+
+
+class OpsRefund(ApiModel):
+    id: uuid.UUID
+    booking: str
+    kind: RefundKind
+    status: RefundStatus
+    amount_paise: int
+    reason: str
+    provider_refund_id: str | None
+    reference: str | None
+    # Names, when these people have them; both empty for an automatic refund.
+    requested_by: str | None
+    approved_by: str | None
+    requested_at: datetime
+    processed_at: datetime | None
+    # Why it failed, or why it was declined.
+    failure: str | None
+
+
+class OpsRefundPage(ApiModel):
+    items: list[OpsRefund]
+    next_cursor: uuid.UUID | None
+
+
+class OpsPayment(ApiModel):
+    id: uuid.UUID
+    purpose: str
+    provider: str
+    provider_order_id: str | None
+    provider_payment_id: str | None
+    amount_paise: int
+    status: PaymentStatus
+    captured_at: datetime | None
+    # What can still go back of it.
+    refundable_paise: int
+    refunds: list[OpsRefund]
+
+
+class OpsPayments(ApiModel):
+    items: list[OpsPayment]
+
+
+class RefundRequest(ApiModel):
+    amount_paise: Annotated[int, Field(gt=0)]
+    reason: Annotated[str, Field(min_length=1, max_length=REASON_MAX_LENGTH)]
+
+
+class RefundDecline(ApiModel):
+    reason: Annotated[str, Field(min_length=1, max_length=REASON_MAX_LENGTH)]

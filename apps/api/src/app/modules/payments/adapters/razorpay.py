@@ -23,9 +23,13 @@ from app.modules.payments.domain.payments import (
     GatewayStatus,
     Provider,
 )
+from app.modules.payments.domain.refunds import GatewayRefund, GatewayRefundStatus
 from app.modules.payments.domain.signatures import checkout_signature, same, webhook_signature
-from app.modules.payments.domain.webhooks import PAYMENT_EVENTS, GatewayEvent
-from app.modules.payments.errors import PaymentGatewayUnavailableError
+from app.modules.payments.domain.webhooks import PAYMENT_EVENTS, REFUND_EVENTS, GatewayEvent
+from app.modules.payments.errors import (
+    PaymentGatewayRefusedError,
+    PaymentGatewayUnavailableError,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -66,6 +70,25 @@ class _Payment(_Answer):
     status: GatewayStatus
 
 
+class _Acquirer(_Answer):
+    arn: str | None = None
+    rrn: str | None = None
+    utr: str | None = None
+
+
+class _Refund(_Answer):
+    id: str
+    payment_id: str
+    amount: int
+    status: GatewayRefundStatus
+    receipt: str | None = None
+    acquirer_data: _Acquirer | None = None
+
+
+class _Refunds(_Answer):
+    items: list[_Refund]
+
+
 class _ErrorBody(_Answer):
     code: str = ""
     description: str = ""
@@ -89,6 +112,48 @@ class _WithPayment(_Answer):
     payment: _PaymentEntity
 
 
+class _RefundEntity(_Answer):
+    entity: _Refund
+
+
+class _WithRefund(_Answer):
+    refund: _RefundEntity
+
+
+def _as_payment(found: _Payment) -> GatewayPayment:
+    return GatewayPayment(
+        id=found.id,
+        order_id=found.order_id,
+        amount_paise=found.amount,
+        currency=found.currency,
+        status=found.status,
+    )
+
+
+def _as_refund(found: _Refund) -> GatewayRefund:
+    bank = found.acquirer_data
+    return GatewayRefund(
+        id=found.id,
+        payment_id=found.payment_id,
+        amount_paise=found.amount,
+        status=found.status,
+        receipt=found.receipt,
+        reference=None if bank is None else bank.arn or bank.rrn or bank.utr,
+    )
+
+
+def _refund_event(found: _Webhook, created_at: datetime) -> GatewayEvent:
+    try:
+        refund = _WithRefund.model_validate(found.payload).refund.entity
+    except ValidationError:
+        return GatewayEvent(found.event, created_at, None, unreadable=True)
+    try:
+        payment = _as_payment(_WithPayment.model_validate(found.payload).payment.entity)
+    except ValidationError:
+        payment = None  # the refund's own payment id is enough to go on
+    return GatewayEvent(found.event, created_at, payment, refund=_as_refund(refund))
+
+
 def read_razorpay_webhook(raw_body: bytes) -> GatewayEvent | None:
     """A webhook in Razorpay's shape, which the fake gateway's share: an event of any kind, with
     the payment it's about if it's one acted on. A kind we don't know, or a payment that doesn't
@@ -99,23 +164,15 @@ def read_razorpay_webhook(raw_body: bytes) -> GatewayEvent | None:
     except ValidationError:
         return None
     created_at = datetime.fromtimestamp(found.created_at, tz=UTC)
+    if found.event in REFUND_EVENTS:
+        return _refund_event(found, created_at)
     if found.event not in PAYMENT_EVENTS:
         return GatewayEvent(found.event, created_at, None)
     try:
         payment = _WithPayment.model_validate(found.payload).payment.entity
     except ValidationError:
         return GatewayEvent(found.event, created_at, None, unreadable=True)
-    return GatewayEvent(
-        found.event,
-        created_at,
-        GatewayPayment(
-            id=payment.id,
-            order_id=payment.order_id,
-            amount_paise=payment.amount,
-            currency=payment.currency,
-            status=payment.status,
-        ),
-    )
+    return GatewayEvent(found.event, created_at, _as_payment(payment))
 
 
 def _error_of(response: httpx.Response) -> _ErrorBody:
@@ -135,12 +192,14 @@ class RazorpayGateway:
         key_id: str,
         key_secret: SecretStr,
         webhook_secret: SecretStr,
+        refund_speed: str = "normal",
         retry_delay_s: float = 0.2,
     ) -> None:
         self._http = http
         self.key_id = key_id
         self._key_secret = key_secret
         self._webhook_secret = webhook_secret
+        self._refund_speed = refund_speed
         self._retry_delay_s = retry_delay_s
 
     async def create_order(
@@ -183,13 +242,47 @@ class RazorpayGateway:
             found = _Payment.model_validate_json(response.content)
         except ValidationError as error:
             raise self._malformed("fetch_payment") from error
-        return GatewayPayment(
-            id=found.id,
-            order_id=found.order_id,
-            amount_paise=found.amount,
-            currency=found.currency,
-            status=found.status,
+        return _as_payment(found)
+
+    async def refund(
+        self, *, payment_id: str, amount_paise: int, receipt: str, notes: Mapping[str, str]
+    ) -> GatewayRefund:
+        response = await self._send(
+            "POST",
+            f"/payments/{payment_id}/refund",
+            json={
+                "amount": amount_paise,
+                "speed": self._refund_speed,
+                "receipt": receipt,
+                "notes": dict(notes),
+            },
         )
+        if response.is_success:
+            try:
+                return _as_refund(_Refund.model_validate_json(response.content))
+            except ValidationError as error:
+                raise self._malformed("refund") from error
+        said = _error_of(response)
+        if _DUPLICATE in said.description.lower():
+            return await self._refund_with_receipt(payment_id, receipt)
+        if self._may_pass(response):
+            raise self._refused("refund", response)
+        logger.error("razorpay won't refund", status=response.status_code, code=said.code)
+        raise PaymentGatewayRefusedError(said.description or "Razorpay refused this refund.")
+
+    async def _refund_with_receipt(self, payment_id: str, receipt: str) -> GatewayRefund:
+        response = await self._fetch(f"/payments/{payment_id}/refunds", params={"count": "100"})
+        if not response.is_success:
+            raise self._refused("find_refund", response)
+        try:
+            refunds = _Refunds.model_validate_json(response.content).items
+        except ValidationError as error:
+            raise self._malformed("find_refund") from error
+        for refund in refunds:
+            if refund.receipt == receipt:
+                return _as_refund(refund)
+        logger.error("razorpay has no refund for a receipt it called a duplicate")
+        raise PaymentGatewayUnavailableError
 
     async def _order_with_receipt(self, receipt: str) -> GatewayOrder:
         response = await self._fetch("/orders", params={"receipt": receipt})
@@ -222,14 +315,17 @@ class RazorpayGateway:
                 if attempt == FETCH_ATTEMPTS:
                     raise
             else:
-                passing = (
-                    response.status_code >= httpx.codes.INTERNAL_SERVER_ERROR
-                    or response.status_code == httpx.codes.TOO_MANY_REQUESTS
-                )
-                if not passing or attempt == FETCH_ATTEMPTS:
+                if not self._may_pass(response) or attempt == FETCH_ATTEMPTS:
                     return response
             await asyncio.sleep(self._retry_delay_s * 2 ** (attempt - 1))
         raise PaymentGatewayUnavailableError  # pragma: no cover - the loop always returns or raises
+
+    @staticmethod
+    def _may_pass(response: httpx.Response) -> bool:
+        return (
+            response.status_code >= httpx.codes.INTERNAL_SERVER_ERROR
+            or response.status_code == httpx.codes.TOO_MANY_REQUESTS
+        )
 
     async def _send(
         self,

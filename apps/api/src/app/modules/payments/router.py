@@ -4,24 +4,33 @@ what happened. Another student's is a 404."""
 
 import uuid
 from datetime import timedelta
-from typing import Final
+from typing import Annotated, Final
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request, Response, status
 
 from app.core.clock import ClockDep
 from app.core.current_actor import CurrentActor
 from app.core.db import DbSession
 from app.core.errors import ForbiddenError
+from app.core.idempotency import OPENAPI_HEADER, StoredResponse, idempotent_request, replay
+from app.core.pagination import PageParams
 from app.core.ratelimit import RateLimit, enforce
 from app.modules.payments.adapters.razorpay import EVENT_ID_HEADER, SIGNATURE_HEADER
-from app.modules.payments.policies import can_pay
+from app.modules.payments.domain.refunds import RefundStatus
+from app.modules.payments.policies import can_pay, can_refund
 from app.modules.payments.schemas import (
     CheckoutCallback,
     CheckoutResult,
+    OpsPayments,
+    OpsRefund,
+    OpsRefundPage,
     PaymentStart,
+    RefundDecline,
+    RefundRequest,
+    StudentPayments,
     WebhookReceipt,
 )
-from app.modules.payments.service import PaymentWebhooks, TokenCheckout
+from app.modules.payments.service import PaymentWebhooks, Refunds, TokenCheckout
 
 router = APIRouter(prefix="/v1", tags=["payments"])
 
@@ -30,6 +39,11 @@ STARTS_PER_USER: Final = RateLimit("payment-starts-per-user", limit=30, window=t
 # Each may ask the gateway about a payment. The browser asks again a few times while a bank
 # finishes.
 CHECKOUTS_PER_USER: Final = RateLimit("checkouts-per-user", limit=120, window=timedelta(hours=1))
+
+
+def _ops(actor: CurrentActor) -> None:
+    if not can_refund(actor):
+        raise ForbiddenError
 
 
 def _checkout(request: Request, db: DbSession, clock: ClockDep) -> TokenCheckout:
@@ -91,3 +105,85 @@ async def razorpay_webhook(request: Request, db: DbSession, clock: ClockDep) -> 
         signature=request.headers.get(SIGNATURE_HEADER, ""),
         event_id=request.headers.get(EVENT_ID_HEADER, ""),
     )
+
+
+@router.get("/bookings/{code}/payments", summary="What you paid for your booking")
+async def my_booking_payments(
+    code: str, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> StudentPayments:
+    """What came in, and what's coming back."""
+    if not can_pay(actor):
+        raise ForbiddenError
+    return StudentPayments(items=await Refunds(db, clock).for_student(actor, code))
+
+
+@router.get("/ops/bookings/{code}/payments", summary="What a booking paid and got back")
+async def ops_booking_payments(
+    code: str, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> OpsPayments:
+    _ops(actor)
+    return OpsPayments(items=await Refunds(db, clock).for_ops(code))
+
+
+@router.get("/ops/refunds", summary="Refunds")
+async def ops_refunds(
+    actor: CurrentActor,
+    *,
+    page: PageParams,
+    db: DbSession,
+    clock: ClockDep,
+    refund_status: Annotated[RefundStatus | None, Query(alias="status")] = None,
+) -> OpsRefundPage:
+    """Oldest first, as a queue; of one status if asked."""
+    _ops(actor)
+    items, next_cursor = await Refunds(db, clock).page(page, status=refund_status)
+    return OpsRefundPage(items=items, next_cursor=next_cursor)
+
+
+@router.post(
+    "/ops/payments/{payment_id}/refunds",
+    status_code=status.HTTP_201_CREATED,
+    response_model=OpsRefund,
+    summary="Give money back",
+    openapi_extra=OPENAPI_HEADER,
+)
+async def ops_refund(
+    payment_id: uuid.UUID,
+    body: RefundRequest,
+    *,
+    request: Request,
+    actor: CurrentActor,
+    db: DbSession,
+    clock: ClockDep,
+) -> OpsRefund | Response:
+    """With a reason. Above the threshold it waits for a second person. Send an Idempotency-Key, the
+    same on every retry. 409 REFUND_TOO_MUCH past what's left of the payment."""
+    _ops(actor)
+    idempotent = await idempotent_request(request, scope=f"user:{actor.user_id}")
+    outcome = await Refunds(db, clock).request(
+        actor,
+        payment_id,
+        amount_paise=body.amount_paise,
+        reason=body.reason,
+        second_person_above=request.app.state.refund_second_person_above_paise,
+        request=idempotent,
+    )
+    return replay(outcome) if isinstance(outcome, StoredResponse) else outcome
+
+
+@router.post("/ops/refunds/{refund_id}/approve", summary="Approve a refund as the second person")
+async def ops_approve_refund(
+    refund_id: uuid.UUID, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> OpsRefund:
+    """409 REFUND_NEEDS_SECOND_PERSON for whoever asked for it."""
+    _ops(actor)
+    return await Refunds(db, clock).approve(actor, refund_id)
+
+
+@router.post("/ops/refunds/{refund_id}/decline", summary="Decline a refund, with a reason")
+async def ops_decline_refund(
+    refund_id: uuid.UUID, body: RefundDecline, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> OpsRefund:
+    """Nothing goes back. Whoever asked for it may withdraw it this way too."""
+    _ops(actor)
+    return await Refunds(db, clock).decline(actor, refund_id, reason=body.reason)

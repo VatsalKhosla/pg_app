@@ -10,6 +10,31 @@ class PaymentGatewayUnavailableError(ServiceUnavailableError):
     title = "Payments can't be reached right now"
 
 
+class PaymentGatewayRefusedError(AppError):
+    """The gateway understood and said no: trying the same again won't help. Only jobs meet this,
+    and they record why."""
+
+    status = 502
+    code = "PAYMENT_GATEWAY_REFUSED"
+    title = "The payment gateway refused that"
+
+
+class RefundTooMuchError(AppError):
+    """More than what's left of the payment."""
+
+    status = 409
+    code = "REFUND_TOO_MUCH"
+    title = "That's more than can go back"
+
+
+class RefundNeedsSecondPersonError(AppError):
+    """The person who asked for a refund can't approve it too."""
+
+    status = 409
+    code = "REFUND_NEEDS_SECOND_PERSON"
+    title = "Someone else has to approve this refund"
+
+
 class PaymentSignatureInvalidError(AppError):
     """What came back from checkout isn't what the gateway signed: nothing moves."""
 

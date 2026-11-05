@@ -12,6 +12,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Final, cast
 
 from app.modules.payments.domain.payments import GatewayPayment, GatewayStatus
+from app.modules.payments.domain.refunds import GatewayRefund, GatewayRefundStatus
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -19,9 +20,12 @@ if TYPE_CHECKING:
 
 # Razorpay retries for 24 hours after an event is created, so anything much older is a replay.
 WEBHOOK_MAX_AGE: Final = timedelta(hours=48)
-# What's acted on. Any other event is kept and ignored. Refund events join these in step 6.3.
+# What's acted on. Any other event is kept and ignored.
 PAYMENT_EVENTS: Final = frozenset(
     {"payment.authorized", "payment.captured", "payment.failed", "order.paid"}
+)
+REFUND_EVENTS: Final = frozenset(
+    {"refund.created", "refund.processed", "refund.failed", "refund.speed_changed"}
 )
 
 
@@ -31,8 +35,11 @@ class GatewayEvent:
     created_at: datetime
     # The payment it's about, if it's one acted on and could be read.
     payment: GatewayPayment | None
-    # Whether it should have held a payment, but its didn't make sense: someone has to look.
+    # Whether it should have held a payment or a refund, but it didn't make sense: someone has to
+    # look.
     unreadable: bool = False
+    # The refund it's about, if it's a refund event.
+    refund: GatewayRefund | None = None
 
 
 def too_old(event: GatewayEvent, now: datetime) -> bool:
@@ -42,9 +49,24 @@ def too_old(event: GatewayEvent, now: datetime) -> bool:
 def kept_payload(event: GatewayEvent) -> dict[str, object]:
     """All that's stored of an event."""
     payment = event.payment
+    refund = event.refund
     return {
         "createdAt": event.created_at.isoformat(),
         **({"unreadable": True} if event.unreadable else {}),
+        **(
+            {}
+            if refund is None
+            else {
+                "refund": {
+                    "id": refund.id,
+                    "paymentId": refund.payment_id,
+                    "amountPaise": refund.amount_paise,
+                    "status": refund.status,
+                    "receipt": refund.receipt,
+                    "reference": refund.reference,
+                }
+            }
+        ),
         **(
             {}
             if payment is None
@@ -73,4 +95,24 @@ def payment_in(payload: Mapping[str, object]) -> GatewayPayment | None:
         amount_paise=int(str(stored["amountPaise"])),
         currency=str(stored["currency"]),
         status=GatewayStatus(str(stored["status"])),
+    )
+
+
+def _text_or_none(value: object) -> str | None:
+    return None if value is None else str(value)
+
+
+def refund_in(payload: Mapping[str, object]) -> GatewayRefund | None:
+    """The refund a stored event is about, if any."""
+    found = payload.get("refund")
+    if found is None:
+        return None
+    stored = cast("Mapping[str, object]", found)
+    return GatewayRefund(
+        id=str(stored["id"]),
+        payment_id=str(stored["paymentId"]),
+        amount_paise=int(str(stored["amountPaise"])),
+        status=GatewayRefundStatus(str(stored["status"])),
+        receipt=_text_or_none(stored["receipt"]),
+        reference=_text_or_none(stored["reference"]),
     )

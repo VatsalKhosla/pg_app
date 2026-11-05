@@ -25,4 +25,5 @@ def build_gateway(settings: Settings, http: httpx.AsyncClient) -> PaymentGateway
         key_id=settings.razorpay_key_id,
         key_secret=settings.razorpay_key_secret,
         webhook_secret=settings.razorpay_webhook_secret,
+        refund_speed=settings.refund_speed,
     )

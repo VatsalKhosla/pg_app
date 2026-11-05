@@ -61,6 +61,7 @@ async def run_due_jobs(
             texts=texts or ConsoleTexts(),
             analytics=analytics or NoAnalytics(),
             beds=NoBookingsYet(),
+            gateway=app.state.payment_gateway,
         ),
         clock=app.state.clock,
         worker_id="test",

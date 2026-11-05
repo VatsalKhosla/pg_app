@@ -5,7 +5,7 @@ payment says, and every way the gateway can fail."""
 import asyncio
 import base64
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime
 from typing import Any
 
@@ -16,9 +16,13 @@ from pydantic import SecretStr
 from app.modules.payments.adapters.fake import FakeGateway
 from app.modules.payments.adapters.razorpay import API, FETCH_ATTEMPTS, RazorpayGateway
 from app.modules.payments.domain.payments import GatewayOrder, GatewayPayment, GatewayStatus
+from app.modules.payments.domain.refunds import GatewayRefund, GatewayRefundStatus
 from app.modules.payments.domain.signatures import checkout_signature, webhook_signature
 from app.modules.payments.domain.webhooks import GatewayEvent
-from app.modules.payments.errors import PaymentGatewayUnavailableError
+from app.modules.payments.errors import (
+    PaymentGatewayRefusedError,
+    PaymentGatewayUnavailableError,
+)
 from app.modules.payments.ports import PaymentGateway
 
 KEY_ID = "rzp_test_1DP5mmOlF5G5ag"
@@ -414,5 +418,160 @@ def test_the_fake_gateway_signs_webhooks_in_razorpays_shape() -> None:
         }
         assert fake.webhook("payment.captured", payment, at=at).event_id.startswith("evt_fake_")
         assert fake.read_webhook(sent.raw_body) == GatewayEvent("payment.captured", at, payment)
+
+    asyncio.run(scenario())
+
+
+REFUND = {
+    "id": "rfnd_FP8R8EGjGbPkVb",
+    "entity": "refund",
+    "amount": TOKEN,
+    "currency": "INR",
+    "payment_id": "pay_29QQoUBi66xm2f",
+    "notes": {"booking": "BK-7F3K2Q9M"},
+    "receipt": "refund-abc",
+    "acquirer_data": {"arn": None},
+    "created_at": 1597078914,
+    "batch_id": None,
+    "status": "pending",
+    "speed_processed": "normal",
+    "speed_requested": "normal",
+}
+
+
+def _refund(gateway: RazorpayGateway) -> Coroutine[Any, Any, GatewayRefund]:
+    return gateway.refund(
+        payment_id="pay_29QQoUBi66xm2f",
+        amount_paise=TOKEN,
+        receipt="refund-abc",
+        notes={"booking": "BK-7F3K2Q9M"},
+    )
+
+
+def test_a_refund_asks_for_the_exact_amount_at_a_normal_speed() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json=REFUND)
+
+    found = asyncio.run(_refund(_gateway(handler)))
+
+    assert found == GatewayRefund(
+        "rfnd_FP8R8EGjGbPkVb",
+        "pay_29QQoUBi66xm2f",
+        TOKEN,
+        GatewayRefundStatus.PENDING,
+        receipt="refund-abc",
+    )
+    assert (seen[0].method, str(seen[0].url)) == (
+        "POST",
+        f"{API}/payments/pay_29QQoUBi66xm2f/refund",
+    )
+    assert json.loads(seen[0].content) == {
+        "amount": TOKEN,
+        "speed": "normal",
+        "receipt": "refund-abc",
+        "notes": {"booking": "BK-7F3K2Q9M"},
+    }
+
+
+def test_a_repeated_receipt_finds_the_first_refund_instead_of_giving_back_twice() -> None:
+    other = {**REFUND, "id": "rfnd_other", "receipt": "refund-other"}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST":
+            return httpx.Response(
+                400,
+                json={"error": {"code": "BAD_REQUEST_ERROR", "description": "Duplicate receipt"}},
+            )
+        assert str(request.url).startswith(f"{API}/payments/pay_29QQoUBi66xm2f/refunds")
+        return httpx.Response(200, json={"entity": "collection", "items": [other, REFUND]})
+
+    assert asyncio.run(_refund(_gateway(handler))).id == REFUND["id"]
+
+
+@pytest.mark.parametrize(
+    "found",
+    [
+        httpx.Response(200, json={"entity": "collection", "items": []}),
+        httpx.Response(200, content=b"not json"),
+        httpx.Response(401, json={"error": {"code": "BAD_REQUEST_ERROR", "description": "no"}}),
+    ],
+)
+def test_a_repeated_receipt_that_cant_be_found_is_tried_again(found: httpx.Response) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST":
+            return httpx.Response(
+                400, json={"error": {"code": "BAD_REQUEST_ERROR", "description": "duplicate"}}
+            )
+        return found
+
+    with pytest.raises(PaymentGatewayUnavailableError):
+        asyncio.run(_refund(_gateway(handler)))
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Your account does not have enough balance to carry out the refund operation.",
+        "The refund amount provided is greater than amount captured.",
+    ],
+)
+def test_a_refund_razorpay_says_no_to_is_final_and_says_why(description: str) -> None:
+    answer = {"error": {"code": "BAD_REQUEST_ERROR", "description": description}}
+
+    with pytest.raises(PaymentGatewayRefusedError, match=description):
+        asyncio.run(_refund(_gateway(_answering(400, answer))))
+
+
+def test_a_refusal_with_no_words_still_says_what_happened() -> None:
+    with pytest.raises(PaymentGatewayRefusedError, match="Razorpay refused"):
+        asyncio.run(_refund(_gateway(_answering(400, {}))))
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        httpx.Response(500, json={}),
+        httpx.Response(429, json={}),
+        httpx.Response(200, content=b"not json"),
+        httpx.Response(200, json={"id": "rfnd_without_a_status"}),
+    ],
+)
+def test_a_refund_that_may_pass_is_tried_again_by_its_job(answer: httpx.Response) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return answer
+
+    with pytest.raises(PaymentGatewayUnavailableError):
+        asyncio.run(_refund(_gateway(handler)))
+
+
+def test_the_fake_gateway_refunds_the_same_way_every_time_and_can_say_no() -> None:
+    async def refund(gateway: FakeGateway) -> GatewayRefund:
+        return await gateway.refund(
+            payment_id="pay_1", amount_paise=TOKEN, receipt="refund-abc", notes={}
+        )
+
+    async def scenario() -> None:
+        fake = FakeGateway()
+        first = await refund(fake)
+        assert first == await refund(FakeGateway())
+        assert first.status is GatewayRefundStatus.PROCESSED
+        assert fake.refunds_made == 1
+
+        fake.refuses_refunds = True
+        with pytest.raises(PaymentGatewayRefusedError):
+            await refund(fake)
+        fake.refuses_refunds = False
+        fake.unreachable = True
+        with pytest.raises(PaymentGatewayUnavailableError):
+            await refund(fake)
+        at = datetime(2027, 7, 14, 10, 0, tzinfo=UTC)
+        sent = fake.refund_webhook("refund.processed", first, at=at, order_id="order_1")
+        event = fake.read_webhook(sent.raw_body)
+        assert event is not None
+        assert event.refund == first
+        assert fake.verify_webhook(raw_body=sent.raw_body, signature=sent.signature)
 
     asyncio.run(scenario())

@@ -16,10 +16,11 @@ from opentelemetry import metrics
 from app.core import audit
 from app.core.outbox import enqueue
 from app.modules.payments.domain.payments import Settlement
-from app.modules.payments.domain.webhooks import kept_payload, payment_in, too_old
+from app.modules.payments.domain.webhooks import kept_payload, payment_in, refund_in, too_old
 from app.modules.payments.errors import WebhookInvalidError
 from app.modules.payments.repository import PaymentRepository
 from app.modules.payments.schemas import WebhookReceipt
+from app.modules.payments.service.refunds import Refunds
 from app.modules.payments.service.settlement import PaymentSettlements
 
 if TYPE_CHECKING:
@@ -49,6 +50,7 @@ class PaymentWebhooks:
         self._clock = clock
         self._payments = PaymentRepository(db)
         self._settlements = PaymentSettlements(db, clock)
+        self._refunds = Refunds(db, clock)
 
     async def receive(
         self, gateway: PaymentGateway, *, raw_body: bytes, signature: str, event_id: str
@@ -94,6 +96,10 @@ class PaymentWebhooks:
             event.error = "unreadable"
             return
         found = payment_in(event.payload)
+        refund = refund_in(event.payload)
+        if refund is not None:
+            event.error = await self._refunds.settle(event.provider, refund, found)
+            return
         if found is None:
             return  # an event we don't act on
         payment = (

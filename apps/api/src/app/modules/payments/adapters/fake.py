@@ -26,8 +26,12 @@ from app.modules.payments.domain.payments import (
     GatewayStatus,
     Provider,
 )
+from app.modules.payments.domain.refunds import GatewayRefund, GatewayRefundStatus
 from app.modules.payments.domain.signatures import checkout_signature, same, webhook_signature
-from app.modules.payments.errors import PaymentGatewayUnavailableError
+from app.modules.payments.errors import (
+    PaymentGatewayRefusedError,
+    PaymentGatewayUnavailableError,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -64,6 +68,9 @@ class FakeGateway:
     def __init__(self) -> None:
         self.unreachable = False
         self.orders_made = 0
+        self.refunds_made = 0
+        self.refund_status = GatewayRefundStatus.PROCESSED
+        self.refuses_refunds = False
         self._said: dict[str, GatewayPayment] = {}
 
     async def create_order(
@@ -91,6 +98,24 @@ class FakeGateway:
         if said is not None:
             return said
         return self._captured(payment_id)
+
+    async def refund(
+        self, *, payment_id: str, amount_paise: int, receipt: str, notes: Mapping[str, str]
+    ) -> GatewayRefund:
+        _ = notes
+        self._check_reachable()
+        if self.refuses_refunds:
+            msg = "The test bank refuses this refund."
+            raise PaymentGatewayRefusedError(msg)
+        self.refunds_made += 1
+        return GatewayRefund(
+            id=f"rfnd_fake_{hashlib.sha256(receipt.encode()).hexdigest()[:16]}",
+            payment_id=payment_id,
+            amount_paise=amount_paise,
+            status=self.refund_status,
+            receipt=receipt,
+            reference="ARN-FAKE-0001",
+        )
 
     def checkout(self, order_id: str) -> CheckoutProof:
         """The test bank says yes: the same order always gets the same payment."""
@@ -145,6 +170,50 @@ class FakeGateway:
                             "contact": "+919000000000",
                         }
                     }
+                },
+            },
+            event_id=event_id,
+        )
+
+    def refund_webhook(
+        self,
+        event: str,
+        refund: GatewayRefund,
+        *,
+        at: datetime,
+        order_id: str | None = None,
+        event_id: str = "",
+    ) -> SignedWebhook:
+        """A signed webhook about ``refund``, in the shape of Razorpay's."""
+        return self.signed(
+            {
+                "entity": "event",
+                "event": event,
+                "contains": ["refund", "payment"],
+                "created_at": int(at.timestamp()),
+                "payload": {
+                    "refund": {
+                        "entity": {
+                            "id": refund.id,
+                            "entity": "refund",
+                            "amount": refund.amount_paise,
+                            "currency": INR,
+                            "payment_id": refund.payment_id,
+                            "receipt": refund.receipt,
+                            "acquirer_data": {"arn": refund.reference},
+                            "status": refund.status,
+                        }
+                    },
+                    "payment": {
+                        "entity": {
+                            "id": refund.payment_id,
+                            "amount": refund.amount_paise,
+                            "currency": INR,
+                            "status": "refunded",
+                            "order_id": order_id,
+                            "contact": "+919000000000",
+                        }
+                    },
                 },
             },
             event_id=event_id,

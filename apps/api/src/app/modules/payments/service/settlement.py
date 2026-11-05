@@ -19,6 +19,7 @@ from app.modules.payments.domain.payments import (
     advanced,
     read_payment,
 )
+from app.modules.payments.service.refunds import Refunds
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,6 +36,7 @@ class PaymentSettlements:
         self._db = db
         self._clock = clock
         self._tokens = BookingTokens(db, clock)
+        self._refunds = Refunds(db, clock)
 
     async def apply(
         self, payment: Payment, found: GatewayPayment, *, by: audit.Actor
@@ -78,6 +80,12 @@ class PaymentSettlements:
             "a token came in too late to secure its booking", booking=code, came_to=taken
         )
         await self._record(payment, "payment.late", code, by=by, came_to=taken)
+        if taken is TokenTaken.MOVED_ON:
+            # No booking event carries this one back, so it goes back from here. A refund from the
+            # hold's end came with its own event, whose job finds this payment.
+            await self._refunds.automatic(
+                payment, amount_paise=payment.amount_paise, reason="moved_on"
+            )
         return Settlement.LATE
 
     async def _record(

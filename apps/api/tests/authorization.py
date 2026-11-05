@@ -66,6 +66,7 @@ PATH_VALUES: Final = frozenset(
         "a_missing_block",
         "a_missing_booking",
         "a_missing_payment",
+        "a_missing_refund",
         "a_missing_dispute",
         "an_owner",
         "a_live_listing",
@@ -562,6 +563,28 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("POST", "/v1/payments/{payment_id}/test-checkout"): Rule(
         signed_in(404, field_agent=403, ops=403, admin=403),
         path={"payment_id": "a_missing_payment"},
+    ),
+    # Money given back (ADR 0059): a student sees their own; ops run it. A refund without an
+    # Idempotency-Key is refused before anything else.
+    ("GET", "/v1/bookings/{code}/payments"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403), path={"code": "a_missing_booking"}
+    ),
+    ("GET", "/v1/ops/bookings/{code}/payments"): Rule(
+        ops_only(404), path={"code": "a_missing_booking"}
+    ),
+    ("GET", "/v1/ops/refunds"): Rule(ops_only(200)),
+    ("POST", "/v1/ops/payments/{payment_id}/refunds"): Rule(
+        ops_only(400),
+        lambda: {"json": {"amountPaise": 100, "reason": "The owner asked us to"}},
+        path={"payment_id": "a_missing_payment"},
+    ),
+    ("POST", "/v1/ops/refunds/{refund_id}/approve"): Rule(
+        ops_only(404), path={"refund_id": "a_missing_refund"}
+    ),
+    ("POST", "/v1/ops/refunds/{refund_id}/decline"): Rule(
+        ops_only(404),
+        lambda: {"json": {"reason": "Not ours to refund"}},
+        path={"refund_id": "a_missing_refund"},
     ),
     # A gateway's word (ADR 0057): anyone may call it, and only a good signature gets anywhere.
     ("POST", "/v1/webhooks/razorpay"): Rule(everyone(400), lambda: {"json": {"event": "x"}}),
