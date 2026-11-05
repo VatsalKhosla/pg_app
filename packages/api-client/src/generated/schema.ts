@@ -2417,6 +2417,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ops/invoices/{invoice_id}/payment-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for a new payment link
+         * @description After a link was cancelled or the gateway refused one: a job asks the gateway for another.
+         *     409 INVALID_TRANSITION once the invoice is paid, or while a link can still be paid.
+         */
+        post: operations["paymentsAskForInvoiceLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/invoices/{invoice_id}/test-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pay an invoice at the test bank
+         * @description With the fake gateway only, which moves no money and which production refuses: the test bank
+         *     pays the owner's own invoice's link, and tells us as Razorpay would, by a signed webhook. A 404
+         *     with a real gateway.
+         */
+        post: operations["paymentsPayInvoiceAtTestBank"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/reconciliation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What's waiting on the gateway */
+        get: operations["paymentsReconciliationSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/reconciliation/issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What reconciliation found
+         * @description Newest first; only the open ones unless asked.
+         */
+        get: operations["paymentsReconciliationIssues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/reconciliation/issues/{issue_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close an issue with what was done
+         * @description 409 INVALID_TRANSITION if it's closed already.
+         */
+        post: operations["paymentsResolveReconciliationIssue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ops/ledger/trial-balance": {
         parameters: {
             query?: never;
@@ -2450,6 +2550,83 @@ export interface paths {
          * @description Newest first, of one booking if asked.
          */
         get: operations["ledgerLedgerTransactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your invoices
+         * @description Newest first: what each placement's fee came to, what the token paid, and what's due.
+         */
+        get: operations["invoicesMyInvoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/invoices/{invoice_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download your invoice
+         * @description 404 for anyone else's, and until its PDF is made.
+         */
+        get: operations["invoicesMyInvoiceFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Owners' invoices
+         * @description Newest first; of one status, or one booking's, if asked.
+         */
+        get: operations["invoicesOpsInvoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/invoices/{invoice_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download an owner's invoice */
+        get: operations["invoicesOpsInvoiceFile"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3878,6 +4055,114 @@ export interface components {
             /** Categories */
             categories: components["schemas"]["InventoryCategory"][];
         };
+        /** InvoicePage */
+        InvoicePage: {
+            /** Items */
+            items: components["schemas"]["InvoiceView"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /**
+         * InvoiceStatus
+         * @enum {string}
+         */
+        InvoiceStatus: "issued" | "paid";
+        /** InvoiceView */
+        InvoiceView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: string;
+            /** Booking */
+            booking: string;
+            /** Place */
+            place: string;
+            /**
+             * Issuedat
+             * Format: date-time
+             */
+            issuedAt: string;
+            /** Baserentpaise */
+            baseRentPaise: number;
+            /** Feeratebps */
+            feeRateBps: number;
+            /** Gstratebps */
+            gstRateBps: number;
+            /** Gstincluded */
+            gstIncluded: boolean;
+            /** Feepaise */
+            feePaise: number;
+            /** Gstpaise */
+            gstPaise: number;
+            /** Totalpaise */
+            totalPaise: number;
+            /** Tokenappliedpaise */
+            tokenAppliedPaise: number;
+            /** Tokenoverpaise */
+            tokenOverPaise: number;
+            /** Balanceduepaise */
+            balanceDuePaise: number;
+            status: components["schemas"]["InvoiceStatus"];
+            /** Paidat */
+            paidAt: string | null;
+            /** Hasfile */
+            hasFile: boolean;
+            pay: components["schemas"]["PayLink"] | null;
+        };
+        /**
+         * IssueKind
+         * @description What reconciliation found that someone has to look at.
+         * @enum {string}
+         */
+        IssueKind: "unknown_payment" | "unknown_refund" | "amount_mismatch" | "not_captured_here" | "refund_not_processed_here" | "unexpected_item" | "not_settled" | "stuck_authorized" | "refund_stuck" | "link_mismatch";
+        /** IssuePage */
+        IssuePage: {
+            /** Items */
+            items: components["schemas"]["IssueView"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** IssueResolution */
+        IssueResolution: {
+            /** Resolution */
+            resolution: string;
+        };
+        /**
+         * IssueView
+         * @description Something reconciliation found that a person has to look at (step 6.6, ADR 0062).
+         */
+        IssueView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["IssueKind"];
+            /** Provider */
+            provider: string;
+            /** Reference */
+            reference: string;
+            /** Booking */
+            booking: string | null;
+            /** Amountpaise */
+            amountPaise: number | null;
+            /** Detail */
+            detail: string;
+            /**
+             * Foundat
+             * Format: date-time
+             */
+            foundAt: string;
+            /** Resolvedat */
+            resolvedAt: string | null;
+            /** Resolvedby */
+            resolvedBy: string | null;
+            /** Resolution */
+            resolution: string | null;
+        };
         /**
          * KycStatus
          * @enum {string}
@@ -4735,6 +5020,60 @@ export interface components {
             /** Nextcursor */
             nextCursor: string | null;
         };
+        /** OpsInvoicePage */
+        OpsInvoicePage: {
+            /** Items */
+            items: components["schemas"]["OpsInvoiceView"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** OpsInvoiceView */
+        OpsInvoiceView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: string;
+            /** Booking */
+            booking: string;
+            /** Place */
+            place: string;
+            /**
+             * Issuedat
+             * Format: date-time
+             */
+            issuedAt: string;
+            /** Baserentpaise */
+            baseRentPaise: number;
+            /** Feeratebps */
+            feeRateBps: number;
+            /** Gstratebps */
+            gstRateBps: number;
+            /** Gstincluded */
+            gstIncluded: boolean;
+            /** Feepaise */
+            feePaise: number;
+            /** Gstpaise */
+            gstPaise: number;
+            /** Totalpaise */
+            totalPaise: number;
+            /** Tokenappliedpaise */
+            tokenAppliedPaise: number;
+            /** Tokenoverpaise */
+            tokenOverPaise: number;
+            /** Balanceduepaise */
+            balanceDuePaise: number;
+            status: components["schemas"]["InvoiceStatus"];
+            /** Paidat */
+            paidAt: string | null;
+            /** Hasfile */
+            hasFile: boolean;
+            pay: components["schemas"]["PayLink"] | null;
+            /** Owner */
+            owner: string;
+        };
         /** OpsPayment */
         OpsPayment: {
             /**
@@ -4949,6 +5288,19 @@ export interface components {
          */
         Party: "student" | "owner" | "ops" | "system";
         /**
+         * PayLink
+         * @description Where the balance can be paid: Razorpay's page, or the fake gateway's test bank.
+         */
+        PayLink: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "razorpay" | "fake";
+            /** Url */
+            url: string;
+        };
+        /**
          * PaymentStart
          * @description What the browser's checkout opens with.
          */
@@ -5035,7 +5387,7 @@ export interface components {
          * PostingKind
          * @enum {string}
          */
-        PostingKind: "token_received" | "token_refunded" | "owner_invoiced" | "token_applied";
+        PostingKind: "token_received" | "token_refunded" | "owner_invoiced" | "token_applied" | "owner_paid" | "owner_refunded" | "gateway_fee" | "settled" | "refund_settled";
         /**
          * PriceCalendar
          * @description What each room costs a month for a move-in each week, as quotes say (ARCHITECTURE §8.5):
@@ -5588,6 +5940,17 @@ export interface components {
             moveInMonth: string;
             /** Budgetmaxpaise */
             budgetMaxPaise: number;
+        };
+        /** ReconciliationSummary */
+        ReconciliationSummary: {
+            /** Openissues */
+            openIssues: number;
+            /** Tokensauthorized */
+            tokensAuthorized: number;
+            /** Linksopen */
+            linksOpen: number;
+            /** Refundswaiting */
+            refundsWaiting: number;
         };
         /** RefundDecline */
         RefundDecline: {
@@ -12133,6 +12496,211 @@ export interface operations {
             };
         };
     };
+    paymentsAskForInvoiceLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsPayInvoiceAtTestBank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookReceipt"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsReconciliationSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationSummary"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsReconciliationIssues: {
+        parameters: {
+            query?: {
+                open?: boolean;
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuePage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsResolveReconciliationIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                issue_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueResolution"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueView"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     ledgerTrialBalance: {
         parameters: {
             query?: {
@@ -12195,6 +12763,168 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["LedgerPage"];
                 };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    invoicesMyInvoices: {
+        parameters: {
+            query?: {
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoicePage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    invoicesMyInvoiceFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description To the PDF, by a link that works for 5 minutes */
+            303: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    invoicesOpsInvoices: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["InvoiceStatus"] | null;
+                booking?: string | null;
+                /** @description The previous page's nextCursor; omit it to start. */
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsInvoicePage"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    invoicesOpsInvoiceFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description To the PDF, by a link that works for 5 minutes */
+            303: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Client error (RFC 9457 problem details) */
             "4XX": {

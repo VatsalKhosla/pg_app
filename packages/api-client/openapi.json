@@ -8105,6 +8105,302 @@
         }
       }
     },
+    "/v1/ops/invoices/{invoice_id}/payment-link": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Ask for a new payment link",
+        "description": "After a link was cancelled or the gateway refused one: a job asks the gateway for another.\n409 INVALID_TRANSITION once the invoice is paid, or while a link can still be paid.",
+        "operationId": "paymentsAskForInvoiceLink",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/owner/invoices/{invoice_id}/test-payment": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Pay an invoice at the test bank",
+        "description": "With the fake gateway only, which moves no money and which production refuses: the test bank\npays the owner's own invoice's link, and tells us as Razorpay would, by a signed webhook. A 404\nwith a real gateway.",
+        "operationId": "paymentsPayInvoiceAtTestBank",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookReceipt"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/reconciliation": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "What's waiting on the gateway",
+        "operationId": "paymentsReconciliationSummary",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconciliationSummary"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/reconciliation/issues": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "What reconciliation found",
+        "description": "Newest first; only the open ones unless asked.",
+        "operationId": "paymentsReconciliationIssues",
+        "parameters": [
+          {
+            "name": "open",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Open"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuePage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/reconciliation/issues/{issue_id}/resolve": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Close an issue with what was done",
+        "description": "409 INVALID_TRANSITION if it's closed already.",
+        "operationId": "paymentsResolveReconciliationIssue",
+        "parameters": [
+          {
+            "name": "issue_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Issue Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueResolution"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueView"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/ops/ledger/trial-balance": {
       "get": {
         "tags": [
@@ -8234,6 +8530,282 @@
                 }
               }
             }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/owner/invoices": {
+      "get": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "Your invoices",
+        "description": "Newest first: what each placement's fee came to, what the token paid, and what's due.",
+        "operationId": "invoicesMyInvoices",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoicePage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/owner/invoices/{invoice_id}/file": {
+      "get": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "Download your invoice",
+        "description": "404 for anyone else's, and until its PDF is made.",
+        "operationId": "invoicesMyInvoiceFile",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "To the PDF, by a link that works for 5 minutes"
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/invoices": {
+      "get": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "Owners' invoices",
+        "description": "Newest first; of one status, or one booking's, if asked.",
+        "operationId": "invoicesOpsInvoices",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/InvoiceStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "booking",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Booking"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The previous page's nextCursor; omit it to start.",
+              "title": "Cursor"
+            },
+            "description": "The previous page's nextCursor; omit it to start."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsInvoicePage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/invoices/{invoice_id}/file": {
+      "get": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "Download an owner's invoice",
+        "operationId": "invoicesOpsInvoiceFile",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "To the PDF, by a link that works for 5 minutes"
           },
           "4XX": {
             "description": "Client error (RFC 9457 problem details)",
@@ -12076,6 +12648,328 @@
         "title": "InventoryView",
         "description": "A PG's beds and what holds each from ``start`` until ``end``."
       },
+      "InvoicePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceView"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "InvoicePage"
+      },
+      "InvoiceStatus": {
+        "type": "string",
+        "enum": [
+          "issued",
+          "paid"
+        ],
+        "title": "InvoiceStatus"
+      },
+      "InvoiceView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "string",
+            "title": "Number"
+          },
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          },
+          "place": {
+            "type": "string",
+            "title": "Place"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issuedat"
+          },
+          "baseRentPaise": {
+            "type": "integer",
+            "title": "Baserentpaise"
+          },
+          "feeRateBps": {
+            "type": "integer",
+            "title": "Feeratebps"
+          },
+          "gstRateBps": {
+            "type": "integer",
+            "title": "Gstratebps"
+          },
+          "gstIncluded": {
+            "type": "boolean",
+            "title": "Gstincluded"
+          },
+          "feePaise": {
+            "type": "integer",
+            "title": "Feepaise"
+          },
+          "gstPaise": {
+            "type": "integer",
+            "title": "Gstpaise"
+          },
+          "totalPaise": {
+            "type": "integer",
+            "title": "Totalpaise"
+          },
+          "tokenAppliedPaise": {
+            "type": "integer",
+            "title": "Tokenappliedpaise"
+          },
+          "tokenOverPaise": {
+            "type": "integer",
+            "title": "Tokenoverpaise"
+          },
+          "balanceDuePaise": {
+            "type": "integer",
+            "title": "Balanceduepaise"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvoiceStatus"
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paidat"
+          },
+          "hasFile": {
+            "type": "boolean",
+            "title": "Hasfile"
+          },
+          "pay": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PayLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "booking",
+          "place",
+          "issuedAt",
+          "baseRentPaise",
+          "feeRateBps",
+          "gstRateBps",
+          "gstIncluded",
+          "feePaise",
+          "gstPaise",
+          "totalPaise",
+          "tokenAppliedPaise",
+          "tokenOverPaise",
+          "balanceDuePaise",
+          "status",
+          "paidAt",
+          "hasFile",
+          "pay"
+        ],
+        "title": "InvoiceView"
+      },
+      "IssueKind": {
+        "type": "string",
+        "enum": [
+          "unknown_payment",
+          "unknown_refund",
+          "amount_mismatch",
+          "not_captured_here",
+          "refund_not_processed_here",
+          "unexpected_item",
+          "not_settled",
+          "stuck_authorized",
+          "refund_stuck",
+          "link_mismatch"
+        ],
+        "title": "IssueKind",
+        "description": "What reconciliation found that someone has to look at."
+      },
+      "IssuePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IssueView"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "IssuePage"
+      },
+      "IssueResolution": {
+        "properties": {
+          "resolution": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Resolution"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "resolution"
+        ],
+        "title": "IssueResolution"
+      },
+      "IssueView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/IssueKind"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "booking": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking"
+          },
+          "amountPaise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amountpaise"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "foundAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Foundat"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedat"
+          },
+          "resolvedBy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedby"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "provider",
+          "reference",
+          "booking",
+          "amountPaise",
+          "detail",
+          "foundAt",
+          "resolvedAt",
+          "resolvedBy",
+          "resolution"
+        ],
+        "title": "IssueView",
+        "description": "Something reconciliation found that a person has to look at (step 6.6, ADR 0062)."
+      },
       "KycStatus": {
         "type": "string",
         "enum": [
@@ -14513,6 +15407,160 @@
         ],
         "title": "OpsDisputePage"
       },
+      "OpsInvoicePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OpsInvoiceView"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "OpsInvoicePage"
+      },
+      "OpsInvoiceView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "string",
+            "title": "Number"
+          },
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          },
+          "place": {
+            "type": "string",
+            "title": "Place"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issuedat"
+          },
+          "baseRentPaise": {
+            "type": "integer",
+            "title": "Baserentpaise"
+          },
+          "feeRateBps": {
+            "type": "integer",
+            "title": "Feeratebps"
+          },
+          "gstRateBps": {
+            "type": "integer",
+            "title": "Gstratebps"
+          },
+          "gstIncluded": {
+            "type": "boolean",
+            "title": "Gstincluded"
+          },
+          "feePaise": {
+            "type": "integer",
+            "title": "Feepaise"
+          },
+          "gstPaise": {
+            "type": "integer",
+            "title": "Gstpaise"
+          },
+          "totalPaise": {
+            "type": "integer",
+            "title": "Totalpaise"
+          },
+          "tokenAppliedPaise": {
+            "type": "integer",
+            "title": "Tokenappliedpaise"
+          },
+          "tokenOverPaise": {
+            "type": "integer",
+            "title": "Tokenoverpaise"
+          },
+          "balanceDuePaise": {
+            "type": "integer",
+            "title": "Balanceduepaise"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvoiceStatus"
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paidat"
+          },
+          "hasFile": {
+            "type": "boolean",
+            "title": "Hasfile"
+          },
+          "pay": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PayLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "owner": {
+            "type": "string",
+            "title": "Owner"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "booking",
+          "place",
+          "issuedAt",
+          "baseRentPaise",
+          "feeRateBps",
+          "gstRateBps",
+          "gstIncluded",
+          "feePaise",
+          "gstPaise",
+          "totalPaise",
+          "tokenAppliedPaise",
+          "tokenOverPaise",
+          "balanceDuePaise",
+          "status",
+          "paidAt",
+          "hasFile",
+          "pay",
+          "owner"
+        ],
+        "title": "OpsInvoiceView"
+      },
       "OpsPayment": {
         "properties": {
           "id": {
@@ -15130,6 +16178,30 @@
         "title": "Party",
         "description": "Who sends an event. The system is the jobs and the gateway's verified events."
       },
+      "PayLink": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "razorpay",
+              "fake"
+            ],
+            "title": "Provider"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "url"
+        ],
+        "title": "PayLink",
+        "description": "Where the balance can be paid: Razorpay's page, or the fake gateway's test bank."
+      },
       "PaymentStart": {
         "properties": {
           "id": {
@@ -15342,7 +16414,12 @@
           "token_received",
           "token_refunded",
           "owner_invoiced",
-          "token_applied"
+          "token_applied",
+          "owner_paid",
+          "owner_refunded",
+          "gateway_fee",
+          "settled",
+          "refund_settled"
         ],
         "title": "PostingKind"
       },
@@ -16970,6 +18047,35 @@
         ],
         "title": "RebookSearch",
         "description": "A search for PGs like this one with a bed free for the student's move-in, once a booking\nended through no fault of theirs: its filters, as the search API takes them (step 5.7)."
+      },
+      "ReconciliationSummary": {
+        "properties": {
+          "openIssues": {
+            "type": "integer",
+            "title": "Openissues"
+          },
+          "tokensAuthorized": {
+            "type": "integer",
+            "title": "Tokensauthorized"
+          },
+          "linksOpen": {
+            "type": "integer",
+            "title": "Linksopen"
+          },
+          "refundsWaiting": {
+            "type": "integer",
+            "title": "Refundswaiting"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "openIssues",
+          "tokensAuthorized",
+          "linksOpen",
+          "refundsWaiting"
+        ],
+        "title": "ReconciliationSummary"
       },
       "RefundDecline": {
         "properties": {
