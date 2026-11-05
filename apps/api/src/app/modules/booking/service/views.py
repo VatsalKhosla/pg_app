@@ -55,6 +55,7 @@ class BookingViews:
         *,
         history: Sequence[BookingEventRecord],
         cancellation: Cancellation | None,
+        can_pay: bool,
         can_check_in: bool,
         check_window_hours: int,
         can_dispute: bool,
@@ -79,6 +80,7 @@ class BookingViews:
             check_in_opens_on=check_in_opens_on(booking.move_in)
             if status is BookingStatus.CONFIRMED
             else None,
+            can_pay=can_pay,
             can_check_in=can_check_in,
             check_window_hours=check_window_hours,
             check_window_ends_at=booking.check_window_ends_at,

@@ -206,6 +206,7 @@ def test_a_student_holds_a_bed_at_their_quotes_price(run: Callable[..., Any]) ->
         "confirmBy": None,
         # Moving in comes once the booking is confirmed; the terms give 24 hours to check the room.
         "checkInOpensOn": None,
+        "canPay": True,
         "canCheckIn": False,
         "checkWindowHours": 24,
         "checkWindowEndsAt": None,

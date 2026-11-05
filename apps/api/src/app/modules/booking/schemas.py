@@ -97,6 +97,7 @@ class StudentBooking(ApiModel):
     confirm_by: datetime | None
     # Once confirmed: the day the student may say they've moved in, and whether they may now.
     check_in_opens_on: date | None
+    can_pay: bool
     can_check_in: bool
     # How long the student has, once moved in, to tell us if the room isn't as shown (the
     # booking's terms; 24 hours by default)...

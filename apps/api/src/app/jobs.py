@@ -49,6 +49,7 @@ from app.modules.media.jobs import (
     discard_upload_handler,
     process_handler,
 )
+from app.modules.payments.service import payments_part
 from app.modules.pricing.jobs import CHECK_INTEGRITY, check_integrity_handler
 from app.modules.pricing.service import BAND_CHANGED, CAPS_CHANGED, RULES_CHANGED
 from app.modules.search.jobs import (
@@ -80,6 +81,7 @@ EXPORTERS: Final = (
     data_requests_part,
     visits_part,
     bookings_part,
+    payments_part,
     grievances_part,
 )
 

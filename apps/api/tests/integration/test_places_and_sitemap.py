@@ -67,6 +67,8 @@ def test_places_count_the_verified_live_pgs_near_each_campus_and_in_each_localit
     token = _token()
 
     async def scenario(ops: Staff) -> dict[str, Any]:
+        # Listings other tests left waiting for their search entries, so they don't count below.
+        await run_due_jobs(ops.app)
         before = await ops.ok("GET", PLACES)
         await _publish(
             ops,

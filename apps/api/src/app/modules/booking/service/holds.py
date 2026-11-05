@@ -35,6 +35,7 @@ from app.modules.booking.domain.state_machine import (
     SuggestSimilar,
     allows,
     hold,
+    token_due,
 )
 from app.modules.booking.errors import (
     BookingNeedsVisitError,
@@ -300,6 +301,7 @@ class BookingService:
             place,
             history=history,
             cancellation=cancellation(facts, now, terms),
+            can_pay=token_due(facts, now.now),
             can_check_in=allows(facts, BookingEvent.CHECK_IN, Party.STUDENT, now, terms),
             check_window_hours=terms.check_window_hours,
             can_dispute=allows(facts, BookingEvent.DISPUTE, Party.STUDENT, now, terms),

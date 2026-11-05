@@ -27,6 +27,9 @@ TURNSTILE_TEST_SECRETS: Final = frozenset(
         "3x0000000000000000000000000000000AA",
     }
 )
+# Test and live payment keys never mix: live money only in production, and only there.
+RAZORPAY_TEST_KEY: Final = "rzp_test_"
+RAZORPAY_LIVE_KEY: Final = "rzp_live_"
 _DOMAIN: Final = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)+")
 _EMAIL: Final = re.compile(r"[^@\s,]+@[a-z0-9-]+(\.[a-z0-9-]+)+")
 # S3's rules for bucket names: 3 to 63 lowercase letters, digits, dots and hyphens.
@@ -108,6 +111,13 @@ class Settings(DatabaseSettings):
     # phone sign-in off (503). The SMS provider's adapter (DLT-registered, the founders' choice)
     # joins this list once they choose one.
     otp_sender: Literal["console", "screen", "unavailable"] = "console"
+    # Who takes payments (ADR 0056). "fake" signs like the real thing and moves no money, for local
+    # development, tests and a test site; production refuses it. "razorpay" needs the key below,
+    # a test key anywhere but production and a live key only there.
+    payment_gateway: Literal["fake", "razorpay"] = "fake"
+    razorpay_key_id: str | None = None
+    razorpay_key_secret: SecretStr | None = None
+    razorpay_webhook_secret: SecretStr | None = None
     # Visit confirmations and reminders (ADR 0033). "console" writes them to the worker's log
     # (local only); "unavailable" sends nothing until the founders choose an SMS provider.
     text_sender: Literal["console", "unavailable"] = "console"
@@ -190,6 +200,9 @@ class Settings(DatabaseSettings):
         "sentry_dsn",
         "otel_exporter_otlp_endpoint",
         "session_cookie_domain",
+        "razorpay_key_id",
+        "razorpay_key_secret",
+        "razorpay_webhook_secret",
         "turnstile_secret_key",
         "google_client_id",
         "google_client_secret",
@@ -285,6 +298,23 @@ class Settings(DatabaseSettings):
             self.staff_google_domains or self.staff_google_emails
         ):
             msg = "Google sign-in needs STAFF_GOOGLE_DOMAINS or STAFF_GOOGLE_EMAILS"
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def _the_right_payment_keys(self) -> Self:
+        production = self.app_env == "production"
+        if self.payment_gateway == "fake":
+            if production:
+                msg = "PAYMENT_GATEWAY=fake takes no real money; not allowed in production"
+                raise ValueError(msg)
+            return self
+        if self.razorpay_key_id is None or self.razorpay_key_secret is None:
+            msg = "PAYMENT_GATEWAY=razorpay needs RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET"
+            raise ValueError(msg)
+        wanted = RAZORPAY_LIVE_KEY if production else RAZORPAY_TEST_KEY
+        if not self.razorpay_key_id.startswith(wanted):
+            msg = f"RAZORPAY_KEY_ID must start with {wanted} in {self.app_env}"
             raise ValueError(msg)
         return self
 

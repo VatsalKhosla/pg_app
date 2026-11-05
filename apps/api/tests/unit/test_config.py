@@ -23,6 +23,10 @@ def environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.Monke
         "REDIS_URL",
         "SECRET_KEY",
         "CORS_ALLOWED_ORIGINS",
+        "PAYMENT_GATEWAY",
+        "RAZORPAY_KEY_ID",
+        "RAZORPAY_KEY_SECRET",
+        "RAZORPAY_WEBHOOK_SECRET",
         "SENTRY_DSN",
         "OTP_SENDER",
         "TURNSTILE_SECRET_KEY",
@@ -62,6 +66,10 @@ def _deployed(environment: pytest.MonkeyPatch, app_env: str = "production") -> p
         "TEXT_SENDER": "unavailable",
     }.items():
         environment.setenv(name, value)
+    if app_env == "production":
+        environment.setenv("PAYMENT_GATEWAY", "razorpay")
+        environment.setenv("RAZORPAY_KEY_ID", "rzp_live_abc")
+        environment.setenv("RAZORPAY_KEY_SECRET", "a-razorpay-secret")
     return environment
 
 
@@ -207,6 +215,42 @@ def test_the_revalidation_secret_is_long_and_empty_means_unset(
 
     environment.setenv("REVALIDATE_SECRET", "too-short")
     with pytest.raises(ValidationError, match="at least 32"):
+        Settings()
+
+
+def test_the_fake_gateway_never_reaches_production(environment: pytest.MonkeyPatch) -> None:
+    assert Settings().payment_gateway == "fake"
+
+    _deployed(environment, "staging").setenv("PAYMENT_GATEWAY", "fake")
+    assert Settings().payment_gateway == "fake"
+
+    _deployed(environment, "production").setenv("PAYMENT_GATEWAY", "fake")
+    with pytest.raises(ValidationError, match="PAYMENT_GATEWAY=fake"):
+        Settings()
+
+
+def test_razorpay_needs_its_key_and_test_and_live_keys_never_mix(
+    environment: pytest.MonkeyPatch,
+) -> None:
+    _deployed(environment, "staging").setenv("PAYMENT_GATEWAY", "razorpay")
+    with pytest.raises(ValidationError, match="RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET"):
+        Settings()
+    environment.setenv("RAZORPAY_KEY_ID", "rzp_test_abc")
+    with pytest.raises(ValidationError, match="RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET"):
+        Settings()
+
+    environment.setenv("RAZORPAY_KEY_SECRET", "a-secret")
+    assert Settings().razorpay_key_id == "rzp_test_abc"
+
+    environment.setenv("RAZORPAY_KEY_ID", "rzp_live_abc")
+    with pytest.raises(ValidationError, match="must start with rzp_test_ in staging"):
+        Settings()
+
+    _deployed(environment, "production")
+    assert Settings().razorpay_key_id == "rzp_live_abc"
+
+    environment.setenv("RAZORPAY_KEY_ID", "rzp_test_abc")
+    with pytest.raises(ValidationError, match="must start with rzp_live_ in production"):
         Settings()
 
 

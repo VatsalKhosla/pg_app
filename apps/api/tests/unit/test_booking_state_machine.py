@@ -47,6 +47,7 @@ from app.modules.booking.domain.state_machine import (
     allows,
     check_in_opens_on,
     hold,
+    token_due,
     transition,
 )
 from app.modules.pricing.domain.policies import BookingPolicy, LateCancelPolicy
@@ -101,6 +102,17 @@ def at_india(day: date, hour: int, minute: int = 0) -> datetime:
     return datetime(day.year, day.month, day.day, hour, minute, tzinfo=UTC) - timedelta(
         hours=5, minutes=30
     )
+
+
+def test_a_token_is_due_only_while_a_hold_has_time_left() -> None:
+    ends = NOW + timedelta(minutes=15)
+    held = facts(S.HELD, hold_expires_at=ends)
+
+    assert token_due(held, NOW)
+    assert token_due(held, ends - timedelta(seconds=1))
+    assert not token_due(held, ends)
+    assert not token_due(facts(S.HELD), NOW)
+    assert not token_due(facts(S.TOKEN_SECURED, hold_expires_at=ends), NOW)
 
 
 def facts(

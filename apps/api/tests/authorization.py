@@ -65,6 +65,7 @@ PATH_VALUES: Final = frozenset(
         "a_missing_alert",
         "a_missing_block",
         "a_missing_booking",
+        "a_missing_payment",
         "a_missing_dispute",
         "an_owner",
         "a_live_listing",
@@ -548,6 +549,19 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
         ops_only(404),
         lambda: {"json": {"reason": "The owner confirmed by phone"}},
         path={"code": "a_missing_booking"},
+    ),
+    # Paying a token (ADR 0056): a student's own, so never staff's.
+    ("POST", "/v1/bookings/{code}/payment"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403), path={"code": "a_missing_booking"}
+    ),
+    ("POST", "/v1/payments/{payment_id}/checkout-callback"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403),
+        lambda: {"json": {"providerPaymentId": "pay_DG4ZdRK8ZnXC3k", "signature": "a" * 64}},
+        path={"payment_id": "a_missing_payment"},
+    ),
+    ("POST", "/v1/payments/{payment_id}/test-checkout"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403),
+        path={"payment_id": "a_missing_payment"},
     ),
     # The board (ADR 0054): ops run every booking from it.
     ("GET", "/v1/ops/bookings"): Rule(ops_only(200)),

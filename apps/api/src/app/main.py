@@ -47,6 +47,8 @@ from app.modules.inventory.service import AllocationsTaken
 from app.modules.media.adapters.s3 import S3Storage
 from app.modules.media.router import router as media_router
 from app.modules.media.service import Buckets
+from app.modules.payments.gateways import build_gateway
+from app.modules.payments.router import router as payments_router
 from app.modules.pricing.router import router as pricing_router
 from app.modules.search.router import router as search_router
 from app.modules.system.router import router as system_router
@@ -91,6 +93,7 @@ ROUTERS: Final = (
     pricing_router,
     inventory_router,
     booking_router,
+    payments_router,
     visits_router,
     media_router,
 )
@@ -144,6 +147,7 @@ def create_app(
         # One HTTP client per outside provider, so a slow one can't use up another's connections.
         turnstile_http = httpx.AsyncClient(timeout=PROVIDER_TIMEOUT)
         google_http = httpx.AsyncClient(timeout=PROVIDER_TIMEOUT)
+        payments_http = httpx.AsyncClient(timeout=PROVIDER_TIMEOUT)
         tracer_provider = configure_tracing(settings, engine=engine)
         meter_provider = configure_metrics(settings, process="api")
         app.state.clock = clock
@@ -164,6 +168,7 @@ def create_app(
             )
         )
         app.state.otp_sender = _OTP_SENDERS[settings.otp_sender]()
+        app.state.payment_gateway = build_gateway(settings, payments_http)
         app.state.google_sign_in = (
             None
             if settings.google_client_id is None or settings.google_client_secret is None
@@ -182,6 +187,7 @@ def create_app(
         finally:
             await turnstile_http.aclose()
             await google_http.aclose()
+            await payments_http.aclose()
             await redis.aclose()
             await engine.dispose()
             if tracer_provider is not None:

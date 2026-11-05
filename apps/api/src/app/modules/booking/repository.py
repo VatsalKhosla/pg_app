@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from collections.abc import Collection, Mapping, Sequence
     from datetime import date, datetime
 
+    from sqlalchemy import Select
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.modules.booking.domain.disputes import DisputeStatus
@@ -72,17 +73,20 @@ class BookingRepository:
     def record(self, entry: BookingEventRecord) -> None:
         self._db.add(entry)
 
+    async def _one(self, query: Select[Booking], *, lock: bool) -> Booking | None:
+        """A locked read is about the row as it is now: not the copy this session read before the
+        lock, which is what it would otherwise be given back."""
+        locked = query.with_for_update().execution_options(populate_existing=True)
+        return await self._db.scalar(locked if lock else query)
+
     async def by_code(self, code: str, *, lock: bool = False) -> Booking | None:
-        query = select(Booking).where(Booking.code == code)
-        return await self._db.scalar(query.with_for_update() if lock else query)
+        return await self._one(select(Booking).where(Booking.code == code), lock=lock)
 
     async def by_public_id(self, public_id: uuid.UUID, *, lock: bool = False) -> Booking | None:
-        query = select(Booking).where(Booking.public_id == public_id)
-        return await self._db.scalar(query.with_for_update() if lock else query)
+        return await self._one(select(Booking).where(Booking.public_id == public_id), lock=lock)
 
     async def by_id(self, booking_id: int, *, lock: bool = False) -> Booking | None:
-        query = select(Booking).where(Booking.id == booking_id)
-        return await self._db.scalar(query.with_for_update() if lock else query)
+        return await self._one(select(Booking).where(Booking.id == booking_id), lock=lock)
 
     async def by_ids(self, booking_ids: Collection[int]) -> dict[int, Booking]:
         if not booking_ids:

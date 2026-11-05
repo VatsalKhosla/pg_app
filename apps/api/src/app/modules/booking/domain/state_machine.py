@@ -349,6 +349,16 @@ def _cancel_late(ask: _Ask) -> str | None:
     return None
 
 
+def token_due(facts: BookingFacts, now: datetime) -> bool:
+    """Whether a student may start paying: a hold with time left. A payment already under way
+    when the time runs out still counts, as long as the booking is held (ADR 0056)."""
+    return (
+        facts.status is BookingStatus.HELD
+        and facts.hold_expires_at is not None
+        and now < facts.hold_expires_at
+    )
+
+
 def check_in_opens_on(move_in: date) -> date:
     """The first day a student may say they've moved in: the day before the move-in."""
     return move_in - timedelta(days=1)
