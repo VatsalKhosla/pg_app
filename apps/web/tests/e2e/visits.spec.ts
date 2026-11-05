@@ -238,6 +238,18 @@ test.describe("a visit", () => {
     await expect(opsPage.getByRole("region", { name: "Payments" })).toContainText("Done");
     expect(await wcagViolations(opsPage)).toEqual([]);
 
+    // The books show the token in and back out, and balance (BUILD_PLAN 6.4).
+    await opsPage.goto(`/ops/ledger?booking=${code}`);
+    await expect(opsPage.getByRole("heading", { level: 1 })).toHaveText("Ledger");
+    const posted = opsPage.getByRole("region", { name: "What was posted" });
+    await expect(posted).toContainText("Token received");
+    await expect(posted).toContainText("Token refunded");
+    const balance = opsPage.getByRole("region", {
+      name: `What booking ${code} did to each account`,
+    });
+    await expect(balance.getByRole("row", { name: /^Total/ })).toBeVisible();
+    expect(await wcagViolations(opsPage)).toEqual([]);
+
     // The funnel, as PostHog will have it: one anonymous journey from search to the visit done,
     // the last step reported by the API under the id the student's tab asked with.
     const journey = await page.evaluate(() => sessionStorage.getItem("analytics-id"));

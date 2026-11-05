@@ -636,6 +636,7 @@
       "visits": "Visits",
       "disputes": "Disputes",
       "refunds": "Refunds",
+      "ledger": "Ledger",
       "grievances": "Grievances",
       "pricingAlerts": "Pricing alerts"
     },
@@ -1124,6 +1125,38 @@
       "needText": "Write something for them.",
       "errors": {
         "generic": "That didn't work. Please try again."
+      }
+    },
+    "ledger": {
+      "metaTitle": "Ledger",
+      "title": "Ledger",
+      "intro": "Every money event, posted as it happens. Debits always equal credits, and nothing posted can be changed.",
+      "search": "Booking code",
+      "searchHint": "BK-7F3K2Q9M",
+      "find": "Find",
+      "balance": {
+        "all": "What every account holds",
+        "booking": "What booking {code} did to each account",
+        "account": "Account",
+        "debit": "Debits",
+        "credit": "Credits",
+        "balance": "Balance",
+        "total": "Total"
+      },
+      "posted": {
+        "title": "What was posted",
+        "none": "Nothing posted yet.",
+        "line": "Booking {code}, {when}",
+        "debit": "Debit {account}: {amount}",
+        "credit": "Credit {account}: {amount}",
+        "memo": "Note: {memo}",
+        "more": "Showing the latest {count}. Search by booking code to see the rest of one.",
+        "kind": {
+          "token_received": "Token received",
+          "token_refunded": "Token refunded",
+          "owner_invoiced": "Owner invoiced",
+          "token_applied": "Token applied to what the owner owes"
+        }
       }
     },
     "refunds": {

@@ -4,6 +4,7 @@ import { getMessages, getTranslations } from "next-intl/server";
 
 import { OpsNav } from "@/components/ops/ops-nav";
 import {
+  OPS_LEDGER_PATH,
   OPS_LISTINGS_PATH,
   OPS_NEW_LISTING_PATH,
   OPS_OWNERS_PATH,
@@ -45,6 +46,7 @@ export default async function OpsLayout({ children }: LayoutProps<"/ops">) {
             { href: OPS_VISITS_PATH, label: t("visits") },
             { href: OPS_DISPUTES_PATH, label: t("disputes") },
             { href: OPS_REFUNDS_PATH, label: t("refunds") },
+            { href: OPS_LEDGER_PATH, label: t("ledger") },
             { href: OPS_GRIEVANCES_PATH, label: t("grievances") },
             { href: OPS_PRICING_ALERTS_PATH, label: t("pricingAlerts") },
             { href: STAFF_HOME_PATH, label: t("staffHome"), exact: true },

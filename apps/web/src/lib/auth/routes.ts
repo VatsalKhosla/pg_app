@@ -27,6 +27,7 @@ export const OPS_GRIEVANCES_PATH = "/ops/grievances" satisfies Route;
 export const OPS_DISPUTES_PATH = "/ops/disputes" satisfies Route;
 export const OPS_BOOKINGS_PATH = "/ops/bookings" satisfies Route;
 export const OPS_REFUNDS_PATH = "/ops/refunds" satisfies Route;
+export const OPS_LEDGER_PATH = "/ops/ledger" satisfies Route;
 export const OPS_PRICING_ALERTS_PATH = "/ops/pricing-alerts" satisfies Route;
 export const ADMIN_HOME_PATH = "/admin" satisfies Route;
 export const ADMIN_POLICIES_PATH = "/admin/policies" satisfies Route;
