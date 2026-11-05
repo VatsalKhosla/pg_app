@@ -59,3 +59,9 @@ class CheckoutCallback(ApiModel):
 class CheckoutResult(ApiModel):
     outcome: CheckoutOutcome
     booking: str
+
+
+class WebhookReceipt(ApiModel):
+    """Whether this event is new: Razorpay gets a 200 either way, and stops sending it."""
+
+    new: bool

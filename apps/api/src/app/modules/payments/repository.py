@@ -5,11 +5,12 @@ from typing import TYPE_CHECKING
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 
-from app.modules.payments.models import Payment
+from app.modules.payments.models import Payment, PaymentEvent
 
 if TYPE_CHECKING:
     import uuid
     from collections.abc import Collection
+    from datetime import datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,6 +25,15 @@ class PaymentRepository:
         # lock, which is what it would otherwise be given back.
         locked = query.with_for_update().execution_options(populate_existing=True)
         return await self._db.scalar(locked if lock else query)
+
+    async def by_order(self, provider: str, order_id: str) -> Payment | None:
+        """The payment for this order at this gateway, locked, as it is now."""
+        return await self._db.scalar(
+            select(Payment)
+            .where(Payment.provider == provider, Payment.provider_order_id == order_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
 
     async def by_key(self, key: str) -> Payment | None:
         return await self._db.scalar(select(Payment).where(Payment.idempotency_key == key))
@@ -80,3 +90,35 @@ class PaymentRepository:
             select(Payment).where(Payment.booking_id.in_(booking_ids)).order_by(Payment.id)
         )
         return list(rows)
+
+    async def add_event_once(
+        self,
+        *,
+        provider: str,
+        event_id: str,
+        kind: str,
+        payload: dict[str, object],
+        received_at: datetime,
+    ) -> int | None:
+        """The new event's id; None if this event was stored before."""
+        return await self._db.scalar(
+            insert(PaymentEvent)
+            .values(
+                provider=provider,
+                provider_event_id=event_id,
+                event_type=kind,
+                payload=payload,
+                received_at=received_at,
+            )
+            .on_conflict_do_nothing(constraint="uq_payment_events_provider_event")
+            .returning(PaymentEvent.id)
+        )
+
+    async def event(self, event_id: int) -> PaymentEvent | None:
+        """The event, locked, as it is now."""
+        return await self._db.scalar(
+            select(PaymentEvent)
+            .where(PaymentEvent.id == event_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )

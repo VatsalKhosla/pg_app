@@ -70,6 +70,7 @@ def _deployed(environment: pytest.MonkeyPatch, app_env: str = "production") -> p
         environment.setenv("PAYMENT_GATEWAY", "razorpay")
         environment.setenv("RAZORPAY_KEY_ID", "rzp_live_abc")
         environment.setenv("RAZORPAY_KEY_SECRET", "a-razorpay-secret")
+        environment.setenv("RAZORPAY_WEBHOOK_SECRET", "a-razorpay-webhook-secret")
     return environment
 
 
@@ -233,13 +234,17 @@ def test_razorpay_needs_its_key_and_test_and_live_keys_never_mix(
     environment: pytest.MonkeyPatch,
 ) -> None:
     _deployed(environment, "staging").setenv("PAYMENT_GATEWAY", "razorpay")
-    with pytest.raises(ValidationError, match="RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET"):
+    needs = "RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET and RAZORPAY_WEBHOOK_SECRET"
+    with pytest.raises(ValidationError, match=needs):
         Settings()
     environment.setenv("RAZORPAY_KEY_ID", "rzp_test_abc")
-    with pytest.raises(ValidationError, match="RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET"):
+    with pytest.raises(ValidationError, match=needs):
+        Settings()
+    environment.setenv("RAZORPAY_KEY_SECRET", "a-secret")
+    with pytest.raises(ValidationError, match=needs):
         Settings()
 
-    environment.setenv("RAZORPAY_KEY_SECRET", "a-secret")
+    environment.setenv("RAZORPAY_WEBHOOK_SECRET", "a-webhook-secret")
     assert Settings().razorpay_key_id == "rzp_test_abc"
 
     environment.setenv("RAZORPAY_KEY_ID", "rzp_live_abc")

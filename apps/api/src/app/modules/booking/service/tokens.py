@@ -1,16 +1,28 @@
-"""What payments asks of bookings (step 6.1, ADR 0056): which booking's token is due and how
-much, and that it came in. Payments calls bookings, never the other way round."""
+"""What payments asks of bookings (steps 6.1 and 6.2, ADRs 0056 and 0057): which booking's token
+is due and how much, and that it came in, in time or not. Payments calls bookings, never the other
+way round."""
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
+from app.core.calendar import india_date
 from app.core.errors import InvalidTransitionError, NotFoundError
 from app.core.ids import normalize_booking_code
-from app.modules.booking.domain.state_machine import BookingStatus, token_due
+from app.modules.booking.domain.state_machine import (
+    BookingEvent,
+    BookingStatus,
+    Moment,
+    Party,
+    token_due,
+)
 from app.modules.booking.repository import BookingRepository
 from app.modules.booking.service.system import BookingSystem
-from app.modules.booking.service.transitions import facts_of
+from app.modules.booking.service.transitions import Transitions, facts_of
 from app.modules.booking.service.views import BookingViews
+from app.modules.inventory.domain.allocations import Period
+from app.modules.inventory.errors import BedUnavailableError
+from app.modules.inventory.service import BedHolds
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -19,6 +31,7 @@ if TYPE_CHECKING:
 
     from app.core.actor import Actor
     from app.core.clock import Clock
+    from app.modules.booking.models import Booking
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,12 +42,27 @@ class TokenDue:
     hold_expires_at: datetime
 
 
+class TokenTaken(StrEnum):
+    """What a token that came in came to."""
+
+    SECURED = "secured"
+    # Its hold had ended, but the bed was still free.
+    REVIVED = "revived"
+    # Its hold had ended and the bed had gone: the token goes back.
+    REFUNDING = "refunding"
+    # The booking ended some other way while the student paid: cancelled, say.
+    MOVED_ON = "moved_on"
+
+
 class BookingTokens:
     def __init__(self, db: AsyncSession, clock: Clock) -> None:
+        self._db = db
         self._clock = clock
         self._bookings = BookingRepository(db)
         self._views = BookingViews(db)
         self._system = BookingSystem(db, clock)
+        self._transitions = Transitions(db, clock)
+        self._beds = BedHolds(db, clock)
 
     async def due(self, actor: Actor, code: str) -> TokenDue:
         """The token the student's own booking is waiting for, which the server alone decides.
@@ -64,16 +92,54 @@ class BookingTokens:
         booking = await self._bookings.by_id(booking_id)
         return booking is not None and booking.token_secured_at is not None
 
-    async def secure(self, booking_id: int, *, paid_paise: int) -> bool:
-        """The token came in, verified. Whether that secured the booking; False when it has moved
-        on, its hold over or cancelled, which leaves the money for step 6.2 to sort out."""
+    async def take(self, booking_id: int, *, paid_paise: int) -> TokenTaken:
+        """The token came in, verified. What that came to, depending on where the booking has got
+        to, inside the caller's transaction."""
         booking = await self._bookings.by_id(booking_id, lock=True)
         if booking is None:  # pragma: no cover - a payment always has its booking
             raise NotFoundError
-        if booking.status != BookingStatus.HELD:
-            return False
-        await self._system.secure_token(booking.public_id, paid_paise=paid_paise)
-        return True
+        match BookingStatus(booking.status):
+            case BookingStatus.HELD:
+                await self._system.secure_token(booking.public_id, paid_paise=paid_paise)
+                return TokenTaken.SECURED
+            case BookingStatus.EXPIRED:
+                return await self._late(booking, paid_paise)
+            case _:
+                return TokenTaken.MOVED_ON
+
+    async def _late(self, booking: Booking, paid_paise: int) -> TokenTaken:
+        """After its hold ended (§7.4): the booking takes the bed back if it's still free and the
+        move-in hasn't passed; otherwise the token goes back and the booking stays ended."""
+        now = self._clock.now()
+        place = await self._views.place(booking)
+        stay = Period(booking.move_in, booking.planned_move_out)
+        # The bed counts as gone once the move-in has passed: a booking can't start on a day that's
+        # over (ADR 0057).
+        if india_date(now) <= booking.move_in and await self._beds.is_free(booking.bed_id, stay):
+            try:
+                # The check above can lose to another booking, which the constraint then refuses.
+                async with self._db.begin_nested():
+                    await self._transitions.apply(
+                        booking,
+                        BookingEvent.LATE_PAYMENT_REVIVE,
+                        Party.SYSTEM,
+                        place,
+                        by=None,
+                        moment=Moment(now, paid_paise=paid_paise, bed_free=True),
+                    )
+            except BedUnavailableError:
+                await self._db.refresh(booking)
+            else:
+                return TokenTaken.REVIVED
+        await self._transitions.apply(
+            booking,
+            BookingEvent.LATE_PAYMENT_REFUND,
+            Party.SYSTEM,
+            place,
+            by=None,
+            moment=Moment(now, paid_paise=paid_paise, bed_free=False),
+        )
+        return TokenTaken.REFUNDING
 
 
 async def booking_codes_of(db: AsyncSession, student_id: int) -> dict[int, str]:

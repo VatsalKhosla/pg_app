@@ -49,6 +49,7 @@ from app.modules.media.jobs import (
     discard_upload_handler,
     process_handler,
 )
+from app.modules.payments.jobs import PROCESS_EVENT, process_event
 from app.modules.payments.service import payments_part
 from app.modules.pricing.jobs import CHECK_INTEGRITY, check_integrity_handler
 from app.modules.pricing.service import BAND_CHANGED, CAPS_CHANGED, RULES_CHANGED
@@ -144,6 +145,7 @@ def build_registry(
     registry.register(IDEMPOTENCY_CLEANUP, delete_expired_keys)
     registry.register(BUILD_EXPORT, build_export_handler(EXPORTERS))
     registry.register(RETENTION, retention_handler(RETENTION_RULES))
+    registry.register(PROCESS_EVENT, process_event)
     registry.register(PROCESS, process_handler(storage, buckets))
     registry.register(DISCARD_UPLOAD, discard_upload_handler(storage, buckets))
     # A listing changed, its rooms and rents included: its search entry and price summaries

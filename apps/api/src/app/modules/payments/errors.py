@@ -18,6 +18,14 @@ class PaymentSignatureInvalidError(AppError):
     title = "That payment couldn't be verified"
 
 
+class WebhookInvalidError(AppError):
+    """Not signed by the gateway, not an event, or far too old to be anything but a replay."""
+
+    status = 400
+    code = "WEBHOOK_INVALID"
+    title = "That webhook was refused"
+
+
 class PaymentMismatchError(AppError):
     """The gateway's payment isn't this order's, or isn't its amount: nothing moves, and it's
     logged for someone to look at."""

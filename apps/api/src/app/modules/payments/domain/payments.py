@@ -58,6 +58,17 @@ class GatewayPayment:
     status: GatewayStatus
 
 
+class Settlement(StrEnum):
+    """What the gateway's word about a payment came to."""
+
+    PAID = "paid"
+    WAITING = "waiting"
+    NOT_PAID = "not_paid"
+    # The money came in, but not in time to secure the booking.
+    LATE = "late"
+    MISMATCH = "mismatch"
+
+
 class Reading(StrEnum):
     """What a gateway's payment means for ours."""
 

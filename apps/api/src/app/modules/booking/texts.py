@@ -31,8 +31,14 @@ OWNER_CANCELLED: Final = "booking_owner_cancelled"
 NO_SHOW_REFUNDED: Final = "booking_no_show_refunded"
 NO_SHOW_KEPT: Final = "booking_no_show_kept"
 NO_SHOW_FOR_OWNER: Final = "booking_no_show_for_owner"
+# Step 6.2: a token after the hold ended, with the bed gone (§7.4).
+LATE_REFUND: Final = "booking_late_refund"
 
 TEMPLATES: Final = {
+    LATE_REFUND: (
+        "{brand}: your token for booking {code} at {pg} came in after your hold ended, and the bed "
+        "had gone. Your token is refunded in full, and we'll help you find another PG."
+    ),
     TOKEN_IN: (
         "{brand}: a student has booked a bed at {pg}: {room_type}, moving in on {move_in}. "
         "Booking {code}. Please confirm it by {confirm_by}, or it is cancelled and refunded."
@@ -116,6 +122,8 @@ TEMPLATES: Final = {
 # Which text each party gets for each change; ops see theirs on the bookings board (5.10).
 FOR: Final = {
     (Party.OWNER, BookingEvent.TOKEN_SECURED): TOKEN_IN,
+    (Party.OWNER, BookingEvent.LATE_PAYMENT_REVIVE): TOKEN_IN,
+    (Party.STUDENT, BookingEvent.LATE_PAYMENT_REFUND): LATE_REFUND,
     (Party.STUDENT, BookingEvent.CONFIRM): CONFIRMED,
     (Party.STUDENT, BookingEvent.REJECT): REJECTED,
     (Party.STUDENT, BookingEvent.CONFIRM_TIMEOUT): NOT_CONFIRMED,

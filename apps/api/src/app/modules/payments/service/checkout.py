@@ -2,8 +2,8 @@
 
 The student taps Pay on their held booking, and only then is an order made, for exactly the
 booking's token. Checkout hands the browser a signature, which proves who it came from and nothing
-more: only the gateway's own answer about the payment, fetched by the server, moves a booking
-(with a verified webhook, from step 6.2).
+more: only the gateway's own word about the payment moves a booking, fetched here or from a verified
+webhook (webhooks.py), and both come to the same settlement.
 
 No call to the gateway happens inside a transaction or under a lock, so each use case is a read, a
 call and a write. Everything can be asked again: the order is found again by its key and receipt,
@@ -23,14 +23,9 @@ from app.modules.identity.service import Accounts
 from app.modules.payments.adapters.fake import FakeGateway
 from app.modules.payments.domain.payments import (
     INR,
-    GatewayPayment,
-    GatewayStatus,
     PaymentMode,
     PaymentPurpose,
-    PaymentStatus,
-    Reading,
-    advanced,
-    read_payment,
+    Settlement,
     token_key,
     token_receipt,
 )
@@ -47,6 +42,7 @@ from app.modules.payments.schemas import (
     CheckoutResult,
     PaymentStart,
 )
+from app.modules.payments.service.settlement import PaymentSettlements
 
 if TYPE_CHECKING:
     import uuid
@@ -67,10 +63,12 @@ _checkouts = _meter.create_counter(
     "payments.checkouts", description="Checkouts the server has verified, by what they came to"
 )
 
-# What the gateway's answer comes to, for each thing it can mean besides a mismatch.
+# What the browser hears, for each thing the gateway's answer can come to besides a mismatch.
 _OUTCOMES: Final = {
-    Reading.WAITING: CheckoutOutcome.WAITING,
-    Reading.NOT_PAID: CheckoutOutcome.NOT_PAID,
+    Settlement.PAID: CheckoutOutcome.PAID,
+    Settlement.WAITING: CheckoutOutcome.WAITING,
+    Settlement.NOT_PAID: CheckoutOutcome.NOT_PAID,
+    Settlement.LATE: CheckoutOutcome.LATE,
 }
 
 
@@ -82,6 +80,7 @@ class TokenCheckout:
         self._payments = PaymentRepository(db)
         self._tokens = BookingTokens(db, clock)
         self._accounts = Accounts(db)
+        self._settlements = PaymentSettlements(db, clock)
 
     async def start(self, actor: Actor, code: str) -> PaymentStart:
         """The student's held booking, ready for checkout: its order, made if there isn't one yet.
@@ -168,13 +167,19 @@ class TokenCheckout:
             _checkouts.add(1, {"outcome": CheckoutOutcome.WAITING})
             return CheckoutResult(outcome=CheckoutOutcome.WAITING, booking=code)
 
+        # Of two answers at once, the second sees the first's work: the row is locked. A mismatch
+        # is refused only after this commits, with its audit entry.
         async with self._db.begin():
-            reading, outcome = await self._settle(payment_id, found, actor=actor, code=code)
-        _checkouts.add(1, {"outcome": reading if outcome is None else outcome})
-        if outcome is None:
-            logger.error("a gateway's payment doesn't match its order", booking=code)
+            locked = await self._payments.by_public_id(payment_id, lock=True)
+            if locked is None:  # pragma: no cover - read above, and never deleted
+                raise NotFoundError
+            settled = await self._settlements.apply(
+                locked, found, by=audit.Actor("user", actor.user_id)
+            )
+        _checkouts.add(1, {"outcome": settled})
+        if settled is Settlement.MISMATCH:
             raise PaymentMismatchError
-        return CheckoutResult(outcome=outcome, booking=code)
+        return CheckoutResult(outcome=_OUTCOMES[settled], booking=code)
 
     async def test_checkout(self, actor: Actor, payment_id: uuid.UUID) -> CheckoutCallback:
         """The fake gateway's bank page says yes: what its checkout hands the browser. Nothing
@@ -189,64 +194,9 @@ class TokenCheckout:
         proof = self._gateway.checkout(order_id)
         return CheckoutCallback(provider_payment_id=proof.payment_id, signature=proof.signature)
 
-    async def _settle(
-        self, payment_id: uuid.UUID, found: GatewayPayment, *, actor: Actor, code: str
-    ) -> tuple[Reading, CheckoutOutcome | None]:
-        """Our payment after the gateway's answer, in one transaction with the booking's move.
-        The row is locked, so of two answers at once the second sees the first's work. None for
-        a mismatch, whose audit entry has to commit before it's refused."""
-        payment = await self._payments.by_public_id(payment_id, lock=True)
-        if payment is None:  # pragma: no cover - read above, and never deleted
-            raise NotFoundError
-        reading = read_payment(
-            found, order_id=payment.provider_order_id or "", amount_paise=payment.amount_paise
-        )
-        match reading:
-            case Reading.MISMATCH:
-                await self._record(actor, payment, "payment.mismatch", code)
-                return reading, None
-            case Reading.PAID:
-                return reading, await self._paid(actor, payment, found, code)
-            case Reading.WAITING | Reading.NOT_PAID:
-                if found.status is GatewayStatus.AUTHORIZED:
-                    payment.provider_payment_id = payment.provider_payment_id or found.id
-                    payment.status = advanced(PaymentStatus(payment.status), found.status)
-                return reading, _OUTCOMES[reading]
-
-    async def _paid(
-        self, actor: Actor, payment: Payment, found: GatewayPayment, code: str
-    ) -> CheckoutOutcome:
-        """The money is in. A payment already captured moves nothing a second time, and tells the
-        student the same as the first time."""
-        if payment.status == PaymentStatus.CAPTURED:
-            took_it = await self._tokens.took_token(payment.booking_id)
-            return CheckoutOutcome.PAID if took_it else CheckoutOutcome.LATE
-        payment.status = advanced(PaymentStatus(payment.status), found.status)
-        payment.provider_payment_id = found.id
-        payment.captured_at = self._clock.now()
-        await self._record(actor, payment, "payment.captured", code)
-        secured = await self._tokens.secure(payment.booking_id, paid_paise=found.amount_paise)
-        if not secured:
-            # Step 6.2 takes it from here: revive the booking, or refund the money (§7.4).
-            logger.warning("a token came in after its booking had moved on", booking=code)
-            await self._record(actor, payment, "payment.late", code)
-            return CheckoutOutcome.LATE
-        return CheckoutOutcome.PAID
-
     async def _own(self, actor: Actor, payment_id: uuid.UUID) -> Payment:
         """The student's own payment; anyone else's is a 404."""
         payment = await self._payments.by_public_id(payment_id)
         if payment is None or not await self._tokens.is_theirs(actor, payment.booking_id):
             raise NotFoundError
         return payment
-
-    async def _record(self, actor: Actor, payment: Payment, action: str, code: str) -> None:
-        await audit.record(
-            self._db,
-            clock=self._clock,
-            actor=audit.Actor("user", actor.user_id),
-            action=action,
-            entity_type="payment",
-            entity_id=str(payment.public_id),
-            details={"booking": code, "amountPaise": payment.amount_paise},
-        )

@@ -558,7 +558,7 @@ def test_the_whole_way_with_razorpays_adapter_and_no_test_bank(run: Callable[...
             httpx.AsyncClient(transport=httpx.MockTransport(razorpay)),
             key_id="rzp_test_1DP5mmOlF5G5ag",
             key_secret=SecretStr(key_secret),
-            webhook_secret=None,
+            webhook_secret=SecretStr("a-test-webhook-secret"),
             retry_delay_s=0,
         )
         start = await _start(student, code)

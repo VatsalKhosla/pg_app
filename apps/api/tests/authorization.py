@@ -563,6 +563,8 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
         signed_in(404, field_agent=403, ops=403, admin=403),
         path={"payment_id": "a_missing_payment"},
     ),
+    # A gateway's word (ADR 0057): anyone may call it, and only a good signature gets anywhere.
+    ("POST", "/v1/webhooks/razorpay"): Rule(everyone(400), lambda: {"json": {"event": "x"}}),
     # The board (ADR 0054): ops run every booking from it.
     ("GET", "/v1/ops/bookings"): Rule(ops_only(200)),
     ("GET", "/v1/ops/bookings/summary"): Rule(ops_only(200)),

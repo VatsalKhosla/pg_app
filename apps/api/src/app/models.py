@@ -40,7 +40,7 @@ from app.modules.identity.models import (
 )
 from app.modules.inventory.models import InventoryAllocation
 from app.modules.media.models import MediaAsset
-from app.modules.payments.models import Payment
+from app.modules.payments.models import Payment, PaymentEvent
 from app.modules.pricing.models import (
     BookingPolicyVersion,
     FeePolicyVersion,
@@ -82,6 +82,7 @@ __all__ = [
     "Owner",
     "OwnerAgreement",
     "Payment",
+    "PaymentEvent",
     "PriceQuote",
     "PricingAlert",
     "PricingCapsVersion",

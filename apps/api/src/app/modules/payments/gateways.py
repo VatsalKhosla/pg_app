@@ -17,6 +17,7 @@ def build_gateway(settings: Settings, http: httpx.AsyncClient) -> PaymentGateway
         settings.payment_gateway == "fake"
         or settings.razorpay_key_id is None
         or settings.razorpay_key_secret is None
+        or settings.razorpay_webhook_secret is None
     ):
         return FakeGateway()
     return RazorpayGateway(

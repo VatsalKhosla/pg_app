@@ -48,6 +48,10 @@ class BedHolds:
         held = await self._allocations.active_overlapping(beds, period)
         return choose_bed(rooms, [(row.bed_id, to_period(row.period)) for row in held], period)
 
+    async def is_free(self, bed_id: int, period: Period) -> bool:
+        """Whether nothing holds this bed on any day of ``period``."""
+        return not await self._allocations.active_overlapping([bed_id], period)
+
     async def hold(self, bed_id: int, period: Period, *, booking_id: int, property_id: int) -> None:
         """The booking's allocation of ``bed_id`` for ``period``. 409 BED_UNAVAILABLE if the
         exclusion constraint finds the bed held all the same."""

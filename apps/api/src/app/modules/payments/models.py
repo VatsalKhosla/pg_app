@@ -1,11 +1,21 @@
-"""The payments module's table (ARCHITECTURE §6; step 6.1, ADR 0056)."""
+"""The payments module's tables (ARCHITECTURE §6; steps 6.1 and 6.2, ADRs 0056 and 0057)."""
 
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Index, Text, Uuid
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Text,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlalchemy import text as sql
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Model
@@ -67,4 +77,24 @@ class Payment(Model):
             unique=True,
             postgresql_where=sql("provider_payment_id IS NOT NULL"),
         ),
+    )
+
+
+class PaymentEvent(Model):
+    """A verified webhook, once: stored as it's acknowledged, then processed by a job. Only what
+    the rules need is kept (kept_payload), since the gateway's copy holds personal details."""
+
+    __tablename__ = "payment_events"
+
+    provider: Mapped[str] = mapped_column(Text)
+    provider_event_id: Mapped[str] = mapped_column(Text)
+    event_type: Mapped[str] = mapped_column(Text)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Why it moved nothing, when someone should look: it's no order of ours, say.
+    error: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        UniqueConstraint("provider", "provider_event_id", name="uq_payment_events_provider_event"),
     )

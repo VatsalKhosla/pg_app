@@ -18,6 +18,7 @@ import secrets
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Final
 
+from app.modules.payments.adapters.razorpay import read_razorpay_webhook
 from app.modules.payments.domain.payments import (
     INR,
     GatewayOrder,
@@ -30,6 +31,9 @@ from app.modules.payments.errors import PaymentGatewayUnavailableError
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from datetime import datetime
+
+    from app.modules.payments.domain.webhooks import GatewayEvent
 
 _KEY_SECRET: Final = "fake-gateway-key-secret"  # noqa: S105 - not a secret: it signs fake payments
 _WEBHOOK_SECRET: Final = "fake-gateway-webhook-secret"  # noqa: S105 - as above
@@ -78,6 +82,9 @@ class FakeGateway:
     def verify_webhook(self, *, raw_body: bytes, signature: str) -> bool:
         return same(webhook_signature(_WEBHOOK_SECRET, raw_body), signature)
 
+    def read_webhook(self, raw_body: bytes) -> GatewayEvent | None:
+        return read_razorpay_webhook(raw_body)
+
     async def fetch_payment(self, payment_id: str) -> GatewayPayment:
         self._check_reachable()
         said = self._said.get(payment_id)
@@ -111,14 +118,18 @@ class FakeGateway:
             currency=currency,
         )
 
-    def webhook(self, event: str, payment: GatewayPayment, *, event_id: str = "") -> SignedWebhook:
-        """A signed webhook about ``payment``, in the shape of Razorpay's."""
-        body = json.dumps(
+    def webhook(
+        self, event: str, payment: GatewayPayment, *, at: datetime, event_id: str = ""
+    ) -> SignedWebhook:
+        """A signed webhook about ``payment``, in the shape of Razorpay's, with what a real one
+        holds that we mustn't keep."""
+        return self.signed(
             {
                 "entity": "event",
                 "account_id": "acc_fake",
                 "event": event,
                 "contains": ["payment"],
+                "created_at": int(at.timestamp()),
                 "payload": {
                     "payment": {
                         "entity": {
@@ -128,14 +139,23 @@ class FakeGateway:
                             "currency": payment.currency,
                             "status": payment.status,
                             "order_id": payment.order_id,
+                            "method": "upi",
+                            "vpa": "a.student@fakebank",
+                            "email": "a.student@example.com",
+                            "contact": "+919000000000",
                         }
                     }
                 },
-            }
-        ).encode()
+            },
+            event_id=event_id,
+        )
+
+    def signed(self, body: Mapping[str, object], *, event_id: str = "") -> SignedWebhook:
+        """Any body, signed as the gateway signs its webhooks."""
+        raw_body = json.dumps(body).encode()
         return SignedWebhook(
-            raw_body=body,
-            signature=webhook_signature(_WEBHOOK_SECRET, body),
+            raw_body=raw_body,
+            signature=webhook_signature(_WEBHOOK_SECRET, raw_body),
             event_id=event_id or f"evt_fake_{secrets.token_hex(8)}",
         )
 

@@ -112,8 +112,8 @@ class Settings(DatabaseSettings):
     # joins this list once they choose one.
     otp_sender: Literal["console", "screen", "unavailable"] = "console"
     # Who takes payments (ADR 0056). "fake" signs like the real thing and moves no money, for local
-    # development, tests and a test site; production refuses it. "razorpay" needs the key below,
-    # a test key anywhere but production and a live key only there.
+    # development, tests and a test site; production refuses it. "razorpay" needs the key and the
+    # webhook's secret below, a test key anywhere but production and a live key only there.
     payment_gateway: Literal["fake", "razorpay"] = "fake"
     razorpay_key_id: str | None = None
     razorpay_key_secret: SecretStr | None = None
@@ -309,8 +309,15 @@ class Settings(DatabaseSettings):
                 msg = "PAYMENT_GATEWAY=fake takes no real money; not allowed in production"
                 raise ValueError(msg)
             return self
-        if self.razorpay_key_id is None or self.razorpay_key_secret is None:
-            msg = "PAYMENT_GATEWAY=razorpay needs RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET"
+        if (
+            self.razorpay_key_id is None
+            or self.razorpay_key_secret is None
+            or self.razorpay_webhook_secret is None
+        ):
+            msg = (
+                "PAYMENT_GATEWAY=razorpay needs RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET and "
+                "RAZORPAY_WEBHOOK_SECRET"
+            )
             raise ValueError(msg)
         wanted = RAZORPAY_LIVE_KEY if production else RAZORPAY_TEST_KEY
         if not self.razorpay_key_id.startswith(wanted):

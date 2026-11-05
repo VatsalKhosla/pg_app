@@ -1,5 +1,6 @@
-"""Payment routes (ARCHITECTURE §9, §15; step 6.1, ADR 0056): a student starts paying their held
-booking's token, and tells us when checkout has finished. Another student's is a 404."""
+"""Payment routes (ARCHITECTURE §9, §15; steps 6.1 and 6.2, ADRs 0056 and 0057): a student starts
+paying their held booking's token, and tells us when checkout has finished, and the gateway tells us
+what happened. Another student's is a 404."""
 
 import uuid
 from datetime import timedelta
@@ -12,9 +13,15 @@ from app.core.current_actor import CurrentActor
 from app.core.db import DbSession
 from app.core.errors import ForbiddenError
 from app.core.ratelimit import RateLimit, enforce
+from app.modules.payments.adapters.razorpay import EVENT_ID_HEADER, SIGNATURE_HEADER
 from app.modules.payments.policies import can_pay
-from app.modules.payments.schemas import CheckoutCallback, CheckoutResult, PaymentStart
-from app.modules.payments.service import TokenCheckout
+from app.modules.payments.schemas import (
+    CheckoutCallback,
+    CheckoutResult,
+    PaymentStart,
+    WebhookReceipt,
+)
+from app.modules.payments.service import PaymentWebhooks, TokenCheckout
 
 router = APIRouter(prefix="/v1", tags=["payments"])
 
@@ -71,3 +78,16 @@ async def test_checkout(
     if not can_pay(actor):
         raise ForbiddenError
     return await _checkout(request, db, clock).test_checkout(actor, payment_id)
+
+
+@router.post("/webhooks/razorpay", summary="What Razorpay tells us")
+async def razorpay_webhook(request: Request, db: DbSession, clock: ClockDep) -> WebhookReceipt:
+    """Razorpay's events, signed over the raw body: anyone may call this, and only a good signature
+    gets anywhere. Each is stored once and answered at once, and a job does the work, so what
+    Razorpay sends twice, or out of order, changes nothing twice. 400 WEBHOOK_INVALID otherwise."""
+    return await PaymentWebhooks(db, clock).receive(
+        request.app.state.payment_gateway,
+        raw_body=await request.body(),
+        signature=request.headers.get(SIGNATURE_HEADER, ""),
+        event_id=request.headers.get(EVENT_ID_HEADER, ""),
+    )

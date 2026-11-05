@@ -9,11 +9,12 @@ the shared HTTP client, with no SDK: two calls and two HMACs don't need a depend
 """
 
 import asyncio
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Final
 
 import httpx
 import structlog
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.modules.payments.domain.payments import (
     INR,
@@ -23,6 +24,7 @@ from app.modules.payments.domain.payments import (
     Provider,
 )
 from app.modules.payments.domain.signatures import checkout_signature, same, webhook_signature
+from app.modules.payments.domain.webhooks import PAYMENT_EVENTS, GatewayEvent
 from app.modules.payments.errors import PaymentGatewayUnavailableError
 
 if TYPE_CHECKING:
@@ -31,6 +33,9 @@ if TYPE_CHECKING:
     from pydantic import SecretStr
 
 API: Final = "https://api.razorpay.com/v1"
+# The two headers of a webhook. The signature covers the body only, not the event's id.
+SIGNATURE_HEADER: Final = "X-Razorpay-Signature"
+EVENT_ID_HEADER: Final = "X-Razorpay-Event-Id"
 FETCH_ATTEMPTS: Final = 3
 # Razorpay answers every error, a repeated receipt included, with a code and these words.
 _DUPLICATE: Final = "duplicate"
@@ -70,6 +75,49 @@ class _Error(_Answer):
     error: _ErrorBody
 
 
+class _Webhook(_Answer):
+    event: str
+    created_at: int
+    payload: dict[str, object] = Field(default_factory=dict)
+
+
+class _PaymentEntity(_Answer):
+    entity: _Payment
+
+
+class _WithPayment(_Answer):
+    payment: _PaymentEntity
+
+
+def read_razorpay_webhook(raw_body: bytes) -> GatewayEvent | None:
+    """A webhook in Razorpay's shape, which the fake gateway's share: an event of any kind, with
+    the payment it's about if it's one acted on. A kind we don't know, or a payment that doesn't
+    make sense, is still an event: it's kept, and answered, so Razorpay doesn't keep retrying and
+    in the end turn the webhook off."""
+    try:
+        found = _Webhook.model_validate_json(raw_body)
+    except ValidationError:
+        return None
+    created_at = datetime.fromtimestamp(found.created_at, tz=UTC)
+    if found.event not in PAYMENT_EVENTS:
+        return GatewayEvent(found.event, created_at, None)
+    try:
+        payment = _WithPayment.model_validate(found.payload).payment.entity
+    except ValidationError:
+        return GatewayEvent(found.event, created_at, None, unreadable=True)
+    return GatewayEvent(
+        found.event,
+        created_at,
+        GatewayPayment(
+            id=payment.id,
+            order_id=payment.order_id,
+            amount_paise=payment.amount,
+            currency=payment.currency,
+            status=payment.status,
+        ),
+    )
+
+
 def _error_of(response: httpx.Response) -> _ErrorBody:
     try:
         return _Error.model_validate_json(response.content).error
@@ -86,7 +134,7 @@ class RazorpayGateway:
         *,
         key_id: str,
         key_secret: SecretStr,
-        webhook_secret: SecretStr | None,
+        webhook_secret: SecretStr,
         retry_delay_s: float = 0.2,
     ) -> None:
         self._http = http
@@ -121,10 +169,11 @@ class RazorpayGateway:
         return same(expected, signature)
 
     def verify_webhook(self, *, raw_body: bytes, signature: str) -> bool:
-        if self._webhook_secret is None:
-            return False
         expected = webhook_signature(self._webhook_secret.get_secret_value(), raw_body)
         return same(expected, signature)
+
+    def read_webhook(self, raw_body: bytes) -> GatewayEvent | None:
+        return read_razorpay_webhook(raw_body)
 
     async def fetch_payment(self, payment_id: str) -> GatewayPayment:
         response = await self._fetch(f"/payments/{payment_id}")

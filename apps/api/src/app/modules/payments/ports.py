@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from app.modules.payments.domain.payments import GatewayOrder, GatewayPayment, Provider
+    from app.modules.payments.domain.webhooks import GatewayEvent
 
 
 class PaymentGateway(Protocol):
@@ -32,6 +33,10 @@ class PaymentGateway(Protocol):
 
     def verify_webhook(self, *, raw_body: bytes, signature: str) -> bool:
         """Whether ``signature`` is the gateway's for this body, exactly as it came."""
+        ...
+
+    def read_webhook(self, raw_body: bytes) -> GatewayEvent | None:
+        """A verified webhook's event, whatever kind it is; None if it isn't one at all."""
         ...
 
     async def fetch_payment(self, payment_id: str) -> GatewayPayment:

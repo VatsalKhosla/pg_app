@@ -6,6 +6,7 @@ import asyncio
 import base64
 import json
 from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -16,6 +17,7 @@ from app.modules.payments.adapters.fake import FakeGateway
 from app.modules.payments.adapters.razorpay import API, FETCH_ATTEMPTS, RazorpayGateway
 from app.modules.payments.domain.payments import GatewayOrder, GatewayPayment, GatewayStatus
 from app.modules.payments.domain.signatures import checkout_signature, webhook_signature
+from app.modules.payments.domain.webhooks import GatewayEvent
 from app.modules.payments.errors import PaymentGatewayUnavailableError
 from app.modules.payments.ports import PaymentGateway
 
@@ -75,12 +77,12 @@ UNKNOWN = {"error": {"code": "BAD_REQUEST_ERROR", "description": "The id provide
 type Handler = Callable[[httpx.Request], httpx.Response]
 
 
-def _gateway(handler: Handler, *, webhook_secret: str | None = WEBHOOK_SECRET) -> RazorpayGateway:
+def _gateway(handler: Handler) -> RazorpayGateway:
     return RazorpayGateway(
         httpx.AsyncClient(transport=httpx.MockTransport(handler)),
         key_id=KEY_ID,
         key_secret=SecretStr(KEY_SECRET),
-        webhook_secret=None if webhook_secret is None else SecretStr(webhook_secret),
+        webhook_secret=SecretStr(WEBHOOK_SECRET),
         retry_delay_s=0,
     )
 
@@ -327,7 +329,6 @@ def test_a_webhook_is_checked_on_its_raw_body_against_its_own_secret() -> None:
     assert gateway.verify_webhook(raw_body=body, signature=good)
     assert not gateway.verify_webhook(raw_body=body + b" ", signature=good)
     assert not gateway.verify_webhook(raw_body=body, signature=webhook_signature(KEY_SECRET, body))
-    assert not _gateway(_nothing, webhook_secret=None).verify_webhook(raw_body=body, signature=good)
 
 
 def test_the_fake_gateway_signs_like_the_real_one_and_needs_no_memory() -> None:
@@ -390,7 +391,8 @@ def test_the_fake_gateway_signs_webhooks_in_razorpays_shape() -> None:
         order = await fake.create_order(amount_paise=TOKEN, receipt=RECEIPT, notes={})
         payment = await fake.fetch_payment(fake.checkout(order.id).payment_id)
 
-        sent = fake.webhook("payment.captured", payment, event_id="evt_1")
+        at = datetime(2027, 7, 14, 10, 0, tzinfo=UTC)
+        sent = fake.webhook("payment.captured", payment, at=at, event_id="evt_1")
 
         assert sent.event_id == "evt_1"
         assert fake.verify_webhook(raw_body=sent.raw_body, signature=sent.signature)
@@ -404,7 +406,13 @@ def test_the_fake_gateway_signs_webhooks_in_razorpays_shape() -> None:
             "currency": "INR",
             "status": "captured",
             "order_id": order.id,
+            # What a real one holds, so tests can see it isn't kept.
+            "method": "upi",
+            "vpa": "a.student@fakebank",
+            "email": "a.student@example.com",
+            "contact": "+919000000000",
         }
-        assert fake.webhook("payment.captured", payment).event_id.startswith("evt_fake_")
+        assert fake.webhook("payment.captured", payment, at=at).event_id.startswith("evt_fake_")
+        assert fake.read_webhook(sent.raw_body) == GatewayEvent("payment.captured", at, payment)
 
     asyncio.run(scenario())

@@ -48,6 +48,7 @@ def test_deployed_environments_add_hsts_and_hide_the_interactive_docs(
             payment_gateway="razorpay",
             razorpay_key_id="rzp_live_abc",
             razorpay_key_secret="a-razorpay-secret",
+            razorpay_webhook_secret="a-razorpay-webhook-secret",
             turnstile_secret_key="test-turnstile-secret",
             revalidate_secret="a-revalidation-secret-of-32-chars!!",
             text_sender="unavailable",
