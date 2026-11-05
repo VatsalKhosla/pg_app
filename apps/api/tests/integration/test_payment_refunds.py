@@ -17,7 +17,11 @@ from app.core.audit import AuditLog
 from app.core.outbox import OutboxJob
 from app.modules.booking.service import BookingSystem
 from app.modules.identity.domain.sessions import SessionKind
-from app.modules.payments.domain.refunds import GatewayRefund, GatewayRefundStatus
+from app.modules.payments.domain.refunds import (
+    GatewayRefund,
+    GatewayRefundStatus,
+    refund_receipt,
+)
 from app.modules.payments.models import Payment, PaymentEvent, Refund
 from app.modules.payments.service import Refunds, payments_part
 from tests.flags import FixedFlags
@@ -165,7 +169,8 @@ def test_every_way_a_booking_ends_gives_the_token_back(
                 (each["amountPaise"], each["status"], each["reference"])
                 for each in await _mine(student, code)
             ],
-            "made": _gateway(ops).refunds_made,
+            # Moving the clock times out other tests' bookings too: count this one's alone.
+            "made": _gateway(ops).refund_receipts.count(refund_receipt(refund.public_id)),
             "audit": await _audited(ops, refund),
             "text": [
                 (template, values["amount"])

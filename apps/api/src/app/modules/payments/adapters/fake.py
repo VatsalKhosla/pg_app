@@ -69,6 +69,8 @@ class FakeGateway:
         self.unreachable = False
         self.orders_made = 0
         self.refunds_made = 0
+        # Each refund asked for, by its receipt: a test can count its own among others'.
+        self.refund_receipts: list[str] = []
         self.refund_status = GatewayRefundStatus.PROCESSED
         self.refuses_refunds = False
         self._said: dict[str, GatewayPayment] = {}
@@ -108,6 +110,7 @@ class FakeGateway:
             msg = "The test bank refuses this refund."
             raise PaymentGatewayRefusedError(msg)
         self.refunds_made += 1
+        self.refund_receipts.append(receipt)
         return GatewayRefund(
             id=f"rfnd_fake_{hashlib.sha256(receipt.encode()).hexdigest()[:16]}",
             payment_id=payment_id,
