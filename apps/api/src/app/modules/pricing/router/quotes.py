@@ -11,6 +11,7 @@ from pydantic import TypeAdapter
 from app.core.clock import ClockDep
 from app.core.current_actor import OptionalActor
 from app.core.db import DbSession
+from app.core.flags import Flag
 from app.core.ratelimit import RateLimit, rate_limited
 from app.modules.catalog.schemas import Charge
 from app.modules.pricing.domain.engine import ClampKind, RuleKind
@@ -45,9 +46,10 @@ def _service(request: Request, db: DbSession, clock: ClockDep) -> QuoteService:
     return QuoteService(db, clock, flags=request.app.state.flags, beds=request.app.state.beds_taken)
 
 
-def _info(view: QuoteView) -> QuoteInfo:
+async def _info(request: Request, view: QuoteView) -> QuoteInfo:
     row = view.row
     return QuoteInfo(
+        reserve_without_visit=await request.app.state.flags.is_enabled(Flag.REMOTE_BOOKING_ENABLED),
         id=row.public_id,
         place=QuotePlace(
             slug=view.property.slug,
@@ -104,7 +106,7 @@ async def create_quote(
     view = await _service(request, db, clock).create(
         actor, body.room_category, move_in=body.move_in, stay_months=body.stay_months
     )
-    return _info(view)
+    return await _info(request, view)
 
 
 @router.get("/quotes/{quote_id}", summary="A quote")
@@ -113,7 +115,7 @@ async def get_quote(
 ) -> QuoteInfo:
     """Anyone with its id: a quote holds no personal data. ``expired`` once its 30 minutes are
     up."""
-    return _info(await _service(request, db, clock).get(quote_id))
+    return await _info(request, await _service(request, db, clock).get(quote_id))
 
 
 @router.get(

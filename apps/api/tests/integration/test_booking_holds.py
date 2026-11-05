@@ -454,3 +454,31 @@ def test_a_code_another_booking_has_is_drawn_again(
     code, fresh = run(scenario)
 
     assert code == fresh
+
+
+def test_a_quote_says_whether_the_bed_can_be_reserved_without_a_visit(
+    make_settings: Callable[..., Settings], database_url: str, valkey_url: str
+) -> None:
+    """From the flag as it is now, so a page cached with the old value can't offer the wrong thing
+    (ADR 0058)."""
+
+    async def scenario(ops: Staff) -> dict[str, Any]:
+        category = _category_of(await _listing(ops, beds=1))
+        student = await _student(ops)
+        off = await _quote(student, category)
+        ops.app.state.flags = FixedFlags(remote_booking_enabled=True)
+        on = await _quote(student, category)
+        kept = await student.ok("GET", f"{QUOTES}/{off['id']}")
+        return {
+            "off": off["reserveWithoutVisit"],
+            "on": on["reserveWithoutVisit"],
+            "the first, read again": kept["reserveWithoutVisit"],
+        }
+
+    settings = make_settings(database_url=database_url, redis_url=valkey_url)
+
+    assert run_as_staff(settings, scenario) == {
+        "off": False,
+        "on": True,
+        "the first, read again": True,
+    }

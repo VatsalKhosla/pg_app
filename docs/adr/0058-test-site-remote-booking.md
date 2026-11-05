@@ -14,7 +14,8 @@
 
 1. **`python -m app.manage flags set NAME VALUE` sets a feature flag.** It checks the value against the flag's declared type, and writes an audit entry. Setting a flag to the value it has already changes nothing and adds no entry.
 2. **`TEST_SITE_REMOTE_BOOKING` sets the flag as the test site starts,** in `all_in_one`, which only the free-plan staging host runs. The free plan restarts often, which is why an unchanged value adds no audit entry.
-3. **Season one's rule is unchanged.** The flag's default stays off, and production doesn't use `all_in_one` or this variable.
+3. **A quote says whether a visit is needed** (`reserveWithoutVisit`), so the PG's page offers **Reserve this bed** from the flag as it is now, rather than from a value cached with the page. Someone not signed in signs in first, and comes back to the PG.
+4. **Season one's rule is unchanged.** The flag's default stays off, and production doesn't use `all_in_one` or this variable.
 
 ## Consequences
 

@@ -365,6 +365,8 @@ class QuoteInfo(ApiModel):
     beside it (rule 7). It stands until ``expiresAt``."""
 
     id: uuid.UUID
+    # Whether the student can reserve at this price from here, without a visit first (ADR 0058).
+    reserve_without_visit: bool
     place: QuotePlace
     move_in: date
     stay_months: int
