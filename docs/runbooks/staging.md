@@ -20,7 +20,7 @@ The services are described in `render.yaml`; the deploy is the **Deploy staging*
 
 ## Payments
 
-The test site uses a fake gateway: **Pay** opens a test bank, and no money moves (ADR 0056). Production refuses it. To try Razorpay's test mode, which also moves no real money:
+The test site takes payments through Razorpay's test mode (since 2026-11-06): **Pay** opens Razorpay's own checkout, and no real money moves. Production refuses test keys. Setting it up, or changing its keys:
 
 1. In Razorpay's dashboard, switch to **Test Mode**. Under **Account & Settings**, then **API Keys**, generate a test key. Its id starts with `rzp_test_`.
 2. Under **Account & Settings**, then **Webhooks**, add a webhook:
@@ -31,7 +31,7 @@ The test site uses a fake gateway: **Pay** opens a test bank, and no money moves
 
    If it asks for a code in test mode, Razorpay's docs give `754081`.
 3. On `fys-staging-api` in Render, open **Environment** and add `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET`. Never paste them in a chat.
-4. Then set `PAYMENT_GATEWAY` to `razorpay` in `render.yaml`. Until that commit deploys, the site stays on the fake gateway.
+4. `PAYMENT_GATEWAY` is `razorpay` in `render.yaml`. Set it to `fake` to go back to the site's own test bank (ADR 0056), which needs no keys.
 
 Razorpay's test card is `4100 2800 0000 1007`, with any CVV and a future date, and its test UPI id is `success@razorpay`.
 

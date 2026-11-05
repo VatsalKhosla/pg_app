@@ -76,10 +76,17 @@ services:
         value: screen
       - key: TEXT_SENDER
         value: unavailable
-      # Moves no money: Pay opens a test bank (ADR 0056). The API refuses this in production. For
-      # Razorpay's test mode, add its test key on the service, then change this to "razorpay".
+      # Razorpay's test mode: Pay opens Razorpay's own checkout, and no real money moves (ADR
+      # 0056). The test key, its secret and the webhook's secret are set on the service; the API
+      # refuses a live key anywhere but production. "fake" goes back to the site's own test bank.
       - key: PAYMENT_GATEWAY
-        value: fake
+        value: razorpay
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
       # Cloudflare's published test secret, which always passes; the API refuses it in
       # production.
       - key: TURNSTILE_SECRET_KEY
