@@ -423,6 +423,8 @@ Adapters: `RazorpayGateway` and `FakeGateway` (deterministic, used in tests and 
 
 Verify Razorpay's current docs for order creation, checkout signature format, webhook headers and event names, OTM and Route before writing the adapter.
 
+In the code (step 6.1, ADR 0056): the order is made when the student taps Pay, outside any transaction, once per booking and gateway. The callback checks the signature, then fetches the payment; the booking moves only on the gateway's word that this order's exact amount is captured. Checkout runs on `/bookings/{code}/pay`, the only page whose policy allows it. `FakeGateway` stands in without keys, and production refuses it.
+
 ### 9.3 Webhooks
 `POST /v1/webhooks/razorpay`: read the raw body → verify HMAC with the webhook secret → insert into `payment_events` (unique provider event id; a duplicate returns 200 and stops) → enqueue `process_payment_event` → return 200 within 1 s. The worker maps events to payment status changes and booking transitions, idempotently. Unknown events are stored and ignored.
 
@@ -548,7 +550,7 @@ Every 15 minutes, check payments stuck in created/authorized. Daily, match gatew
 - Dates: `YYYY-MM-DD` for move-in; timestamps in ISO 8601 UTC; display in IST.
 - Public ids only (UUIDv7, booking codes). Never expose sequential ids.
 - Cursor pagination (`cursor`, `limit` ≤ 50, default 20; `app/core/pagination.py`). Lists are ordered by public id, which as a UUIDv7 sorts by creation time, so the cursor is the last id of the page; responses are `{items, nextCursor}`, with `nextCursor` null on the last page, and a page costs one query however many rows (ADR 0016). Reference data (the geo lists) comes whole instead, ordered by name the same way in every environment (ADR 0020).
-- `Idempotency-Key` is required on POSTs that create bookings, payments, refunds or invoices.
+- `Idempotency-Key` is required on POSTs that create bookings, payments, refunds or invoices. The token's payment is idempotent by its booking instead: asking again gets the same order (ADR 0056).
 - OpenAPI is the contract: CI regenerates the TS client and fails if it is stale; `oasdiff` fails CI on breaking changes. `make gen-client` exports the schema without starting the API (`python -m app.openapi`) into `packages/api-client/openapi.json` and generates `src/generated/schema.ts` with openapi-typescript; `make check-client` (part of `make check`) fails when either is out of date. Operation ids are the route's tag and function name in camelCase (`systemHealthz`), and every operation declares `4XX`/`5XX` as `application/problem+json` `ProblemDetail`, so the web client's error types are the API's real ones (ADR 0012).
 
 Main endpoints (v1):
@@ -567,7 +569,8 @@ Auth     POST /v1/auth/otp/request     POST /v1/auth/otp/verify   GET /v1/auth/c
 Student  POST/GET /v1/visits           POST /v1/visits/{id}/cancel (ADR 0033)
          POST /v1/bookings             GET /v1/bookings   GET /v1/bookings/{code}
          POST /v1/bookings/{code}/cancel | /check-in | /disputes
-         POST /v1/payments/{id}/checkout-callback
+         POST /v1/bookings/{code}/payment   POST /v1/payments/{id}/checkout-callback (ADR 0056)
+         POST /v1/payments/{id}/test-checkout (the fake gateway only)
 Webhooks POST /v1/webhooks/razorpay
 Owner    GET /v1/owner/profile   GET /v1/owner/agreement   POST /v1/owner/agreement/acceptances   (ADR 0025)
          /v1/owner/properties… /v1/owner/beds/{id}/blocks /v1/owner/pricing/rule-sets… (+ /preview, /activate)
@@ -622,7 +625,7 @@ Target OWASP ASVS level 2 for auth, booking, payments and personal data.
 - **Input**: Pydantic and Zod validation; `extra="forbid"`; request size limits; server computes all money; quotes are server-side records, not client payloads.
 - **Auth**: as section 12. Lock out after repeated OTP failures; alert on spikes.
 - **Authorization**: policies on every endpoint; 404 for others' resources; the authorization matrix test must pass in CI.
-- **Headers**: strict CSP with nonces (no `unsafe-inline` scripts), HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `frame-ancestors 'none'`, a tight `Permissions-Policy` (geolocation only on self, for "near me").
+- **Headers**: strict CSP with nonces (no `unsafe-inline` scripts), HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `frame-ancestors 'none'`, a tight `Permissions-Policy` (geolocation only on self, for "near me"). The payment page alone allows Razorpay's checkout (ADR 0056).
 - **Payments**: never handle card data; amounts computed server-side; checkout signature verified; webhooks verified on the raw body; idempotent processing; refunds require the ops role, a reason and an audit entry; two-person approval for manual refunds above ₹5,000 (configurable).
 - **Rate limits and abuse**: OTP, login, visit and booking creation, search and map endpoints; at most one active hold per user; Cloudflare WAF rules on auth routes; bot protection on public search to slow scraping.
 - **Secrets**: environment variables loaded from AWS Secrets Manager / Vercel env; separate test and live keys; rotation documented; gitleaks in pre-commit and CI; nothing secret in `NEXT_PUBLIC_*`; Claude Code is denied read access to `.env` files.

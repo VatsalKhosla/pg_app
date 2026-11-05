@@ -44,7 +44,8 @@ Start the slow ones in week 1.
   - [ ] change the uploads bucket's CORS rule in Neon's console to `https://fixyourstay.in`;
   - [x] apply the Render blueprint, and save the deploy hooks as GitHub secrets;
   - [x] point fixyourstay.in at Render in GoDaddy, and turn GitHub Pages off;
-  - [x] attach fixyourstay.in in Render: delete the old custom domains, then add it on the web service (ADR 0055).
+  - [x] attach fixyourstay.in in Render: delete the old custom domains, then add it on the web service (ADR 0055);
+  - [ ] Razorpay test keys, to finish step 6.1: `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` on `fys-staging-api` in Render, never in a chat (runbook's "Payments"). Test mode moves no real money.
 - [ ] GitHub repository settings (docs/ci.md): the branch ruleset for `main` with the required checks, secret scanning with push protection, Dependabot alerts, and the free Renovate GitHub App for dependency updates.
 - [ ] Lawyer: Terms, Privacy notice (DPDP), Refund & Cancellation policy, owner agreement (30% fee, 90-day introduction clause, token set-off), E-Commerce Rules seller-disclosure question (hiding owner contacts), grievance officer. The drafts are in `apps/web/src/content/legal`, with the open questions in brackets.
 - [ ] The facts the trust pages state (`apps/web/src/config/company.ts`): the registered name and office address, the phone line a person answers and its hours, the help email, the founders' names, roles and photos, and the grievance officer's name, designation and contact details. A production build waits for them (ADR 0034).
@@ -462,6 +463,11 @@ Start the slow ones in week 1.
 
 - [ ] **6.1 Gateway port and Razorpay adapter.** Port per ARCHITECTURE §9.1; `FakeGateway` with signed webhook fixtures; Razorpay orders for the exact token amount; web checkout; server-side checkout-signature verification. **Read Razorpay's current docs first.** Test keys only.
   *Done when* a staging booking reaches TOKEN_SECURED through Razorpay test mode.
+  *Note (2026-11-05): built, and open only for its last check,* which needs the founders' Razorpay test keys (their task below).
+  - **API:** `POST /v1/bookings/{code}/payment` makes the order for exactly the token when the student taps, once per booking. `POST /v1/payments/{id}/checkout-callback` checks the signature, then fetches the payment, and only captured money of this order's exact amount moves the booking (ADR 0056).
+  - **Web:** `/bookings/{code}/pay` opens Razorpay's checkout, or the test bank with the fake gateway. It's the only page whose security policy allows Razorpay.
+  - **Staging:** the fake gateway moves no money, and production refuses it. Test and live keys can't mix.
+  - **Proof:** Razorpay's documented requests and answers against its adapter, the whole way through the API over a stand-in for its API, forged signatures, wrong amounts, requests at once, a gateway out of reach, and a phone browser test that pays at the test bank.
 
 - [ ] **6.2 Webhooks and event processing.** Raw-body HMAC verification, `payment_events` with a unique provider event id, fast 200 response, outbox processing, idempotent status mapping, late-payment revive or auto-refund (§7.4).
   *Done when* duplicate, out-of-order and late webhooks are all handled correctly in tests.

@@ -18,6 +18,16 @@ Everything runs in the US East (Ohio) region, where the Neon project is, so the 
 
 The services are described in `render.yaml`; the deploy is the **Deploy staging** job in `.github/workflows/ci.yml`.
 
+## Payments
+
+The test site uses a fake gateway: **Pay** opens a test bank, and no money moves (ADR 0056). Production refuses it. To try Razorpay's test mode, which also moves no real money:
+
+1. In Razorpay's dashboard, switch to **Test Mode**. Under **Account & Settings**, then **API Keys**, generate a test key. Its id starts with `rzp_test_`.
+2. On `fys-staging-api` in Render, open **Environment** and add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`. Never paste them in a chat.
+3. Then set `PAYMENT_GATEWAY` to `razorpay` in `render.yaml`. Until that commit deploys, the site stays on the fake gateway.
+
+Razorpay's test card is `4100 2800 0000 1007`, with any CVV and a future date, and its test UPI id is `success@razorpay`.
+
 ## What staging can't do yet
 
 - **Texts:** there's no SMS provider yet (a paid vendor the founders choose). Sign-in codes show on the sign-in page instead (`OTP_SENDER=screen`, ADR 0055), and visit and booking texts aren't sent.

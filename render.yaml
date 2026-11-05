@@ -76,6 +76,10 @@ services:
         value: screen
       - key: TEXT_SENDER
         value: unavailable
+      # Moves no money: Pay opens a test bank (ADR 0056). The API refuses this in production. For
+      # Razorpay's test mode, add its test key on the service, then change this to "razorpay".
+      - key: PAYMENT_GATEWAY
+        value: fake
       # Cloudflare's published test secret, which always passes; the API refuses it in
       # production.
       - key: TURNSTILE_SECRET_KEY
