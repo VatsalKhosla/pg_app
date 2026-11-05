@@ -18,6 +18,17 @@ const securityHeaders = [
   },
 ];
 
+// Only where a student pays (ADR 0056). Razorpay's checkout asks for the payment feature in its
+// frame, and a bank's page may open in a popup that has to report back to it.
+const paymentPageHeaders = [
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+  {
+    key: "Permissions-Policy",
+    value:
+      'camera=(), microphone=(), payment=(self "https://api.razorpay.com"), usb=(), geolocation=(self)',
+  },
+];
+
 // The container image (apps/web/Dockerfile) builds Next.js's standalone server, traced from the
 // repository's root so the workspace's API client comes along. Vercel builds need neither.
 const standalone = process.env.NEXT_OUTPUT === "standalone";
@@ -47,7 +58,11 @@ const nextConfig: NextConfig = {
     ...(apiWaitMs !== undefined && { proxyTimeout: apiWaitMs }),
   },
   headers() {
-    return Promise.resolve([{ source: "/:path*", headers: securityHeaders }]);
+    // Of two rules setting one header, the last wins.
+    return Promise.resolve([
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/bookings/:code/pay", headers: paymentPageHeaders },
+    ]);
   },
   rewrites() {
     return Promise.resolve(

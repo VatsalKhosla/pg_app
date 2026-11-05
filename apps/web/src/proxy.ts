@@ -26,6 +26,15 @@ const imageOrigins = [
 /** Cloudflare Turnstile's challenge runs in a frame from here (src/components/auth/turnstile.tsx). */
 export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 const frameOrigins = publicEnv.turnstileSiteKey === undefined ? [] : [TURNSTILE_ORIGIN];
+/**
+ * Razorpay's checkout, only on the page where a student pays (ADR 0056). Its script comes through
+ * 'strict-dynamic'; it runs in a frame from one origin, and reports from the page to another.
+ * Probed against its real script on 2026-11-05: Razorpay publishes no list. Whatever else a real
+ * payment asks for reaches Sentry as a violation.
+ */
+export const CHECKOUT_FRAME_ORIGIN = "https://api.razorpay.com";
+export const CHECKOUT_CONNECT_ORIGIN = "https://lumberjack.razorpay.com";
+const PAYMENT_PAGE = /^\/bookings\/[^/]+\/pay$/u;
 
 /**
  * Runs before every page (Next.js 16's name for middleware): gives the request a fresh nonce and
@@ -49,13 +58,14 @@ export function proxy(request: NextRequest): NextResponse {
 
   const nonce = newNonce();
   const requestId = crypto.randomUUID();
+  const paying = PAYMENT_PAGE.test(pathname);
   const policy = buildContentSecurityPolicy({
     nonce,
     isDevelopment: process.env.NODE_ENV === "development",
     upgradeInsecureRequests: publicEnv.siteUrl.protocol === "https:",
-    connectOrigins,
+    connectOrigins: paying ? [...connectOrigins, CHECKOUT_CONNECT_ORIGIN] : connectOrigins,
     imageOrigins,
-    frameOrigins,
+    frameOrigins: paying ? [...frameOrigins, CHECKOUT_FRAME_ORIGIN] : frameOrigins,
     reportUrl: sentry?.securityReportUrl,
   });
 

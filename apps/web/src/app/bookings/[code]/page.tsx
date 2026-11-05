@@ -8,6 +8,7 @@ import { getFormatter, getMessages, getTranslations } from "next-intl/server";
 import { BookingActions } from "@/components/bookings/booking-actions";
 import { CheckWindow } from "@/components/bookings/check-window";
 import { DisputeForm } from "@/components/bookings/dispute-form";
+import { buttonVariants } from "@/components/ui/button";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getSearchPage } from "@/lib/api/public";
@@ -195,6 +196,14 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
           </NextIntlClientProvider>
         ) : null}
       </section>
+
+      {booking.canPay ? (
+        // A plain link, not next/link: checkout needs the payment page's own security policy, and
+        // a browser takes a page's policy only on a full page load (ADR 0056).
+        <a href={`${BOOKINGS_PATH}/${booking.code}/pay`} className={buttonVariants()}>
+          {t("pay.link", { amount: formatINR(booking.tokenPaise) })}
+        </a>
+      ) : null}
 
       {actions.dispute ? (
         <NextIntlClientProvider messages={{ Bookings: { dispute: messages.Bookings.dispute } }}>

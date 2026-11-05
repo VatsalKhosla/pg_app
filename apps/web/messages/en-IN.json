@@ -2095,7 +2095,7 @@
       "refunded": "Refunded"
     },
     "next": {
-      "held": "Pay the token to keep this bed. Your hold ends at {time}. Paying online opens soon.",
+      "held": "Pay the token to keep this bed. Your hold ends at {time}.",
       "token_secured": "Your token is in. The owner confirms by {time}; if they don't, you get it all back.",
       "confirmed": "You move in on {date}. The address and the owner's phone are below. From {opens}, tell us once you've moved in.",
       "checked_in": "Welcome in. If the room isn't as shown, contact us before {time}, quoting your booking code.",
@@ -2107,6 +2107,32 @@
       "rejected": "The PG couldn't take this booking. Your token comes back in full.",
       "no_show": "This booking ended because you didn't move in on time.",
       "refunded": "Your token was refunded."
+    },
+    "pay": {
+      "metaTitle": "Pay your token",
+      "link": "Pay the {amount} token",
+      "back": "Back to your booking",
+      "title": "Pay your {amount} token",
+      "what": "For booking {code} at {pg}.",
+      "until": "This bed is held for you until {time}.",
+      "pay": "Pay {amount}",
+      "description": "Token for booking {code}",
+      "opening": "Opening the payment…",
+      "checking": "Checking your payment…",
+      "waiting": "Your bank hasn't finished yet. We'll keep checking, and move on once it has.",
+      "checkAgain": "Check again",
+      "notPaid": "That payment didn't go through. You can try again.",
+      "late": "Your payment came in after this booking had ended. Contact us quoting {code}, and we'll sort it out.",
+      "unverified": "We couldn't verify that payment, so your booking hasn't changed. If money left your account, contact us quoting {code}.",
+      "changed": "This booking isn't waiting for its token any more.",
+      "failed": "Payments can't be reached right now. Please try again in a moment.",
+      "backToBooking": "See your booking",
+      "test": {
+        "title": "A test payment",
+        "body": "This is a test copy of the site, so no money moves.",
+        "pay": "Pay {amount} at the test bank",
+        "cancel": "Not now"
+      }
     },
     "money": {
       "title": "What you pay",

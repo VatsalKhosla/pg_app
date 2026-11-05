@@ -62,6 +62,27 @@ describe("proxy", () => {
     expect(policy).not.toContain("tile");
   });
 
+  it("opens the policy for Razorpay's checkout on the payment page and nowhere else", async () => {
+    const { proxy, CHECKOUT_CONNECT_ORIGIN, CHECKOUT_FRAME_ORIGIN } = await loadProxy();
+    const policyOf = (path: string) =>
+      proxy(
+        new NextRequest(`http://localhost:3000${path}`, {
+          headers: { cookie: "__Secure-session=x" },
+        }),
+      ).headers.get("content-security-policy") ?? "";
+
+    const paying = policyOf("/bookings/BK-7F3K2Q9M/pay");
+    expect(paying).toContain(`frame-src ${CHECKOUT_FRAME_ORIGIN}`);
+    expect(paying).toContain(CHECKOUT_CONNECT_ORIGIN);
+
+    for (const path of ["/", "/bookings", "/bookings/BK-7F3K2Q9M", "/bookings/BK-7F3K2Q9M/pay/x"]) {
+      const policy = policyOf(path);
+      expect(policy).not.toContain(CHECKOUT_FRAME_ORIGIN);
+      expect(policy).not.toContain(CHECKOUT_CONNECT_ORIGIN);
+      expect(policy).toContain("frame-src 'none'");
+    }
+  });
+
   it("sends Sentry's origin and violation reports there when error reporting is on", async () => {
     vi.stubEnv("NEXT_PUBLIC_SENTRY_DSN", "https://publickey@o1.ingest.example.test/42");
     vi.stubEnv("NEXT_PUBLIC_APP_ENV", "staging");

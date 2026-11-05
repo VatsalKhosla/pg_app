@@ -168,6 +168,28 @@ test.describe("a visit", () => {
     const code = new URL(page.url()).pathname.split("/").pop() ?? "";
     expect(await wcagViolations(page)).toEqual([]);
 
+    // The student pays the token at the test bank (BUILD_PLAN 6.1). The payment page has its own
+    // security policy, so it's a full page load, and only the API's check moves the booking.
+    await page.getByRole("link", { name: /^Pay the ₹[0-9,]+ token$/ }).click();
+    await expect(page).toHaveURL(new RegExp(`/bookings/${code}/pay$`));
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Pay your");
+    expect(await wcagViolations(page)).toEqual([]);
+    const headers = (await page.request.get(page.url())).headers();
+    expect(headers["cross-origin-opener-policy"]).toBe("same-origin-allow-popups");
+    expect(headers["permissions-policy"]).toContain('payment=(self "https://api.razorpay.com")');
+    expect(headers["content-security-policy"]).toMatch(
+      /frame-src [^;]*https:\/\/api\.razorpay\.com/,
+    );
+    await page.getByRole("button", { name: /^Pay ₹[0-9,]+$/ }).click();
+    const testBank = page.getByRole("region", { name: "A test payment" });
+    await expect(testBank).toContainText("no money moves");
+    expect(await wcagViolations(page)).toEqual([]);
+    await testBank.getByRole("button", { name: /at the test bank$/ }).click();
+    await expect(page).toHaveURL(new RegExp(`/bookings/${code}$`));
+    await expect(page.getByRole("heading", { name: "Waiting for the owner" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Pay the/ })).toHaveCount(0);
+    expect(await wcagViolations(page)).toEqual([]);
+
     // Ops: the visit log, the agent's check-in, the booking made on the spot and how it went.
     await opsPage.reload();
     const log = opsPage.getByRole("region", { name: "Visit log" });
@@ -180,7 +202,7 @@ test.describe("a visit", () => {
 
     // Ops: the bookings board finds it by its code, with whom to call and what happened (BUILD_PLAN
     // 5.10).
-    await opsPage.goto("/ops/bookings?status=held");
+    await opsPage.goto("/ops/bookings?status=token_secured");
     await expect(opsPage.getByRole("heading", { level: 1 })).toHaveText("Bookings");
     expect(await wcagViolations(opsPage)).toEqual([]);
     await opsPage.getByLabel("Find a booking").fill(code);
