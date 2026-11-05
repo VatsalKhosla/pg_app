@@ -5189,6 +5189,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Reservewithoutvisit */
+            reserveWithoutVisit: boolean;
             place: components["schemas"]["QuotePlace"];
             /**
              * Movein

@@ -15747,6 +15747,10 @@
             "format": "uuid",
             "title": "Id"
           },
+          "reserveWithoutVisit": {
+            "type": "boolean",
+            "title": "Reservewithoutvisit"
+          },
           "place": {
             "$ref": "#/components/schemas/QuotePlace"
           },
@@ -15844,6 +15848,7 @@
         "type": "object",
         "required": [
           "id",
+          "reserveWithoutVisit",
           "place",
           "moveIn",
           "stayMonths",
