@@ -79,6 +79,7 @@ const RESERVE_ERRORS = [
   "QUOTE_EXPIRED",
   "QUOTE_USED",
   "UNAUTHENTICATED",
+  "BOOKING_NEEDS_VISIT",
 ] as const;
 
 // A visit id in the link: the student came from their visit to reserve on the spot (step 5.9).

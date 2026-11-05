@@ -58,6 +58,7 @@ function quote(id: string): Quote {
     charges: [],
     explanation: "Base ₹10,000",
     expiresAt: "2027-07-14T10:30:00Z",
+    reserveWithoutVisit: false,
   } as unknown as Quote;
 }
 
@@ -92,6 +93,49 @@ describe("QuoteChecker", () => {
 
     expect(screen.queryByRole("button", { name: text.reserve.submit })).toBeNull();
     expect(screen.getByText(/Reserving a bed online opens soon/)).toBeTruthy();
+  });
+
+  it("offers a reservation with no visit where the API says none is needed", async () => {
+    vi.mocked(pricing.createQuote).mockResolvedValue({
+      ...quote("quote-1"),
+      reserveWithoutVisit: true,
+    });
+    vi.mocked(bookings.holdBed).mockResolvedValue({ code: "BK-7F3K2Q9M" } as StudentBooking);
+    show(null);
+
+    await priced();
+    expect(screen.queryByText(/Reserving a bed online opens soon/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: text.reserve.submit }));
+
+    await waitFor(() => {
+      expect(router.push).toHaveBeenCalledWith("/bookings/BK-7F3K2Q9M");
+    });
+    expect(bookings.holdBed).toHaveBeenCalledWith("quote-1", null, expect.any(String));
+  });
+
+  it("sends someone not signed in to sign in, and back to this PG", async () => {
+    vi.mocked(pricing.createQuote).mockResolvedValue({
+      ...quote("quote-1"),
+      reserveWithoutVisit: true,
+    });
+    vi.mocked(bookings.holdBed).mockRejectedValue(
+      new ApiError({
+        message: "UNAUTHENTICATED",
+        status: 401,
+        code: "UNAUTHENTICATED",
+        problem: { type: "about:blank", title: "Sign in", status: 401, code: "UNAUTHENTICATED" },
+      }),
+    );
+    window.history.pushState({}, "", "/pg/fictional-sample-pg");
+    show(null);
+
+    await priced();
+    fireEvent.click(screen.getByRole("button", { name: text.reserve.submit }));
+
+    await waitFor(() => {
+      expect(router.push).toHaveBeenCalledWith("/sign-in?next=%2Fpg%2Ffictional-sample-pg");
+    });
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("reserves the bed at that price from the visit, then opens the booking", async () => {

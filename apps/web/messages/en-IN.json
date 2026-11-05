@@ -590,7 +590,8 @@
           "BED_UNAVAILABLE": "No bed of this room is free for your stay any more. Try another date or room.",
           "QUOTE_EXPIRED": "This price has run out. Check your price again.",
           "QUOTE_USED": "This price was used for a booking already. Check your price again.",
-          "UNAUTHENTICATED": "Sign in again on your phone to reserve."
+          "UNAUTHENTICATED": "Sign in again on your phone to reserve.",
+          "BOOKING_NEEDS_VISIT": "Beds are reserved on a visit for now. Book a visit to see it."
         }
       }
     }

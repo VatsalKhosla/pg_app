@@ -8,7 +8,8 @@ import { useForm } from "react-hook-form";
 
 import { problemMessage } from "@/components/auth/problem-message";
 import { Button } from "@/components/ui/button";
-import { BOOKINGS_PATH } from "@/lib/auth/routes";
+import { ApiError } from "@/lib/api/errors";
+import { BOOKINGS_PATH, SIGN_IN_PATH, signInUrl } from "@/lib/auth/routes";
 import { holdBed } from "@/lib/bookings/client";
 import { Field, Select } from "@/components/ui/fields";
 import { Input } from "@/components/ui/input";
@@ -38,7 +39,7 @@ export interface QuoteCheckerText {
   validUntil: string;
   bookingSoon: string;
   errors: Record<string, string>;
-  /** On the spot, at the student's visit (step 5.9). */
+  /** At the student's visit (step 5.9), or wherever the API says no visit is needed. */
   reserve: {
     note: string;
     submit: string;
@@ -58,7 +59,8 @@ const TIME = new Intl.DateTimeFormat("en-IN", { timeStyle: "short", timeZone: "A
  * charges (CLAUDE.md rule 7). The browser formats amounts; it never works one out.
  *
  * At their visit (``visit``, step 5.9), the student can reserve the bed at that price on the
- * spot, once the agent has checked in; the booking's page then takes them on.
+ * spot, once the agent has checked in; the booking's page then takes them on. Where the API says
+ * no visit is needed (ADR 0058), they can from here, signing in first if they haven't.
  */
 export function QuoteChecker({
   rooms,
@@ -120,10 +122,16 @@ export function QuoteChecker({
       const booking = await holdBed(quoteId, visit, key);
       router.push(`${BOOKINGS_PATH}/${booking.code}` as Route);
     } catch (error) {
+      if (visit === null && error instanceof ApiError && error.status === 401) {
+        router.push(signInUrl(SIGN_IN_PATH, window.location.pathname));
+        return;
+      }
       setRefused(problemMessage(error, text.reserve.errors, RESERVE_WITH_DETAIL));
       setReserving(false);
     }
   }
+
+  const canReserve = visit !== null || quote?.reserveWithoutVisit === true;
 
   return (
     <div className="space-y-5">
@@ -195,9 +203,9 @@ export function QuoteChecker({
             </ul>
             <p className="text-sm text-muted-foreground">
               {fillBlanks(text.validUntil, { time: TIME.format(new Date(quote.expiresAt)) })}{" "}
-              {visit === null ? text.bookingSoon : null}
+              {canReserve ? null : text.bookingSoon}
             </p>
-            {visit === null || reservation === null ? null : (
+            {!canReserve || reservation === null ? null : (
               <div className="space-y-2 pt-2">
                 <p className="text-sm">{text.reserve.note}</p>
                 <Button
