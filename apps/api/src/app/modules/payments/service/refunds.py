@@ -25,12 +25,13 @@ from app.core.outbox import enqueue
 from app.core.pagination import split_page
 from app.modules.booking.service import BookingTokens
 from app.modules.identity.service import Accounts
+from app.modules.ledger.domain.ledger import token_refunded
+from app.modules.ledger.service import Ledger
 from app.modules.payments.domain.payments import PaymentStatus
 from app.modules.payments.domain.refunds import (
     GatewayRefund,
     RefundKind,
     RefundStatus,
-    from_gateway,
     needs_second_person,
     refund_of_receipt,
     refund_progress,
@@ -78,6 +79,7 @@ class Refunds:
         self._payments = PaymentRepository(db)
         self._tokens = BookingTokens(db, clock)
         self._accounts = Accounts(db)
+        self._ledger = Ledger(db, clock)
 
     async def due(self, booking: uuid.UUID, *, amount_paise: int, reason: str) -> None:
         """A booking's change gives money back: inside the job's transaction. A booking whose token
@@ -334,7 +336,8 @@ class Refunds:
         await self._payments.add_refund_once(
             payment_id=ours.id,
             kind=RefundKind.GATEWAY,
-            status=from_gateway(found.status),
+            # It moves on as any refund does, below, with its audit entry, text and postings.
+            status=RefundStatus.PENDING,
             amount_paise=found.amount_paise,
             reason="gateway",
             key=f"gateway:{found.id}",
@@ -355,6 +358,7 @@ class Refunds:
         if now is RefundStatus.PROCESSED and refund.processed_at is None:
             refund.processed_at = self._clock.now()
             await self._record(refund, "refund.processed", by=audit.SYSTEM)
+            await self._post(refund)
             _changes.add(1, {"status": now, "kind": refund.kind})
             await enqueue(
                 self._db,
@@ -363,6 +367,21 @@ class Refunds:
                 clock=self._clock,
                 dedupe_key=f"{REFUND_TEXT}:{refund.public_id}",
             )
+
+    async def _post(self, refund: Refund) -> None:
+        """Money that came in has gone back. The gateway's own refund of a payment nobody captured
+        never touched the books, so it posts nothing (ADR 0060)."""
+        payment = await self._payments.by_id(refund.payment_id)
+        if payment.status != PaymentStatus.CAPTURED:
+            return
+        await self._ledger.post(
+            token_refunded(refund.amount_paise),
+            key=f"token_refunded:{refund.public_id}",
+            booking_id=payment.booking_id,
+            booking_code=await self._tokens.code_of(payment.booking_id),
+            payment_id=payment.id,
+            memo=refund.reason,
+        )
 
     async def _failed(self, refund: Refund, why: str) -> None:
         logger.error("a refund failed", refund=str(refund.public_id))

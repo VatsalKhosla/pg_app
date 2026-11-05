@@ -11,6 +11,8 @@ import structlog
 
 from app.core import audit
 from app.modules.booking.service import BookingTokens, TokenTaken
+from app.modules.ledger.domain.ledger import token_received
+from app.modules.ledger.service import Ledger
 from app.modules.payments.domain.payments import (
     GatewayStatus,
     PaymentStatus,
@@ -37,6 +39,7 @@ class PaymentSettlements:
         self._clock = clock
         self._tokens = BookingTokens(db, clock)
         self._refunds = Refunds(db, clock)
+        self._ledger = Ledger(db, clock)
 
     async def apply(
         self, payment: Payment, found: GatewayPayment, *, by: audit.Actor
@@ -73,6 +76,13 @@ class PaymentSettlements:
         payment.provider_payment_id = found.id
         payment.captured_at = self._clock.now()
         await self._record(payment, "payment.captured", code, by=by)
+        await self._ledger.post(
+            token_received(found.amount_paise),
+            key=f"token_received:{payment.public_id}",
+            booking_id=payment.booking_id,
+            booking_code=code,
+            payment_id=payment.id,
+        )
         taken = await self._tokens.take(payment.booking_id, paid_paise=found.amount_paise)
         if taken in {TokenTaken.SECURED, TokenTaken.REVIVED}:
             return Settlement.PAID

@@ -71,10 +71,6 @@ _REACHES: Final = {
 }
 
 
-def from_gateway(seen: GatewayRefundStatus) -> RefundStatus:
-    return _REACHES[seen]
-
-
 def refund_progress(status: RefundStatus, seen: GatewayRefundStatus) -> RefundStatus:
     """Our status after the gateway says ``seen``: further along, or as it was. A gateway has no
     say over a refund that never reached it."""

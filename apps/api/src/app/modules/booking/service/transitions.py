@@ -51,6 +51,8 @@ from app.modules.booking.models import BookingEventRecord
 from app.modules.booking.repository import BookingRepository
 from app.modules.inventory.domain.allocations import Period
 from app.modules.inventory.service import BedHolds
+from app.modules.ledger.domain.ledger import owner_invoiced, token_applied
+from app.modules.ledger.service import Ledger
 from app.modules.pricing.service import BookingTerms
 
 if TYPE_CHECKING:
@@ -63,6 +65,7 @@ if TYPE_CHECKING:
     from app.modules.booking.domain.state_machine import Effect, Transition
     from app.modules.booking.models import Booking
     from app.modules.catalog.service import BookingPlace
+    from app.modules.ledger.domain.ledger import Posting
 
 # A text about a booking, to the party a transition names (step 5.4, ADR 0048).
 NOTIFY: Final = "booking.notify"
@@ -144,6 +147,7 @@ class Transitions:
         self._clock = clock
         self._bookings = BookingRepository(db)
         self._terms = BookingTerms(db)
+        self._ledger = Ledger(db, clock)
         self._beds = BedHolds(db, clock)
 
     async def apply(
@@ -231,9 +235,19 @@ class Transitions:
                     # The order is made when the student taps Pay, and a gateway's order can't be
                     # withdrawn: a token that still comes in goes back (ADRs 0056, 0057).
                     pass
-                case RecordTokenReceived() | EarnToken() | IssueOwnerInvoice():
-                    # The ledger and the owner's invoice come with steps 6.4 and 6.5.
+                case RecordTokenReceived():
+                    # Posted with the money, when the payment is captured (ADR 0060): it can come in
+                    # whatever the booking has come to.
                     pass
+                case EarnToken():
+                    if booking.token_paise > 0:
+                        await self._post(booking, token_applied(booking.token_paise))
+                case IssueOwnerInvoice():
+                    # What the owner owes: the invoice itself comes with step 6.5.
+                    if booking.fee_paise > 0:
+                        await self._post(
+                            booking, owner_invoiced(booking.fee_paise, booking.gst_paise)
+                        )
                 case SuggestSimilar():
                     # The student's booking offers a search for PGs like it, from this change
                     # (ADR 0051); their text points them there.
@@ -248,6 +262,14 @@ class Transitions:
                     pass
                 case _:
                     assert_never(effect)
+
+    async def _post(self, booking: Booking, posting: Posting) -> None:
+        await self._ledger.post(
+            posting,
+            key=f"{posting.kind}:{booking.public_id}",
+            booking_id=booking.id,
+            booking_code=booking.code,
+        )
 
     async def _refund(self, booking: Booking, event: str, amount_paise: int) -> None:
         """Asks for the money back, in this transaction, for the payments module to send."""

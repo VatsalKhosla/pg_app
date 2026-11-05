@@ -12,7 +12,6 @@ from app.modules.payments.domain.refunds import (
     GatewayRefund,
     GatewayRefundStatus,
     RefundStatus,
-    from_gateway,
     needs_second_person,
     refund_of_receipt,
     refund_progress,
@@ -48,14 +47,6 @@ AT = datetime(2027, 7, 14, 10, 0, tzinfo=UTC)
 )
 def test_a_refund_only_moves_forward(status: S, seen: G, after: S) -> None:
     assert refund_progress(status, seen) is after
-
-
-@pytest.mark.parametrize(
-    ("seen", "status"),
-    [(G.PENDING, S.PENDING), (G.PROCESSED, S.PROCESSED), (G.FAILED, S.FAILED)],
-)
-def test_a_refund_found_at_the_gateway_starts_where_it_says(seen: G, status: S) -> None:
-    assert from_gateway(seen) is status
 
 
 def test_only_what_didnt_go_back_can_go_back_again() -> None:

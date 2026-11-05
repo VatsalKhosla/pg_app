@@ -185,7 +185,6 @@ class PaymentRepository:
                 idempotency_key=key,
                 requested_at=requested_at,
                 requested_by=requested_by,
-                processed_at=requested_at if status == "processed" else None,
             )
             .on_conflict_do_nothing(index_elements=[Refund.idempotency_key])
             .returning(Refund.id)
