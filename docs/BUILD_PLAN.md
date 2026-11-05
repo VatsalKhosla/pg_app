@@ -477,8 +477,14 @@ Start the slow ones in week 1.
   - **A late token:** it takes the bed back if the bed is free and the move-in hasn't passed; otherwise the booking stays ended and the student is texted. The refund itself is step 6.3's.
   - **Proof:** the same event twice and at once, two events about one payment, events out of order, a webhook and a checkout at once, forged and tampered events, replays, and every late path including a lost race for the bed.
 
-- [ ] **6.3 Refunds.** Automatic refunds on reject, timeout, free cancellation, hold-expired payments and resolved disputes; manual refunds by ops with a reason and two-person approval above the threshold; refund webhooks.
+- [x] **6.3 Refunds.** Automatic refunds on reject, timeout, free cancellation, hold-expired payments and resolved disputes; manual refunds by ops with a reason and two-person approval above the threshold; refund webhooks.
   *Done when* every refund path is tested and visible to the student with a status.
+  *Note (2026-11-05):*
+  - **Automatic:** a booking's change asks through the outbox, the refund is saved, and a separate job sends it. Its receipt makes a retry safe. A token after its booking moved on goes back the same way (ADR 0059).
+  - **By ops:** with a reason, from the booking's page. Above ₹5,000 it waits on `/ops/refunds` for a second person, and the database refuses an approval by whoever asked.
+  - **Webhooks:** `refund.*` events move a refund forward by its id or receipt, and a refund nobody here asked for is recorded against its payment.
+  - **Students:** their booking shows what came in, each refund's status and the bank's reference, and they're texted once it's processed. `docs/runbooks/refunds.md` is for ops.
+  - **Proof:** every way a booking ends, a late token, a gateway out of reach or refusing, webhooks in either order, the two-person rule, what's left of a payment, and a phone browser test from a rejected booking to the student's page.
 
 - [ ] **6.4 Ledger.** Chart of accounts and postings per §9.4 for every money event, in the same transaction; deferred balance check; ops ledger view.
   *Done when* a test replays a full booking life cycle and the trial balance is zero.

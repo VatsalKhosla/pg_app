@@ -428,6 +428,8 @@ In the code (step 6.1, ADR 0056): the order is made when the student taps Pay, o
 ### 9.3 Webhooks
 `POST /v1/webhooks/razorpay`: read the raw body → verify HMAC with the webhook secret → insert into `payment_events` (unique provider event id; a duplicate returns 200 and stops) → enqueue `process_payment_event` → return 200 within 1 s. The worker maps events to payment status changes and booking transitions, idempotently. Unknown events are stored and ignored.
 
+In the code (step 6.3, ADR 0059): a booking's change asks for its refund through the outbox, and a separate job sends it, its receipt making a retry safe. Refund events move a refund forward by its id or receipt. `REFUND_SECOND_PERSON_ABOVE_PAISE` is the threshold for ops' refunds, and `REFUND_SPEED` is `normal` until the founders choose otherwise.
+
 In the code (step 6.2, ADR 0057): checkouts and webhooks reach the same settlement. Events more than 48 hours old are refused as replays, and an order that isn't ours is kept and goes no further.
 
 ### 9.4 Ledger
@@ -573,6 +575,7 @@ Student  POST/GET /v1/visits           POST /v1/visits/{id}/cancel (ADR 0033)
          POST /v1/bookings/{code}/cancel | /check-in | /disputes
          POST /v1/bookings/{code}/payment   POST /v1/payments/{id}/checkout-callback (ADR 0056)
          POST /v1/payments/{id}/test-checkout (the fake gateway only)
+         GET /v1/bookings/{code}/payments (ADR 0059)
 Webhooks POST /v1/webhooks/razorpay
 Owner    GET /v1/owner/profile   GET /v1/owner/agreement   POST /v1/owner/agreement/acceptances   (ADR 0025)
          /v1/owner/properties… /v1/owner/beds/{id}/blocks /v1/owner/pricing/rule-sets… (+ /preview, /activate)
@@ -587,7 +590,8 @@ Ops      /v1/ops/owners  /v1/ops/owners/{id} (GET, PATCH; + /agreements)   (ADR 
          /v1/ops/properties/{id}/rule-sets (+ /draft)   /v1/ops/rule-sets/{id} (+ /rules /activate)
          /v1/ops/rules/{id} (PUT, DELETE)   (ADR 0038)
 Field    GET /v1/field/visits   GET /v1/field/visits/{id}   POST /v1/field/visits/{id}/check-in | /outcome
-         /v1/ops/disputes… /v1/ops/refunds… /v1/ops/reconciliation
+         /v1/ops/disputes… /v1/ops/refunds (+ /approve /decline) /v1/ops/reconciliation
+         /v1/ops/bookings/{code}/payments   POST /v1/ops/payments/{id}/refunds   (ADR 0059)
 Admin    GET /v1/admin/policies (+ /history)   POST /v1/admin/policies/fee | /booking | /caps   (ADR 0036)
          GET/POST /v1/admin/rent-bands   POST /v1/admin/rent-bands/{id}/end   (ADR 0036)
          /v1/admin/staff /v1/admin/flags /v1/admin/audit-logs

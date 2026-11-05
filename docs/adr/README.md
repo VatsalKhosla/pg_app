@@ -62,5 +62,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0056](0056-token-checkout.md) | Paying a token: an order made when the student taps, checkout on a page of its own, and only the gateway's own word moving a booking; a fake gateway for everything without keys, which production refuses | Accepted |
 | [0057](0057-webhooks.md) | Webhooks: each event stored once and answered at once, a job doing the work, one settlement for checkouts and webhooks, and a late token taking the bed back or going back | Accepted |
 | [0058](0058-test-site-remote-booking.md) | A test site can open booking without a visit, through an audited flag command; season one's rule is unchanged everywhere else | Accepted |
+| [0059](0059-refunds.md) | Refunds: saved first and sent by a job, asked for by bookings through the outbox, a second person above the threshold, and the gateway's word recorded either way | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.
