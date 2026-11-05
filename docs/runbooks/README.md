@@ -13,6 +13,7 @@ What to do when something goes wrong in production. Each runbook says how to rec
 | [Owner agreement](owner-agreement.md) | Publishing a new version of the owner agreement; an owner disputing what they agreed to |
 | [Running a day of bookings](bookings-board.md) | The ops bookings board: what needs a person, what each timer means, and what each action does |
 | [Refunds](refunds.md) | Money going back: what happens by itself, giving money back by hand, the second person, and when one fails |
+| [Reconciliation issues](reconciliation.md) | What the payment checks found, what each issue means, and closing one |
 | [Staging](staging.md) | Setting up the free staging site, a deploy that didn't happen or broke, staging's logs and limits |
 
 Ground rules for every runbook:

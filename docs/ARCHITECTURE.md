@@ -119,7 +119,8 @@ Use current stable versions and pin them. Verify third-party APIs against offici
     │   │       ├── visits/
     │   │       ├── booking/       # domain/state_machine.py (pure), allocations, holds, check-in, disputes
     │   │       ├── payments/      # ports.py, adapters/razorpay.py, webhooks, reconciliation, refunds
-    │   │       ├── ledger/        # accounts, postings, invoices
+    │   │       ├── ledger/        # accounts, postings
+    │   │       ├── invoices/      # owners' invoices: numbers, PDFs (ADR 0061)
     │   │       ├── owners/        # owner-facing APIs, agreements
     │   │       ├── ops/           # staff-facing APIs
     │   │       ├── notifications/ # ports + adapters: sms, whatsapp, email
@@ -452,8 +453,12 @@ In the code (step 6.4, ADR 0060): the `ledger` module knows no other module, and
 ### 9.5 Owner invoices
 Issued on ACTIVE: fee, GST, token applied, balance due; sequential invoice numbers per financial year (`FY2027-28/000123`); a PDF stored privately; balance collected through a Razorpay payment link and marked paid by webhook.
 
+In the code (step 6.5, ADR 0061): an `invoices` module, which knows neither bookings nor payments, issues the invoice in the settling change's transaction. Its statuses are `issued` and `paid` for now; corrections wait for the accountant. A trigger keeps an invoice as issued, and the PDF says "Draft invoice" until the company's details are set. A token larger than the fee is owed to the owner (`owner_payable`).
+
 ### 9.6 Reconciliation
 Every 15 minutes, check payments stuck in created/authorized. Daily, match gateway settlement reports against the ledger; any mismatch raises an alert and a ticket. A reconciliation dashboard is part of the ops console.
+
+In the code (step 6.6, ADR 0062): checks run every 15 minutes for checkouts from 5 minutes old, open links and refunds still with the bank; the daily match reads the last three days' reports and posts the gateway's fee, payouts and refunds taken back, once each. What doesn't match is kept in `reconciliation_issues`, logged as an error, and closed by ops at `/ops/reconciliation`.
 
 ## 10. Search, PG pages and the map
 

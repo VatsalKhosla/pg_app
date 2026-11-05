@@ -494,10 +494,20 @@ Start the slow ones in week 1.
   - **Ops** read the trial balance and what was posted at `/ops/ledger`, all of it or one booking's.
   - **Proof:** a booking from token to living there comes to exactly §9.4's balances and sums to zero; a refund leaves nothing behind; a property test holds any order of events to zero. The accounting is for the CA to confirm.
 
-- [ ] **6.5 Owner invoices.** On ACTIVE: fee, GST (per `gst_mode`), token applied, balance due; sequential numbering per financial year; PDF; balance via Razorpay payment link; paid by webhook.
+- [x] **6.5 Owner invoices.** On ACTIVE: fee, GST (per `gst_mode`), token applied, balance due; sequential numbering per financial year; PDF; balance via Razorpay payment link; paid by webhook.
   *Done when* the ₹10,000 example produces an invoice of ₹3,540 with ₹2,000 applied and ₹1,540 due.
+  *Note (2026-11-06):*
+  - **Issued** in the settling change's transaction, numbered `FY2026-27/000001` from a row locked to the end of it, so numbers never skip; a trigger keeps an invoice as issued (ADR 0061).
+  - **The PDF** is private, behind a 5-minute link, and says "Draft invoice" until the company's name, address, GSTIN and SAC code are set; production won't start without them.
+  - **The balance** is paid through a Razorpay payment link we text the owner about; only `payment_link.paid` for exactly the balance marks it paid. An expired link is replaced; ops ask for another after a cancelled or refused one. The test site's bank pays it through the real webhook path.
+  - **Proof:** the ₹10,000 booking settles into an invoice of ₹3,540, ₹2,000 applied and ₹1,540 due, paid by link with nothing left owed; twelve numbers taken at once run 1 to 12.
+  - **For the founders:** the company's four details, the GST split, and what becomes of a token larger than the fee.
 
-- [ ] **6.6 Reconciliation.** 15-minute stuck-payment checks; daily settlement matching; mismatch alerts and an ops dashboard.
+- [x] **6.6 Reconciliation.** 15-minute stuck-payment checks; daily settlement matching; mismatch alerts and an ops dashboard.
+  *Note (2026-11-06):*
+  - **Every 15 minutes** a checkout that hasn't come back, a link not yet paid and a refund still with the bank are asked about at the gateway, and its answer goes the way a webhook's would (ADR 0062).
+  - **Every morning** the last three days' settlement reports are matched line by line: the gateway's fee, the payout and refunds taken back are posted once each, and anything that doesn't match is an issue.
+  - **Issues** alert as errors and wait at `/ops/reconciliation` until ops close them with what they did; so do a payment authorized and never captured, a stuck refund and a payment no report settled in a week.
   *Done when* a seeded mismatch raises exactly one alert.
 
 - [ ] **6.7 UPI one-time mandate mode (flagged).** Mandate create, capture and release in the adapter; validity check against move-in + window; fall back to payment mode. Build only after the founders confirm Razorpay has enabled it.

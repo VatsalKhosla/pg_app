@@ -27,13 +27,15 @@ The test site takes payments through Razorpay's test mode (since 2026-11-06): **
    - **URL:** `https://fys-staging-api.onrender.com/v1/webhooks/razorpay`
    - **Secret:** a long random one of your own, not the key's secret.
    - **Alert email:** yours. Razorpay turns a webhook off after 24 hours of failures, and says so there.
-   - **Active events:** `payment.authorized`, `payment.captured`, `payment.failed`, `order.paid`, `refund.created`, `refund.processed`, `refund.failed` and `refund.speed_changed`.
+   - **Active events:** `payment.authorized`, `payment.captured`, `payment.failed`, `order.paid`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`, and, for owners' invoices, `payment_link.paid`, `payment_link.expired` and `payment_link.cancelled`.
 
    If it asks for a code in test mode, Razorpay's docs give `754081`.
 3. On `fys-staging-api` in Render, open **Environment** and add `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET`. Never paste them in a chat.
 4. `PAYMENT_GATEWAY` is `razorpay` in `render.yaml`. Set it to `fake` to go back to the site's own test bank (ADR 0056), which needs no keys.
 
-Razorpay's test card is `4100 2800 0000 1007`, with any CVV and a future date, and its test UPI id is `success@razorpay`.
+Razorpay's test card is `4100 2800 0000 1007`, with CVV `123` and expiry `12/26` (as Razorpay's onboarding gives them), and its test UPI id is `test@razorpay`.
+
+Test mode allows 30 payment links for the account, which owners' invoices use (ADR 0061).
 
 ## Booking without a visit
 

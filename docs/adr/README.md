@@ -64,5 +64,7 @@ One file per real decision: the context, what was decided and what follows from 
 | [0058](0058-test-site-remote-booking.md) | A test site can open booking without a visit, through an audited flag command; season one's rule is unchanged everywhere else | Accepted |
 | [0059](0059-refunds.md) | Refunds: saved first and sent by a job, asked for by bookings through the outbox, a second person above the threshold, and the gateway's word recorded either way | Accepted |
 | [0060](0060-ledger.md) | The ledger: a module that knows no other, posting in the money event's own transaction, once per event, with the database refusing anything that doesn't balance | Accepted |
+| [0061](0061-owner-invoices.md) | Owners' invoices: issued as a booking settles, numbered without gaps, kept as issued, and paid through a payment link only the gateway's word marks paid | Accepted |
+| [0062](0062-reconciliation.md) | Reconciliation: the gateway asked about what hasn't come back, its settlement reports matched line by line, and what doesn't match kept for ops | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.
