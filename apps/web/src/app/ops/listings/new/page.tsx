@@ -34,10 +34,12 @@ export default async function NewListingPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
-      <NewListing cities={choices} />
+      <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs">
+        <NewListing cities={choices} />
+      </div>
     </div>
   );
 }

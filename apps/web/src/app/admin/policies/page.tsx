@@ -179,22 +179,25 @@ export default async function AdminPoliciesPage() {
   ];
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       {sections.map((section) => (
         <section
           key={section.policy}
           aria-labelledby={`${section.policy}-title`}
-          className="space-y-5 rounded-lg border p-5"
+          className="space-y-5 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
         >
           <div className="space-y-1">
-            <h2 id={`${section.policy}-title`} className="text-xl font-semibold">
+            <h2
+              id={`${section.policy}-title`}
+              className="font-display text-title-3 text-foreground"
+            >
               {section.title}
             </h2>
-            <p className="font-medium">{section.summary}</p>
+            <p className="font-medium text-foreground">{section.summary}</p>
             <p className="text-sm text-muted-foreground">
               {t("inForce", {
                 since: when(section.inForce.effectiveFrom),
@@ -203,8 +206,10 @@ export default async function AdminPoliciesPage() {
             </p>
           </div>
           <PolicyForm policy={section.policy} fields={section.fields} initial={section.initial} />
-          <details className="space-y-2">
-            <summary className="cursor-pointer text-sm font-medium">{t("historyTitle")}</summary>
+          <details className="space-y-2 border-t border-border/60 pt-4">
+            <summary className="cursor-pointer text-sm font-medium text-foreground">
+              {t("historyTitle")}
+            </summary>
             <ol className="space-y-2 pt-2">
               {section.history.map((version) => (
                 <li key={version.from} className="text-sm">

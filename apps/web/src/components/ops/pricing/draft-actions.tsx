@@ -77,7 +77,10 @@ function Confirmation({ title, children }: { title: string; children: React.Reac
     heading.current?.focus();
   }, []);
   return (
-    <section aria-labelledby={id} className="space-y-4 rounded-lg border border-primary/40 p-4">
+    <section
+      aria-labelledby={id}
+      className="space-y-4 rounded-xl border border-primary/40 bg-primary-soft/30 p-4"
+    >
       <h3 id={id} ref={heading} tabIndex={-1} className="font-semibold outline-none">
         {title}
       </h3>

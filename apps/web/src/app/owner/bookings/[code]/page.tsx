@@ -59,19 +59,25 @@ export default async function OwnerBookingPage({ params }: PageProps<"/owner/boo
       <div className="space-y-2">
         <Link
           href={OWNER_BOOKINGS_PATH}
-          className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+          className="inline-flex min-h-6 items-center text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
         >
           {t("back")}
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          {t("title", { code: booking.code })}
-        </h1>
-        <p className="font-medium">{t(`status.${booking.status}`)}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-title-1 font-semibold tracking-tight text-foreground">
+            {t("title", { code: booking.code })}
+          </h1>
+          <span className="rounded-full border border-border/80 bg-surface px-3 py-1 text-xs font-semibold text-foreground">
+            {t(`status.${booking.status}`)}
+          </span>
+        </div>
       </div>
       {booking.status === "token_secured" ? (
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-2xl border border-primary/30 bg-primary-soft/60 p-5">
           {booking.confirmBy === null ? null : (
-            <p>{t("answerBy", { when: when(booking.confirmBy) })}</p>
+            <p className="text-sm font-medium text-foreground">
+              {t("answerBy", { when: when(booking.confirmBy) })}
+            </p>
           )}
           <BookingAnswer
             code={booking.code}
@@ -89,15 +95,20 @@ export default async function OwnerBookingPage({ params }: PageProps<"/owner/boo
           />
         </section>
       ) : null}
-      <section aria-labelledby="details-title" className="space-y-3">
-        <h2 id="details-title" className="text-lg font-semibold">
+      <section
+        aria-labelledby="details-title"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs sm:p-6"
+      >
+        <h2 id="details-title" className="text-title-3 font-semibold tracking-tight">
           {t("details")}
         </h2>
-        <dl className="divide-y rounded-md border">
+        <dl className="divide-y divide-border/80 rounded-xl border border-border/80 bg-surface/50">
           {details.map((detail) => (
-            <div key={detail.term} className="grid gap-1 p-3 sm:grid-cols-3">
-              <dt className="text-sm text-muted-foreground">{detail.term}</dt>
-              <dd className="break-words sm:col-span-2">{detail.value}</dd>
+            <div key={detail.term} className="grid gap-1 px-4 py-3 sm:grid-cols-3">
+              <dt className="text-sm font-medium text-muted-foreground">{detail.term}</dt>
+              <dd className="font-medium break-words text-foreground tabular-nums sm:col-span-2">
+                {detail.value}
+              </dd>
             </div>
           ))}
         </dl>

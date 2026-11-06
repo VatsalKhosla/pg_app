@@ -119,7 +119,10 @@ export function RulesEditor({
                 />
               </li>
             ) : (
-              <li key={rule.id} className="space-y-2 rounded-lg border p-4">
+              <li
+                key={rule.id}
+                className="space-y-2 rounded-xl border border-border/80 bg-surface/40 p-4"
+              >
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                   <h3 className="font-medium">{rule.label}</h3>
                   <p className="text-sm text-muted-foreground">

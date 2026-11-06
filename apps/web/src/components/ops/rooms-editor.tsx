@@ -102,7 +102,10 @@ function CategoryCard({ listingId, category }: { listingId: string; category: Ca
     );
   }
   return (
-    <article aria-labelledby={`${id}-title`} className="space-y-4 rounded-md border p-4">
+    <article
+      aria-labelledby={`${id}-title`}
+      className="space-y-4 rounded-xl border border-border/80 bg-surface/40 p-4"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <h3 id={`${id}-title`} className="font-semibold">
@@ -157,9 +160,9 @@ function CategoryCard({ listingId, category }: { listingId: string; category: Ca
       {category.rooms.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("rooms.noRooms")}</p>
       ) : (
-        <ul className="divide-y rounded-md border">
+        <ul className="divide-y divide-border/70 rounded-xl border border-border/80 bg-background">
           {category.rooms.map((room) => (
-            <li key={room.id} className="p-3">
+            <li key={room.id} className="p-3.5">
               <RoomRow room={room} bedsPerRoom={category.bedsPerRoom} />
             </li>
           ))}
@@ -203,7 +206,10 @@ function RoomRow({ room, bedsPerRoom }: { room: Room; bedsPerRoom: number }) {
       </p>
       <ul className="flex flex-wrap gap-2">
         {room.beds.map((bed) => (
-          <li key={bed.id} className="flex items-center gap-2 rounded-md border px-3 py-1 text-sm">
+          <li
+            key={bed.id}
+            className="flex items-center gap-2 rounded-lg border border-border/80 bg-surface/50 px-3 py-1 text-sm"
+          >
             <span>
               {t("bed", { label: bed.label })}:{" "}
               {bed.status === "active" ? t("bedInUse") : t("bedOutOfUse")}

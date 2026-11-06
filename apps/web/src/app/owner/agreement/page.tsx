@@ -49,27 +49,38 @@ export default async function OwnerAgreementPage({ searchParams }: PageProps<"/o
   return (
     <>
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("version", { version: agreement.version })}</p>
+        <h1 className="text-title-1 font-semibold tracking-tight text-foreground">{t("title")}</h1>
+        <p className="text-body-sm font-medium text-muted-foreground">
+          {t("version", { version: agreement.version })}
+        </p>
       </div>
 
       {notice === null ? null : (
-        <p className="rounded-lg border bg-accent/40 p-4 text-sm">{notice}</p>
+        <p className="rounded-xl border border-primary/25 bg-primary-soft/60 p-4 text-sm font-medium text-foreground">
+          {notice}
+        </p>
       )}
       {/* A draft can't be in force: production refuses one (OWNER_AGREEMENT_VERSION). */}
       {agreement.version.startsWith("draft") ? (
-        <p className="rounded-lg border border-destructive/40 p-4 text-sm">{t("draft")}</p>
+        <p className="rounded-xl border border-warning/30 bg-warning-soft p-4 text-sm font-medium text-warning">
+          {t("draft")}
+        </p>
       ) : null}
 
-      <MarkdownText text={agreement.text} />
+      <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs">
+        <MarkdownText text={agreement.text} />
+      </div>
 
-      <section aria-labelledby="accept-title" className="space-y-4 rounded-lg border p-4">
-        <h2 id="accept-title" className="text-lg font-semibold">
+      <section
+        aria-labelledby="accept-title"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs sm:p-6"
+      >
+        <h2 id="accept-title" className="text-title-3 font-semibold tracking-tight">
           {t("acceptTitle")}
         </h2>
         {agreement.accepted ? (
           <div className="space-y-3">
-            <p>
+            <p className="text-sm text-foreground">
               {agreement.acceptedAt === null
                 ? t("accepted")
                 : t("acceptedOn", {
@@ -81,7 +92,7 @@ export default async function OwnerAgreementPage({ searchParams }: PageProps<"/o
             </p>
             <Link
               href={OWNER_HOME_PATH}
-              className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+              className="inline-flex min-h-6 items-center text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
             >
               {t("back")}
             </Link>

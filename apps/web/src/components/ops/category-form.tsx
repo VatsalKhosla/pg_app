@@ -142,7 +142,7 @@ export function CategoryForm({
     <form
       method="post"
       noValidate
-      className="space-y-6 rounded-md border p-4"
+      className="space-y-6 rounded-xl border border-border/80 bg-surface/40 p-5"
       onSubmit={(event) => {
         void form.handleSubmit(save)(event);
       }}
@@ -225,7 +225,10 @@ export function CategoryForm({
           const rowErrors = errors.charges?.[index];
           const metered = types[index] === "metered";
           return (
-            <div key={row.id} className="space-y-4 rounded-md border p-3">
+            <div
+              key={row.id}
+              className="space-y-4 rounded-xl border border-border/80 bg-background p-4"
+            >
               <div className="grid gap-4 sm:grid-cols-3">
                 <Field id={`${id}-charge-${String(index)}-type`} label={t("rooms.chargeType")}>
                   {(control) => (

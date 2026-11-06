@@ -123,9 +123,9 @@ export default async function OpsListingPage({
   ];
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{listing.name}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{listing.name}</h1>
         <p className="text-muted-foreground">
           {[
             listing.locality.name,
@@ -150,7 +150,10 @@ export default async function OpsListingPage({
       </div>
 
       {duplicates.length === 0 ? null : (
-        <div role="alert" className="space-y-2 rounded-md border border-destructive/40 p-4 text-sm">
+        <div
+          role="alert"
+          className="space-y-2 rounded-2xl border border-destructive/30 bg-destructive-soft p-5 text-sm text-destructive-soft-foreground"
+        >
           <p>{t("duplicates")}</p>
           <ul className="list-disc pl-5">
             {duplicates.map((other) => (
@@ -169,8 +172,15 @@ export default async function OpsListingPage({
       )}
 
       {sections.map((section) => (
-        <section key={section.key} aria-labelledby={`${section.key}-title`} className="space-y-4">
-          <h2 id={`${section.key}-title`} className="border-b pb-2 text-lg font-semibold">
+        <section
+          key={section.key}
+          aria-labelledby={`${section.key}-title`}
+          className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+        >
+          <h2
+            id={`${section.key}-title`}
+            className="border-b border-border/60 pb-2 font-display text-title-3 text-foreground"
+          >
             {section.title}
           </h2>
           {section.body}

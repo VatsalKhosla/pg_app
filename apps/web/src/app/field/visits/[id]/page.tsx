@@ -48,7 +48,7 @@ export default async function FieldVisitPage({ params }: PageProps<"/field/visit
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{place.name}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{place.name}</h1>
         <p className="text-muted-foreground">
           {t(`status.${visit.status}`)}
           {" · "}
@@ -59,8 +59,11 @@ export default async function FieldVisitPage({ params }: PageProps<"/field/visit
         </p>
       </div>
 
-      <section aria-labelledby="where-title" className="space-y-2">
-        <h2 id="where-title" className="text-lg font-semibold">
+      <section
+        aria-labelledby="where-title"
+        className="space-y-2 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="where-title" className="font-display text-title-3 text-foreground">
           {t("where")}
         </h2>
         <p>
@@ -93,8 +96,11 @@ export default async function FieldVisitPage({ params }: PageProps<"/field/visit
         </p>
       </section>
 
-      <section aria-labelledby="report-title" className="space-y-4">
-        <h2 id="report-title" className="text-lg font-semibold">
+      <section
+        aria-labelledby="report-title"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="report-title" className="font-display text-title-3 text-foreground">
           {t("report")}
         </h2>
         {visit.status === "submitted" ? <VisitReport visit={visit} /> : null}

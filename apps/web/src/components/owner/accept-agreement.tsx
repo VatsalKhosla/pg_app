@@ -70,7 +70,7 @@ export function AcceptAgreement({
       }}
     >
       <div className="space-y-2">
-        <label className="flex items-start gap-3 text-sm">
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface/50 p-3.5 text-sm transition-colors hover:bg-accent/50 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/50">
           <input
             type="checkbox"
             className="mt-0.5 size-5 shrink-0 accent-primary"
@@ -78,20 +78,23 @@ export function AcceptAgreement({
             aria-describedby={errors.agreed ? `${id}-error` : undefined}
             {...form.register("agreed")}
           />
-          <span>{text.agree}</span>
+          <span className="leading-snug text-foreground">{text.agree}</span>
         </label>
         {errors.agreed?.message === undefined ? null : (
-          <p id={`${id}-error`} className="text-sm text-destructive">
+          <p id={`${id}-error`} className="text-sm font-medium text-destructive">
             {errors.agreed.message}
           </p>
         )}
       </div>
       {failure === null ? null : (
-        <p role="alert" className="text-sm text-destructive">
+        <p
+          role="alert"
+          className="rounded-xl border border-destructive/25 bg-destructive-soft px-3.5 py-2.5 text-sm font-medium text-destructive"
+        >
           {failure}
         </p>
       )}
-      <Button type="submit" size="lg" disabled={isSubmitting}>
+      <Button type="submit" size="lg" shape="pill" disabled={isSubmitting}>
         {isSubmitting ? text.submitting : text.submit}
       </Button>
     </form>

@@ -46,7 +46,7 @@ export default async function OpsRefundsPage({ searchParams }: PageProps<"/ops/r
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       <nav aria-label={t("statusFilter")} className="flex flex-wrap gap-2">
@@ -56,8 +56,9 @@ export default async function OpsRefundsPage({ searchParams }: PageProps<"/ops/r
             href={`${OPS_REFUNDS_PATH}?status=${each}` as Route}
             aria-current={each === status ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-9 items-center rounded-full border px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              each === status && "border-primary bg-accent font-medium",
+              "inline-flex min-h-9 items-center rounded-full border border-border/80 bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-surface hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+              each === status &&
+                "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
             )}
           >
             {t(`status.${each}`)}
@@ -69,8 +70,11 @@ export default async function OpsRefundsPage({ searchParams }: PageProps<"/ops/r
       ) : (
         <ul className="space-y-4">
           {page.items.map((refund) => (
-            <li key={refund.id} className="space-y-2 rounded-lg border p-4">
-              <p className="font-medium">
+            <li
+              key={refund.id}
+              className="space-y-2 rounded-2xl border border-border/80 bg-card p-5 shadow-xs"
+            >
+              <p className="font-semibold text-foreground tabular-nums">
                 {t("line", { amount: formatINR(refund.amountPaise), code: refund.booking })}
               </p>
               <p>{refund.reason}</p>

@@ -334,7 +334,7 @@ export function ReportForm({ visit }: { visit: Visit }) {
           <ol className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {photos.map((photo, index) => (
               <li key={photo.id} className="space-y-1">
-                <div className="relative aspect-square overflow-hidden rounded bg-muted">
+                <div className="relative aspect-square overflow-hidden rounded-xl bg-surface">
                   {photo.thumbnail === undefined ? null : (
                     <Image
                       src={photo.thumbnail}
@@ -394,7 +394,7 @@ export function ReportForm({ visit }: { visit: Visit }) {
             />
             <label
               htmlFor={`${id}-photos`}
-              className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border bg-background px-6 text-sm font-medium shadow-xs hover:bg-accent peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring/50"
+              className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-border/80 bg-card px-5 text-sm font-medium shadow-xs transition-colors hover:bg-surface peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring/50"
             >
               <ImagePlus aria-hidden className="size-4" />
               {t("addPhotos")}

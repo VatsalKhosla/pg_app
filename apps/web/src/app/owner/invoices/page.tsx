@@ -40,11 +40,11 @@ export default async function OwnerInvoicesPage() {
   return (
     <>
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       {page.items.length === 0 ? (
-        <p>{t("none")}</p>
+        <p className="text-sm text-muted-foreground">{t("none")}</p>
       ) : (
         <ul className="space-y-6">
           {page.items.map((invoice) => {
@@ -66,13 +66,18 @@ export default async function OwnerInvoicesPage() {
               <li key={invoice.id}>
                 <section
                   aria-labelledby={`invoice-${invoice.id}`}
-                  className="space-y-3 rounded-lg border p-4"
+                  className="space-y-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs sm:p-6"
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h2 id={`invoice-${invoice.id}`} className="text-lg font-semibold">
+                    <h2
+                      id={`invoice-${invoice.id}`}
+                      className="font-display text-title-3 text-foreground"
+                    >
                       {t("number", { number: invoice.number })}
                     </h2>
-                    <span className="text-sm font-medium">{t(`status.${invoice.status}`)}</span>
+                    <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                      {t(`status.${invoice.status}`)}
+                    </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {t("issued", { date: day(invoice.issuedAt) })} ·{" "}
@@ -81,11 +86,14 @@ export default async function OwnerInvoicesPage() {
                   <p className="text-sm">
                     {invoice.gstIncluded ? t("feeIncluded", terms) : t("fee", terms)}
                   </p>
-                  <dl aria-label={t("amounts")} className="divide-y rounded-md border text-sm">
+                  <dl
+                    aria-label={t("amounts")}
+                    className="divide-y divide-border/60 rounded-xl border border-border/70 bg-surface/50 text-sm"
+                  >
                     {rows.map((row) => (
-                      <div key={row.term} className="flex justify-between gap-4 p-2">
-                        <dt>{row.term}</dt>
-                        <dd className="tabular-nums">{row.value}</dd>
+                      <div key={row.term} className="flex justify-between gap-4 px-3.5 py-2.5">
+                        <dt className="text-muted-foreground">{row.term}</dt>
+                        <dd className="font-medium text-foreground tabular-nums">{row.value}</dd>
                       </div>
                     ))}
                   </dl>
