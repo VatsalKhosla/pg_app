@@ -36,7 +36,8 @@ class FilterParams(BaseModel):
 
     move_in_month: str | None = Field(
         default=None,
-        pattern=r"^[0-9]{4}-(0[1-9]|1[0-2])$",
+        # This century: a year the calendar can step through (year 0 isn't one).
+        pattern=r"^20[0-9]{2}-(0[1-9]|1[0-2])$",
         description="YYYY-MM: this month or one of the next six. Prices are for it; this month "
         "if left out.",
     )

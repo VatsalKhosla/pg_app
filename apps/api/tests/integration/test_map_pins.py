@@ -194,6 +194,11 @@ def test_a_map_without_an_area_or_outside_the_city_is_refused(run: Callable[...,
             "too close": {"bbox": "77.15,28.65,77.25,28.72", "zoom": 25},
             "Bengaluru": {"bbox": "77.5,12.9,77.6,13.0", "zoom": 13},
             "a campus too": {"bbox": "77.15,28.65,77.25,28.72", "zoom": 13, "campus": "x"},
+            "no such year": {
+                "bbox": "77.15,28.65,77.25,28.72",
+                "zoom": 13,
+                "move_in_month": "0000-01",
+            },
         }
         found = {}
         for name, params in asks.items():
@@ -207,4 +212,5 @@ def test_a_map_without_an_area_or_outside_the_city_is_refused(run: Callable[...,
         "too close": (422, "VALIDATION_ERROR"),
         "Bengaluru": (422, "SEARCH_INVALID"),
         "a campus too": (422, "VALIDATION_ERROR"),
+        "no such year": (422, "VALIDATION_ERROR"),
     }
