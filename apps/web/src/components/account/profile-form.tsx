@@ -116,7 +116,7 @@ export function ProfileForm({
       }}
     >
       <div className="space-y-2">
-        <label htmlFor={`${id}-name`} className="block text-sm font-medium">
+        <label htmlFor={`${id}-name`} className="block text-sm font-medium text-foreground">
           {text.name}
         </label>
         <Input
@@ -130,14 +130,14 @@ export function ProfileForm({
           {text.nameHint}
         </p>
         {errors.name?.message ? (
-          <p id={`${id}-name-error`} className="text-sm text-destructive">
+          <p id={`${id}-name-error`} className="text-sm font-medium text-destructive">
             {errors.name.message}
           </p>
         ) : null}
       </div>
 
       <div className="space-y-2">
-        <label htmlFor={`${id}-place`} className="block text-sm font-medium">
+        <label htmlFor={`${id}-place`} className="block text-sm font-medium text-foreground">
           {text.place}
         </label>
         <Input
@@ -151,22 +151,22 @@ export function ProfileForm({
           {text.placeHint}
         </p>
         {errors.collegeOrWorkplace?.message ? (
-          <p id={`${id}-place-error`} className="text-sm text-destructive">
+          <p id={`${id}-place-error`} className="text-sm font-medium text-destructive">
             {errors.collegeOrWorkplace.message}
           </p>
         ) : null}
       </div>
 
-      <fieldset className="space-y-2" aria-describedby={`${id}-gender-hint`}>
-        <legend className="text-sm font-medium">{text.gender}</legend>
+      <fieldset className="space-y-2.5" aria-describedby={`${id}-gender-hint`}>
+        <legend className="text-sm font-medium text-foreground">{text.gender}</legend>
         <p id={`${id}-gender-hint`} className="text-sm text-muted-foreground">
           {text.genderHint}
         </p>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2.5 sm:grid-cols-2">
           {genders.map((gender) => (
             <label
               key={gender.value}
-              className="flex min-h-11 items-center gap-3 rounded-md border px-3 text-sm has-[:checked]:border-primary has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50"
+              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm font-medium transition-colors hover:bg-accent/60 has-[:checked]:border-primary has-[:checked]:bg-primary-soft has-[:checked]:text-foreground has-[:checked]:ring-1 has-[:checked]:ring-primary has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50"
             >
               <input
                 type="radio"
@@ -181,15 +181,18 @@ export function ProfileForm({
       </fieldset>
 
       {failure === null ? null : (
-        <p role="alert" className="text-sm text-destructive">
+        <p
+          role="alert"
+          className="rounded-xl border border-destructive/25 bg-destructive-soft px-3.5 py-2.5 text-sm font-medium text-destructive"
+        >
           {failure}
         </p>
       )}
-      <div className="flex items-center gap-4">
-        <Button type="submit" size="lg" disabled={isSubmitting}>
+      <div className="flex flex-wrap items-center gap-4">
+        <Button type="submit" size="lg" shape="pill" disabled={isSubmitting}>
           {isSubmitting ? text.saving : text.submit}
         </Button>
-        <p role="status" className="text-sm text-muted-foreground">
+        <p role="status" className="text-sm font-medium text-success">
           {saved ? text.saved : ""}
         </p>
       </div>

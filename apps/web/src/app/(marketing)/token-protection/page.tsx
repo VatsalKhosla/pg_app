@@ -33,7 +33,10 @@ export default async function TokenProtectionPage() {
   ] as const;
   return (
     <TrustPage title={t("title")} intro={t("intro")}>
-      <p role="note" className="rounded-md border bg-muted/40 p-3 text-sm">
+      <p
+        role="note"
+        className="rounded-xl border border-primary/25 bg-primary-soft/60 p-4 text-sm font-medium text-foreground"
+      >
         {t("soon")}
       </p>
       {sections.map(([key, text]) => (
@@ -44,7 +47,7 @@ export default async function TokenProtectionPage() {
       <p>
         <Link
           href={trustPages.refunds}
-          className="font-medium text-primary underline underline-offset-4"
+          className="font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
         >
           {t("policyLink")}
         </Link>

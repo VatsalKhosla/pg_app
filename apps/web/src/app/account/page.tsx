@@ -8,6 +8,9 @@ import { MarketingConsent } from "@/components/account/marketing-consent";
 import { ProfileForm } from "@/components/account/profile-form";
 import { errorText, profileText } from "@/components/auth/sign-in-text";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { publicEnv } from "@/config/env";
 import { unwrap } from "@/lib/api/client";
 import { getServerApi } from "@/lib/api/server";
@@ -57,11 +60,11 @@ export default async function AccountPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-10 px-4 py-10 sm:py-16">
+    <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
-        <p className="text-muted-foreground">
-          {t("phone")}: <span className="font-medium text-foreground">{me.phone}</span>
+        <h1 className="text-title-1 font-semibold tracking-tight text-foreground">{t("title")}</h1>
+        <p className="text-body text-muted-foreground">
+          {t("phone")}: <span className="font-mono font-semibold text-foreground">{me.phone}</span>
         </p>
       </div>
 
@@ -77,58 +80,66 @@ export default async function AccountPage() {
         />
       )}
 
-      <section aria-labelledby="details-title" className="space-y-4">
-        <h2 id="details-title" className="text-lg font-semibold">
-          {t("details")}
-        </h2>
-        <ProfileForm text={await profileText()} initial={me} />
-      </section>
-
-      <section aria-labelledby="data-title" className="space-y-4">
-        <div className="space-y-1">
-          <h2 id="data-title" className="text-lg font-semibold">
-            {t("dataTitle")}
+      <Card asChild className="space-y-5 rounded-2xl border-border/80 bg-card p-6">
+        <section aria-labelledby="details-title">
+          <h2 id="details-title" className="text-title-3 font-semibold tracking-tight">
+            {t("details")}
           </h2>
-          <p className="text-sm text-muted-foreground">{t("dataIntro")}</p>
-        </div>
-        <DataRequests
-          initial={requests.items}
-          apiOrigin={publicEnv.browserApiOrigin}
-          formatDate={formatDate}
-          text={{
-            exportButton: t("exportButton"),
-            deletionButton: t("deletionButton"),
-            deletionConfirm: t("deletionConfirm"),
-            status: {
-              exportReceived: t("status.exportReceived"),
-              exportReady: t.raw("status.exportReady") as string,
-              exportExpired: t("status.exportExpired"),
-              deletionReceived: t("status.deletionReceived"),
-              deletionCompleted: t("status.deletionCompleted"),
-              deletionRejected: t.raw("status.deletionRejected") as string,
-            },
-            download: t("download"),
-            errors: await errorText(),
-          }}
-        />
-      </section>
+          <Separator />
+          <ProfileForm text={await profileText()} initial={me} />
+        </section>
+      </Card>
 
-      <section aria-labelledby="messages-title" className="space-y-4">
-        <h2 id="messages-title" className="text-lg font-semibold">
-          {t("messagesTitle")}
-        </h2>
-        <MarketingConsent
-          initial={marketing}
-          noticeVersion={notice.version}
-          text={{
-            label: t("marketing"),
-            saved: t("marketingSaved"),
-            failed: t("marketingFailed"),
-          }}
-        />
-      </section>
+      <Card asChild className="space-y-5 rounded-2xl border-border/80 bg-card p-6">
+        <section aria-labelledby="data-title">
+          <div className="space-y-1">
+            <h2 id="data-title" className="text-title-3 font-semibold tracking-tight">
+              {t("dataTitle")}
+            </h2>
+            <p className="text-body-sm text-muted-foreground">{t("dataIntro")}</p>
+          </div>
+          <Separator />
+          <DataRequests
+            initial={requests.items}
+            apiOrigin={publicEnv.browserApiOrigin}
+            formatDate={formatDate}
+            text={{
+              exportButton: t("exportButton"),
+              deletionButton: t("deletionButton"),
+              deletionConfirm: t("deletionConfirm"),
+              status: {
+                exportReceived: t("status.exportReceived"),
+                exportReady: t.raw("status.exportReady") as string,
+                exportExpired: t("status.exportExpired"),
+                deletionReceived: t("status.deletionReceived"),
+                deletionCompleted: t("status.deletionCompleted"),
+                deletionRejected: t.raw("status.deletionRejected") as string,
+              },
+              download: t("download"),
+              errors: await errorText(),
+            }}
+          />
+        </section>
+      </Card>
 
-      <div className="flex flex-wrap items-center gap-4 border-t pt-6">
+      <Card asChild className="space-y-4 rounded-2xl border-border/80 bg-card p-6">
+        <section aria-labelledby="messages-title">
+          <h2 id="messages-title" className="text-title-3 font-semibold tracking-tight">
+            {t("messagesTitle")}
+          </h2>
+          <MarketingConsent
+            initial={marketing}
+            noticeVersion={notice.version}
+            text={{
+              label: t("marketing"),
+              saved: t("marketingSaved"),
+              failed: t("marketingFailed"),
+            }}
+          />
+        </section>
+      </Card>
+
+      <div className="flex flex-wrap items-center gap-3 border-t border-border/80 pt-6">
         <SignOutButton
           label={t("signOut")}
           busyLabel={t("signingOut")}
@@ -137,7 +148,7 @@ export default async function AccountPage() {
         {isStaff(me) ? (
           <Link
             href={STAFF_HOME_PATH}
-            className="text-sm font-medium text-primary underline underline-offset-4"
+            className={buttonVariants({ variant: "ghost", size: "sm", shape: "pill" })}
           >
             {t("staffTools")}
           </Link>
@@ -145,7 +156,7 @@ export default async function AccountPage() {
         {isStaff(me) ? null : (
           <Link
             href={VISITS_PATH}
-            className="text-sm font-medium text-primary underline underline-offset-4"
+            className={buttonVariants({ variant: "ghost", size: "sm", shape: "pill" })}
           >
             {t("visits")}
           </Link>
@@ -153,7 +164,7 @@ export default async function AccountPage() {
         {isStaff(me) ? null : (
           <Link
             href={BOOKINGS_PATH}
-            className="text-sm font-medium text-primary underline underline-offset-4"
+            className={buttonVariants({ variant: "ghost", size: "sm", shape: "pill" })}
           >
             {t("bookings")}
           </Link>
@@ -161,7 +172,7 @@ export default async function AccountPage() {
         {isOwner(me) ? (
           <Link
             href={OWNER_HOME_PATH}
-            className="text-sm font-medium text-primary underline underline-offset-4"
+            className={buttonVariants({ variant: "ghost", size: "sm", shape: "pill" })}
           >
             {t("ownerArea")}
           </Link>

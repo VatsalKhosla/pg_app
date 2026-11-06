@@ -28,9 +28,9 @@ function Spans({ content }: { content: Span[] }) {
 }
 
 const HEADINGS = {
-  2: { tag: "h2", className: "text-xl font-semibold tracking-tight" },
-  3: { tag: "h3", className: "pt-2 text-lg font-semibold" },
-  4: { tag: "h4", className: "font-semibold" },
+  2: { tag: "h2", className: "pt-2 text-title-3 font-semibold tracking-tight text-foreground" },
+  3: { tag: "h3", className: "pt-2 text-lg font-semibold text-foreground" },
+  4: { tag: "h4", className: "font-semibold text-foreground" },
 } as const;
 
 function BlockView({ block }: { block: Block }) {
