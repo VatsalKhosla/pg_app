@@ -114,13 +114,13 @@ export function DisputeForm({ code }: { code: string }) {
     <form
       noValidate
       aria-labelledby={`${id}-title`}
-      className="space-y-5 rounded-lg border p-4"
+      className="space-y-5 rounded-2xl border bg-card p-6 text-card-foreground shadow-xs"
       onSubmit={(event) => {
         void form.handleSubmit(send)(event);
       }}
     >
-      <div className="space-y-1">
-        <h3 id={`${id}-title`} className="font-semibold">
+      <div className="space-y-1.5">
+        <h3 id={`${id}-title`} className="text-title-3 text-foreground">
           {t("title")}
         </h3>
         <p className="text-sm text-muted-foreground">{t("intro")}</p>
@@ -149,13 +149,13 @@ export function DisputeForm({ code }: { code: string }) {
         )}
       </Field>
       <fieldset className="space-y-3">
-        <legend className="text-sm font-medium">{t("photos")}</legend>
+        <legend className="text-sm font-medium text-foreground">{t("photos")}</legend>
         <p className="text-sm text-muted-foreground">{t("photosHint")}</p>
         {photos.length === 0 ? null : (
-          <ol className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          <ol className="grid grid-cols-3 gap-3 sm:grid-cols-4">
             {photos.map((photo, index) => (
-              <li key={photo.id} className="space-y-1">
-                <div className="relative aspect-square overflow-hidden rounded bg-muted">
+              <li key={photo.id} className="space-y-1.5">
+                <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
                   {photo.thumbnail === undefined ? null : (
                     <Image
                       src={photo.thumbnail}
@@ -215,7 +215,7 @@ export function DisputeForm({ code }: { code: string }) {
             />
             <label
               htmlFor={`${id}-photos`}
-              className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border bg-background px-6 text-sm font-medium shadow-xs hover:bg-accent peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring/50"
+              className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-input bg-background px-5 text-sm font-medium shadow-2xs transition-colors hover:bg-secondary peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 pointer-fine:h-10"
             >
               <ImagePlus aria-hidden className="size-4" />
               {t("addPhotos")}
@@ -224,7 +224,13 @@ export function DisputeForm({ code }: { code: string }) {
         ) : null}
       </fieldset>
       <FormOutcome failure={failure} />
-      <Button type="submit" variant="destructive" disabled={isSubmitting || busy}>
+      <Button
+        type="submit"
+        variant="destructive"
+        size="lg"
+        shape="pill"
+        disabled={isSubmitting || busy}
+      >
         {isSubmitting ? t("sending") : t("send")}
       </Button>
     </form>

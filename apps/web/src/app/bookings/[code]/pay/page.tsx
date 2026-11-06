@@ -1,10 +1,13 @@
 import type { Schemas } from "@pg-platform/api-client";
+import { ArrowLeft } from "lucide-react";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { PayToken } from "@/components/bookings/pay-token";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getServerApi } from "@/lib/api/server";
@@ -43,53 +46,59 @@ export default async function PayPage({ params }: PageProps<"/bookings/[code]/pa
   const token = formatINR(booking.tokenPaise);
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-10 sm:py-16">
-      <div className="space-y-3">
-        <Link
-          href={path as Route}
-          className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
-        >
-          {t("back")}
-        </Link>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          {t("title", { amount: token })}
-        </h1>
-        <p>{t("what", { pg: booking.property.name, code: booking.code })}</p>
-        <p>
-          {t("until", {
-            time: format.dateTime(new Date(booking.holdExpiresAt), {
-              dateStyle: "medium",
-              timeStyle: "short",
-            }),
-          })}
-        </p>
-        <p className="text-muted-foreground">{money("tokenNote")}</p>
-      </div>
-      <PayToken
-        code={booking.code}
-        bookingPath={path}
-        text={{
-          pay: t("pay", { amount: token }),
-          description: t("description", { code: booking.code }),
-          opening: t("opening"),
-          checking: t("checking"),
-          waiting: t("waiting"),
-          blocking: t("blocking", { amount: token }),
-          checkAgain: t("checkAgain"),
-          notPaid: t("notPaid"),
-          late: t("late", { code: booking.code }),
-          unverified: t("unverified", { code: booking.code }),
-          changed: t("changed"),
-          failed: t("failed"),
-          backToBooking: t("backToBooking"),
-          test: {
-            title: t("test.title"),
-            body: t("test.body"),
-            pay: t("test.pay", { amount: token }),
-            cancel: t("test.cancel"),
-          },
-        }}
-      />
+    <div className="mx-auto w-full max-w-xl space-y-6 px-gutter py-10 sm:py-16">
+      <Link
+        href={path as Route}
+        className="inline-flex min-h-8 items-center gap-1.5 text-sm font-medium text-primary underline underline-offset-4"
+      >
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        {t("back")}
+      </Link>
+      <Card variant="raised" className="space-y-6 rounded-3xl p-6 sm:p-8">
+        <div className="space-y-3">
+          <h1 className="text-title-1 text-foreground tabular-nums">
+            {t("title", { amount: token })}
+          </h1>
+          <p className="font-medium text-foreground">
+            {t("what", { pg: booking.property.name, code: booking.code })}
+          </p>
+          <p className="rounded-xl bg-primary-soft px-4 py-3 text-sm font-medium text-primary-soft-foreground">
+            {t("until", {
+              time: format.dateTime(new Date(booking.holdExpiresAt), {
+                dateStyle: "medium",
+                timeStyle: "short",
+              }),
+            })}
+          </p>
+          <p className="text-sm text-muted-foreground">{money("tokenNote")}</p>
+        </div>
+        <Separator />
+        <PayToken
+          code={booking.code}
+          bookingPath={path}
+          text={{
+            pay: t("pay", { amount: token }),
+            description: t("description", { code: booking.code }),
+            opening: t("opening"),
+            checking: t("checking"),
+            waiting: t("waiting"),
+            blocking: t("blocking", { amount: token }),
+            checkAgain: t("checkAgain"),
+            notPaid: t("notPaid"),
+            late: t("late", { code: booking.code }),
+            unverified: t("unverified", { code: booking.code }),
+            changed: t("changed"),
+            failed: t("failed"),
+            backToBooking: t("backToBooking"),
+            test: {
+              title: t("test.title"),
+              body: t("test.body"),
+              pay: t("test.pay", { amount: token }),
+              cancel: t("test.cancel"),
+            },
+          }}
+        />
+      </Card>
     </div>
   );
 }

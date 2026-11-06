@@ -8,8 +8,8 @@ import {
   type CheckoutCallback,
   checkMandate,
   finishCheckout,
-  payAtTestBank,
   type PaymentStart,
+  payAtTestBank,
   startTokenPayment,
 } from "@/lib/payments/client";
 import { openRazorpayCheckout } from "@/lib/payments/razorpay";
@@ -180,13 +180,18 @@ export function PayToken({
   switch (state.step) {
     case "idle":
       return (
-        <div className="space-y-3">
-          <Button onClick={pay}>{text.pay}</Button>
+        <div className="space-y-4">
+          <Button size="lg" shape="pill" onClick={pay}>
+            {text.pay}
+          </Button>
           {state.notice === undefined ? null : (
-            <div role="alert" className="space-y-2 text-sm text-destructive">
+            <div
+              role="alert"
+              className="space-y-2 rounded-xl border border-destructive/30 bg-destructive-soft p-4 text-sm text-destructive-soft-foreground"
+            >
               <p>{text[state.notice]}</p>
               {state.notice === "changed" ? (
-                <a href={bookingPath} className="font-medium underline underline-offset-4">
+                <a href={bookingPath} className="font-semibold underline underline-offset-4">
                   {text.backToBooking}
                 </a>
               ) : null}
@@ -195,16 +200,27 @@ export function PayToken({
         </div>
       );
     case "opening":
-      return <p role="status">{text.opening}</p>;
+      return (
+        <p
+          role="status"
+          className="rounded-xl bg-surface px-4 py-3 text-sm font-medium text-muted-foreground"
+        >
+          {text.opening}
+        </p>
+      );
     case "testBank":
       return (
-        <section aria-labelledby="test-bank-title" className="space-y-3 rounded-lg border p-4">
-          <h2 id="test-bank-title" className="font-semibold">
+        <section
+          aria-labelledby="test-bank-title"
+          className="space-y-4 rounded-2xl border bg-surface p-5"
+        >
+          <h2 id="test-bank-title" className="font-display text-lg font-semibold text-foreground">
             {text.test.title}
           </h2>
-          <p>{text.test.body}</p>
+          <p className="text-sm text-muted-foreground">{text.test.body}</p>
           <div className="flex flex-wrap gap-3">
             <Button
+              shape="pill"
               onClick={() => {
                 payAtBank(state.start);
               }}
@@ -213,6 +229,7 @@ export function PayToken({
             </Button>
             <Button
               variant="outline"
+              shape="pill"
               onClick={() => {
                 setState({ step: "idle" });
               }}
@@ -224,13 +241,23 @@ export function PayToken({
       );
     case "checking":
     case "checkingBlock":
-      return <p role="status">{text.checking}</p>;
+      return (
+        <p
+          role="status"
+          className="rounded-xl bg-surface px-4 py-3 text-sm font-medium text-muted-foreground"
+        >
+          {text.checking}
+        </p>
+      );
     case "waiting":
       return (
-        <div className="space-y-3">
-          <p role="status">{text.waiting}</p>
+        <div className="space-y-3 rounded-2xl border bg-surface p-5">
+          <p role="status" className="text-sm text-foreground">
+            {text.waiting}
+          </p>
           <Button
             variant="outline"
+            shape="pill"
             onClick={() => {
               clearTimeout(timer.current);
               check(state.start, state.callback);
@@ -242,10 +269,13 @@ export function PayToken({
       );
     case "blocking":
       return (
-        <div className="space-y-3">
-          <p role="status">{text.blocking}</p>
+        <div className="space-y-3 rounded-2xl border bg-surface p-5">
+          <p role="status" className="text-sm text-foreground">
+            {text.blocking}
+          </p>
           <Button
             variant="outline"
+            shape="pill"
             onClick={() => {
               clearTimeout(timer.current);
               checkBlock(state.start);
@@ -258,9 +288,12 @@ export function PayToken({
     case "late":
     case "unverified":
       return (
-        <div role="alert" className="space-y-2">
+        <div
+          role="alert"
+          className="space-y-2 rounded-2xl border border-destructive/30 bg-destructive-soft p-5 text-sm text-destructive-soft-foreground"
+        >
           <p>{state.step === "late" ? text.late : text.unverified}</p>
-          <a href={bookingPath} className="font-medium underline underline-offset-4">
+          <a href={bookingPath} className="font-semibold underline underline-offset-4">
             {text.backToBooking}
           </a>
         </div>
