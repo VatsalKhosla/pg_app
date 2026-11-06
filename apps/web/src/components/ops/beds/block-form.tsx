@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { useScope } from "@/components/scope";
 import { Button } from "@/components/ui/button";
 import { Choices, Field, FormOutcome, Select } from "@/components/ui/fields";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ export function BlockForm({
   today: string;
 }) {
   const t = useTranslations("Ops.beds");
+  const scope = useScope();
   const problem = useOpsProblem();
   const refresh = useRefresh();
   const id = useId();
@@ -62,12 +64,16 @@ export function BlockForm({
     setFailure(null);
     setSaved("");
     try {
-      await placeBlock(values.bed, {
-        kind: values.kind,
-        start: values.start,
-        end: values.end === "" ? null : values.end,
-        note: values.note,
-      });
+      await placeBlock(
+        values.bed,
+        {
+          kind: values.kind,
+          start: values.start,
+          end: values.end === "" ? null : values.end,
+          note: values.note,
+        },
+        scope,
+      );
       form.reset({ ...empty, kind: values.kind });
       setSaved(t("add.saved"));
       refresh();

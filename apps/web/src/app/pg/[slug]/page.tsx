@@ -12,6 +12,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { TrackView } from "@/components/system/track-view";
 import { publicEnv } from "@/config/env";
 import { QuoteChecker } from "@/components/pg/quote-checker";
+import { ViewCounter } from "@/components/pg/view-counter";
 import {
   getPriceCalendar,
   getPublicListing,
@@ -102,6 +103,8 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
   return (
     <div className="mx-auto w-full max-w-5xl space-y-10 px-4 py-8 sm:py-12">
       <TrackView event="pg_viewed" properties={{ slug }} />
+      {/* Its owner's count of views (step 7.6): once a session, from the browser. */}
+      <ViewCounter slug={slug} />
       {/* For search engines: the PG with its offers, and where it sits in the site (ADR 0032). */}
       <JsonLd
         data={[

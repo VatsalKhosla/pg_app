@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { NotSetUp } from "@/components/owner/not-set-up";
-import { OWNER_AGREEMENT_PATH, OWNER_HOME_PATH, OWNER_INVOICES_PATH } from "@/lib/auth/routes";
+import {
+  OWNER_AGREEMENT_PATH,
+  OWNER_BOOKINGS_PATH,
+  OWNER_HOME_PATH,
+  OWNER_INVOICES_PATH,
+  OWNER_PGS_PATH,
+} from "@/lib/auth/routes";
 import { requireOwner } from "@/lib/auth/session";
 import { getOwnProfile } from "@/lib/owner/server";
 
@@ -48,6 +54,30 @@ export default async function OwnerHomePage() {
           ))}
         </dl>
         <p className="text-sm text-muted-foreground">{t("changes")}</p>
+      </section>
+
+      <section aria-labelledby="run-title" className="space-y-3">
+        <h2 id="run-title" className="text-lg font-semibold">
+          {t("runTitle")}
+        </h2>
+        <ul className="space-y-2">
+          <li>
+            <Link
+              href={OWNER_BOOKINGS_PATH}
+              className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+            >
+              {t("bookingsLink")}
+            </Link>
+          </li>
+          <li>
+            <Link
+              href={OWNER_PGS_PATH}
+              className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+            >
+              {t("pgsLink")}
+            </Link>
+          </li>
+        </ul>
       </section>
 
       <section aria-labelledby="invoices-title" className="space-y-3">

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 
+import { useScope } from "@/components/scope";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Choices, Field, FormOutcome, Select } from "@/components/ui/fields";
 import { Input } from "@/components/ui/input";
@@ -163,6 +164,7 @@ export function RuleForm({
   onDone: () => void;
 }) {
   const t = useTranslations("Ops.pricing");
+  const scope = useScope();
   const problem = useOpsProblem();
   const refresh = useRefresh();
   const id = useId();
@@ -182,8 +184,8 @@ export function RuleForm({
     setFailure(null);
     try {
       const body = bodyOf(values);
-      if (rule === undefined) await addRule(ruleSetId, body);
-      else await replaceRule(rule.id, body);
+      if (rule === undefined) await addRule(ruleSetId, body, scope);
+      else await replaceRule(rule.id, body, scope);
       refresh();
       onDone();
     } catch (error) {

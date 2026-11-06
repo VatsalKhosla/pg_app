@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 
+import { useScope } from "@/components/scope";
 import { Button } from "@/components/ui/button";
 import { Field, FormOutcome } from "@/components/ui/fields";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ export function StartDraft({
   pricingPath: string;
 }) {
   const t = useTranslations("Ops.pricing");
+  const scope = useScope();
   const problem = useOpsProblem();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -38,7 +40,7 @@ export function StartDraft({
     setBusy(true);
     setFailure(null);
     try {
-      const draft = await startDraft(propertyId);
+      const draft = await startDraft(propertyId, scope);
       startTransition(() => {
         router.push(versionPath(pricingPath, draft.id));
         router.refresh();
@@ -103,6 +105,7 @@ export function ActivateDraft({
   pricingPath: string;
 }) {
   const t = useTranslations("Ops.pricing");
+  const scope = useScope();
   const problem = useOpsProblem();
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -116,7 +119,7 @@ export function ActivateDraft({
     setBusy(true);
     setFailure(null);
     try {
-      const active = await activateDraft(ruleSetId, note.trim());
+      const active = await activateDraft(ruleSetId, note.trim(), scope);
       setOpen(false);
       startTransition(() => {
         router.replace(versionPath(pricingPath, active.id));
@@ -201,6 +204,7 @@ export function DiscardDraft({
   pricingPath: string;
 }) {
   const t = useTranslations("Ops.pricing");
+  const scope = useScope();
   const problem = useOpsProblem();
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -212,7 +216,7 @@ export function DiscardDraft({
     setBusy(true);
     setFailure(null);
     try {
-      await discardDraft(ruleSetId);
+      await discardDraft(ruleSetId, scope);
       startTransition(() => {
         router.replace(versionPath(pricingPath));
         router.refresh();

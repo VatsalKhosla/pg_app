@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
 
+import { useScope } from "@/components/scope";
 import { Field, Select } from "@/components/ui/fields";
 import { Input } from "@/components/ui/input";
 import { formatINR } from "@/lib/money";
@@ -50,6 +51,7 @@ export function PreviewPanel({
   today: string;
 }) {
   const t = useTranslations("Ops.pricing.preview");
+  const scope = useScope();
   const problem = useOpsProblem();
   const id = useId();
   const [room, setRoom] = useState(rooms[0]?.id ?? "");
@@ -64,7 +66,7 @@ export function PreviewPanel({
     const controller = new AbortController();
     const timer = setTimeout(() => {
       setBusy(true);
-      previewPrice(ruleSetId, { room, moveIn, stay }, controller.signal)
+      previewPrice(ruleSetId, { room, moveIn, stay }, controller.signal, scope)
         .then((preview) => {
           setResult(preview);
           setFailure(null);
@@ -82,7 +84,7 @@ export function PreviewPanel({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [ruleSetId, revision, room, moveIn, stay, problem]);
+  }, [ruleSetId, revision, room, moveIn, stay, problem, scope]);
 
   if (rooms.length === 0) return <p>{t("noRooms")}</p>;
 

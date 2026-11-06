@@ -218,7 +218,10 @@
       "accepted": "You've accepted version {version} of the owner agreement.",
       "read": "Read the owner agreement",
       "invoicesTitle": "Invoices",
-      "invoicesLink": "See your invoices"
+      "invoicesLink": "See your invoices",
+      "runTitle": "Run your PGs",
+      "bookingsLink": "Bookings, and visits coming up",
+      "pgsLink": "Your PGs: how they're doing, beds and pricing"
     },
     "agreement": {
       "metaTitle": "Owner agreement",
@@ -285,6 +288,150 @@
         "cancel": "Not now",
         "paid": "The test bank has paid it. This page shows it as soon as we've recorded it.",
         "failed": "That didn't go through. Try again."
+      }
+    },
+    "nav": {
+      "label": "Your account",
+      "home": "Home",
+      "bookings": "Bookings",
+      "pgs": "Your PGs",
+      "invoices": "Invoices"
+    },
+    "bookings": {
+      "metaTitle": "Bookings",
+      "title": "Bookings",
+      "intro": "Every booking at your PGs, newest first. One waiting for your answer has a deadline: answer by then, or it's cancelled and the student refunded.",
+      "filter": "Show bookings that are",
+      "all": "All",
+      "none": "No bookings to show.",
+      "line": "{code}: {place}, {roomType}",
+      "moveIn": "Moving in {date} for {months, plural, one {# month} other {# months}}, at {rent} a month",
+      "answerBy": "Answer by {when}",
+      "open": "Open booking {code}",
+      "status": {
+        "held": "Held, token not paid yet",
+        "token_secured": "Waiting for your answer",
+        "confirmed": "Confirmed",
+        "checked_in": "Moved in, checking the room",
+        "disputed": "The student has reported a problem",
+        "active": "Living there",
+        "completed": "Moved out",
+        "expired": "Hold ended",
+        "cancelled": "Cancelled",
+        "rejected": "Turned down",
+        "no_show": "Never moved in",
+        "refunded": "Refunded"
+      },
+      "visitsTitle": "Visits coming up",
+      "visitsNone": "No visits booked in the next two weeks.",
+      "visit": "{when}: {place}, with {student}",
+      "visitNoName": "{when}: {place}"
+    },
+    "booking": {
+      "metaTitle": "Booking {code}",
+      "title": "Booking {code}",
+      "back": "Back to your bookings",
+      "details": "The booking",
+      "place": "PG",
+      "roomType": "Room type",
+      "room": "Room and bed",
+      "roomBed": "Room {room}, bed {bed}",
+      "moveIn": "Moving in",
+      "stay": "Staying",
+      "months": "{months, plural, one {# month} other {# months}}",
+      "rent": "Monthly rent",
+      "token": "Token paid to us",
+      "dueAtMoveIn": "Due to you at move-in",
+      "deposit": "Deposit",
+      "student": "Student",
+      "noName": "Not given",
+      "answerBy": "Answer by {when}, or the booking is cancelled and the student refunded.",
+      "status": {
+        "held": "Held, token not paid yet",
+        "token_secured": "Waiting for your answer",
+        "confirmed": "Confirmed",
+        "checked_in": "Moved in, checking the room",
+        "disputed": "The student has reported a problem",
+        "active": "Living there",
+        "completed": "Moved out",
+        "expired": "Hold ended",
+        "cancelled": "Cancelled",
+        "rejected": "Turned down",
+        "no_show": "Never moved in",
+        "refunded": "Refunded"
+      },
+      "answer": {
+        "confirm": "Confirm the booking",
+        "reject": "Turn it down",
+        "rejectTitle": "Turn down booking {code}",
+        "reason": "Why (the student is told)",
+        "needReason": "Say why.",
+        "confirmReject": "Yes, turn it down",
+        "back": "Back",
+        "changed": "This booking has changed since. Reload to see it.",
+        "failed": "That didn't go through. Try again."
+      }
+    },
+    "pgs": {
+      "metaTitle": "Your PGs",
+      "title": "Your PGs",
+      "intro": "Each PG we list for you. Open one for how it's doing, its documents, its beds over time and its pricing.",
+      "none": "No PGs yet: ops add your first one with you.",
+      "open": "Open {name}",
+      "place": "{locality}",
+      "status": {
+        "draft": "Being set up",
+        "published": "Live",
+        "paused": "Paused",
+        "delisted": "Taken down"
+      }
+    },
+    "pg": {
+      "metaTitle": "Your PG",
+      "back": "Back to your PGs",
+      "links": "Run this PG",
+      "calendar": "Beds over time",
+      "pricing": "Pricing",
+      "insightsTitle": "The last {days} days",
+      "views": "Times its page was opened",
+      "visits": "Visits asked for",
+      "bookings": "Bookings made",
+      "conversion": "Bookings for each visit",
+      "percent": "{value}%",
+      "noValue": "Not yet",
+      "taken": "Beds taken today",
+      "takenOf": "{taken} of {beds}",
+      "rents": "Your rents beside the locality's",
+      "room": "Room type",
+      "yourRent": "Your listed rent",
+      "median": "Middle of the locality's",
+      "comparables": "{count, plural, =0 {No other PGs to compare} one {# other PG} other {# other PGs}}",
+      "noMedian": "Not enough PGs to compare",
+      "documentsTitle": "Documents",
+      "documentsIntro": "Your PG's licence or registration, and your housing society's permission to run a PG, where you have them. We look at each and tell you here.",
+      "documentsNone": "None added yet.",
+      "kind": {
+        "licence": "Licence or registration",
+        "society_permission": "Society permission"
+      },
+      "documentStatus": {
+        "submitted": "Waiting for us to look",
+        "accepted": "Accepted",
+        "rejected": "Not accepted"
+      },
+      "added": "Added {date}",
+      "note": "Our note: {note}",
+      "view": "See the file",
+      "upload": {
+        "title": "Add a document",
+        "kind": "What it is",
+        "file": "The file (PDF, JPEG or PNG, up to 10 MB)",
+        "submit": "Add it",
+        "working": "Uploading and checking the file...",
+        "done": "Added. We'll look at it soon.",
+        "refused": "That file wasn't accepted. Try a clear PDF or photo.",
+        "failed": "That didn't go through. Try again.",
+        "needFile": "Choose a file."
       }
     }
   },

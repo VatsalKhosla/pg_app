@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
+import { useScope } from "@/components/scope";
 import { Button } from "@/components/ui/button";
 import { Field, FormOutcome } from "@/components/ui/fields";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ export function EndBlock({
   today: string;
 }) {
   const t = useTranslations("Ops.beds");
+  const scope = useScope();
   const problem = useOpsProblem();
   const refresh = useRefresh();
   const id = useId();
@@ -34,7 +36,7 @@ export function EndBlock({
     setBusy(true);
     setFailure(null);
     try {
-      await endBlock(blockId, on);
+      await endBlock(blockId, on, scope);
       refresh();
     } catch (error) {
       setFailure(problem(error));

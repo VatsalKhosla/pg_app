@@ -88,6 +88,19 @@ test.describe("owner agreement", () => {
     await expect(owner.getByRole("heading", { name: "Invoices", level: 1 })).toBeVisible();
     await expect(owner.getByText(/^No invoices yet\./)).toBeVisible();
     expect(await wcagViolations(owner)).toEqual([]);
+
+    // The rest of the owner dashboard (BUILD_PLAN 7.x): bookings with visits coming up, and their
+    // PGs, from the owner area's own navigation. Ops haven't added a PG for this owner.
+    const nav = owner.getByRole("navigation", { name: "Your account" });
+    await nav.getByRole("link", { name: "Bookings" }).click();
+    await expect(owner.getByRole("heading", { name: "Bookings", level: 1 })).toBeVisible();
+    await expect(owner.getByText("No bookings to show.")).toBeVisible();
+    await expect(owner.getByText("No visits booked in the next two weeks.")).toBeVisible();
+    expect(await wcagViolations(owner)).toEqual([]);
+    await nav.getByRole("link", { name: "Your PGs" }).click();
+    await expect(owner.getByRole("heading", { name: "Your PGs", level: 1 })).toBeVisible();
+    await expect(owner.getByText(/^No PGs yet/)).toBeVisible();
+    expect(await wcagViolations(owner)).toEqual([]);
     await phone.close();
 
     // Ops see what was accepted, when, from where and in which browser.

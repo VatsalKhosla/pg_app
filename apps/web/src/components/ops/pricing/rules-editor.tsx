@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { useScope } from "@/components/scope";
 import { Button } from "@/components/ui/button";
 import { FormOutcome } from "@/components/ui/fields";
 import { formatINR } from "@/lib/money";
@@ -78,6 +79,7 @@ export function RulesEditor({
   editable: boolean;
 }) {
   const t = useTranslations("Ops.pricing");
+  const scope = useScope();
   const problem = useOpsProblem();
   const refresh = useRefresh();
   const [editing, setEditing] = useState<string | null>(null);
@@ -88,7 +90,7 @@ export function RulesEditor({
     setRemoving(rule.id);
     setFailure(null);
     try {
-      await removeRule(rule.id);
+      await removeRule(rule.id, scope);
       refresh();
     } catch (error) {
       setFailure(problem(error));
