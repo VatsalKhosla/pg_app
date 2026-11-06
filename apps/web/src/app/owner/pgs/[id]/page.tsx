@@ -82,50 +82,55 @@ export default async function OwnerPgPage({ params }: PageProps<"/owner/pgs/[id]
         >
           {t("back")}
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{insights.name}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{insights.name}</h1>
       </div>
 
       <nav aria-label={t("links")} className="flex flex-wrap gap-3">
         <Link
           href={`${path}/calendar` as Route}
-          className="inline-flex min-h-11 items-center rounded-md border px-4 text-sm font-medium"
+          className="inline-flex min-h-11 items-center rounded-full border border-border/80 bg-card px-5 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-surface"
         >
           {t("calendar")}
         </Link>
         <Link
           href={`${path}/pricing` as Route}
-          className="inline-flex min-h-11 items-center rounded-md border px-4 text-sm font-medium"
+          className="inline-flex min-h-11 items-center rounded-full border border-border/80 bg-card px-5 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-surface"
         >
           {t("pricing")}
         </Link>
       </nav>
 
       <section aria-labelledby="numbers-title" className="space-y-3">
-        <h2 id="numbers-title" className="text-lg font-semibold">
+        <h2 id="numbers-title" className="font-display text-title-3 text-foreground">
           {t("insightsTitle", { days: DAYS })}
         </h2>
-        <dl className="grid gap-3 sm:grid-cols-2">
+        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {numbers.map((number) => (
-            <div key={number.term} className="rounded-lg border p-3">
+            <div
+              key={number.term}
+              className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs"
+            >
               <dt className="text-sm text-muted-foreground">{number.term}</dt>
-              <dd className="text-xl font-semibold tabular-nums">{number.value}</dd>
+              <dd className="mt-1 font-display text-2xl font-semibold text-foreground tabular-nums">
+                {number.value}
+              </dd>
             </div>
           ))}
         </dl>
       </section>
 
       <section aria-labelledby="rents-title" className="space-y-3">
-        <h2 id="rents-title" className="text-lg font-semibold">
+        <h2 id="rents-title" className="font-display text-title-3 text-foreground">
           {t("rents")}
         </h2>
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y divide-border/60 rounded-2xl border border-border/80 bg-card shadow-xs">
           {insights.rooms.map((room) => (
-            <li key={room.roomType} className="space-y-1 p-3">
-              <p className="font-medium">{room.roomType}</p>
-              <p className="text-sm">
+            <li key={room.roomType} className="space-y-1 p-4">
+              <p className="font-semibold text-foreground">{room.roomType}</p>
+              <p className="text-sm tabular-nums">
                 {t("yourRent")}: {formatINR(room.rentPaise)}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground tabular-nums">
                 {room.localityMedianPaise === null
                   ? t("noMedian")
                   : `${t("median")}: ${formatINR(room.localityMedianPaise)} (${t("comparables", { count: room.comparables })})`}
@@ -136,18 +141,18 @@ export default async function OwnerPgPage({ params }: PageProps<"/owner/pgs/[id]
       </section>
 
       <section aria-labelledby="documents-title" className="space-y-3">
-        <h2 id="documents-title" className="text-lg font-semibold">
+        <h2 id="documents-title" className="font-display text-title-3 text-foreground">
           {t("documentsTitle")}
         </h2>
         <p className="text-sm text-muted-foreground">{t("documentsIntro")}</p>
         {documents.items.length === 0 ? (
-          <p className="text-sm">{t("documentsNone")}</p>
+          <p className="text-sm text-muted-foreground">{t("documentsNone")}</p>
         ) : (
-          <ul className="divide-y rounded-lg border">
+          <ul className="divide-y divide-border/60 rounded-2xl border border-border/80 bg-card shadow-xs">
             {documents.items.map((document) => (
-              <li key={document.id} className="space-y-1 p-3">
-                <p className="font-medium">{t(`kind.${document.kind}`)}</p>
-                <p className="text-sm">
+              <li key={document.id} className="space-y-1 p-4">
+                <p className="font-semibold text-foreground">{t(`kind.${document.kind}`)}</p>
+                <p className="text-sm text-muted-foreground">
                   {t(`documentStatus.${document.status}`)} ·{" "}
                   {t("added", { date: day(document.addedAt) })}
                 </p>

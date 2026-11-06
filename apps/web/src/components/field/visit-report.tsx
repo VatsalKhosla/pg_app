@@ -85,7 +85,7 @@ export async function VisitReport({ visit }: { visit: Visit }) {
             return (
               <li
                 key={photo.id}
-                className="relative aspect-square overflow-hidden rounded bg-muted"
+                className="relative aspect-square overflow-hidden rounded-xl bg-surface"
               >
                 {thumbnail === undefined ? null : (
                   <Image

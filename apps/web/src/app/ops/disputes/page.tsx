@@ -43,7 +43,7 @@ export default async function OpsDisputesPage({ searchParams }: PageProps<"/ops/
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       <nav aria-label={t("statusFilter")} className="flex flex-wrap gap-2">
@@ -53,8 +53,9 @@ export default async function OpsDisputesPage({ searchParams }: PageProps<"/ops/
             href={`${OPS_DISPUTES_PATH}?status=${filter.status}` as Route}
             aria-current={filter.status === status ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-9 items-center rounded-full border px-3 text-sm outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50",
-              filter.status === status && "border-primary bg-accent font-medium",
+              "inline-flex min-h-9 items-center rounded-full border border-border/80 bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-surface hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              filter.status === status &&
+                "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
             )}
           >
             {filter.label}
@@ -64,13 +65,13 @@ export default async function OpsDisputesPage({ searchParams }: PageProps<"/ops/
       {page.items.length === 0 ? (
         <p className="text-muted-foreground">{t("none")}</p>
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y divide-border/60 rounded-2xl border border-border/80 bg-card shadow-xs">
           {page.items.map((dispute) => (
             <li key={dispute.id} className="space-y-1 p-4">
               <p>
                 <Link
                   href={`${OPS_DISPUTES_PATH}/${dispute.id}` as Route}
-                  className="font-semibold underline-offset-4 hover:underline"
+                  className="font-semibold text-primary underline-offset-4 hover:underline"
                 >
                   {t("item", { code: dispute.booking, pg: dispute.property.name })}
                 </Link>
@@ -79,7 +80,9 @@ export default async function OpsDisputesPage({ searchParams }: PageProps<"/ops/
                 {t(`status.${dispute.status}`)} · {t(`reasons.${dispute.reason}`)} ·{" "}
                 {dispute.property.locality} · {t("photoCount", { count: dispute.photos })}
               </p>
-              <p className="text-sm">{t("openedOn", { when: when(dispute.openedAt) })}</p>
+              <p className="text-sm tabular-nums">
+                {t("openedOn", { when: when(dispute.openedAt) })}
+              </p>
             </li>
           ))}
         </ul>

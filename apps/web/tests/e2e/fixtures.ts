@@ -55,8 +55,16 @@ export const test = base.extend<Fixtures>({
 
 export { expect };
 
-/** WCAG 2.2 AA violations on the current page, as found by axe. */
+/**
+ * WCAG 2.2 AA violations on the current page, as found by axe, with the page as it first shows:
+ * scrolled to the top. Scrolled down, the sticky header covers whatever passes under it, and axe
+ * would count the covered part against those targets' size (2.5.8), though nothing is wrong with
+ * them.
+ */
 export async function wcagViolations(page: Page): Promise<string[]> {
+  await page.evaluate(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  });
   // Evaluated through the DevTools protocol, so the page's script policy doesn't apply.
   await page.evaluate(axe.source);
   return page.evaluate(async (tags) => {

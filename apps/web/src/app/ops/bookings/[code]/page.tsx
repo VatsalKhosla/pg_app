@@ -102,7 +102,7 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
         >
           {t("detail.back")}
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+        <h1 className="font-display text-title-1 text-foreground">
           {t("detail.title", { code: booking.code, pg: booking.property.name })}
         </h1>
         <p className="text-muted-foreground">
@@ -113,7 +113,7 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
           <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
             {t(`timer.${timer.kind}`, { since: when(timer.since), due: when(timer.due) })}
             {timer.late ? (
-              <span className="rounded-full border border-destructive px-2 py-0.5 text-xs font-semibold text-destructive">
+              <span className="rounded-full bg-destructive-soft px-2.5 py-0.5 text-xs font-semibold text-destructive-soft-foreground">
                 {t("late")}
               </span>
             ) : null}
@@ -129,8 +129,11 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
         )}
       </div>
 
-      <section aria-labelledby="desk" className="space-y-3">
-        <h2 id="desk" className="text-lg font-semibold">
+      <section
+        aria-labelledby="desk"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="desk" className="font-display text-title-3 text-foreground">
           {t("detail.do")}
         </h2>
         {dispute === null ? null : (
@@ -152,8 +155,11 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
         )}
       </section>
 
-      <section aria-labelledby="people" className="space-y-2">
-        <h2 id="people" className="text-lg font-semibold">
+      <section
+        aria-labelledby="people"
+        className="space-y-3 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="people" className="font-display text-title-3 text-foreground">
           {t("detail.people")}
         </h2>
         <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
@@ -163,7 +169,7 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
               {booking.studentContact.name ?? t("noName")} ·{" "}
               <a
                 href={`tel:${booking.studentContact.phone}`}
-                className="underline underline-offset-4"
+                className="font-medium text-primary underline underline-offset-4"
               >
                 {booking.studentContact.phone}
               </a>
@@ -175,7 +181,7 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
               {booking.ownerContact.name ?? t("noName")} ·{" "}
               <a
                 href={`tel:${booking.ownerContact.phone}`}
-                className="underline underline-offset-4"
+                className="font-medium text-primary underline underline-offset-4"
               >
                 {booking.ownerContact.phone}
               </a>
@@ -199,44 +205,59 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
         )}
       </section>
 
-      <section aria-labelledby="stay" className="space-y-2">
-        <h2 id="stay" className="text-lg font-semibold">
+      <section
+        aria-labelledby="stay"
+        className="space-y-3 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="stay" className="font-display text-title-3 text-foreground">
           {t("detail.stay")}
         </h2>
         <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
           {stay.map(([label, value]) => (
             <div key={label}>
               <dt className="text-sm text-muted-foreground">{label}</dt>
-              <dd>{value}</dd>
+              <dd className="font-medium text-foreground">{value}</dd>
             </div>
           ))}
         </dl>
       </section>
 
-      <section aria-labelledby="money" className="space-y-2">
-        <h2 id="money" className="text-lg font-semibold">
+      <section
+        aria-labelledby="money"
+        className="space-y-3 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="money" className="font-display text-title-3 text-foreground">
           {t("detail.money")}
         </h2>
-        <dl className="divide-y rounded-lg border">
+        <dl className="divide-y divide-border/60 rounded-xl border border-border/70 bg-surface/50 text-sm">
           {money.map(([label, value]) => (
-            <div key={label} className="flex flex-wrap items-baseline justify-between gap-2 p-3">
-              <dt>{label}</dt>
-              <dd className="font-medium">{value}</dd>
+            <div
+              key={label}
+              className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-2.5"
+            >
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd className="font-medium text-foreground tabular-nums">{value}</dd>
             </div>
           ))}
         </dl>
       </section>
 
-      <section aria-labelledby="payments" className="space-y-3">
-        <h2 id="payments" className="text-lg font-semibold">
+      <section
+        aria-labelledby="payments"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="payments" className="font-display text-title-3 text-foreground">
           {desk("title")}
         </h2>
         {payments.items.length === 0 ? (
           <p className="text-muted-foreground">{desk("none")}</p>
         ) : (
           payments.items.map((payment) => (
-            <div key={payment.id} className="space-y-2 rounded-lg border p-3">
-              <p className="font-medium">
+            <div
+              key={payment.id}
+              className="space-y-2 rounded-xl border border-border/70 bg-surface/50 p-4"
+            >
+              <p className="font-semibold text-foreground tabular-nums">
                 {desk("payment", {
                   amount: formatINR(payment.amountPaise),
                   status: desk(`paymentStatus.${payment.status}`),
@@ -322,16 +343,21 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
         )}
       </section>
 
-      <section aria-labelledby="history" className="space-y-3">
-        <h2 id="history" className="text-lg font-semibold">
+      <section
+        aria-labelledby="history"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="history" className="font-display text-title-3 text-foreground">
           {t("detail.history")}
         </h2>
         <ol className="space-y-3">
           {booking.history.map((entry) => (
             <li key={`${entry.event}-${entry.at}`} className="space-y-0.5">
               <p className="flex flex-wrap justify-between gap-2">
-                <span className="font-medium">{t(`events.${entry.event}` as "events.hold")}</span>
-                <time dateTime={entry.at} className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  {t(`events.${entry.event}` as "events.hold")}
+                </span>
+                <time dateTime={entry.at} className="text-sm text-muted-foreground tabular-nums">
                   {when(entry.at)}
                 </time>
               </p>

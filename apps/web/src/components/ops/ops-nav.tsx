@@ -16,7 +16,10 @@ export function OpsNav({
 }) {
   const pathname = usePathname();
   return (
-    <nav aria-label={label} className="flex flex-wrap gap-x-6 gap-y-2 border-b pb-4 text-sm">
+    <nav
+      aria-label={label}
+      className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-border/80 bg-surface/80 p-1.5 text-sm"
+    >
       {links.map((link) => {
         const current = link.exact
           ? pathname === link.href
@@ -27,8 +30,8 @@ export function OpsNav({
             href={link.href}
             aria-current={current ? "page" : undefined}
             className={cn(
-              "font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline",
-              current && "text-foreground underline",
+              "inline-flex min-h-9 items-center rounded-xl px-3.5 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-card/60 hover:text-foreground",
+              current && "bg-card font-semibold text-foreground shadow-xs ring-1 ring-border/80",
             )}
           >
             {link.label}

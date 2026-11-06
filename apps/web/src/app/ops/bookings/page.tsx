@@ -4,6 +4,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 
 import { LiveRefresh } from "@/components/ops/live-refresh";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/fields";
 import { Input } from "@/components/ui/input";
 import { unwrap } from "@/lib/api/client";
 import { getServerApi } from "@/lib/api/server";
@@ -103,9 +104,9 @@ export default async function OpsBookingsPage({ searchParams }: PageProps<"/ops/
     <div className="space-y-6">
       <LiveRefresh />
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
-        <p className="text-sm">
+        <p className="text-sm font-medium text-foreground">
           {t("waiting", {
             owners: summary.unconfirmedLate,
             disputes: summary.disputesOpen,
@@ -113,7 +114,11 @@ export default async function OpsBookingsPage({ searchParams }: PageProps<"/ops/
           })}
         </p>
       </div>
-      <form method="get" action={OPS_BOOKINGS_PATH} className="flex flex-wrap items-end gap-3">
+      <form
+        method="get"
+        action={OPS_BOOKINGS_PATH}
+        className="flex flex-wrap items-end gap-3 rounded-2xl border border-border/80 bg-card p-5 shadow-xs"
+      >
         <div className="min-w-56 flex-1 space-y-1">
           <label htmlFor="booking-search" className="text-sm font-medium">
             {t("search")}
@@ -130,21 +135,16 @@ export default async function OpsBookingsPage({ searchParams }: PageProps<"/ops/
           <label htmlFor="booking-channel" className="text-sm font-medium">
             {t("channel")}
           </label>
-          <select
-            id="booking-channel"
-            name="channel"
-            defaultValue={channel ?? ""}
-            className="h-10 rounded-md border bg-background px-3 text-sm"
-          >
+          <Select id="booking-channel" name="channel" defaultValue={channel ?? ""}>
             <option value="">{t("anyChannel")}</option>
             {CHANNELS.map((each: Channel) => (
               <option key={each} value={each}>
                 {t(`channels.${each}`)}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
-        <Button type="submit" variant="outline">
+        <Button type="submit" variant="outline" className="h-11">
           {t("find")}
         </Button>
       </form>
@@ -155,8 +155,9 @@ export default async function OpsBookingsPage({ searchParams }: PageProps<"/ops/
             href={link(filter.status)}
             aria-current={filter.status === show ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-9 items-center rounded-full border px-3 text-sm outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50",
-              filter.status === show && "border-primary bg-accent font-medium",
+              "inline-flex min-h-9 items-center rounded-full border border-border/80 bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-surface hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              filter.status === show &&
+                "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
             )}
           >
             {filter.label}
@@ -166,19 +167,19 @@ export default async function OpsBookingsPage({ searchParams }: PageProps<"/ops/
       {page.items.length === 0 ? (
         <p className="text-muted-foreground">{show === ATTENTION ? t("allClear") : t("none")}</p>
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y divide-border/60 rounded-2xl border border-border/80 bg-card shadow-xs">
           {page.items.map((booking) => (
             <li key={booking.code} className="space-y-1 p-4">
               <p className="flex flex-wrap items-center gap-2">
                 <Link
                   href={`${OPS_BOOKINGS_PATH}/${booking.code}` as Route}
-                  className="font-mono font-semibold underline-offset-4 hover:underline"
+                  className="font-mono font-semibold text-primary underline-offset-4 hover:underline"
                 >
                   {booking.code}
                 </Link>
-                <span>{booking.property.name}</span>
+                <span className="font-medium text-foreground">{booking.property.name}</span>
                 {booking.timer?.late === true ? (
-                  <span className="rounded-full border border-destructive px-2 py-0.5 text-xs font-semibold text-destructive">
+                  <span className="rounded-full bg-destructive-soft px-2.5 py-0.5 text-xs font-semibold text-destructive-soft-foreground">
                     {t("late")}
                   </span>
                 ) : null}
@@ -187,7 +188,7 @@ export default async function OpsBookingsPage({ searchParams }: PageProps<"/ops/
                 {t(`status.${booking.status}`)} · {booking.roomType} · {booking.property.locality} ·{" "}
                 {booking.student.name ?? t("noName")} · {t(`channels.${booking.channel}`)}
               </p>
-              <p className="text-sm">
+              <p className="text-sm tabular-nums">
                 {t("moveIn", { date: dayText(booking.moveIn) })}
                 {booking.timer === null
                   ? null

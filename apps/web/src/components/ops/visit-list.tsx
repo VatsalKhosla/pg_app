@@ -19,7 +19,10 @@ export async function VisitList({ visits }: { visits: Visit[] }) {
   return (
     <ol className="space-y-3">
       {visits.map((visit) => (
-        <li key={visit.id} className="space-y-3 rounded-md border p-3">
+        <li
+          key={visit.id}
+          className="space-y-3 rounded-xl border border-border/80 bg-surface/40 p-3.5"
+        >
           <p className="text-sm">
             <span className="font-medium">{t(`status.${visit.status}`)}</span>
             {" · "}

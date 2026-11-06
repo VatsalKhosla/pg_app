@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 
+import { ListingPlaceholderArt } from "@/components/brand/editorial-art";
 import { Photo } from "@/components/pg/photo";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -64,12 +65,18 @@ export function PinPreview({
         }
       }}
       className={cn(
-        "relative flex gap-3.5 rounded-2xl border bg-card p-3.5 pe-12 text-card-foreground shadow-xl outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "relative flex gap-3.5 overflow-hidden rounded-2xl border border-saffron-border bg-card p-3.5 pt-4 pe-12 text-card-foreground shadow-xl outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
     >
-      <div className="relative size-22 shrink-0 overflow-hidden rounded-xl bg-muted">
-        {cover == null ? null : (
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),var(--saffron),var(--coral))]"
+      />
+      <div className="relative size-22 shrink-0 overflow-hidden rounded-xl border border-saffron-border/60 bg-saffron-soft">
+        {cover == null ? (
+          <ListingPlaceholderArt />
+        ) : (
           <Photo media={cover} alt="" sizes="88px" className="h-full w-full object-cover" />
         )}
       </div>
@@ -84,17 +91,19 @@ export function PinPreview({
         <p className="truncate text-xs font-medium text-muted-foreground">
           {[locality, tPg(`gender.${pin.genderPolicy}`)].filter(Boolean).join(" · ")}
         </p>
-        <p className="text-sm font-bold text-foreground">{price}</p>
+        <p className="w-fit rounded-md bg-primary-soft px-2 py-0.5 text-sm font-bold text-primary-soft-foreground">
+          {price}
+        </p>
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           {pin.verified ? (
-            <Badge variant="brand" className="px-2 py-0 text-[11px]">
+            <Badge variant="sage" className="px-2 py-0 text-[11px]">
               <ShieldCheck aria-hidden="true" className="size-3" />
               {t("card.verified")}
             </Badge>
           ) : null}
-          <span className="font-medium text-muted-foreground">
+          <Badge variant="saffron" className="px-2 py-0 text-[11px] font-semibold">
             {t(`card.beds.${pin.bedsFree}`)}
-          </span>
+          </Badge>
         </div>
         <Link
           href={`/pg/${pin.slug}` as Route}

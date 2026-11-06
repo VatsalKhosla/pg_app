@@ -64,7 +64,7 @@ export default async function OpsGrievancePage({ params }: PageProps<"/ops/griev
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="font-mono text-2xl font-bold tracking-tight sm:text-3xl">
+        <h1 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           {grievance.ticketNumber}
         </h1>
         <p className="text-muted-foreground">
@@ -80,8 +80,11 @@ export default async function OpsGrievancePage({ params }: PageProps<"/ops/griev
               : null}
         </p>
       </div>
-      <section aria-labelledby="complainant" className="space-y-1">
-        <h2 id="complainant" className="text-lg font-semibold">
+      <section
+        aria-labelledby="complainant"
+        className="space-y-2 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="complainant" className="font-display text-title-3 text-foreground">
           {t("complainant")}
         </h2>
         <p>
@@ -95,8 +98,11 @@ export default async function OpsGrievancePage({ params }: PageProps<"/ops/griev
           <p>{t("contactEmail", { email: complainant.email })}</p>
         )}
       </section>
-      <section aria-labelledby="details" className="space-y-2">
-        <h2 id="details" className="text-lg font-semibold">
+      <section
+        aria-labelledby="details"
+        className="space-y-2 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="details" className="font-display text-title-3 text-foreground">
           {t("detailsTitle")}
         </h2>
         {grievance.reference === "" ? null : (
@@ -106,8 +112,11 @@ export default async function OpsGrievancePage({ params }: PageProps<"/ops/griev
         )}
         <p className="leading-7 whitespace-pre-line">{grievance.details}</p>
       </section>
-      <section aria-labelledby="log" className="space-y-2">
-        <h2 id="log" className="text-lg font-semibold">
+      <section
+        aria-labelledby="log"
+        className="space-y-2 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="log" className="font-display text-title-3 text-foreground">
           {t("logTitle")}
         </h2>
         <ul className="list-disc space-y-1 pl-5">
@@ -117,21 +126,23 @@ export default async function OpsGrievancePage({ params }: PageProps<"/ops/griev
         </ul>
       </section>
       {grievance.nextStatuses.length === 0 ? null : (
-        <GrievanceForms
-          ticket={grievance.ticketNumber}
-          next={grievance.nextStatuses}
-          text={{
-            replyTitle: t("replyTitle"),
-            replyHint: t("replyHint"),
-            acknowledge: t("acknowledge"),
-            resolutionTitle: t("resolutionTitle"),
-            resolutionHint: t("resolutionHint"),
-            resolve: t("resolve"),
-            saving: t("saving"),
-            needText: t("needText"),
-            errors: { generic: t("errors.generic") },
-          }}
-        />
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs">
+          <GrievanceForms
+            ticket={grievance.ticketNumber}
+            next={grievance.nextStatuses}
+            text={{
+              replyTitle: t("replyTitle"),
+              replyHint: t("replyHint"),
+              acknowledge: t("acknowledge"),
+              resolutionTitle: t("resolutionTitle"),
+              resolutionHint: t("resolutionHint"),
+              resolve: t("resolve"),
+              saving: t("saving"),
+              needText: t("needText"),
+              errors: { generic: t("errors.generic") },
+            }}
+          />
+        </div>
       )}
     </div>
   );

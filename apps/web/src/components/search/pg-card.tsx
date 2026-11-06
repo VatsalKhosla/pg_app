@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type * as React from "react";
 
+import { ListingPlaceholderArt } from "@/components/brand/editorial-art";
 import { Photo } from "@/components/pg/photo";
 import { Badge } from "@/components/ui/badge";
 import { formatDistance } from "@/lib/format/distance";
@@ -45,12 +46,18 @@ export function PgCard({
       href={`/pg/${card.slug}` as Route}
       {...handlers}
       className={cn(
-        "group flex gap-3.5 rounded-2xl border bg-card p-3.5 text-card-foreground shadow-xs transition-[box-shadow,border-color,background-color,transform] duration-(--duration-base) ease-standard outline-none hover:-translate-y-0.5 hover:border-foreground/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-        active && "border-primary bg-primary-soft/50 shadow-md ring-1 ring-primary",
+        "group relative flex gap-3.5 overflow-hidden rounded-2xl border border-border/90 bg-card p-3.5 text-card-foreground shadow-xs transition-[box-shadow,border-color,background-color,transform] duration-(--duration-base) ease-standard outline-none hover:-translate-y-0.5 hover:border-primary/50 hover:bg-surface-warm/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        active && "border-primary bg-primary-soft shadow-md ring-1 ring-primary",
       )}
     >
-      <div className="relative size-26 shrink-0 overflow-hidden rounded-xl bg-muted sm:size-30">
-        {card.cover === null ? null : (
+      <span
+        aria-hidden="true"
+        className=" inset-y-0 left-0 w-1 bg-[linear-gradient(180deg,var(--primary),var(--saffron),var(--coral))] opacity-75 transition-opacity group-hover:opacity-100 absolute"
+      />
+      <div className="relative size-26 shrink-0 overflow-hidden rounded-xl border border-saffron-border/60 bg-saffron-soft sm:size-30">
+        {card.cover === null ? (
+          <ListingPlaceholderArt />
+        ) : (
           <Photo
             media={card.cover}
             alt=""
@@ -73,7 +80,9 @@ export function PgCard({
             ].join(" · ")}
           </p>
         </div>
-        <p className="text-base font-bold tracking-tight text-foreground">{price}</p>
+        <p className="w-fit rounded-lg bg-primary-soft px-2 py-0.5 text-base font-bold tracking-tight text-primary-soft-foreground">
+          {price}
+        </p>
         {card.distanceM === null && card.nearestStation === null ? null : (
           <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
             {card.distanceM === null ? null : (
@@ -91,17 +100,19 @@ export function PgCard({
         )}
         <p className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
           {card.verified ? (
-            <Badge variant="brand" className="px-2 py-0 text-[11px]">
+            <Badge variant="sage" className="px-2 py-0 text-[11px]">
               <ShieldCheck aria-hidden="true" className="size-3" />
               {t("verified")}
             </Badge>
           ) : null}
           {card.licensed ? (
-            <Badge variant="outline" className="px-2 py-0 text-[11px]">
+            <Badge variant="indigo" className="px-2 py-0 text-[11px]">
               {t("licensed")}
             </Badge>
           ) : null}
-          <span className="font-medium text-muted-foreground">{t(`beds.${card.bedsFree}`)}</span>
+          <Badge variant="saffron" className="px-2 py-0 text-[11px] font-semibold">
+            {t(`beds.${card.bedsFree}`)}
+          </Badge>
         </p>
       </div>
     </Link>

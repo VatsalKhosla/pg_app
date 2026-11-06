@@ -14,6 +14,7 @@
   --background: oklch(1 0 0);
   --foreground: oklch(0.2 0.008 210);
   --surface: oklch(0.98 0.003 210);
+  --surface-warm: #faf6f0;
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
@@ -28,6 +29,27 @@
   --primary-soft: color-mix(in oklch, var(--background), var(--primary) 9%);
   --primary-soft-hover: color-mix(in oklch, var(--background), var(--primary) 15%);
   --primary-soft-foreground: color-mix(in oklch, var(--primary) 80%, black);
+
+  /* Editorial hospitality accents (from src/config/brand.ts, >= 6:1 contrast on soft fills) */
+  --coral: var(--brand-coral);
+  --coral-soft: #fceee9;
+  --coral-soft-foreground: #7c2014;
+  --coral-border: #f2c6b8;
+
+  --saffron: var(--brand-saffron);
+  --saffron-soft: #fef3de;
+  --saffron-soft-foreground: #663300;
+  --saffron-border: #f3d092;
+
+  --indigo: var(--brand-indigo);
+  --indigo-soft: #eef0ff;
+  --indigo-soft-foreground: #282268;
+  --indigo-border: #c3c8f7;
+
+  --sage: var(--brand-sage);
+  --sage-soft: #e7f6ee;
+  --sage-soft-foreground: #0c472a;
+  --sage-border: #addbc2;
 
   /* Quiet fills: secondary buttons, chips, hover states */
   --secondary: oklch(0.955 0.006 210);
@@ -76,6 +98,7 @@
     --background: oklch(0.17 0.008 220);
     --foreground: oklch(0.97 0.004 210);
     --surface: oklch(0.195 0.009 220);
+    --surface-warm: #16191d;
     --card: oklch(0.21 0.009 220);
     --popover: oklch(0.23 0.01 220);
     --muted: oklch(0.255 0.01 220);
@@ -87,6 +110,26 @@
     --primary-soft: color-mix(in oklch, var(--background), var(--primary) 16%);
     --primary-soft-hover: color-mix(in oklch, var(--background), var(--primary) 24%);
     --primary-soft-foreground: color-mix(in oklch, var(--primary) 70%, white);
+
+    --coral: var(--brand-coral-dark);
+    --coral-soft: #2d1714;
+    --coral-soft-foreground: #ffb4a8;
+    --coral-border: #5c2b24;
+
+    --saffron: var(--brand-saffron-dark);
+    --saffron-soft: #2b1f0d;
+    --saffron-soft-foreground: #fad28c;
+    --saffron-border: #593e16;
+
+    --indigo: var(--brand-indigo-dark);
+    --indigo-soft: #1b1d36;
+    --indigo-soft-foreground: #c7cdff;
+    --indigo-border: #363a6b;
+
+    --sage: var(--brand-sage-dark);
+    --sage-soft: #11281d;
+    --sage-soft-foreground: #9ee7bf;
+    --sage-border: #214f39;
 
     --secondary: oklch(0.26 0.01 220);
     --secondary-hover: oklch(0.3 0.012 220);
@@ -121,6 +164,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-surface-warm: var(--surface-warm);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -133,6 +177,22 @@
   --color-primary-soft: var(--primary-soft);
   --color-primary-soft-hover: var(--primary-soft-hover);
   --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-coral: var(--coral);
+  --color-coral-soft: var(--coral-soft);
+  --color-coral-soft-foreground: var(--coral-soft-foreground);
+  --color-coral-border: var(--coral-border);
+  --color-saffron: var(--saffron);
+  --color-saffron-soft: var(--saffron-soft);
+  --color-saffron-soft-foreground: var(--saffron-soft-foreground);
+  --color-saffron-border: var(--saffron-border);
+  --color-indigo: var(--indigo);
+  --color-indigo-soft: var(--indigo-soft);
+  --color-indigo-soft-foreground: var(--indigo-soft-foreground);
+  --color-indigo-border: var(--indigo-border);
+  --color-sage: var(--sage);
+  --color-sage-soft: var(--sage-soft);
+  --color-sage-soft-foreground: var(--sage-soft-foreground);
+  --color-sage-border: var(--sage-border);
   --color-secondary: var(--secondary);
   --color-secondary-hover: var(--secondary-hover);
   --color-secondary-foreground: var(--secondary-foreground);

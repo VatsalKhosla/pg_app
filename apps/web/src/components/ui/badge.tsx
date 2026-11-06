@@ -14,7 +14,11 @@ const badgeVariants = cva(
     variants: {
       variant: {
         neutral: "bg-secondary text-secondary-foreground",
-        brand: "bg-primary-soft text-primary-soft-foreground",
+        brand: "border-primary/25 bg-primary-soft text-primary-soft-foreground",
+        coral: "border-coral-border bg-coral-soft text-coral-soft-foreground",
+        saffron: "border-saffron-border bg-saffron-soft text-saffron-soft-foreground",
+        indigo: "border-indigo-border bg-indigo-soft text-indigo-soft-foreground",
+        sage: "border-sage-border bg-sage-soft text-sage-soft-foreground",
         success: "bg-success-soft text-success-soft-foreground",
         warning: "bg-warning-soft text-warning-soft-foreground",
         destructive: "bg-destructive-soft text-destructive-soft-foreground",

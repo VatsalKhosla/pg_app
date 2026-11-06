@@ -26,20 +26,23 @@ export default async function OwnerPgsPage() {
   return (
     <>
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       {items.length === 0 ? (
-        <p>{t("none")}</p>
+        <p className="text-sm text-muted-foreground">{t("none")}</p>
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y divide-border/60 rounded-2xl border border-border/80 bg-card shadow-xs">
           {items.map((place) => (
-            <li key={place.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <li
+              key={place.id}
+              className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5"
+            >
               <div>
                 <Link
                   href={`${OWNER_PGS_PATH}/${place.id}` as Route}
                   aria-label={t("open", { name: place.name })}
-                  className="font-medium text-primary underline underline-offset-4"
+                  className="font-semibold text-primary underline underline-offset-4"
                 >
                   {place.name}
                 </Link>
@@ -47,7 +50,9 @@ export default async function OwnerPgsPage() {
                   {t("place", { locality: place.locality })}
                 </p>
               </div>
-              <span className="text-sm">{t(`status.${place.status}`)}</span>
+              <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                {t(`status.${place.status}`)}
+              </span>
             </li>
           ))}
         </ul>

@@ -55,7 +55,7 @@ export default async function OpsInvoicesPage({ searchParams }: PageProps<"/ops/
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       <nav aria-label={t("statusFilter")} className="flex flex-wrap gap-2">
@@ -65,8 +65,9 @@ export default async function OpsInvoicesPage({ searchParams }: PageProps<"/ops/
             href={filter.href}
             aria-current={filter.current ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-9 items-center rounded-md border px-3 text-sm",
-              filter.current && "border-primary bg-accent font-medium",
+              "inline-flex min-h-9 items-center rounded-full border border-border/80 bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-foreground",
+              filter.current &&
+                "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
             )}
           >
             {filter.label}
@@ -93,12 +94,17 @@ export default async function OpsInvoicesPage({ searchParams }: PageProps<"/ops/
       ) : (
         <ul className="space-y-4">
           {page.items.map((invoice) => (
-            <li key={invoice.id} className="space-y-2 rounded-lg border p-4">
+            <li
+              key={invoice.id}
+              className="space-y-2 rounded-2xl border border-border/80 bg-card p-5 shadow-xs"
+            >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="font-medium">
+                <p className="font-semibold text-foreground">
                   {t("line", { number: invoice.number, owner: invoice.owner })}
                 </p>
-                <span className="text-sm font-medium">{t(`status.${invoice.status}`)}</span>
+                <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                  {t(`status.${invoice.status}`)}
+                </span>
               </div>
               <p className="text-sm text-muted-foreground">
                 {t("booking", {

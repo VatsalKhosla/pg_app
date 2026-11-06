@@ -45,7 +45,7 @@ export default async function OpsOwnersPage({ searchParams }: PageProps<"/ops/ow
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
 
@@ -69,21 +69,21 @@ export default async function OpsOwnersPage({ searchParams }: PageProps<"/ops/ow
       {page.items.length === 0 ? (
         <p className="text-muted-foreground">{t("empty")}</p>
       ) : (
-        <ul className="divide-y rounded-md border">
+        <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
           {page.items.map((owner) => (
             <li key={owner.id}>
               <Link
                 href={`/ops/owners/${owner.id}` as Route}
-                className="flex flex-wrap items-center justify-between gap-3 p-3 hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                className="flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-surface focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
               >
                 <div className="min-w-0">
-                  <p className="truncate font-medium">{owner.businessName}</p>
+                  <p className="truncate font-semibold text-foreground">{owner.businessName}</p>
                   <p className="text-sm text-muted-foreground">
                     {owner.legalName}
                     {owner.phone === null ? null : ` · ${owner.phone}`}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full border px-2 py-0.5 text-xs">
+                <span className="shrink-0 rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-muted-foreground ring-1 ring-border/70">
                   {owner.agreementCurrent ? t("accepted") : t("notAccepted")}
                 </span>
               </Link>
@@ -108,8 +108,11 @@ export default async function OpsOwnersPage({ searchParams }: PageProps<"/ops/ow
         )}
       </div>
 
-      <section aria-labelledby="add-owner-title" className="space-y-4 rounded-md border p-4">
-        <h2 id="add-owner-title" className="text-lg font-semibold">
+      <section
+        aria-labelledby="add-owner-title"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="add-owner-title" className="font-display text-title-3 text-foreground">
           {t("addTitle")}
         </h2>
         <AddOwnerPanel />

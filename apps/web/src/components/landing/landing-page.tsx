@@ -2,6 +2,7 @@ import { MapPinned } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 
+import { ArchWatermark } from "@/components/brand/editorial-art";
 import { PgCard } from "@/components/search/pg-card";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buttonVariants } from "@/components/ui/button";
@@ -28,7 +29,9 @@ export interface LandingText {
 }
 
 const nearbyChipClasses =
-  "inline-flex min-h-11 items-center rounded-full border border-input/70 bg-surface px-4 py-2 text-sm font-medium text-foreground shadow-2xs transition-[background-color,border-color,color,transform] duration-(--duration-fast) ease-standard outline-none hover:-translate-y-0.5 hover:border-primary hover:bg-primary-soft hover:text-primary-soft-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0";
+  "inline-flex min-h-11 items-center rounded-full border border-saffron-border bg-saffron-soft px-4 py-2 text-sm font-medium text-saffron-soft-foreground shadow-2xs transition-[background-color,border-color,color,transform] duration-(--duration-fast) ease-standard outline-none hover:-translate-y-0.5 hover:border-coral hover:bg-coral-soft hover:text-coral-soft-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0";
+
+const faqVariants = ["teal", "saffron", "indigo", "sage"] as const;
 
 /**
  * A landing page for a campus or a locality (step 3.6, ADR 0032): the PGs there as search finds
@@ -68,8 +71,9 @@ export function LandingPage({
           ...(faqs.length === 0 ? [] : [faqJsonLd(faqs)]),
         ]}
       />
-      <header className="border-b bg-surface">
-        <div className="mx-auto max-w-page space-y-4 px-gutter py-10 sm:py-14">
+      <header className="relative overflow-hidden border-b border-saffron-border/70 bg-surface-warm">
+        <ArchWatermark tone="coral" className="absolute -right-6 -bottom-6 size-48 opacity-15" />
+        <div className="relative mx-auto max-w-page space-y-4 px-gutter py-10 sm:py-14">
           <nav aria-label={text.breadcrumb}>
             <ol className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
               {crumbs.slice(0, -1).map((crumb) => (
@@ -88,6 +92,11 @@ export function LandingPage({
               </li>
             </ol>
           </nav>
+          <div aria-hidden="true" className="flex items-center gap-1.5">
+            <span className="h-1.5 w-8 rounded-full bg-coral" />
+            <span className="h-1.5 w-5 rounded-full bg-saffron" />
+            <span className="h-1.5 w-4 rounded-full bg-primary" />
+          </div>
           <h1 className="max-w-3xl text-title-1 font-bold tracking-tight text-foreground">
             {text.title}
           </h1>
@@ -100,7 +109,7 @@ export function LandingPage({
           <div className="pt-2">
             <Link
               href={mapHref as Route}
-              className={buttonVariants({ size: "lg", shape: "pill", className: "shadow-sm" })}
+              className={buttonVariants({ size: "lg", shape: "pill", className: "shadow-md" })}
             >
               <MapPinned aria-hidden="true" />
               {text.map}
@@ -112,9 +121,12 @@ export function LandingPage({
       <div className="mx-auto w-full max-w-page space-y-14 px-gutter py-10 sm:py-14">
         {cards.length === 0 ? null : (
           <section aria-labelledby="landing-list" className="space-y-6">
-            <h2 id="landing-list" className="text-title-2 font-bold tracking-tight">
-              {text.list}
-            </h2>
+            <div className="flex items-center gap-3">
+              <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-primary" />
+              <h2 id="landing-list" className="text-title-2 font-bold tracking-tight">
+                {text.list}
+              </h2>
+            </div>
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {cards.map((card, index) => (
                 <li key={card.id}>
@@ -137,9 +149,12 @@ export function LandingPage({
 
         {nearby.length === 0 ? null : (
           <section aria-labelledby="landing-nearby" className="space-y-4">
-            <h2 id="landing-nearby" className="text-title-2 font-bold tracking-tight">
-              {text.nearby}
-            </h2>
+            <div className="flex items-center gap-3">
+              <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-saffron" />
+              <h2 id="landing-nearby" className="text-title-2 font-bold tracking-tight">
+                {text.nearby}
+              </h2>
+            </div>
             <ul className="flex flex-wrap gap-2.5">
               {nearby.map((place) => (
                 <li key={place.href}>
@@ -154,14 +169,21 @@ export function LandingPage({
 
         {faqs.length === 0 ? null : (
           <section aria-labelledby="landing-faq" className="space-y-6">
-            <h2 id="landing-faq" className="text-title-2 font-bold tracking-tight">
-              {text.faq}
-            </h2>
+            <div className="flex items-center gap-3">
+              <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-indigo" />
+              <h2 id="landing-faq" className="text-title-2 font-bold tracking-tight">
+                {text.faq}
+              </h2>
+            </div>
             <div className="grid gap-4 md:grid-cols-2">
-              {faqs.map((faq) => (
-                <Card key={faq.question} variant="flat" className="rounded-2xl p-6">
+              {faqs.map((faq, index) => (
+                <Card
+                  key={faq.question}
+                  variant={faqVariants[index % faqVariants.length]}
+                  className="rounded-2xl p-6"
+                >
                   <h3 className="text-base font-semibold text-foreground">{faq.question}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-foreground">{faq.answer}</p>
                 </Card>
               ))}
             </div>

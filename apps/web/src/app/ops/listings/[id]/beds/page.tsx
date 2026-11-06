@@ -80,7 +80,7 @@ export default async function BedsPage({
   );
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div className="space-y-2">
         <Link
           href={`/ops/listings/${id}` as Route}
@@ -88,12 +88,16 @@ export default async function BedsPage({
         >
           {t("back")}
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{view.property.name}</p>
         <p className="max-w-prose text-sm text-muted-foreground">{t("intro")}</p>
       </div>
 
-      <form method="get" aria-label={t("window")} className="flex flex-wrap items-end gap-4">
+      <form
+        method="get"
+        aria-label={t("window")}
+        className="flex flex-wrap items-end gap-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs"
+      >
         <Field id="beds-from" label={t("from")}>
           {(control) => <Input {...control} type="date" name="from" defaultValue={from} />}
         </Field>
@@ -114,7 +118,7 @@ export default async function BedsPage({
       </form>
 
       {view.categories.every((category) => category.beds.length === 0) ? (
-        <p>{t("noRooms")}</p>
+        <p className="text-sm text-muted-foreground">{t("noRooms")}</p>
       ) : (
         view.categories.map((category) => (
           <section
@@ -122,8 +126,11 @@ export default async function BedsPage({
             aria-labelledby={`category-${category.id}`}
             className="space-y-3"
           >
-            <div className="space-y-1 border-b pb-2">
-              <h2 id={`category-${category.id}`} className="text-lg font-semibold">
+            <div className="space-y-1 border-b border-border/60 pb-2">
+              <h2
+                id={`category-${category.id}`}
+                className="font-display text-title-3 text-foreground"
+              >
                 {category.label}
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -135,10 +142,10 @@ export default async function BedsPage({
                 })}
               </p>
             </div>
-            <ul className="divide-y rounded-lg border">
+            <ul className="divide-y divide-border/60 rounded-2xl border border-border/80 bg-card shadow-xs">
               {category.beds.map((bed) => (
-                <li key={bed.id} className="space-y-3 p-4">
-                  <p className="font-medium">
+                <li key={bed.id} className="space-y-3 p-4 sm:p-5">
+                  <p className="font-medium text-foreground">
                     {`${t("room")} ${bed.room} · ${t("bed")} ${bed.label}`}
                     {bed.active ? null : (
                       <span className="ms-2 text-sm font-normal text-muted-foreground">
@@ -179,8 +186,14 @@ export default async function BedsPage({
       )}
 
       {choices.length === 0 ? null : (
-        <section aria-labelledby="hold-title" className="space-y-4">
-          <h2 id="hold-title" className="border-b pb-2 text-lg font-semibold">
+        <section
+          aria-labelledby="hold-title"
+          className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+        >
+          <h2
+            id="hold-title"
+            className="border-b border-border/60 pb-2 font-display text-title-3 text-foreground"
+          >
             {t("add.title")}
           </h2>
           <BlockForm beds={choices} today={today} />

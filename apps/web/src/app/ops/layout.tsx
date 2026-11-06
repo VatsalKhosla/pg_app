@@ -37,7 +37,7 @@ export default async function OpsLayout({ children }: LayoutProps<"/ops">) {
 
   return (
     <NextIntlClientProvider messages={{ Ops: messages.Ops }}>
-      <div className="mx-auto w-full max-w-5xl space-y-8 px-4 py-8 sm:py-10">
+      <div className="mx-auto w-full max-w-5xl space-y-8 px-gutter py-8 sm:py-10">
         <OpsNav
           label={t("label")}
           links={[

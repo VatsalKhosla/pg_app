@@ -56,18 +56,23 @@ export default async function OpsReconciliationPage({
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       <section aria-labelledby="waiting-title" className="space-y-3">
-        <h2 id="waiting-title" className="text-lg font-semibold">
+        <h2 id="waiting-title" className="font-display text-title-3 text-foreground">
           {t("summary.title")}
         </h2>
-        <dl className="grid gap-3 sm:grid-cols-2">
+        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {counts.map((count) => (
-            <div key={count.term} className="rounded-lg border p-3">
+            <div
+              key={count.term}
+              className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs"
+            >
               <dt className="text-sm text-muted-foreground">{count.term}</dt>
-              <dd className="text-2xl font-semibold tabular-nums">{count.value}</dd>
+              <dd className="mt-1 font-display text-2xl font-semibold text-foreground tabular-nums">
+                {count.value}
+              </dd>
             </div>
           ))}
         </dl>
@@ -79,8 +84,9 @@ export default async function OpsReconciliationPage({
             href={view.href}
             aria-current={view.current ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-9 items-center rounded-md border px-3 text-sm",
-              view.current && "border-primary bg-accent font-medium",
+              "inline-flex min-h-9 items-center rounded-full border border-border/80 bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-foreground",
+              view.current &&
+                "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
             )}
           >
             {view.label}
@@ -92,10 +98,13 @@ export default async function OpsReconciliationPage({
       ) : (
         <ul className="space-y-4">
           {page.items.map((issue) => (
-            <li key={issue.id} className="space-y-2 rounded-lg border p-4">
-              <p className="font-medium">{t(`kind.${issue.kind}`)}</p>
+            <li
+              key={issue.id}
+              className="space-y-2 rounded-2xl border border-border/80 bg-card p-5 shadow-xs"
+            >
+              <p className="font-semibold text-foreground">{t(`kind.${issue.kind}`)}</p>
               <p className="text-sm">{issue.detail}</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground tabular-nums">
                 {[
                   t("found", { when: when(issue.foundAt) }),
                   issue.booking === null ? null : t("booking", { code: issue.booking }),

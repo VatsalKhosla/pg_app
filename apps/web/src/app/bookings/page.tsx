@@ -3,6 +3,7 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { ArchWatermark } from "@/components/brand/editorial-art";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,18 +15,18 @@ import { dayText } from "@/lib/format/days";
 
 type Status = Schemas["StudentBooking"]["status"];
 
-function statusVariant(status: Status): "brand" | "success" | "warning" | "neutral" {
+function statusVariant(status: Status): "indigo" | "sage" | "saffron" | "neutral" {
   switch (status) {
     case "held":
     case "token_secured":
-      return "brand";
+      return "indigo";
     case "confirmed":
     case "checked_in":
     case "active":
     case "completed":
-      return "success";
+      return "sage";
     case "disputed":
-      return "warning";
+      return "saffron";
     case "expired":
     case "cancelled":
     case "rejected":
@@ -34,6 +35,8 @@ function statusVariant(status: Status): "brand" | "success" | "warning" | "neutr
       return "neutral";
   }
 }
+
+const barColors = ["bg-primary", "bg-sage", "bg-saffron", "bg-coral"] as const;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Bookings");
@@ -49,12 +52,21 @@ export default async function BookingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
-      <div className="space-y-3">
-        <h1 className="text-title-1 text-foreground">{t("title")}</h1>
-        <p className="max-w-prose text-muted-foreground">{t("intro")}</p>
+      <div className="relative space-y-3 overflow-hidden rounded-3xl border border-saffron-border bg-surface-warm p-6 shadow-xs sm:p-8">
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-1.5"
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, var(--primary) 0%, var(--sage) 35%, var(--saffron) 70%, var(--coral) 100%)",
+          }}
+        />
+        <ArchWatermark tone="indigo" className="absolute -right-6 -bottom-6 size-40 opacity-15" />
+        <h1 className="relative text-title-1 font-bold text-foreground">{t("title")}</h1>
+        <p className="relative max-w-prose text-muted-foreground">{t("intro")}</p>
       </div>
       {items.length === 0 ? (
-        <Card variant="flat" className="space-y-4 rounded-2xl border-dashed p-8">
+        <Card variant="warm" className="space-y-4 rounded-3xl border-dashed p-8">
           <p className="text-muted-foreground">{t("none")}</p>
           <Link href="/search" className={buttonVariants({ size: "lg", shape: "pill" })}>
             {t("find")}
@@ -62,12 +74,16 @@ export default async function BookingsPage() {
         </Card>
       ) : (
         <ul className="space-y-4">
-          {items.map((booking) => (
+          {items.map((booking, index) => (
             <li
               key={booking.code}
-              className="flex flex-col justify-between gap-4 rounded-2xl border bg-card p-5 text-card-foreground shadow-xs sm:flex-row sm:items-center sm:p-6"
+              className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border bg-card p-5 text-card-foreground shadow-xs sm:flex-row sm:items-center sm:p-6"
             >
-              <div className="space-y-2">
+              <span
+                aria-hidden="true"
+                className={`absolute inset-y-0 left-0 w-1.5 ${barColors[index % barColors.length] ?? "bg-primary"}`}
+              />
+              <div className="space-y-2 ps-2">
                 <div>
                   <Badge variant={statusVariant(booking.status)}>
                     {t(`status.${booking.status}`)}

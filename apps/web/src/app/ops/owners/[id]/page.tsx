@@ -48,9 +48,9 @@ export default async function OpsOwnerPage({ params }: PageProps<"/ops/owners/[i
         : t("ownerPage.outdated", { version: owner.agreementVersion });
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{owner.businessName}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{owner.businessName}</h1>
         <p className="text-muted-foreground">
           {[
             owner.legalName,
@@ -63,29 +63,44 @@ export default async function OpsOwnerPage({ params }: PageProps<"/ops/owners/[i
         </p>
       </div>
 
-      <section aria-labelledby="details-title" className="space-y-4">
-        <h2 id="details-title" className="border-b pb-2 text-lg font-semibold">
+      <section
+        aria-labelledby="details-title"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2
+          id="details-title"
+          className="border-b border-border/60 pb-2 font-display text-title-3 text-foreground"
+        >
           {t("ownerPage.details")}
         </h2>
         <OwnerForm owner={owner} />
       </section>
 
-      <section aria-labelledby="agreement-title" className="space-y-4">
-        <h2 id="agreement-title" className="border-b pb-2 text-lg font-semibold">
+      <section
+        aria-labelledby="agreement-title"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2
+          id="agreement-title"
+          className="border-b border-border/60 pb-2 font-display text-title-3 text-foreground"
+        >
           {t("ownerPage.agreementTitle")}
         </h2>
         <p>{standing}</p>
         {acceptances.items.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("ownerPage.historyEmpty")}</p>
         ) : (
-          <ol aria-label={t("ownerPage.history")} className="divide-y rounded-md border">
+          <ol
+            aria-label={t("ownerPage.history")}
+            className="divide-y divide-border/60 rounded-xl border border-border/70 bg-surface/40"
+          >
             {acceptances.items.map((acceptance) => (
-              <li key={`${acceptance.version}-${acceptance.acceptedAt}`} className="p-3">
+              <li key={`${acceptance.version}-${acceptance.acceptedAt}`} className="p-4">
                 <dl className="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
                   <dt className="text-muted-foreground">{t("ownerPage.version")}</dt>
-                  <dd className="font-medium">{acceptance.version}</dd>
+                  <dd className="font-medium text-foreground">{acceptance.version}</dd>
                   <dt className="text-muted-foreground">{t("ownerPage.acceptedAt")}</dt>
-                  <dd>
+                  <dd className="tabular-nums">
                     {format.dateTime(new Date(acceptance.acceptedAt), {
                       dateStyle: "medium",
                       timeStyle: "medium",

@@ -68,8 +68,11 @@ export function DocumentUpload({
   }
 
   return (
-    <section aria-labelledby={`${formId}-title`} className="space-y-3 rounded-lg border p-4">
-      <h3 id={`${formId}-title`} className="font-semibold">
+    <section
+      aria-labelledby={`${formId}-title`}
+      className="space-y-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs"
+    >
+      <h3 id={`${formId}-title`} className="font-display text-base font-semibold text-foreground">
         {text.title}
       </h3>
       <Field id={`${formId}-kind`} label={text.kind}>
@@ -103,6 +106,7 @@ export function DocumentUpload({
         )}
       </Field>
       <Button
+        shape="pill"
         disabled={state === "working"}
         onClick={() => {
           void send();

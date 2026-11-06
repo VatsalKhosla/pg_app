@@ -44,7 +44,7 @@ export default async function OpsLedgerPage({ searchParams }: PageProps<"/ops/le
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       <form method="get" action={OPS_LEDGER_PATH} className="flex flex-wrap items-end gap-3">
@@ -64,55 +64,55 @@ export default async function OpsLedgerPage({ searchParams }: PageProps<"/ops/le
       </form>
 
       <section aria-labelledby="ledger-balance" className="space-y-3">
-        <h2 id="ledger-balance" className="text-lg font-semibold">
+        <h2 id="ledger-balance" className="font-display text-title-3 text-foreground">
           {balance.booking === null
             ? t("balance.all")
             : t("balance.booking", { code: balance.booking })}
         </h2>
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="overflow-x-auto rounded-2xl border border-border/80 bg-card shadow-xs">
           <table className="w-full min-w-96 text-sm">
             <thead>
-              <tr className="border-b text-left">
-                <th scope="col" className="p-3 font-medium">
+              <tr className="border-b border-border/70 bg-surface/60 text-left">
+                <th scope="col" className="p-3.5 font-medium text-muted-foreground">
                   {t("balance.account")}
                 </th>
-                <th scope="col" className="p-3 text-right font-medium">
+                <th scope="col" className="p-3.5 text-right font-medium text-muted-foreground">
                   {t("balance.debit")}
                 </th>
-                <th scope="col" className="p-3 text-right font-medium">
+                <th scope="col" className="p-3.5 text-right font-medium text-muted-foreground">
                   {t("balance.credit")}
                 </th>
-                <th scope="col" className="p-3 text-right font-medium">
+                <th scope="col" className="p-3.5 text-right font-medium text-muted-foreground">
                   {t("balance.balance")}
                 </th>
               </tr>
             </thead>
             <tbody>
               {balance.lines.map((line) => (
-                <tr key={line.account} className="border-b last:border-b-0">
-                  <th scope="row" className="p-3 text-left font-normal">
+                <tr key={line.account} className="border-b border-border/60 last:border-b-0">
+                  <th scope="row" className="p-3.5 text-left font-normal text-foreground">
                     {line.name}
                   </th>
-                  <td className="p-3 text-right tabular-nums">{formatINR(line.debitPaise)}</td>
-                  <td className="p-3 text-right tabular-nums">{formatINR(line.creditPaise)}</td>
-                  <td className="p-3 text-right font-medium tabular-nums">
+                  <td className="p-3.5 text-right tabular-nums">{formatINR(line.debitPaise)}</td>
+                  <td className="p-3.5 text-right tabular-nums">{formatINR(line.creditPaise)}</td>
+                  <td className="p-3.5 text-right font-medium text-foreground tabular-nums">
                     {signed(line.balancePaise)}
                   </td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t font-medium">
-                <th scope="row" className="p-3 text-left">
+              <tr className="border-t border-border/80 bg-surface/60 font-semibold text-foreground">
+                <th scope="row" className="p-3.5 text-left">
                   {t("balance.total")}
                 </th>
-                <td className="p-3 text-right tabular-nums">
+                <td className="p-3.5 text-right tabular-nums">
                   {formatINR(balance.totalDebitPaise)}
                 </td>
-                <td className="p-3 text-right tabular-nums">
+                <td className="p-3.5 text-right tabular-nums">
                   {formatINR(balance.totalCreditPaise)}
                 </td>
-                <td className="p-3 text-right tabular-nums">
+                <td className="p-3.5 text-right tabular-nums">
                   {signed(balance.totalDebitPaise - balance.totalCreditPaise)}
                 </td>
               </tr>
@@ -122,7 +122,7 @@ export default async function OpsLedgerPage({ searchParams }: PageProps<"/ops/le
       </section>
 
       <section aria-labelledby="ledger-posted" className="space-y-3">
-        <h2 id="ledger-posted" className="text-lg font-semibold">
+        <h2 id="ledger-posted" className="font-display text-title-3 text-foreground">
           {t("posted.title")}
         </h2>
         {posted.items.length === 0 ? (
@@ -130,14 +130,17 @@ export default async function OpsLedgerPage({ searchParams }: PageProps<"/ops/le
         ) : (
           <ul className="space-y-3">
             {posted.items.map((item) => (
-              <li key={item.id} className="space-y-1 rounded-lg border p-3 text-sm">
-                <p className="font-medium">{t(`posted.kind.${item.kind}`)}</p>
-                <p className="text-muted-foreground">
+              <li
+                key={item.id}
+                className="space-y-1.5 rounded-2xl border border-border/80 bg-card p-4 text-sm shadow-xs"
+              >
+                <p className="font-semibold text-foreground">{t(`posted.kind.${item.kind}`)}</p>
+                <p className="text-muted-foreground tabular-nums">
                   {item.booking === null
                     ? when(item.postedAt)
                     : t("posted.line", { code: item.booking, when: when(item.postedAt) })}
                 </p>
-                <ul>
+                <ul className="tabular-nums">
                   {item.entries.map((entry) => (
                     <li key={`${entry.account}-${entry.direction}`}>
                       {t(`posted.${entry.direction}`, {

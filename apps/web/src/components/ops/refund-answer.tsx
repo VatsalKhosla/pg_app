@@ -69,7 +69,10 @@ export function RefundAnswer({ id, text }: { id: string; text: RefundAnswerText 
   return (
     <div className="space-y-3">
       {step === "declining" ? (
-        <section aria-labelledby={`${formId}-title`} className="space-y-3 rounded-lg border p-4">
+        <section
+          aria-labelledby={`${formId}-title`}
+          className="space-y-3 rounded-xl border border-border/80 bg-surface/50 p-4"
+        >
           <h3 id={`${formId}-title`} className="font-semibold">
             {text.declineTitle}
           </h3>

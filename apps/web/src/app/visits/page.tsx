@@ -2,6 +2,7 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { ArchWatermark } from "@/components/brand/editorial-art";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CancelMyVisit } from "@/components/visits/cancel-my-visit";
@@ -16,6 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("metaTitle"), robots: { index: false, follow: false } };
 }
 
+const visitBars = ["bg-primary", "bg-saffron", "bg-sage", "bg-indigo"] as const;
 const OPEN = ["requested", "scheduled"];
 const ENTITLING = ["scheduled", "completed", "no_show"];
 
@@ -56,15 +58,23 @@ export default async function VisitsPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
-      <div className="space-y-2.5">
-        <h1 className="text-title-1 font-semibold tracking-tight text-foreground">{t("title")}</h1>
-        <p className="text-body text-muted-foreground">{t("intro")}</p>
+      <div className="relative space-y-2.5 overflow-hidden rounded-3xl border border-saffron-border bg-surface-warm p-6 shadow-xs sm:p-8">
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-1.5"
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, var(--primary) 0%, var(--sage) 35%, var(--saffron) 70%, var(--coral) 100%)",
+          }}
+        />
+        <ArchWatermark tone="sage" className="absolute -right-6 -bottom-6 size-40 opacity-15" />
+        <h1 className="relative text-title-1 font-bold tracking-tight text-foreground">
+          {t("title")}
+        </h1>
+        <p className="relative text-body text-muted-foreground">{t("intro")}</p>
       </div>
       {items.length === 0 ? (
-        <Card
-          variant="flat"
-          className="space-y-4 rounded-2xl border-dashed border-border bg-surface/60 p-6"
-        >
+        <Card variant="warm" className="space-y-4 rounded-3xl border-dashed p-6">
           <p className="text-body text-muted-foreground">{t("none")}</p>
           <Link href="/search" className={buttonVariants({ shape: "pill" })}>
             {t("find")}
@@ -72,14 +82,18 @@ export default async function VisitsPage() {
         </Card>
       ) : (
         <ul className="space-y-4">
-          {items.map((visit) => {
+          {items.map((visit, index) => {
             const contact = contacts.get(visit.id);
             return (
               <li
                 key={visit.id}
-                className="space-y-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs transition-shadow hover:shadow-sm sm:p-6"
+                className="relative space-y-4 overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-xs transition-shadow hover:shadow-sm sm:p-6"
               >
-                <div className="space-y-1">
+                <span
+                  aria-hidden="true"
+                  className={`absolute inset-x-0 top-0 h-1.5 ${visitBars[index % visitBars.length] ?? "bg-primary"}`}
+                />
+                <div className="space-y-1 pt-1">
                   <Link
                     href={`/pg/${visit.property.slug}` as Route}
                     className="text-title-3 font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline"
@@ -94,28 +108,26 @@ export default async function VisitsPage() {
                   </p>
                 </div>
                 {visit.scheduledAt === null ? (
-                  <div className="space-y-1.5 rounded-xl bg-surface/70 p-3.5 text-sm">
-                    <p className="font-medium text-foreground">{t("offered")}</p>
-                    <ul className="list-disc space-y-1 ps-5 text-muted-foreground">
+                  <div className="space-y-1.5 rounded-xl border border-saffron-border bg-saffron-soft p-3.5 text-sm">
+                    <p className="font-semibold text-saffron-soft-foreground">{t("offered")}</p>
+                    <ul className="list-disc space-y-1 ps-5 text-foreground">
                       {visit.preferredStarts.map((start) => (
                         <li key={start}>{when(start)}</li>
                       ))}
                     </ul>
                   </div>
                 ) : (
-                  <div className="space-y-1 rounded-xl bg-surface/70 p-3.5 text-sm">
-                    <p className="font-semibold text-foreground">
+                  <div className="space-y-1 rounded-xl border border-sage-border bg-sage-soft p-3.5 text-sm">
+                    <p className="font-semibold text-sage-soft-foreground">
                       {t("booked", { when: when(visit.scheduledAt) })}
                     </p>
                     {visit.agentName === null ? null : (
-                      <p className="text-muted-foreground">
-                        {t("agent", { name: visit.agentName })}
-                      </p>
+                      <p className="text-foreground">{t("agent", { name: visit.agentName })}</p>
                     )}
                   </div>
                 )}
                 {contact == null ? null : (
-                  <dl className="grid gap-1.5 rounded-xl border border-border/70 bg-surface/50 p-3.5 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4">
+                  <dl className="grid gap-1.5 rounded-xl border border-saffron-border/70 bg-surface-warm p-3.5 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4">
                     <dt className="font-medium text-muted-foreground">{t("address")}</dt>
                     <dd className="text-foreground">{contact.addressLine}</dd>
                     {contact.ownerPhone === null ? null : (
@@ -144,7 +156,7 @@ export default async function VisitsPage() {
                   </p>
                 )}
                 {visit.canReserve ? (
-                  <div className="space-y-2.5 rounded-xl border border-primary/25 bg-primary-soft/60 p-4">
+                  <div className="space-y-2.5 rounded-xl border border-primary-border bg-primary-soft p-4">
                     <p className="text-sm font-medium text-foreground">{t("reserveHint")}</p>
                     <Link
                       href={`/pg/${visit.property.slug}?visit=${visit.id}#quote-title` as Route}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { ArchWatermark, ListingPlaceholderArt } from "@/components/brand/editorial-art";
 import { LocationMap } from "@/components/map/location-map";
 import { Photo } from "@/components/pg/photo";
 import { QuoteChecker } from "@/components/pg/quote-checker";
@@ -122,31 +123,40 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
           ]),
         ]}
       />
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-3">
+      <header className="relative flex flex-col gap-5 overflow-hidden rounded-3xl border border-saffron-border bg-surface-warm p-6 shadow-xs sm:flex-row sm:items-end sm:justify-between sm:p-8">
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-1.5"
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, var(--primary) 0%, var(--sage) 35%, var(--saffron) 70%, var(--coral) 100%)",
+          }}
+        />
+        <ArchWatermark tone="coral" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
+        <div className="relative space-y-3">
           <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-muted-foreground">
-            <MapPin aria-hidden="true" className="size-4 text-primary" />
+            <MapPin aria-hidden="true" className="size-4 text-coral" />
             <Link
               href={localityPath as Route}
-              className="inline-flex min-h-6 items-center rounded underline underline-offset-4 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex min-h-6 items-center rounded font-semibold text-foreground underline decoration-coral/60 underline-offset-4 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
             >
               {listing.locality.name}
             </Link>
             <span>{`· ${t(`genderShort.${listing.genderPolicy}`)} · ${t(`meals.${listing.meals}`)}`}</span>
           </p>
-          <h1 className="text-title-1 text-balance text-foreground">{listing.name}</h1>
+          <h1 className="text-title-1 font-bold text-balance text-foreground">{listing.name}</h1>
           <div className="flex flex-wrap items-center gap-3 text-sm">
             {listing.verified ? (
-              <Badge variant="brand" className="px-3 py-1 text-xs">
+              <Badge variant="sage" className="px-3 py-1 text-xs font-semibold">
                 <ShieldCheck aria-hidden="true" className="size-3.5" />
                 {t("verified")}
               </Badge>
             ) : (
-              <Badge variant="outline" className="px-3 py-1 text-xs">
+              <Badge variant="outline" className="bg-card px-3 py-1 text-xs">
                 {t("notVerified")}
               </Badge>
             )}
-            <span className="text-muted-foreground">
+            <span className="rounded-full border border-saffron-border bg-saffron-soft px-3 py-1 text-xs font-medium text-saffron-soft-foreground">
               {t("runBy", { business: listing.ownerBusinessName })}
             </span>
           </div>
@@ -155,7 +165,7 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
           href={visit}
           className={cn(
             buttonVariants({ size: "lg", shape: "pill" }),
-            "shrink-0 self-start sm:self-auto",
+            "relative shrink-0 self-start shadow-md sm:self-auto",
           )}
         >
           {t("bookVisit")}
@@ -176,16 +186,21 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
       {listing.amenities.length === 0 && listing.houseRules.length === 0 ? null : (
         <div className="grid gap-6 md:grid-cols-2">
           {listing.amenities.length === 0 ? null : (
-            <Card asChild className="space-y-4 rounded-2xl p-6">
+            <Card
+              asChild
+              variant="saffron"
+              className="relative space-y-4 overflow-hidden rounded-3xl p-6"
+            >
               <section aria-labelledby="amenities-title">
-                <h2 id="amenities-title" className="text-title-3 text-foreground">
+                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-saffron" />
+                <h2 id="amenities-title" className="text-title-3 font-semibold text-foreground">
                   {t("amenities")}
                 </h2>
                 <ul className="flex flex-wrap gap-2">
                   {listing.amenities.map((amenity) => (
                     <li
                       key={amenity.slug}
-                      className="rounded-full border bg-surface px-3.5 py-1.5 text-sm font-medium text-foreground"
+                      className="rounded-full border border-saffron-border bg-card px-3.5 py-1.5 text-sm font-medium text-foreground shadow-2xs"
                     >
                       {amenity.name}
                     </li>
@@ -195,9 +210,14 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
             </Card>
           )}
           {listing.houseRules.length === 0 ? null : (
-            <Card asChild className="space-y-4 rounded-2xl p-6">
+            <Card
+              asChild
+              variant="coral"
+              className="relative space-y-4 overflow-hidden rounded-3xl p-6"
+            >
               <section aria-labelledby="rules-title">
-                <h2 id="rules-title" className="text-title-3 text-foreground">
+                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-coral" />
+                <h2 id="rules-title" className="text-title-3 font-semibold text-foreground">
                   {t("rules")}
                 </h2>
                 <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-foreground">
@@ -212,12 +232,20 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
       )}
 
       {listing.description === "" ? null : (
-        <Card asChild className="space-y-3 rounded-2xl p-6 sm:p-8">
+        <Card
+          asChild
+          variant="warm"
+          className="relative space-y-3 overflow-hidden rounded-3xl p-6 sm:p-8"
+        >
           <section aria-labelledby="about-title">
-            <h2 id="about-title" className="text-title-3 text-foreground">
+            <ArchWatermark
+              tone="saffron"
+              className="absolute -right-4 -bottom-4 size-36 opacity-15"
+            />
+            <h2 id="about-title" className="relative text-title-3 font-semibold text-foreground">
               {t("about")}
             </h2>
-            <p className="max-w-prose leading-7 whitespace-pre-line text-foreground">
+            <p className="relative max-w-prose leading-7 whitespace-pre-line text-foreground">
               {listing.description}
             </p>
           </section>
@@ -227,13 +255,18 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
       <Location listing={listing} />
 
       <Card
-        variant="flat"
-        className="flex flex-wrap items-center justify-between gap-4 rounded-2xl p-6"
+        variant="coral"
+        className="relative flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-3xl p-6 sm:p-8"
       >
-        <p className="text-sm font-medium text-muted-foreground">
+        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-coral" />
+        <ArchWatermark tone="coral" className="absolute -right-4 -bottom-4 size-32 opacity-15" />
+        <p className="relative text-sm font-semibold text-foreground">
           {t("runBy", { business: listing.ownerBusinessName })}
         </p>
-        <Link href={visit} className={buttonVariants({ size: "lg", shape: "pill" })}>
+        <Link
+          href={visit}
+          className={cn(buttonVariants({ size: "lg", shape: "pill" }), "relative shadow-md")}
+        >
           {t("bookVisit")}
         </Link>
       </Card>
@@ -251,8 +284,12 @@ async function Gallery({ listing }: { listing: PublicListing }) {
         {t("title")}
       </h2>
       {photos.length === 0 ? (
-        <Card variant="flat" className="border-dashed p-8 text-center text-muted-foreground">
-          <p>{t("none")}</p>
+        <Card
+          variant="warm"
+          className="relative overflow-hidden rounded-3xl border-dashed p-8 text-center text-muted-foreground"
+        >
+          <ListingPlaceholderArt className="mx-auto mb-4 h-36 max-w-md rounded-2xl border border-saffron-border/60" />
+          <p className="font-medium text-foreground">{t("none")}</p>
         </Card>
       ) : (
         <ul className="grid grid-cols-2 gap-2.5 overflow-hidden rounded-2xl sm:grid-cols-4 sm:gap-3 sm:rounded-3xl">
@@ -316,6 +353,8 @@ function currentRent(calendar: PriceCalendar | null): (category: Category) => nu
   return (category) => soonest.get(category.id) ?? category.baseRentPaise;
 }
 
+const roomAccentBars = ["bg-primary", "bg-saffron", "bg-indigo", "bg-coral"] as const;
+
 async function Rooms({
   categories,
   calendar,
@@ -335,28 +374,35 @@ async function Rooms({
   return (
     <section aria-labelledby="rooms-title" className="space-y-5">
       <div className="space-y-1.5">
-        <h2 id="rooms-title" className="text-title-2 text-foreground">
-          {t("title")}
-        </h2>
+        <div className="flex items-center gap-3">
+          <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-primary" />
+          <h2 id="rooms-title" className="text-title-2 font-bold text-foreground">
+            {t("title")}
+          </h2>
+        </div>
         <p className="max-w-prose text-sm text-muted-foreground sm:text-base">{t("intro")}</p>
       </div>
       {categories.length === 0 ? (
-        <Card variant="flat" className="p-6 text-muted-foreground">
+        <Card variant="warm" className="p-6 text-muted-foreground">
           <p>{t("none")}</p>
         </Card>
       ) : (
         <ul className="grid gap-5 md:grid-cols-2">
-          {categories.map((category) => (
+          {categories.map((category, index) => (
             <li
               key={category.id}
-              className="flex flex-col justify-between gap-5 rounded-2xl border bg-card p-6 text-card-foreground shadow-sm"
+              className="relative flex flex-col justify-between gap-5 overflow-hidden rounded-3xl border bg-card p-6 text-card-foreground shadow-sm"
             >
-              <div className="space-y-4">
+              <span
+                aria-hidden="true"
+                className={`absolute inset-x-0 top-0 h-1.5 ${roomAccentBars[index % roomAccentBars.length] ?? "bg-primary"}`}
+              />
+              <div className="space-y-4 pt-1">
                 <div className="space-y-1">
                   <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">
                     {category.label}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm font-medium text-muted-foreground">
                     {[
                       t(`sharing.${category.occupancy}`),
                       category.ac ? t("ac") : null,
@@ -374,13 +420,13 @@ async function Rooms({
                   day={day}
                 />
               </div>
-              <div className="space-y-3 rounded-xl border bg-surface/80 p-4 text-sm">
+              <div className="space-y-3 rounded-2xl border border-saffron-border/70 bg-surface-warm p-4 text-sm">
                 <p className="font-semibold text-foreground tabular-nums">
                   {t("deposit", { amount: formatINR(category.securityDepositPaise) })}
                 </p>
                 <Separator />
                 <div className="space-y-1.5">
-                  <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  <p className="text-xs font-semibold tracking-wider text-saffron-soft-foreground uppercase">
                     {t("charges")}
                   </p>
                   {category.mandatoryCharges.length === 0 ? (
@@ -392,7 +438,7 @@ async function Rooms({
                           <li key={`${charge.type}-${charge.label}`}>{chargeText(charge, t)}</li>
                         ))}
                       </ul>
-                      <p className="pt-1 text-xs text-muted-foreground tabular-nums">
+                      <p className="pt-1 text-xs font-medium text-muted-foreground tabular-nums">
                         {t("totals", {
                           monthly: formatINR(category.monthlyChargesPaise),
                           once: formatINR(category.oneTimeChargesPaise),
@@ -448,25 +494,25 @@ async function RoomPrice({
   const scarce = room === undefined ? null : scarceBeds(room.bedsFree);
   return (
     <div className="space-y-2.5">
-      <p className="font-display text-2xl font-bold tracking-tight text-foreground tabular-nums">
+      <p className="inline-block rounded-xl border border-primary-border bg-primary-soft px-3.5 py-1.5 font-display text-2xl font-bold tracking-tight text-primary-soft-foreground tabular-nums">
         {t("rent", { amount: formatINR(rent) })}
       </p>
       {room === undefined || stay === undefined ? null : (
         <p className="text-xs text-muted-foreground">{t("headlineNote", { months: stay })}</p>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="success" className="px-3 py-1 text-xs">
+        <Badge variant="sage" className="px-3 py-1 text-xs font-semibold">
           <Check aria-hidden="true" className="size-3.5" />
           {t("fixedForStay")}
         </Badge>
         {scarce === null ? null : (
-          <Badge variant="warning" className="px-3 py-1 text-xs font-semibold">
+          <Badge variant="saffron" className="px-3 py-1 text-xs font-semibold">
             {t("bedsLeft", { count: scarce })}
           </Badge>
         )}
       </div>
       {changes === null ? null : (
-        <p className="rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-foreground tabular-nums">
+        <p className="rounded-lg border border-indigo-border bg-indigo-soft px-3 py-1.5 text-xs font-medium text-indigo-soft-foreground tabular-nums">
           {changes}
         </p>
       )}
@@ -499,16 +545,30 @@ async function CheckPrice({
   return (
     <section
       aria-labelledby="quote-title"
-      className="space-y-5 rounded-3xl border bg-surface p-6 shadow-xs sm:p-8"
+      className="relative space-y-5 overflow-hidden rounded-3xl border border-indigo-border bg-indigo-soft p-6 shadow-sm sm:p-8"
     >
-      <div className="space-y-1.5">
-        <div className="flex items-center gap-2">
-          <Sparkles aria-hidden="true" className="size-5 text-primary" />
-          <h2 id="quote-title" className="text-title-2 text-foreground">
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-1.5"
+        style={{
+          backgroundImage:
+            "linear-gradient(90deg, var(--indigo) 0%, var(--primary) 40%, var(--saffron) 75%, var(--coral) 100%)",
+        }}
+      />
+      <ArchWatermark tone="indigo" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
+      <div className="relative space-y-1.5">
+        <div className="flex items-center gap-2.5">
+          <span
+            aria-hidden="true"
+            className="grid size-10 place-items-center rounded-xl bg-card text-indigo-soft-foreground shadow-2xs ring-1 ring-indigo-border"
+          >
+            <Sparkles className="size-5" />
+          </span>
+          <h2 id="quote-title" className="text-title-2 font-bold text-foreground">
             {t("title")}
           </h2>
         </div>
-        <p className="max-w-prose text-sm text-muted-foreground sm:text-base">
+        <p className="max-w-prose text-sm text-foreground sm:text-base">
           {visit === null ? t("intro") : t("atYourVisit")}
         </p>
       </div>
@@ -582,21 +642,27 @@ async function Safety({ listing }: { listing: PublicListing }) {
           [t("warden"), safety.warden],
         ] as const);
   return (
-    <Card asChild className="space-y-5 rounded-2xl p-6 sm:p-8">
+    <Card
+      asChild
+      variant="sage"
+      className="relative space-y-5 overflow-hidden rounded-3xl p-6 sm:p-8"
+    >
       <section aria-labelledby="safety-title">
-        <div className="flex items-center gap-2.5">
-          <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-sage" />
+        <ArchWatermark tone="sage" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
+        <div className="relative flex items-center gap-2.5">
+          <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-card text-sage-soft-foreground shadow-2xs ring-1 ring-sage-border">
             <ShieldCheck aria-hidden="true" className="size-5" />
           </div>
-          <h2 id="safety-title" className="text-title-2 text-foreground">
+          <h2 id="safety-title" className="text-title-2 font-bold text-foreground">
             {t("title")}
           </h2>
         </div>
         {safety === null ? (
-          <p className="text-muted-foreground">{t("notChecked")}</p>
+          <p className="relative text-muted-foreground">{t("notChecked")}</p>
         ) : (
-          <div className="space-y-5">
-            <p className="rounded-xl bg-primary-soft/60 px-4 py-3 text-sm font-medium text-foreground">
+          <div className="relative space-y-5">
+            <p className="rounded-xl border border-sage-border bg-card px-4 py-3 text-sm font-semibold text-sage-soft-foreground shadow-2xs">
               {t("checked", {
                 date: format.dateTime(new Date(`${safety.verifiedOn}T00:00:00+05:30`), {
                   dateStyle: "long",
@@ -604,17 +670,20 @@ async function Safety({ listing }: { listing: PublicListing }) {
               })}
             </p>
             <ul className="grid gap-3 sm:grid-cols-2">
-              <li className="flex items-center gap-2.5 rounded-xl border bg-surface/60 px-4 py-3 text-sm font-medium text-foreground">
-                <Check aria-hidden="true" className="size-4 shrink-0 text-primary" />
+              <li className="flex items-center gap-2.5 rounded-xl border border-sage-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-2xs">
+                <Check aria-hidden="true" className="size-4 shrink-0 text-sage-soft-foreground" />
                 <span>{t("exits", { count: safety.exits })}</span>
               </li>
               {checks.map(([label, present]) => (
                 <li
                   key={label}
-                  className="flex items-center gap-2.5 rounded-xl border bg-surface/60 px-4 py-3 text-sm text-foreground"
+                  className="flex items-center gap-2.5 rounded-xl border border-sage-border bg-card px-4 py-3 text-sm text-foreground shadow-2xs"
                 >
                   {present ? (
-                    <Check aria-hidden="true" className="size-4 shrink-0 text-primary" />
+                    <Check
+                      aria-hidden="true"
+                      className="size-4 shrink-0 text-sage-soft-foreground"
+                    />
                   ) : (
                     <X aria-hidden="true" className="size-4 shrink-0 text-destructive" />
                   )}
@@ -633,9 +702,9 @@ async function Safety({ listing }: { listing: PublicListing }) {
                   {safety.womenSafety.map((feature) => (
                     <li
                       key={feature}
-                      className="inline-flex items-center gap-1.5 rounded-full border bg-surface px-3.5 py-1.5 text-sm text-foreground"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-saffron-border bg-saffron-soft px-3.5 py-1.5 text-sm font-medium text-saffron-soft-foreground shadow-2xs"
                     >
-                      <Check aria-hidden="true" className="size-3.5 text-primary" />
+                      <Check aria-hidden="true" className="size-3.5" />
                       {t(`feature.${feature}`)}
                     </li>
                   ))}
@@ -645,7 +714,7 @@ async function Safety({ listing }: { listing: PublicListing }) {
           </div>
         )}
         <Separator />
-        <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+        <ul className="relative flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-foreground">
           <li>{t(`licence.${listing.licenceStatus}`)}</li>
           <li>{t(`society.${listing.societyPermission}`)}</li>
         </ul>
@@ -659,9 +728,12 @@ async function Location({ listing }: { listing: PublicListing }) {
   return (
     <section aria-labelledby="location-title" className="space-y-5">
       <div className="space-y-1.5">
-        <h2 id="location-title" className="text-title-2 text-foreground">
-          {t("location.title")}
-        </h2>
+        <div className="flex items-center gap-3">
+          <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-coral" />
+          <h2 id="location-title" className="text-title-2 font-bold text-foreground">
+            {t("location.title")}
+          </h2>
+        </div>
         <p className="max-w-prose text-sm text-muted-foreground sm:text-base">
           {t("location.approximate", { locality: listing.locality.name })}
         </p>
@@ -682,13 +754,23 @@ async function Location({ listing }: { listing: PublicListing }) {
       />
       <div className="grid gap-5 sm:grid-cols-2">
         {[
-          { key: "campuses", title: t("location.campuses"), places: listing.campusesNearby },
-          { key: "stations", title: t("location.stations"), places: listing.stationsNearby },
+          {
+            key: "campuses",
+            variant: "indigo" as const,
+            title: t("location.campuses"),
+            places: listing.campusesNearby,
+          },
+          {
+            key: "stations",
+            variant: "teal" as const,
+            title: t("location.stations"),
+            places: listing.stationsNearby,
+          },
         ].map((group) =>
           group.places.length === 0 ? null : (
-            <Card key={group.key} variant="flat" className="space-y-2.5 rounded-2xl p-5">
+            <Card key={group.key} variant={group.variant} className="space-y-2.5 rounded-3xl p-6">
               <h3 className="font-display font-semibold text-foreground">{group.title}</h3>
-              <ul className="space-y-1.5 text-sm text-muted-foreground tabular-nums">
+              <ul className="space-y-1.5 text-sm font-medium text-foreground tabular-nums">
                 {group.places.map((place) => (
                   <li key={place.slug}>
                     {t("location.distance", {

@@ -50,10 +50,10 @@ export default async function OpsListingsPage({ searchParams }: PageProps<"/ops/
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("listings.title")}</h1>
+          <h1 className="font-display text-title-1 text-foreground">{t("listings.title")}</h1>
           <p className="text-muted-foreground">{t("listings.intro")}</p>
         </div>
-        <Link href={OPS_NEW_LISTING_PATH} className={buttonVariants({ size: "lg" })}>
+        <Link href={OPS_NEW_LISTING_PATH} className={buttonVariants({ size: "lg", shape: "pill" })}>
           {t("nav.newListing")}
         </Link>
       </div>
@@ -66,8 +66,9 @@ export default async function OpsListingsPage({ searchParams }: PageProps<"/ops/
               href={pageUrl({ status: value, q })}
               aria-current={value === status ? "page" : undefined}
               className={cn(
-                "rounded-full border px-3 py-1 text-sm",
-                value === status && "border-primary bg-primary text-primary-foreground",
+                "inline-flex min-h-9 items-center rounded-full border border-border/80 bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-foreground",
+                value === status &&
+                  "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
               )}
             >
               {value === undefined ? t("listings.all") : t(`status.${value}`)}
@@ -96,7 +97,7 @@ export default async function OpsListingsPage({ searchParams }: PageProps<"/ops/
       {page.items.length === 0 ? (
         <p className="text-muted-foreground">{t("listings.empty")}</p>
       ) : (
-        <ul className="divide-y rounded-md border">
+        <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
           {page.items.map((item) => {
             const picture = item.cover?.renditions.find(
               (rendition) => rendition.name === "thumb" && rendition.contentType === "image/webp",
@@ -105,9 +106,9 @@ export default async function OpsListingsPage({ searchParams }: PageProps<"/ops/
               <li key={item.id}>
                 <Link
                   href={`/ops/listings/${item.id}` as Route}
-                  className="flex items-center gap-4 p-3 hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="flex items-center gap-4 p-4 transition-colors hover:bg-surface focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
-                  <div className="relative size-16 shrink-0 overflow-hidden rounded bg-muted">
+                  <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-surface">
                     {picture === undefined ? null : (
                       <Image
                         src={picture.url}
@@ -120,11 +121,11 @@ export default async function OpsListingsPage({ searchParams }: PageProps<"/ops/
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{item.name}</p>
+                    <p className="truncate font-semibold text-foreground">{item.name}</p>
                     <p className="text-sm text-muted-foreground">
                       {item.locality.name} · {t(`verification.${item.verificationStatus}`)}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground tabular-nums">
                       {t("listings.updated", {
                         when: format.dateTime(new Date(item.updatedAt), {
                           dateStyle: "medium",
@@ -133,7 +134,7 @@ export default async function OpsListingsPage({ searchParams }: PageProps<"/ops/
                       })}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full border px-2 py-0.5 text-xs">
+                  <span className="shrink-0 rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-muted-foreground ring-1 ring-border/70">
                     {t(`status.${item.status}`)}
                   </span>
                 </Link>

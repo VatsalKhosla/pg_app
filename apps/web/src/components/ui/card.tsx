@@ -14,9 +14,15 @@ const cardVariants = cva(
     variants: {
       variant: {
         flat: "",
-        raised: "border-transparent shadow-md dark:border-border",
+        raised: "border-border/70 shadow-md dark:border-border",
         interactive:
-          "transition-[box-shadow,border-color,transform] duration-(--duration-base) ease-standard hover:-translate-y-0.5 hover:border-transparent hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:hover:border-border",
+          "transition-[box-shadow,border-color,transform] duration-(--duration-base) ease-standard hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:hover:border-border",
+        warm: "border-saffron-border bg-surface-warm shadow-xs",
+        teal: "border-primary/30 bg-primary-soft shadow-xs",
+        coral: "border-coral-border bg-coral-soft shadow-xs",
+        saffron: "border-saffron-border bg-saffron-soft shadow-xs",
+        indigo: "border-indigo-border bg-indigo-soft shadow-xs",
+        sage: "border-sage-border bg-sage-soft shadow-xs",
       },
     },
     defaultVariants: { variant: "flat" },

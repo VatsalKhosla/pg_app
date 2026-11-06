@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { ArchWatermark } from "@/components/brand/editorial-art";
 import { Card } from "@/components/ui/card";
 import { VisitRequestForm } from "@/components/visits/visit-request-form";
 import { getPublicListing } from "@/lib/api/public";
@@ -49,16 +50,27 @@ export default async function VisitPage({ params }: PageProps<"/pg/[slug]/visit"
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 px-gutter py-10 sm:py-16">
-      <div className="space-y-3">
+      <div className="relative space-y-3 overflow-hidden rounded-3xl border border-saffron-border bg-surface-warm p-6 shadow-xs sm:p-8">
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-1.5"
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, var(--primary) 0%, var(--sage) 35%, var(--saffron) 70%, var(--coral) 100%)",
+          }}
+        />
+        <ArchWatermark tone="saffron" className="absolute -right-6 -bottom-6 size-36 opacity-15" />
         <Link
           href={`/pg/${slug}` as Route}
-          className="inline-flex min-h-8 items-center gap-1.5 text-sm font-medium text-primary underline underline-offset-4"
+          className="relative inline-flex min-h-8 items-center gap-1.5 text-sm font-semibold text-primary underline underline-offset-4"
         >
           <ArrowLeft aria-hidden="true" className="size-4" />
           {t("back")}
         </Link>
-        <h1 className="text-title-1 text-foreground">{t("title", { name: listing.name })}</h1>
-        <p className="text-muted-foreground">{t("intro")}</p>
+        <h1 className="relative text-title-1 font-bold text-foreground">
+          {t("title", { name: listing.name })}
+        </h1>
+        <p className="relative text-muted-foreground">{t("intro")}</p>
       </div>
       {isStaff(me) ? (
         <Card className="p-6">
