@@ -238,7 +238,7 @@ export function RuleForm({
       aria-label={
         rule === undefined ? t("form.addTitle") : t("form.editTitle", { label: rule.label })
       }
-      className="space-y-5 rounded-lg border p-4"
+      className="space-y-5 rounded-xl border border-border/80 bg-surface/40 p-5"
       onSubmit={(event) => {
         void form.handleSubmit(save)(event);
       }}

@@ -59,7 +59,10 @@ export function DisputeResolve({ id, code }: { id: string; code: string }) {
 
   if (chosen !== null) {
     return (
-      <section aria-labelledby={`${formId}-confirm`} className="space-y-3 rounded-lg border p-4">
+      <section
+        aria-labelledby={`${formId}-confirm`}
+        className="space-y-3 rounded-xl border border-border/80 bg-surface/50 p-4"
+      >
         <h2 id={`${formId}-confirm`} className="font-semibold">
           {t(`confirm.${chosen.outcome}.title`, { code })}
         </h2>

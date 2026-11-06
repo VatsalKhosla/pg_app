@@ -423,7 +423,7 @@ function Readout({
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute top-2 z-10 w-max max-w-44 space-y-0.5 rounded-md border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-sm"
+      className="pointer-events-none absolute top-2 z-10 w-max max-w-44 space-y-0.5 rounded-xl border border-border/80 bg-popover px-3.5 py-2.5 text-xs text-popover-foreground shadow-md"
       style={leftwards ? { right: width - at + 10 } : { left: at + 10 }}
     >
       <p className="text-sm font-semibold">

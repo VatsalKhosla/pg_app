@@ -127,8 +127,11 @@ export function MediaManager({ listing }: { listing: Listing }) {
                 ? t("video", { number: index + 1 })
                 : t("photo", { number: index + 1 });
             return (
-              <li key={item.id} className="space-y-2 rounded-md border p-2">
-                <div className="relative aspect-[4/3] overflow-hidden rounded bg-muted">
+              <li
+                key={item.id}
+                className="space-y-2.5 rounded-xl border border-border/80 bg-surface/40 p-2.5"
+              >
+                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-surface">
                   {picture === undefined ? (
                     <p className="p-3 text-sm text-muted-foreground">{t("preparing")}</p>
                   ) : (
@@ -259,7 +262,7 @@ export function MediaManager({ listing }: { listing: Listing }) {
           />
           <label
             htmlFor={inputId}
-            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border bg-background px-6 text-sm font-medium shadow-xs hover:bg-accent peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring/50"
+            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-border/80 bg-card px-5 text-sm font-medium shadow-xs transition-colors hover:bg-surface peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring/50"
           >
             <ImagePlus aria-hidden className="size-4" />
             {t("add")}

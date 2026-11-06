@@ -58,7 +58,7 @@ export function OwnerPicker({
 
   if (owner !== null) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-surface/40 p-4">
         <p className="text-sm">
           {t("chosen", { business: owner.businessName, phone: owner.phone ?? "" })}
         </p>
@@ -108,9 +108,12 @@ export function OwnerPicker({
         {results === null ? null : results.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("none")}</p>
         ) : (
-          <ul className="divide-y rounded-md border">
+          <ul className="divide-y divide-border/70 rounded-xl border border-border/80 bg-background">
             {results.map((found) => (
-              <li key={found.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+              <li
+                key={found.id}
+                className="flex flex-wrap items-center justify-between gap-3 p-3.5"
+              >
                 <div className="min-w-0">
                   <p className="font-medium">{found.businessName}</p>
                   <p className="text-sm text-muted-foreground">
@@ -139,7 +142,10 @@ export function OwnerPicker({
         </p>
       ) : null}
 
-      <section aria-labelledby={`${id}-add`} className="space-y-4 rounded-md border p-4">
+      <section
+        aria-labelledby={`${id}-add`}
+        className="space-y-4 rounded-xl border border-border/80 bg-surface/40 p-4"
+      >
         <h3 id={`${id}-add`} className="font-medium">
           {t("addTitle")}
         </h3>

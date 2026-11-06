@@ -5,11 +5,10 @@ import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/fields";
+import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api/errors";
 import { cancelVisit, scheduleVisit } from "@/lib/visits/client";
-
-const fieldClasses =
-  "h-11 w-full rounded-md border bg-background px-3 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm dark:bg-input/30";
 
 const CUSTOM = "custom";
 
@@ -69,7 +68,7 @@ export function StudentVisitForms({
   return (
     <div className="space-y-6">
       <form
-        className="space-y-4 rounded-lg border p-4"
+        className="space-y-4 rounded-xl border border-border/80 bg-surface/40 p-4"
         onSubmit={(event) => {
           event.preventDefault();
           if (at === "" || agent === "") return;
@@ -80,7 +79,10 @@ export function StudentVisitForms({
         <fieldset className="space-y-2">
           <legend className="text-sm font-medium">{t("time")}</legend>
           {offered.map((option) => (
-            <label key={option.value} className="flex min-h-11 items-center gap-3 text-sm">
+            <label
+              key={option.value}
+              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm transition-colors hover:bg-surface/60 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/50"
+            >
               <input
                 type="radio"
                 name={`${formId}-time`}
@@ -89,12 +91,12 @@ export function StudentVisitForms({
                 onChange={() => {
                   setChoice(option.value);
                 }}
-                className="size-5 accent-primary"
+                className="size-4 accent-primary"
               />
               {option.label}
             </label>
           ))}
-          <label className="flex min-h-11 items-center gap-3 text-sm">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm transition-colors hover:bg-surface/60 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/50">
             <input
               type="radio"
               name={`${formId}-time`}
@@ -103,32 +105,30 @@ export function StudentVisitForms({
               onChange={() => {
                 setChoice(CUSTOM);
               }}
-              className="size-5 accent-primary"
+              className="size-4 accent-primary"
             />
             {t("customTime")}
           </label>
           {choice === CUSTOM ? (
             <label className="block space-y-1.5 text-sm">
               <span className="font-medium">{t("customTimeField")}</span>
-              <input
+              <Input
                 type="datetime-local"
                 value={custom}
                 onChange={(event) => {
                   setCustom(event.target.value);
                 }}
-                className={fieldClasses}
               />
             </label>
           ) : null}
         </fieldset>
         <label className="block space-y-1.5 text-sm">
           <span className="font-medium">{t("agent")}</span>
-          <select
+          <Select
             value={agent}
             onChange={(event) => {
               setAgent(event.target.value);
             }}
-            className={fieldClasses}
           >
             <option value="">{agents.length === 0 ? t("noAgents") : t("chooseAgent")}</option>
             {agents.map((each) => (
@@ -136,7 +136,7 @@ export function StudentVisitForms({
                 {each.name}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <p className="text-sm text-muted-foreground">{t("texted")}</p>
         <Button type="submit" disabled={busy !== null || at === "" || agent === ""}>
@@ -144,7 +144,7 @@ export function StudentVisitForms({
         </Button>
       </form>
       <form
-        className="space-y-3 rounded-lg border p-4"
+        className="space-y-3 rounded-xl border border-border/80 bg-surface/40 p-4"
         onSubmit={(event) => {
           event.preventDefault();
           if (reason.trim() === "") return;
@@ -154,13 +154,12 @@ export function StudentVisitForms({
         <h2 className="text-lg font-semibold">{t("cancel")}</h2>
         <label className="block space-y-1.5 text-sm">
           <span className="font-medium">{t("reason")}</span>
-          <input
+          <Input
             value={reason}
             maxLength={500}
             onChange={(event) => {
               setReason(event.target.value);
             }}
-            className={fieldClasses}
           />
         </label>
         <Button type="submit" variant="outline" disabled={busy !== null || reason.trim() === ""}>

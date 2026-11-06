@@ -101,7 +101,10 @@ function ReasonedChange({
 
   if (chosen !== null) {
     return (
-      <section aria-labelledby={`${id}-confirm`} className="space-y-3 rounded-lg border p-4">
+      <section
+        aria-labelledby={`${id}-confirm`}
+        className="space-y-3 rounded-xl border border-border/80 bg-surface/50 p-4"
+      >
         <h3 id={`${id}-confirm`} className="font-semibold">
           {t(`${action}.title`, { code })}
         </h3>
@@ -133,7 +136,7 @@ function ReasonedChange({
     <form
       noValidate
       aria-labelledby={`${id}-title`}
-      className="space-y-3 rounded-lg border p-4"
+      className="space-y-3 rounded-xl border border-border/80 bg-surface/50 p-4"
       onSubmit={(event) => {
         void form.handleSubmit((values) => {
           setFailure(null);

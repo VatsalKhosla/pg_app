@@ -33,7 +33,10 @@ export async function MarketPanel({ market }: { market: Market }) {
       ) : (
         <ul className="space-y-3">
           {market.rooms.map((room) => (
-            <li key={room.roomCategory} className="space-y-2 rounded-lg border p-4">
+            <li
+              key={room.roomCategory}
+              className="space-y-2 rounded-xl border border-border/80 bg-surface/40 p-4"
+            >
               <h3 className="font-medium">{room.label}</h3>
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
                 <dt className="text-muted-foreground">{t("listed")}</dt>

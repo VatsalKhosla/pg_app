@@ -131,7 +131,10 @@ export function RefundDesk({
 
   if (step === "confirming" || step === "busy") {
     return (
-      <section aria-labelledby={`${id}-confirm`} className="space-y-3 rounded-lg border p-4">
+      <section
+        aria-labelledby={`${id}-confirm`}
+        className="space-y-3 rounded-xl border border-border/80 bg-surface/50 p-4"
+      >
         <h3 id={`${id}-confirm`} className="font-semibold">
           {text.confirmTitle.replace("{amount}", paise === null ? "" : formatINR(paise))}
         </h3>
@@ -155,7 +158,10 @@ export function RefundDesk({
   }
 
   return (
-    <section aria-labelledby={`${id}-title`} className="space-y-3 rounded-lg border p-4">
+    <section
+      aria-labelledby={`${id}-title`}
+      className="space-y-3 rounded-xl border border-border/80 bg-surface/50 p-4"
+    >
       <h3 id={`${id}-title`} className="font-semibold">
         {text.title}
       </h3>

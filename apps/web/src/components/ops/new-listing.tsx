@@ -75,8 +75,16 @@ export function NewListing({ cities }: { cities: CityChoice[] }) {
   // The owner has its own search and form, so it sits outside the listing's form.
   return (
     <div className="space-y-10">
-      <section aria-labelledby={`${id}-owner`} className="space-y-4">
-        <h2 id={`${id}-owner`} ref={ownerRef} tabIndex={-1} className="text-lg font-semibold">
+      <section
+        aria-labelledby={`${id}-owner`}
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2
+          id={`${id}-owner`}
+          ref={ownerRef}
+          tabIndex={-1}
+          className="font-display text-title-3 font-semibold"
+        >
           {t("owner.legend")}
         </h2>
         <OwnerPicker
@@ -89,8 +97,11 @@ export function NewListing({ cities }: { cities: CityChoice[] }) {
         />
       </section>
 
-      <section aria-labelledby={`${id}-details`} className="space-y-4">
-        <h2 id={`${id}-details`} className="text-lg font-semibold">
+      <section
+        aria-labelledby={`${id}-details`}
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id={`${id}-details`} className="font-display text-title-3 font-semibold">
           {t("details.title")}
         </h2>
         <form
