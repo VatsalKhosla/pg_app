@@ -29,12 +29,12 @@ export async function SiteHeader() {
   }));
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md supports-backdrop-filter:bg-background/75">
+      <div className="mx-auto flex h-16 max-w-page items-center justify-between gap-4 px-gutter sm:h-18">
         {/* Named by its visible text: the mark beside it is decorative. */}
         <Link
           href="/"
-          className="-mx-1 flex items-center gap-2.5 rounded-md px-1 py-1 text-lg font-semibold tracking-tight outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="-mx-1.5 flex items-center gap-2.5 rounded-xl px-1.5 py-1 font-display text-lg font-bold tracking-tight text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <BrandMark />
           <span>{brand.name}</span>
@@ -45,7 +45,7 @@ export async function SiteHeader() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  className="inline-flex min-h-10 items-center rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
                 >
                   {link.label}
                 </Link>
@@ -53,10 +53,14 @@ export async function SiteHeader() {
             ))}
           </ul>
         </nav>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <Link
             href={accountLink.href}
-            className={buttonVariants({ variant: me === null ? "default" : "ghost", size: "sm" })}
+            className={buttonVariants({
+              variant: me === null ? "default" : "outline",
+              size: "sm",
+              shape: "pill",
+            })}
           >
             {accountLink.label}
           </Link>
