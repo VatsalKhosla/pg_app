@@ -43,7 +43,8 @@ export const company: Company = {
   registeredAddress: null,
   supportPhone: null,
   supportHours: null,
-  supportEmail: null,
+  // The founders' Google Workspace address (2026-11-06).
+  supportEmail: "support@fixyourstay.in",
   founders: [],
   grievanceOfficer: null,
 };

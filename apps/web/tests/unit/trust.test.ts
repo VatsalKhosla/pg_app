@@ -22,13 +22,12 @@ const GIVEN: Company = {
 };
 
 describe("the company's facts", () => {
-  it("are all still to come from the founders", () => {
+  it("are, but for the support address, still to come from the founders", () => {
     expect(missingFacts(company)).toEqual([
       "legalName",
       "registeredAddress",
       "supportPhone",
       "supportHours",
-      "supportEmail",
       "founders",
       "grievanceOfficer",
     ]);
@@ -59,7 +58,7 @@ describe("which trust pages search engines may index", () => {
 describe("the launch check", () => {
   it("names every missing fact and every draft", () => {
     const problems = launchProblems();
-    expect(problems).toHaveLength(7 + Object.keys(legalDocuments).length);
+    expect(problems).toHaveLength(6 + Object.keys(legalDocuments).length);
     expect(problems).toContain("src/content/legal: terms is a draft that needs a lawyer's review");
     expect(launchProblems(GIVEN, { terms: { version: "2027-01" } })).toEqual([]);
   });
