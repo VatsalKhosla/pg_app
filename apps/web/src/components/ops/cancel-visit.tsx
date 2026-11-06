@@ -61,6 +61,7 @@ export function CancelVisit({ visitId }: { visitId: string }) {
   }
   return (
     <form
+      method="post"
       noValidate
       className="space-y-3"
       onSubmit={(event) => {

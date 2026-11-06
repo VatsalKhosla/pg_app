@@ -105,6 +105,7 @@ export function VisitRequestForm({
 
   return (
     <form
+      method="post"
       noValidate
       onSubmit={(event) => {
         void form.handleSubmit(submit)(event);

@@ -68,6 +68,7 @@ export function OwnerForm({ owner }: { owner: Owner }) {
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-4"
       onSubmit={(event) => {

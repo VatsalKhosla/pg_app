@@ -207,6 +207,7 @@ export function GrievanceForm({
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-5"
       onSubmit={(event) => {

@@ -94,6 +94,7 @@ export function RentBandForm({
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-5"
       onSubmit={(event) => {

@@ -112,6 +112,7 @@ export function SearchBar({
   return (
     <div className="space-y-3">
       <form
+        method="get"
         role="search"
         className="flex gap-2"
         onSubmit={(event) => {

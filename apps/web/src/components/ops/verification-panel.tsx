@@ -78,6 +78,7 @@ function BookVisit({ listingId, agents }: { listingId: string; agents: AgentChoi
 
   return (
     <form
+      method="post"
       noValidate
       aria-labelledby={`${id}-title`}
       className="space-y-4 rounded-md border p-4"
@@ -157,6 +158,7 @@ function Suspend({ listingId }: { listingId: string }) {
   }
   return (
     <form
+      method="post"
       noValidate
       className="space-y-4 rounded-md border border-destructive/40 p-4"
       onSubmit={(event) => {

@@ -109,6 +109,7 @@ export function ProfileForm({
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-6"
       onSubmit={(event) => {

@@ -53,6 +53,7 @@ export function DetailsForm({ listing }: { listing: Listing }) {
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-6"
       onSubmit={(event) => {

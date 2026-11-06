@@ -282,6 +282,7 @@ function AddRoomForm({ category }: { category: Category }) {
 
   return (
     <form
+      method="post"
       noValidate
       aria-label={t("rooms.addRoomTo", { label: category.label })}
       className="space-y-4"
@@ -359,6 +360,7 @@ function AddBedForm({ room }: { room: Room }) {
 
   return (
     <form
+      method="post"
       noValidate
       aria-label={t("rooms.addBedTo", { label: room.label })}
       className="flex flex-wrap items-end gap-3"

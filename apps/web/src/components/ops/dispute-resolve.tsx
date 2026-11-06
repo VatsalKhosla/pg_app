@@ -90,6 +90,7 @@ export function DisputeResolve({ id, code }: { id: string; code: string }) {
   }
   return (
     <form
+      method="post"
       noValidate
       aria-labelledby={`${formId}-title`}
       className="space-y-4"

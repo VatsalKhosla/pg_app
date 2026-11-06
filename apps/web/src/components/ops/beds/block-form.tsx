@@ -85,6 +85,7 @@ export function BlockForm({
 
   return (
     <form
+      method="post"
       noValidate
       aria-label={t("add.title")}
       className="space-y-5"

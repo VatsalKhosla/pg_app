@@ -47,6 +47,7 @@ export function EndBlock({
 
   return (
     <form
+      method="post"
       noValidate
       aria-label={label}
       className="flex flex-wrap items-end gap-2"

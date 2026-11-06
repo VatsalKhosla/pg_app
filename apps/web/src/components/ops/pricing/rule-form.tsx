@@ -234,6 +234,7 @@ export function RuleForm({
 
   return (
     <form
+      method="post"
       noValidate
       aria-label={
         rule === undefined ? t("form.addTitle") : t("form.editTitle", { label: rule.label })

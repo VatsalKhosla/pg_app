@@ -94,6 +94,7 @@ export function NewListing({ cities }: { cities: CityChoice[] }) {
           {t("details.title")}
         </h2>
         <form
+          method="post"
           noValidate
           className="space-y-6"
           onSubmit={(event) => {

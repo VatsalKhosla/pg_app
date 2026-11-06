@@ -112,6 +112,7 @@ export function DisputeForm({ code }: { code: string }) {
 
   return (
     <form
+      method="post"
       noValidate
       aria-labelledby={`${id}-title`}
       className="space-y-5 rounded-2xl border bg-card p-6 text-card-foreground shadow-xs"

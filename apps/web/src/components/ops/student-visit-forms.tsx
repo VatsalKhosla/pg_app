@@ -69,6 +69,7 @@ export function StudentVisitForms({
   return (
     <div className="space-y-6">
       <form
+        method="post"
         className="space-y-4 rounded-lg border p-4"
         onSubmit={(event) => {
           event.preventDefault();
@@ -144,6 +145,7 @@ export function StudentVisitForms({
         </Button>
       </form>
       <form
+        method="post"
         className="space-y-3 rounded-lg border p-4"
         onSubmit={(event) => {
           event.preventDefault();

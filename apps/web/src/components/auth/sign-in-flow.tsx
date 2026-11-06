@@ -274,6 +274,7 @@ function PhoneStep({
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-5"
       onSubmit={(event) => {
@@ -383,6 +384,7 @@ function CodeStep({
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-5"
       onSubmit={(event) => {
@@ -481,6 +483,7 @@ function ConsentStep({
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-5"
       onSubmit={(event) => {
@@ -553,6 +556,7 @@ function AuthenticatorStep({ text, onDone }: { text: SignInText; onDone: () => v
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-5"
       onSubmit={(event) => {

@@ -69,6 +69,7 @@ export function StudentVisitActions({ id, checkedIn }: { id: string; checkedIn: 
     <div className="space-y-4">
       {checkedIn ? (
         <form
+          method="post"
           className="space-y-4"
           onSubmit={(event) => {
             event.preventDefault();

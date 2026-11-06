@@ -136,6 +136,7 @@ export function QuoteChecker({
   return (
     <div className="space-y-5">
       <form
+        method="get"
         noValidate
         className="grid gap-4 sm:grid-cols-3 sm:items-end"
         onSubmit={(event) => {

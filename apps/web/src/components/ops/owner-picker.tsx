@@ -79,6 +79,7 @@ export function OwnerPicker({
   return (
     <div className="space-y-6">
       <form
+        method="post"
         noValidate
         role="search"
         className="space-y-3"
@@ -197,6 +198,7 @@ export function AddOwner({ onAdded }: { onAdded: (owner: Owner) => void }) {
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-4"
       onSubmit={(event) => {

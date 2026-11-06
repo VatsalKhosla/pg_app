@@ -140,6 +140,7 @@ export function CategoryForm({
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-6 rounded-md border p-4"
       onSubmit={(event) => {

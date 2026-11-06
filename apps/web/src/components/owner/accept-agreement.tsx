@@ -62,6 +62,7 @@ export function AcceptAgreement({
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-4"
       onSubmit={(event) => {

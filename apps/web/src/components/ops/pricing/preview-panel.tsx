@@ -97,6 +97,7 @@ export function PreviewPanel({
   return (
     <div className="space-y-5">
       <form
+        method="post"
         noValidate
         className="grid gap-4 sm:grid-cols-3"
         onSubmit={(event) => {

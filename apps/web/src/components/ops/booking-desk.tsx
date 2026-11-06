@@ -131,6 +131,7 @@ function ReasonedChange({
   }
   return (
     <form
+      method="post"
       noValidate
       aria-labelledby={`${id}-title`}
       className="space-y-3 rounded-lg border p-4"

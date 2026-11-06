@@ -200,6 +200,7 @@ export function ReportForm({ visit }: { visit: Visit }) {
 
   return (
     <form
+      method="post"
       noValidate
       className="space-y-8"
       onSubmit={(event) => {
