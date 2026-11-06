@@ -67,6 +67,8 @@ function CheckIn({ code, text, failed }: { code: string; text: CheckInText; fail
     return (
       <div className="space-y-2">
         <Button
+          size="lg"
+          shape="pill"
           onClick={() => {
             setStep("asking");
           }}
@@ -74,7 +76,7 @@ function CheckIn({ code, text, failed }: { code: string; text: CheckInText; fail
           {text.start}
         </Button>
         {step === "changed" ? (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-sm font-medium text-destructive">
             {text.changed}
           </p>
         ) : null}
@@ -82,17 +84,21 @@ function CheckIn({ code, text, failed }: { code: string; text: CheckInText; fail
     );
   }
   return (
-    <section aria-labelledby="check-in-title" className="space-y-3 rounded-lg border p-4">
-      <h3 id="check-in-title" className="font-semibold">
+    <section
+      aria-labelledby="check-in-title"
+      className="space-y-4 rounded-2xl border bg-surface p-5"
+    >
+      <h3 id="check-in-title" className="font-display text-lg font-semibold text-foreground">
         {text.title}
       </h3>
-      <p>{text.body}</p>
+      <p className="text-sm leading-relaxed text-foreground">{text.body}</p>
       <div className="flex flex-wrap gap-3">
-        <Button disabled={step === "busy"} onClick={checkIn}>
+        <Button shape="pill" disabled={step === "busy"} onClick={checkIn}>
           {step === "busy" ? text.saving : text.confirm}
         </Button>
         <Button
           variant="outline"
+          shape="pill"
           disabled={step === "busy"}
           onClick={() => {
             setStep("idle");
@@ -102,7 +108,7 @@ function CheckIn({ code, text, failed }: { code: string; text: CheckInText; fail
         </Button>
       </div>
       {step === "failed" ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-sm font-medium text-destructive">
           {failed}
         </p>
       ) : null}
@@ -157,6 +163,7 @@ export function BookingActions({
           <div className="space-y-2">
             <Button
               variant="outline"
+              shape="pill"
               onClick={() => {
                 setStep("asking");
               }}
@@ -164,26 +171,30 @@ export function BookingActions({
               {text.cancel}
             </Button>
             {step === "changed" ? (
-              <p role="alert" className="text-sm text-destructive">
+              <p role="alert" className="text-sm font-medium text-destructive">
                 {text.changed}
               </p>
             ) : null}
           </div>
         ) : (
-          <section aria-labelledby="cancel-title" className="space-y-3 rounded-lg border p-4">
-            <h3 id="cancel-title" className="font-semibold">
+          <section
+            aria-labelledby="cancel-title"
+            className="space-y-4 rounded-2xl border bg-surface p-5"
+          >
+            <h3 id="cancel-title" className="font-display text-lg font-semibold text-foreground">
               {text.confirmTitle}
             </h3>
-            <p>{text.refund}</p>
+            <p className="text-sm text-foreground">{text.refund}</p>
             <Link
               href={policyPath}
-              className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+              className="inline-flex min-h-8 items-center text-sm font-medium text-primary underline underline-offset-4"
             >
               {text.policy}
             </Link>
             <div className="flex flex-wrap gap-3">
               <Button
                 variant="destructive"
+                shape="pill"
                 disabled={step === "busy"}
                 onClick={() => {
                   cancel(cancellation.refundPaise);
@@ -193,6 +204,7 @@ export function BookingActions({
               </Button>
               <Button
                 variant="outline"
+                shape="pill"
                 disabled={step === "busy"}
                 onClick={() => {
                   setStep("idle");
@@ -202,7 +214,7 @@ export function BookingActions({
               </Button>
             </div>
             {step === "failed" ? (
-              <p role="alert" className="text-sm text-destructive">
+              <p role="alert" className="text-sm font-medium text-destructive">
                 {text.failed}
               </p>
             ) : null}
@@ -210,7 +222,7 @@ export function BookingActions({
         )
       ) : null}
       {actions.findAnother ? (
-        <Link href="/search" className={buttonVariants()}>
+        <Link href="/search" className={buttonVariants({ size: "lg", shape: "pill" })}>
           {text.findAnother}
         </Link>
       ) : null}

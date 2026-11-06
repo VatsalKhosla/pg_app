@@ -50,16 +50,16 @@ export function MobileNavMenu({
         aria-describedby={undefined}
         onCloseAutoFocus={handleCloseAutoFocus}
       >
-        <SheetHeader>
+        <SheetHeader className="border-b px-5 py-4">
           <SheetTitle>{labels.menuTitle}</SheetTitle>
         </SheetHeader>
-        <nav aria-label={labels.mainNavigation} className="px-2">
+        <nav aria-label={labels.mainNavigation} className="px-3">
           <ul className="flex flex-col gap-1">
             {links.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="flex min-h-11 items-center rounded-md px-3 text-base font-medium outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  className="flex min-h-12 items-center rounded-xl px-3.5 text-base font-medium text-foreground transition-colors outline-none hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
                   onClick={() => {
                     followedTarget.current = link.targetId;
                     onOpenChange(false);

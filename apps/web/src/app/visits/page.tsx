@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { CancelMyVisit } from "@/components/visits/cancel-my-visit";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
@@ -54,63 +55,76 @@ export default async function VisitsPage() {
     format.dateTime(new Date(moment), { dateStyle: "medium", timeStyle: "short" });
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-8 px-4 py-10 sm:py-16">
-      <div className="space-y-3">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("intro")}</p>
+    <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
+      <div className="space-y-2.5">
+        <h1 className="text-title-1 font-semibold tracking-tight text-foreground">{t("title")}</h1>
+        <p className="text-body text-muted-foreground">{t("intro")}</p>
       </div>
       {items.length === 0 ? (
-        <div className="space-y-4 rounded-lg border border-dashed p-6">
-          <p>{t("none")}</p>
-          <Link href="/search" className={buttonVariants()}>
+        <Card
+          variant="flat"
+          className="space-y-4 rounded-2xl border-dashed border-border bg-surface/60 p-6"
+        >
+          <p className="text-body text-muted-foreground">{t("none")}</p>
+          <Link href="/search" className={buttonVariants({ shape: "pill" })}>
             {t("find")}
           </Link>
-        </div>
+        </Card>
       ) : (
         <ul className="space-y-4">
           {items.map((visit) => {
             const contact = contacts.get(visit.id);
             return (
-              <li key={visit.id} className="space-y-3 rounded-lg border p-4">
+              <li
+                key={visit.id}
+                className="space-y-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs transition-shadow hover:shadow-sm sm:p-6"
+              >
                 <div className="space-y-1">
                   <Link
                     href={`/pg/${visit.property.slug}` as Route}
-                    className="font-semibold underline-offset-4 hover:underline"
+                    className="text-title-3 font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline"
                   >
                     {visit.property.name}
                   </Link>
-                  <p className="text-sm text-muted-foreground">
-                    {visit.property.locality} · {t(`status.${visit.status}`)}
+                  <p className="text-body-sm text-muted-foreground">
+                    {visit.property.locality} ·{" "}
+                    <span className="font-medium text-foreground">
+                      {t(`status.${visit.status}`)}
+                    </span>
                   </p>
                 </div>
                 {visit.scheduledAt === null ? (
-                  <div className="text-sm">
-                    <p className="font-medium">{t("offered")}</p>
-                    <ul className="list-disc ps-5">
+                  <div className="space-y-1.5 rounded-xl bg-surface/70 p-3.5 text-sm">
+                    <p className="font-medium text-foreground">{t("offered")}</p>
+                    <ul className="list-disc space-y-1 ps-5 text-muted-foreground">
                       {visit.preferredStarts.map((start) => (
                         <li key={start}>{when(start)}</li>
                       ))}
                     </ul>
                   </div>
                 ) : (
-                  <div className="space-y-1 text-sm">
-                    <p className="font-medium">{t("booked", { when: when(visit.scheduledAt) })}</p>
+                  <div className="space-y-1 rounded-xl bg-surface/70 p-3.5 text-sm">
+                    <p className="font-semibold text-foreground">
+                      {t("booked", { when: when(visit.scheduledAt) })}
+                    </p>
                     {visit.agentName === null ? null : (
-                      <p>{t("agent", { name: visit.agentName })}</p>
+                      <p className="text-muted-foreground">
+                        {t("agent", { name: visit.agentName })}
+                      </p>
                     )}
                   </div>
                 )}
                 {contact == null ? null : (
-                  <dl className="grid gap-1 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4">
-                    <dt className="text-muted-foreground">{t("address")}</dt>
-                    <dd>{contact.addressLine}</dd>
+                  <dl className="grid gap-1.5 rounded-xl border border-border/70 bg-surface/50 p-3.5 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4">
+                    <dt className="font-medium text-muted-foreground">{t("address")}</dt>
+                    <dd className="text-foreground">{contact.addressLine}</dd>
                     {contact.ownerPhone === null ? null : (
                       <>
-                        <dt className="text-muted-foreground">{t("ownerPhone")}</dt>
+                        <dt className="font-medium text-muted-foreground">{t("ownerPhone")}</dt>
                         <dd>
                           <a
                             href={`tel:${contact.ownerPhone}`}
-                            className="underline underline-offset-4"
+                            className="font-mono font-medium text-primary underline underline-offset-4 hover:text-primary-hover"
                           >
                             {contact.ownerPhone}
                           </a>
@@ -123,18 +137,18 @@ export default async function VisitsPage() {
                   <p className="text-sm">
                     <Link
                       href={`${BOOKINGS_PATH}/${visit.booking}` as Route}
-                      className="font-medium text-primary underline underline-offset-4"
+                      className="font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
                     >
                       {t("reserved", { code: visit.booking })}
                     </Link>
                   </p>
                 )}
                 {visit.canReserve ? (
-                  <div className="space-y-1">
-                    <p className="text-sm">{t("reserveHint")}</p>
+                  <div className="space-y-2.5 rounded-xl border border-primary/25 bg-primary-soft/60 p-4">
+                    <p className="text-sm font-medium text-foreground">{t("reserveHint")}</p>
                     <Link
                       href={`/pg/${visit.property.slug}?visit=${visit.id}#quote-title` as Route}
-                      className={buttonVariants()}
+                      className={buttonVariants({ shape: "pill" })}
                     >
                       {t("reserve")}
                     </Link>

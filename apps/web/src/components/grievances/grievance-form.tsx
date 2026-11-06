@@ -177,10 +177,15 @@ export function GrievanceForm({
 
   if (receipt !== null) {
     return (
-      <div role="status" className="space-y-3 rounded-lg border bg-muted/40 p-5">
-        <h3 className="text-lg font-semibold">{text.receivedTitle}</h3>
-        <p className="leading-7">{fillBlanks(text.ticket, { ticket: receipt.ticketNumber })}</p>
-        <p className="leading-7">
+      <div
+        role="status"
+        className="space-y-3 rounded-2xl border border-success/30 bg-success-soft/60 p-5"
+      >
+        <h3 className="text-title-3 font-semibold text-foreground">{text.receivedTitle}</h3>
+        <p className="leading-7 text-foreground">
+          {fillBlanks(text.ticket, { ticket: receipt.ticketNumber })}
+        </p>
+        <p className="leading-7 text-muted-foreground">
           {fillBlanks(text.deadlines, {
             acknowledgeBy: DATE.format(new Date(receipt.acknowledgeBy)),
             resolveBy: DATE.format(new Date(receipt.resolveBy)),
@@ -189,6 +194,7 @@ export function GrievanceForm({
         <Button
           type="button"
           variant="outline"
+          shape="pill"
           onClick={() => {
             setReceipt(null);
           }}
@@ -291,11 +297,19 @@ export function GrievanceForm({
         </>
       )}
       {failure === null ? null : (
-        <p role="alert" className="text-sm text-destructive">
+        <p
+          role="alert"
+          className="rounded-xl border border-destructive/25 bg-destructive-soft px-3.5 py-2.5 text-sm font-medium text-destructive"
+        >
           {failure}
         </p>
       )}
-      <Button type="submit" size="lg" disabled={isSubmitting || (checking && token === null)}>
+      <Button
+        type="submit"
+        size="lg"
+        shape="pill"
+        disabled={isSubmitting || (checking && token === null)}
+      >
         {isSubmitting ? text.submitting : text.submit}
       </Button>
     </form>

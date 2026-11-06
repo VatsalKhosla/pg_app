@@ -8,11 +8,11 @@ import { useForm } from "react-hook-form";
 
 import { problemMessage } from "@/components/auth/problem-message";
 import { Button } from "@/components/ui/button";
+import { Field, Select } from "@/components/ui/fields";
+import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api/errors";
 import { BOOKINGS_PATH, SIGN_IN_PATH, signInUrl } from "@/lib/auth/routes";
 import { holdBed } from "@/lib/bookings/client";
-import { Field, Select } from "@/components/ui/fields";
-import { Input } from "@/components/ui/input";
 import { fillBlanks } from "@/lib/content/markdown";
 import { z } from "@/lib/forms/zod";
 import { formatINR } from "@/lib/money";
@@ -170,6 +170,8 @@ export function QuoteChecker({
         </Field>
         <Button
           type="submit"
+          size="lg"
+          shape="pill"
           disabled={isSubmitting}
           className="sm:col-span-3 sm:justify-self-start"
         >
@@ -177,18 +179,22 @@ export function QuoteChecker({
         </Button>
       </form>
       {failure === null ? null : (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-sm font-medium text-destructive">
           {failure}
         </p>
       )}
       <div aria-live="polite">
         {quote === null ? null : (
-          <div className="space-y-2 rounded-lg border bg-muted/40 p-4">
-            <p className="text-xl font-bold">
-              {fillBlanks(text.monthly, { amount: formatINR(quote.monthlyRentPaise) })}
-            </p>
-            <p className="text-sm text-muted-foreground">{quote.explanation}</p>
-            <ul className="space-y-1 text-sm">
+          <div className="space-y-4 rounded-2xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6">
+            <div className="space-y-2">
+              <p className="font-display text-2xl font-bold tracking-tight text-foreground tabular-nums">
+                {fillBlanks(text.monthly, { amount: formatINR(quote.monthlyRentPaise) })}
+              </p>
+              <p className="rounded-xl bg-primary-soft px-3.5 py-2 text-sm font-medium text-primary-soft-foreground tabular-nums">
+                {quote.explanation}
+              </p>
+            </div>
+            <ul className="grid gap-2 border-y py-3.5 text-sm text-foreground tabular-nums sm:grid-cols-2">
               <li>{fillBlanks(text.token, { amount: formatINR(quote.tokenPaise) })}</li>
               <li>{fillBlanks(text.dueAtMoveIn, { amount: formatINR(quote.dueAtMoveInPaise) })}</li>
               <li>{fillBlanks(text.deposit, { amount: formatINR(quote.depositPaise) })}</li>
@@ -206,9 +212,11 @@ export function QuoteChecker({
               {canReserve ? null : text.bookingSoon}
             </p>
             {!canReserve || reservation === null ? null : (
-              <div className="space-y-2 pt-2">
-                <p className="text-sm">{text.reserve.note}</p>
+              <div className="space-y-3 rounded-xl bg-surface p-4">
+                <p className="text-sm text-foreground">{text.reserve.note}</p>
                 <Button
+                  size="lg"
+                  shape="pill"
                   disabled={reserving}
                   onClick={() => {
                     void reserve(quote.id, reservation);
@@ -217,7 +225,7 @@ export function QuoteChecker({
                   {reserving ? text.reserve.reserving : text.reserve.submit}
                 </Button>
                 {refused === null ? null : (
-                  <p role="alert" className="text-sm text-destructive">
+                  <p role="alert" className="text-sm font-medium text-destructive">
                     {refused}
                   </p>
                 )}

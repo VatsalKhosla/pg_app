@@ -37,7 +37,7 @@ function Field({ label, children }: { label: string; children: (id: string) => R
   const id = useId();
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="text-sm font-medium">
+      <label htmlFor={id} className="block text-sm font-medium text-foreground">
         {label}
       </label>
       {children(id)}
@@ -55,14 +55,14 @@ function Check({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex min-h-11 items-center gap-3 text-sm">
+    <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2 text-sm text-foreground transition-colors hover:bg-secondary/60 motion-reduce:transition-none">
       <input
         type="checkbox"
         checked={checked}
         onChange={(event) => {
           onChange(event.target.checked);
         }}
-        className="size-5 shrink-0 accent-primary"
+        className="size-[1.125rem] shrink-0 accent-primary"
       />
       {label}
     </label>
@@ -112,13 +112,13 @@ export function FiltersSheet({
         aria-describedby={undefined}
         className={cn(
           "gap-0",
-          side === "bottom" ? "max-h-[85dvh] rounded-t-2xl" : "w-full sm:max-w-md",
+          side === "bottom" ? "max-h-[85dvh] rounded-t-3xl" : "w-full sm:max-w-md",
         )}
       >
-        <SheetHeader className="border-b pe-14">
+        <SheetHeader className="border-b bg-surface px-5 py-4 pe-14">
           <SheetTitle>{t("title")}</SheetTitle>
         </SheetHeader>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-5">
           <Field label={t("campus")}>
             {(id) => (
               <select
@@ -321,7 +321,7 @@ export function FiltersSheet({
               </select>
             )}
           </Field>
-          <div>
+          <div className="space-y-0.5">
             <Check
               label={t("ac")}
               checked={query.ac === true}
@@ -346,8 +346,10 @@ export function FiltersSheet({
           </div>
           {amenities.length === 0 ? null : (
             <fieldset>
-              <legend className="mb-1 text-sm font-medium">{t("amenities")}</legend>
-              <div className="grid grid-cols-1 sm:grid-cols-2">
+              <legend className="mb-1.5 text-sm font-medium text-foreground">
+                {t("amenities")}
+              </legend>
+              <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-2">
                 {byName(amenities).map((amenity) => (
                   <Check
                     key={amenity.slug}
@@ -365,10 +367,11 @@ export function FiltersSheet({
             </fieldset>
           )}
         </div>
-        <div className="flex gap-2 border-t p-4">
+        <div className="flex gap-2.5 border-t bg-surface p-4 sm:px-5">
           <Button
             type="button"
             variant="outline"
+            shape="pill"
             className="flex-1"
             onClick={() => {
               onChange({ ...CLEARED, q: state.q, sort: state.sort });
@@ -378,6 +381,7 @@ export function FiltersSheet({
           </Button>
           <Button
             type="button"
+            shape="pill"
             className="flex-1"
             onClick={() => {
               onOpenChange(false);

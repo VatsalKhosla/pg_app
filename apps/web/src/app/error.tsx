@@ -27,7 +27,11 @@ export default function ErrorPage({
       title={text.title}
       body={text.body}
       detail={error.digest === undefined ? undefined : `${text.referenceLabel}: ${error.digest}`}
-      action={<Button onClick={retry}>{text.retry}</Button>}
+      action={
+        <Button size="lg" shape="pill" onClick={retry}>
+          {text.retry}
+        </Button>
+      }
     />
   );
 }

@@ -18,7 +18,7 @@ export default async function NotFound() {
       title={t("title")}
       body={t("body")}
       action={
-        <Button asChild>
+        <Button size="lg" shape="pill" asChild>
           <Link href="/">{t("home")}</Link>
         </Button>
       }

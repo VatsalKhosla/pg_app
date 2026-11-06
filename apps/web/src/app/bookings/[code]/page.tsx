@@ -1,4 +1,5 @@
 import type { Schemas } from "@pg-platform/api-client";
+import { ArrowLeft } from "lucide-react";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -9,6 +10,7 @@ import { BookingActions } from "@/components/bookings/booking-actions";
 import { CheckWindow } from "@/components/bookings/check-window";
 import { DisputeForm } from "@/components/bookings/dispute-form";
 import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getSearchPage } from "@/lib/api/public";
@@ -20,6 +22,7 @@ import { dayText } from "@/lib/format/days";
 import { formatINR } from "@/lib/money";
 import { serializeSearch } from "@/lib/search/params";
 import { trustPages } from "@/lib/trust/pages";
+import { cn } from "@/lib/utils";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Bookings");
@@ -152,18 +155,19 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
   ];
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-10 px-4 py-10 sm:py-16">
+    <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
       <div className="space-y-3">
         <Link
           href={BOOKINGS_PATH}
-          className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+          className="inline-flex min-h-8 items-center gap-1.5 text-sm font-medium text-primary underline underline-offset-4"
         >
+          <ArrowLeft aria-hidden="true" className="size-4" />
           {t("back")}
         </Link>
-        <p className="text-sm font-medium text-muted-foreground">
+        <p className="font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase">
           {t("code", { code: booking.code })}
         </p>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+        <h1 className="text-title-1 text-foreground">
           <Link
             href={`/pg/${booking.property.slug}` as Route}
             className="underline-offset-4 hover:underline"
@@ -179,31 +183,36 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
         </p>
       </div>
 
-      <section aria-labelledby="status-title" className="space-y-2 rounded-lg border p-4">
-        <h2 id="status-title" className="text-lg font-semibold">
-          {t(`status.${booking.status}`)}
-        </h2>
-        <p>{next}</p>
-        {dispute === null ? null : (
-          <p>
-            {t("disputeStatus", {
-              date: dayText(dispute.openedAt.slice(0, 10)),
-              reason: t(`dispute.reasons.${dispute.reason}`),
-              status: t(`dispute.status.${dispute.status}`),
-            })}
-          </p>
-        )}
-        {booking.status === "checked_in" && booking.checkWindowEndsAt !== null ? (
-          <NextIntlClientProvider messages={{ Bookings: { window: messages.Bookings.window } }}>
-            <CheckWindow endsAt={booking.checkWindowEndsAt} />
-          </NextIntlClientProvider>
-        ) : null}
-      </section>
+      <Card asChild variant="raised" className="space-y-3 rounded-2xl p-6">
+        <section aria-labelledby="status-title">
+          <h2 id="status-title" className="text-title-3 text-foreground">
+            {t(`status.${booking.status}`)}
+          </h2>
+          <p className="text-sm leading-relaxed text-foreground sm:text-base">{next}</p>
+          {dispute === null ? null : (
+            <p className="rounded-xl bg-warning-soft px-4 py-3 text-sm font-medium text-warning-soft-foreground">
+              {t("disputeStatus", {
+                date: dayText(dispute.openedAt.slice(0, 10)),
+                reason: t(`dispute.reasons.${dispute.reason}`),
+                status: t(`dispute.status.${dispute.status}`),
+              })}
+            </p>
+          )}
+          {booking.status === "checked_in" && booking.checkWindowEndsAt !== null ? (
+            <NextIntlClientProvider messages={{ Bookings: { window: messages.Bookings.window } }}>
+              <CheckWindow endsAt={booking.checkWindowEndsAt} />
+            </NextIntlClientProvider>
+          ) : null}
+        </section>
+      </Card>
 
       {booking.canPay ? (
         // A plain link, not next/link: checkout needs the payment page's own security policy, and
         // a browser takes a page's policy only on a full page load (ADR 0056).
-        <a href={`${BOOKINGS_PATH}/${booking.code}/pay`} className={buttonVariants()}>
+        <a
+          href={`${BOOKINGS_PATH}/${booking.code}/pay`}
+          className={cn(buttonVariants({ size: "lg", shape: "pill" }), "w-full sm:w-auto")}
+        >
           {t("pay.link", { amount: formatINR(booking.tokenPaise) })}
         </a>
       ) : null}
@@ -215,42 +224,44 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
       ) : null}
 
       {similar === null ? null : (
-        <section aria-labelledby="similar-title" className="space-y-3">
-          <h2 id="similar-title" className="text-lg font-semibold">
-            {t("similar.title")}
-          </h2>
-          {similar.cards.length === 0 ? (
-            <p className="text-muted-foreground">{t("similar.none")}</p>
-          ) : (
-            <ul className="divide-y rounded-lg border">
-              {similar.cards.map((card) => (
-                <li
-                  key={card.id}
-                  className="flex flex-wrap items-baseline justify-between gap-2 p-3"
-                >
-                  <Link
-                    href={`/pg/${card.slug}` as Route}
-                    className="font-medium underline-offset-4 hover:underline"
+        <Card asChild className="space-y-4 rounded-2xl p-6">
+          <section aria-labelledby="similar-title">
+            <h2 id="similar-title" className="text-title-3 text-foreground">
+              {t("similar.title")}
+            </h2>
+            {similar.cards.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("similar.none")}</p>
+            ) : (
+              <ul className="divide-y rounded-xl border bg-surface/60">
+                {similar.cards.map((card) => (
+                  <li
+                    key={card.id}
+                    className="flex flex-wrap items-baseline justify-between gap-2 p-3.5"
                   >
-                    {card.name}
-                  </Link>
-                  <span className="text-sm text-muted-foreground">
-                    {t("similar.card", {
-                      locality: card.locality.name,
-                      rent: formatINR(card.minRentPaise),
-                    })}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link
-            href={similar.more}
-            className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
-          >
-            {t("similar.more")}
-          </Link>
-        </section>
+                    <Link
+                      href={`/pg/${card.slug}` as Route}
+                      className="font-medium text-foreground underline-offset-4 hover:underline"
+                    >
+                      {card.name}
+                    </Link>
+                    <span className="text-sm text-muted-foreground tabular-nums">
+                      {t("similar.card", {
+                        locality: card.locality.name,
+                        rent: formatINR(card.minRentPaise),
+                      })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link
+              href={similar.more}
+              className="inline-flex min-h-8 items-center text-sm font-medium text-primary underline underline-offset-4"
+            >
+              {t("similar.more")}
+            </Link>
+          </section>
+        </Card>
       )}
 
       <BookingActions
@@ -280,27 +291,36 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
       />
 
       {contact === null ? null : (
-        <section aria-labelledby="where-title" className="space-y-2">
-          <h2 id="where-title" className="text-lg font-semibold">
-            {t("where.title")}
-          </h2>
-          <dl className="space-y-2">
-            <div>
-              <dt className="text-sm text-muted-foreground">{t("where.address")}</dt>
-              <dd>{contact.addressLine}</dd>
-            </div>
-            {contact.ownerPhone === null ? null : (
-              <div>
-                <dt className="text-sm text-muted-foreground">{t("where.ownerPhone")}</dt>
-                <dd>
-                  <a href={`tel:${contact.ownerPhone}`} className="underline underline-offset-4">
-                    {contact.ownerPhone}
-                  </a>
-                </dd>
+        <Card asChild className="space-y-4 rounded-2xl p-6">
+          <section aria-labelledby="where-title">
+            <h2 id="where-title" className="text-title-3 text-foreground">
+              {t("where.title")}
+            </h2>
+            <dl className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <dt className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  {t("where.address")}
+                </dt>
+                <dd className="text-sm font-medium text-foreground">{contact.addressLine}</dd>
               </div>
-            )}
-          </dl>
-        </section>
+              {contact.ownerPhone === null ? null : (
+                <div className="space-y-1">
+                  <dt className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    {t("where.ownerPhone")}
+                  </dt>
+                  <dd className="text-sm font-medium">
+                    <a
+                      href={`tel:${contact.ownerPhone}`}
+                      className="text-primary underline underline-offset-4"
+                    >
+                      {contact.ownerPhone}
+                    </a>
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </section>
+        </Card>
       )}
 
       {paid.items.some(
@@ -309,84 +329,107 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
           payment.status === "blocked" ||
           payment.status === "released",
       ) ? (
-        <section aria-labelledby="paid-title" className="space-y-2">
-          <h2 id="paid-title" className="text-lg font-semibold">
-            {t("paid.title")}
-          </h2>
-          <ul className="space-y-2">
-            {paid.items.map((payment, index) =>
-              payment.status === "blocked" || payment.status === "released" ? (
-                // A token blocked by a UPI one-time mandate (step 6.7): not taken, or given back.
-                <li key={`${payment.status}-${String(index)}`}>
-                  <p>{t(`paid.${payment.status}`, { amount: formatINR(payment.amountPaise) })}</p>
-                </li>
-              ) : payment.capturedAt === null ? null : (
-                <li key={payment.capturedAt} className="space-y-1">
-                  <p>
-                    {t("paid.token", {
-                      amount: formatINR(payment.amountPaise),
-                      date: when(payment.capturedAt),
-                    })}
-                  </p>
-                  {payment.refunds.map((refund) => (
-                    <div key={refund.requestedAt + String(refund.amountPaise)}>
-                      <p>
-                        {t(`paid.refund.${refund.status as "requested"}`, {
-                          amount: formatINR(refund.amountPaise),
-                          date: when(refund.processedAt ?? refund.requestedAt),
-                        })}
-                      </p>
-                      {refund.reference === null ? null : (
-                        <p className="text-sm text-muted-foreground">
-                          {t("paid.reference", { reference: refund.reference })}
+        <Card asChild className="space-y-4 rounded-2xl p-6">
+          <section aria-labelledby="paid-title">
+            <h2 id="paid-title" className="text-title-3 text-foreground">
+              {t("paid.title")}
+            </h2>
+            <ul className="space-y-3">
+              {paid.items.map((payment, index) =>
+                payment.status === "blocked" || payment.status === "released" ? (
+                  // A token blocked by a UPI one-time mandate (step 6.7): not taken, or given back.
+                  <li
+                    key={`${payment.status}-${String(index)}`}
+                    className="rounded-xl border bg-surface/70 p-4 text-sm text-foreground tabular-nums"
+                  >
+                    <p>{t(`paid.${payment.status}`, { amount: formatINR(payment.amountPaise) })}</p>
+                  </li>
+                ) : payment.capturedAt === null ? null : (
+                  <li
+                    key={payment.capturedAt}
+                    className="space-y-2 rounded-xl border bg-surface/70 p-4 text-sm text-foreground tabular-nums"
+                  >
+                    <p className="font-medium">
+                      {t("paid.token", {
+                        amount: formatINR(payment.amountPaise),
+                        date: when(payment.capturedAt),
+                      })}
+                    </p>
+                    {payment.refunds.map((refundItem) => (
+                      <div
+                        key={refundItem.requestedAt + String(refundItem.amountPaise)}
+                        className="space-y-0.5 text-muted-foreground"
+                      >
+                        <p className="text-foreground">
+                          {t(`paid.refund.${refundItem.status as "requested"}`, {
+                            amount: formatINR(refundItem.amountPaise),
+                            date: when(refundItem.processedAt ?? refundItem.requestedAt),
+                          })}
                         </p>
-                      )}
-                    </div>
-                  ))}
-                </li>
-              ),
-            )}
-          </ul>
-        </section>
+                        {refundItem.reference === null ? null : (
+                          <p className="text-xs text-muted-foreground">
+                            {t("paid.reference", { reference: refundItem.reference })}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </li>
+                ),
+              )}
+            </ul>
+          </section>
+        </Card>
       ) : null}
 
-      <section aria-labelledby="money-title" className="space-y-3">
-        <h2 id="money-title" className="text-lg font-semibold">
-          {t("money.title")}
-        </h2>
-        <dl className="divide-y rounded-lg border">
-          {money.map(([label, value, note]) => (
-            <div key={label} className="flex flex-wrap items-baseline justify-between gap-2 p-3">
-              <dt>
-                {label}
-                {note === null ? null : (
-                  <span className="block text-sm text-muted-foreground">{note}</span>
-                )}
-              </dt>
-              <dd className="font-medium">{value}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className="text-sm text-muted-foreground">{t("money.toOwner")}</p>
-      </section>
+      <Card asChild className="space-y-4 rounded-2xl p-6">
+        <section aria-labelledby="money-title">
+          <h2 id="money-title" className="text-title-3 text-foreground">
+            {t("money.title")}
+          </h2>
+          <dl className="divide-y rounded-xl border bg-surface/60">
+            {money.map(([label, value, note]) => (
+              <div
+                key={label}
+                className="flex flex-wrap items-baseline justify-between gap-2 p-3.5 text-sm"
+              >
+                <dt className="text-foreground">
+                  {label}
+                  {note === null ? null : (
+                    <span className="mt-0.5 block text-xs text-muted-foreground">{note}</span>
+                  )}
+                </dt>
+                <dd className="font-semibold text-foreground tabular-nums">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-sm text-muted-foreground">{t("money.toOwner")}</p>
+        </section>
+      </Card>
 
-      <section aria-labelledby="history-title" className="space-y-3">
-        <h2 id="history-title" className="text-lg font-semibold">
-          {t("history")}
-        </h2>
-        <ol className="space-y-2">
-          {booking.timeline.map((step) => (
-            <li key={`${step.event}-${step.at}`} className="flex flex-wrap justify-between gap-2">
-              <span>{t(`events.${step.event}` as "events.hold")}</span>
-              <time dateTime={step.at} className="text-sm text-muted-foreground">
-                {when(step.at)}
-              </time>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <Card asChild className="space-y-4 rounded-2xl p-6">
+        <section aria-labelledby="history-title">
+          <h2 id="history-title" className="text-title-3 text-foreground">
+            {t("history")}
+          </h2>
+          <ol className="divide-y text-sm">
+            {booking.timeline.map((step) => (
+              <li
+                key={`${step.event}-${step.at}`}
+                className="flex flex-wrap items-baseline justify-between gap-2 py-2.5 first:pt-0 last:pb-0"
+              >
+                <span className="text-foreground">
+                  {t(`events.${step.event}` as "events.hold")}
+                </span>
+                <time dateTime={step.at} className="text-xs text-muted-foreground tabular-nums">
+                  {when(step.at)}
+                </time>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </Card>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="rounded-2xl bg-surface px-5 py-4 text-sm text-muted-foreground">
         {t("help", { code: booking.code })}{" "}
         <Link
           href={trustPages.contact}

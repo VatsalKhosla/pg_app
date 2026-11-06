@@ -3,13 +3,14 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { BrandMark } from "@/components/brand/brand-mark";
+import { Separator } from "@/components/ui/separator";
 import { brand } from "@/config/brand";
 import { footerGroups, trustPages } from "@/lib/trust/pages";
 
 import { navigationItems } from "./navigation";
 
 const linkClasses =
-  "inline-flex min-h-11 items-center rounded-md text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-0 sm:py-1";
+  "inline-flex min-h-11 items-center rounded-md text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none sm:min-h-8";
 
 function FooterGroup({
   id,
@@ -21,8 +22,8 @@ function FooterGroup({
   links: readonly { href: Route; label: string }[];
 }) {
   return (
-    <div className="space-y-2">
-      <h2 id={id} className="text-sm font-semibold">
+    <div className="space-y-3">
+      <h2 id={id} className="text-xs font-semibold tracking-wider text-foreground uppercase">
         {title}
       </h2>
       <ul aria-labelledby={id} className="space-y-1">
@@ -53,14 +54,16 @@ export async function SiteFooter() {
     pages.map((page) => ({ href: trustPages[page], label: tTrust(`pages.${page}`) }));
 
   return (
-    <footer className="border-t bg-muted/40">
-      <div className="mx-auto max-w-6xl space-y-8 px-4 py-10 sm:px-6">
-        <div className="grid gap-8 lg:grid-cols-[1fr_3fr]">
-          <div className="flex items-start gap-3">
-            <BrandMark className="size-9" />
+    <footer className="border-t bg-surface">
+      <div className="mx-auto max-w-page space-y-10 px-gutter py-12 sm:py-16">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_2.8fr]">
+          <div className="flex items-start gap-3.5">
+            <BrandMark className="size-10" />
             <div>
-              <p className="font-semibold">{brand.name}</p>
-              <p className="text-sm text-muted-foreground">{tBrand("tagline")}</p>
+              <p className="font-display text-base font-bold tracking-tight text-foreground">
+                {brand.name}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{tBrand("tagline")}</p>
             </div>
           </div>
           <nav aria-label={t("footerNavigation")} className="grid gap-8 sm:grid-cols-3">
@@ -84,7 +87,8 @@ export async function SiteFooter() {
             />
           </nav>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <Separator />
+        <p className="text-xs text-muted-foreground">
           {t("copyright", { year: new Date().getFullYear(), brand: brand.name })}
         </p>
       </div>

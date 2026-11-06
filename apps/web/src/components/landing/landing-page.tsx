@@ -1,10 +1,11 @@
+import { MapPinned } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
-import { MapPinned } from "lucide-react";
 
-import { JsonLd } from "@/components/seo/json-ld";
 import { PgCard } from "@/components/search/pg-card";
+import { JsonLd } from "@/components/seo/json-ld";
 import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { publicEnv } from "@/config/env";
 import type { SearchCard } from "@/lib/search/client";
 import { breadcrumbJsonLd, faqJsonLd, itemListJsonLd } from "@/lib/seo/json-ld";
@@ -25,6 +26,9 @@ export interface LandingText {
   search: string;
   faq: string;
 }
+
+const nearbyChipClasses =
+  "inline-flex min-h-11 items-center rounded-full border border-input/70 bg-surface px-4 py-2 text-sm font-medium text-foreground shadow-2xs transition-[background-color,border-color,color,transform] duration-(--duration-fast) ease-standard outline-none hover:-translate-y-0.5 hover:border-primary hover:bg-primary-soft hover:text-primary-soft-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0";
 
 /**
  * A landing page for a campus or a locality (step 3.6, ADR 0032): the PGs there as search finds
@@ -54,7 +58,7 @@ export function LandingPage({
     { name: text.title, path },
   ];
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-10 px-4 py-8 sm:px-6 sm:py-12">
+    <div>
       <JsonLd
         data={[
           itemListJsonLd(text.title, cards, absolute),
@@ -64,90 +68,106 @@ export function LandingPage({
           ...(faqs.length === 0 ? [] : [faqJsonLd(faqs)]),
         ]}
       />
-      <header className="space-y-4">
-        <nav aria-label={text.breadcrumb}>
-          <ol className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
-            {crumbs.slice(0, -1).map((crumb) => (
-              <li key={crumb.path} className="flex items-center gap-1">
-                <Link
-                  href={crumb.path as Route}
-                  className="rounded underline-offset-4 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                >
-                  {crumb.name}
-                </Link>
-                <span aria-hidden="true">/</span>
+      <header className="border-b bg-surface">
+        <div className="mx-auto max-w-page space-y-4 px-gutter py-10 sm:py-14">
+          <nav aria-label={text.breadcrumb}>
+            <ol className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+              {crumbs.slice(0, -1).map((crumb) => (
+                <li key={crumb.path} className="flex items-center gap-1.5">
+                  <Link
+                    href={crumb.path as Route}
+                    className="inline-flex min-h-8 items-center rounded-md px-1 underline-offset-4 transition-colors outline-none hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+                  >
+                    {crumb.name}
+                  </Link>
+                  <span aria-hidden="true">/</span>
+                </li>
+              ))}
+              <li aria-current="page" className="font-medium text-foreground">
+                {text.title}
               </li>
-            ))}
-            <li aria-current="page">{text.title}</li>
-          </ol>
-        </nav>
-        <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">{text.title}</h1>
-        <p className="text-lg text-pretty text-muted-foreground">{text.intro ?? text.none}</p>
-        {text.intro === null ? <p className="text-muted-foreground">{text.noneHint}</p> : null}
-        <Link href={mapHref as Route} className={buttonVariants({ size: "lg" })}>
-          <MapPinned aria-hidden="true" />
-          {text.map}
-        </Link>
-      </header>
-
-      {cards.length === 0 ? null : (
-        <section aria-labelledby="landing-list" className="space-y-4">
-          <h2 id="landing-list" className="text-xl font-semibold tracking-tight">
-            {text.list}
-          </h2>
-          <ul className="space-y-3">
-            {cards.map((card, index) => (
-              <li key={card.id}>
-                <PgCard card={card} first={index === 0} />
-              </li>
-            ))}
-          </ul>
-          {text.mapAll === null ? null : (
+            </ol>
+          </nav>
+          <h1 className="max-w-3xl text-title-1 font-bold tracking-tight text-foreground">
+            {text.title}
+          </h1>
+          <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">
+            {text.intro ?? text.none}
+          </p>
+          {text.intro === null ? (
+            <p className="max-w-2xl text-muted-foreground">{text.noneHint}</p>
+          ) : null}
+          <div className="pt-2">
             <Link
               href={mapHref as Route}
-              className={buttonVariants({ variant: "outline", className: "w-full" })}
+              className={buttonVariants({ size: "lg", shape: "pill", className: "shadow-sm" })}
             >
-              {text.mapAll}
+              <MapPinned aria-hidden="true" />
+              {text.map}
             </Link>
-          )}
-        </section>
-      )}
-
-      {nearby.length === 0 ? null : (
-        <section aria-labelledby="landing-nearby" className="space-y-3">
-          <h2 id="landing-nearby" className="text-xl font-semibold tracking-tight">
-            {text.nearby}
-          </h2>
-          <ul className="flex flex-wrap gap-2">
-            {nearby.map((place) => (
-              <li key={place.href}>
-                <Link
-                  href={place.href as Route}
-                  className="inline-flex min-h-11 items-center rounded-full border px-4 text-sm outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                >
-                  {place.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {faqs.length === 0 ? null : (
-        <section aria-labelledby="landing-faq" className="space-y-4">
-          <h2 id="landing-faq" className="text-xl font-semibold tracking-tight">
-            {text.faq}
-          </h2>
-          <div className="space-y-5">
-            {faqs.map((faq) => (
-              <div key={faq.question} className="space-y-1">
-                <h3 className="font-medium">{faq.question}</h3>
-                <p className="text-muted-foreground">{faq.answer}</p>
-              </div>
-            ))}
           </div>
-        </section>
-      )}
+        </div>
+      </header>
+
+      <div className="mx-auto w-full max-w-page space-y-14 px-gutter py-10 sm:py-14">
+        {cards.length === 0 ? null : (
+          <section aria-labelledby="landing-list" className="space-y-6">
+            <h2 id="landing-list" className="text-title-2 font-bold tracking-tight">
+              {text.list}
+            </h2>
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {cards.map((card, index) => (
+                <li key={card.id}>
+                  <PgCard card={card} first={index === 0} />
+                </li>
+              ))}
+            </ul>
+            {text.mapAll === null ? null : (
+              <div>
+                <Link
+                  href={mapHref as Route}
+                  className={buttonVariants({ variant: "outline", size: "lg", shape: "pill" })}
+                >
+                  {text.mapAll}
+                </Link>
+              </div>
+            )}
+          </section>
+        )}
+
+        {nearby.length === 0 ? null : (
+          <section aria-labelledby="landing-nearby" className="space-y-4">
+            <h2 id="landing-nearby" className="text-title-2 font-bold tracking-tight">
+              {text.nearby}
+            </h2>
+            <ul className="flex flex-wrap gap-2.5">
+              {nearby.map((place) => (
+                <li key={place.href}>
+                  <Link href={place.href as Route} className={nearbyChipClasses}>
+                    {place.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {faqs.length === 0 ? null : (
+          <section aria-labelledby="landing-faq" className="space-y-6">
+            <h2 id="landing-faq" className="text-title-2 font-bold tracking-tight">
+              {text.faq}
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {faqs.map((faq) => (
+                <Card key={faq.question} variant="flat" className="rounded-2xl p-6">
+                  <h3 className="text-base font-semibold text-foreground">{faq.question}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

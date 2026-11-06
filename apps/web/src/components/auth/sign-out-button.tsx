@@ -22,6 +22,7 @@ export function SignOutButton({
       <Button
         type="button"
         variant="outline"
+        shape="pill"
         disabled={state === "busy"}
         onClick={() => {
           setState("busy");
@@ -41,7 +42,7 @@ export function SignOutButton({
         {state === "busy" ? busyLabel : label}
       </Button>
       {state === "failed" ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-sm font-medium text-destructive">
           {failedLabel}
         </p>
       ) : null}

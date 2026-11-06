@@ -108,7 +108,7 @@ export default function MapLibreLocationMap({
 
   if (failed) {
     return (
-      <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+      <p className="rounded-2xl border border-dashed bg-surface p-5 text-sm text-muted-foreground">
         {text.failed}
       </p>
     );
@@ -116,7 +116,7 @@ export default function MapLibreLocationMap({
   return (
     <div
       ref={attach}
-      className="h-64 w-full overflow-hidden rounded-md border [&_.maplibregl-ctrl-attrib_a]:underline!"
+      className="h-64 w-full overflow-hidden rounded-2xl border shadow-xs [&_.maplibregl-ctrl-attrib_a]:underline!"
     />
   );
 }

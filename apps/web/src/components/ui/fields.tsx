@@ -3,6 +3,8 @@ import type { UseFormRegisterReturn } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
 
+import { controlClasses } from "./input";
+
 /**
  * Form controls: a label, the control, a hint and the field's error, wired together for screen
  * readers (aria-describedby, aria-invalid).
@@ -28,7 +30,7 @@ function HintAndError({ id, hint, error }: { id: string; hint?: string; error?: 
         </p>
       ) : null}
       {error ? (
-        <p id={`${id}-error`} className="text-sm text-destructive">
+        <p id={`${id}-error`} className="text-sm font-medium text-destructive">
           {error}
         </p>
       ) : null}
@@ -66,18 +68,19 @@ export function Field({
   );
 }
 
-const boxClasses =
-  "w-full min-w-0 rounded-md border bg-transparent px-3 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none md:text-sm dark:bg-input/30";
-
+/** A native select (the phone's own picker), drawn like the other controls. */
 export function Select({ className, ...props }: React.ComponentProps<"select">) {
-  return <select className={cn(boxClasses, "h-11", className)} {...props} />;
+  return <select className={cn(controlClasses, "h-11 pointer-fine:h-10", className)} {...props} />;
 }
 
 export function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
-  return <textarea className={cn(boxClasses, "min-h-24 py-2", className)} {...props} />;
+  return <textarea className={cn(controlClasses, "min-h-24 py-2.5", className)} {...props} />;
 }
 
-/** A group of radio buttons, each a large target. */
+/**
+ * A group of radio buttons, each a large target drawn as a card: the chosen one takes the brand
+ * colour, with a thicker border so the choice doesn't rest on colour alone (WCAG 1.4.1).
+ */
 export function Choices({
   id,
   legend,
@@ -102,12 +105,12 @@ export function Choices({
         {options.map((option) => (
           <label
             key={option.value}
-            className="flex min-h-11 items-center gap-3 rounded-md border px-3 text-sm has-[:checked]:border-primary has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50"
+            className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-input px-3.5 text-sm transition-[color,background-color,border-color,box-shadow] duration-(--duration-fast) ease-standard hover:border-foreground/60 has-[:checked]:border-primary has-[:checked]:bg-primary-soft has-[:checked]:font-medium has-[:checked]:ring-1 has-[:checked]:ring-primary has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring motion-reduce:transition-none"
           >
             <input
               type="radio"
               value={option.value}
-              className="size-4 accent-primary"
+              className="size-[1.125rem] shrink-0 accent-primary outline-none"
               {...registration}
             />
             {option.label}
@@ -125,8 +128,8 @@ export function Checkbox({
   ...props
 }: Omit<React.ComponentProps<"input">, "type"> & { label: string }) {
   return (
-    <label className={cn("flex min-h-11 items-center gap-3 text-sm", className)}>
-      <input type="checkbox" className="size-4 shrink-0 accent-primary" {...props} />
+    <label className={cn("flex min-h-11 cursor-pointer items-center gap-3 text-sm", className)}>
+      <input type="checkbox" className="size-[1.125rem] shrink-0 accent-primary" {...props} />
       {label}
     </label>
   );

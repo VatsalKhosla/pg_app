@@ -7,18 +7,18 @@ import { cn } from "@/lib/utils";
 type Tone = ApiHealth | "checking";
 
 const dotTone: Record<Tone, string> = {
-  online: "bg-emerald-600 dark:bg-emerald-400",
-  offline: "bg-amber-600 dark:bg-amber-400",
+  online: "bg-success",
+  offline: "bg-warning-soft-foreground",
   checking: "bg-muted-foreground/50 motion-safe:animate-pulse",
 };
 
 // The text carries the state; the dot only repeats it in colour.
 function StatusLine({ label, value, tone }: { label: string; value: string; tone: Tone }) {
   return (
-    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+    <p className="inline-flex items-center gap-2.5 rounded-full border bg-surface px-3.5 py-1.5 text-xs text-muted-foreground">
       <span aria-hidden className={cn("size-2 rounded-full", dotTone[tone])} />
       <span>
-        {label}: <span className="font-medium text-foreground">{value}</span>
+        {label}: <span className="font-semibold text-foreground">{value}</span>
       </span>
     </p>
   );

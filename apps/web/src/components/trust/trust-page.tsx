@@ -2,6 +2,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import type * as React from "react";
 
 import { MarkdownText } from "@/components/content/markdown-text";
+import { Card } from "@/components/ui/card";
 import { isDraft, type LegalDocument } from "@/content/legal";
 import { fillBlanks } from "@/lib/content/markdown";
 
@@ -16,14 +17,16 @@ export function TrustPage({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-10 sm:px-6 sm:py-16">
-      <header className="space-y-3">
-        <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">{title}</h1>
+    <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
+      <header className="space-y-3 border-b border-border/80 pb-6">
+        <h1 className="text-display font-semibold tracking-tight text-balance text-foreground">
+          {title}
+        </h1>
         {intro === undefined ? null : (
-          <p className="text-lg text-pretty text-muted-foreground">{intro}</p>
+          <p className="text-body-lg text-pretty text-muted-foreground">{intro}</p>
         )}
       </header>
-      {children}
+      <div className="space-y-6">{children}</div>
     </div>
   );
 }
@@ -32,7 +35,7 @@ export function TrustPage({
 export async function Placeholder({ fact }: { fact: string }) {
   const t = await getTranslations("Trust");
   return (
-    <span className="rounded-sm bg-amber-500/15 px-1 font-medium">
+    <span className="inline-flex items-center rounded-md border border-warning/30 bg-warning-soft px-2 py-0.5 text-sm font-medium text-warning">
       {t("placeholder", { fact })}
     </span>
   );
@@ -49,12 +52,14 @@ export function TrustSection({
   children: React.ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className="space-y-3">
-      <h2 id={id} className="text-xl font-semibold tracking-tight">
-        {title}
-      </h2>
-      {children}
-    </section>
+    <Card asChild className="space-y-3 rounded-2xl border-border/80 bg-card p-6">
+      <section aria-labelledby={id}>
+        <h2 id={id} className="text-title-2 font-semibold tracking-tight text-foreground">
+          {title}
+        </h2>
+        <div className="space-y-3 text-body text-foreground/90">{children}</div>
+      </section>
+    </Card>
   );
 }
 
@@ -73,12 +78,12 @@ export async function LegalText({
       {isDraft(document) ? (
         <p
           role="note"
-          className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm font-medium"
+          className="rounded-xl border border-warning/30 bg-warning-soft p-4 text-sm font-medium text-warning"
         >
           {t("draft")}
         </p>
       ) : null}
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm font-medium text-muted-foreground">
         {t("version", {
           version: document.version,
           updated: format.dateTime(new Date(`${document.updated}T00:00:00+05:30`), {
@@ -87,7 +92,9 @@ export async function LegalText({
           }),
         })}
       </p>
-      <MarkdownText text={fillBlanks(document.text, blanks)} />
+      <Card className="rounded-2xl border-border/80 bg-card p-6">
+        <MarkdownText text={fillBlanks(document.text, blanks)} />
+      </Card>
     </div>
   );
 }

@@ -135,16 +135,16 @@ export function SignInFlow({
 
   return (
     <section aria-labelledby="sign-in-step" className="space-y-6">
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <h2
           id="sign-in-step"
           ref={heading}
           tabIndex={-1}
-          className="text-xl font-semibold tracking-tight outline-none"
+          className="text-title-3 font-semibold tracking-tight text-foreground outline-none"
         >
           {current.title}
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-body-sm text-muted-foreground">
           {step.name === "code" ? current.intro.replace("{phone}", step.phone) : current.intro}
         </p>
       </div>
@@ -206,7 +206,7 @@ export function SignInFlow({
 
 function FieldError({ id, message }: { id: string; message: string | undefined }) {
   return message ? (
-    <p id={id} className="text-sm text-destructive">
+    <p id={id} className="text-sm font-medium text-destructive">
       {message}
     </p>
   ) : null;
@@ -214,7 +214,10 @@ function FieldError({ id, message }: { id: string; message: string | undefined }
 
 function FormFailure({ message }: { message: string | null | undefined }) {
   return message ? (
-    <p role="alert" className="text-sm text-destructive">
+    <p
+      role="alert"
+      className="rounded-xl border border-destructive/25 bg-destructive-soft px-3.5 py-2.5 text-sm font-medium text-destructive"
+    >
       {message}
     </p>
   ) : null;
@@ -279,7 +282,7 @@ function PhoneStep({
     >
       <FormFailure message={notice} />
       <div className="space-y-2">
-        <label htmlFor={`${id}-phone`} className="block text-sm font-medium">
+        <label htmlFor={`${id}-phone`} className="block text-sm font-medium text-foreground">
           {text.phone.label}
         </label>
         <Input
@@ -309,7 +312,13 @@ function PhoneStep({
         </div>
       )}
       <FormFailure message={failure} />
-      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || needsToken}>
+      <Button
+        type="submit"
+        size="lg"
+        shape="pill"
+        className="w-full"
+        disabled={isSubmitting || needsToken}
+      >
         {isSubmitting ? text.phone.sending : text.phone.submit}
       </Button>
     </form>
@@ -381,12 +390,12 @@ function CodeStep({
       }}
     >
       {challenge.developmentCode ? (
-        <p className="rounded-md border border-dashed p-3 text-sm">
+        <p className="rounded-xl border border-dashed border-primary/40 bg-primary-soft/60 px-3.5 py-2.5 font-mono text-sm font-medium text-foreground">
           {text.code.developmentCode.replace("{code}", challenge.developmentCode)}
         </p>
       ) : null}
       <div className="space-y-2">
-        <label htmlFor={`${id}-code`} className="block text-sm font-medium">
+        <label htmlFor={`${id}-code`} className="block text-sm font-medium text-foreground">
           {text.code.label}
         </label>
         <Input
@@ -394,6 +403,7 @@ function CodeStep({
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={6}
+          className="font-mono tracking-widest"
           aria-invalid={errors.code !== undefined}
           aria-describedby={errors.code ? `${id}-code-error` : undefined}
           {...form.register("code")}
@@ -401,7 +411,7 @@ function CodeStep({
         <FieldError id={`${id}-code-error`} message={errors.code?.message} />
       </div>
       <FormFailure message={failure} />
-      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+      <Button type="submit" size="lg" shape="pill" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? text.code.checking : text.code.submit}
       </Button>
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
@@ -482,13 +492,13 @@ function ConsentStep({
           href="/privacy"
           target="_blank"
           rel="noopener"
-          className="font-medium text-primary underline underline-offset-4"
+          className="font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
         >
           {text.consent.notice}
         </a>
       </p>
       <div className="space-y-2">
-        <label className="flex items-start gap-3 text-sm">
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface/50 p-3.5 text-sm transition-colors hover:bg-accent/50 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/50">
           <input
             type="checkbox"
             className="mt-0.5 size-5 shrink-0 accent-primary"
@@ -496,22 +506,22 @@ function ConsentStep({
             aria-describedby={errors.account ? `${id}-account-error` : undefined}
             {...form.register("account")}
           />
-          <span>{text.consent.account}</span>
+          <span className="leading-snug text-foreground">{text.consent.account}</span>
         </label>
         <FieldError id={`${id}-account-error`} message={errors.account?.message} />
       </div>
       {offersMarketing ? (
-        <label className="flex items-start gap-3 text-sm">
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface/50 p-3.5 text-sm transition-colors hover:bg-accent/50 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/50">
           <input
             type="checkbox"
             className="mt-0.5 size-5 shrink-0 accent-primary"
             {...form.register("marketing")}
           />
-          <span>{text.consent.marketing}</span>
+          <span className="leading-snug text-foreground">{text.consent.marketing}</span>
         </label>
       ) : null}
       <FormFailure message={failure} />
-      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+      <Button type="submit" size="lg" shape="pill" className="w-full" disabled={isSubmitting}>
         {text.consent.submit}
       </Button>
     </form>
@@ -550,7 +560,7 @@ function AuthenticatorStep({ text, onDone }: { text: SignInText; onDone: () => v
       }}
     >
       <div className="space-y-2">
-        <label htmlFor={`${id}-totp`} className="block text-sm font-medium">
+        <label htmlFor={`${id}-totp`} className="block text-sm font-medium text-foreground">
           {text.authenticator.label}
         </label>
         <Input
@@ -558,6 +568,7 @@ function AuthenticatorStep({ text, onDone }: { text: SignInText; onDone: () => v
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={6}
+          className="font-mono tracking-widest"
           aria-invalid={errors.code !== undefined}
           aria-describedby={errors.code ? `${id}-totp-error` : undefined}
           {...form.register("code")}
@@ -565,7 +576,7 @@ function AuthenticatorStep({ text, onDone }: { text: SignInText; onDone: () => v
         <FieldError id={`${id}-totp-error`} message={errors.code?.message} />
       </div>
       <FormFailure message={failure} />
-      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+      <Button type="submit" size="lg" shape="pill" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? text.authenticator.checking : text.authenticator.submit}
       </Button>
     </form>

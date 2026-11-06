@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 
 import { problemMessage } from "@/components/auth/problem-message";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/fields";
 import { track } from "@/lib/analytics";
 import { analyticsId } from "@/lib/analytics-beacon";
 import { ApiError } from "@/lib/api/errors";
@@ -40,9 +41,6 @@ const FIELDS = [
   { day: "slots.1.day", time: "slots.1.time" },
   { day: "slots.2.day", time: "slots.2.time" },
 ] as const;
-
-const selectClasses =
-  "h-11 w-full rounded-md border bg-background px-3 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm dark:bg-input/30";
 
 /**
  * Up to three times a student could come (step 3.7): a day and a time each, the first needed.
@@ -111,7 +109,7 @@ export function VisitRequestForm({
       onSubmit={(event) => {
         void form.handleSubmit(submit)(event);
       }}
-      className="space-y-6"
+      className="space-y-5"
     >
       {FIELDS.map((field, index) => {
         const label = text.slots[index] ?? "";
@@ -120,44 +118,38 @@ export function VisitRequestForm({
         return (
           <fieldset
             key={label}
-            className="space-y-2"
+            className="space-y-3 rounded-2xl border bg-surface/60 p-4"
             aria-describedby={problem ? problemId : undefined}
           >
-            <legend className="font-medium">{label}</legend>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="space-y-1.5 text-sm">
-                <span>{text.day}</span>
-                <select
-                  {...form.register(field.day)}
-                  aria-invalid={problem ? true : undefined}
-                  className={selectClasses}
-                >
+            <legend className="px-1 font-display text-sm font-semibold text-foreground">
+              {label}
+            </legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="space-y-1.5 text-sm font-medium text-foreground">
+                <span className="block">{text.day}</span>
+                <Select {...form.register(field.day)} aria-invalid={problem ? true : undefined}>
                   <option value="">{text.chooseDay}</option>
                   {days.map((day) => (
                     <option key={day.value} value={day.value}>
                       {day.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
-              <label className="space-y-1.5 text-sm">
-                <span>{text.time}</span>
-                <select
-                  {...form.register(field.time)}
-                  aria-invalid={problem ? true : undefined}
-                  className={selectClasses}
-                >
+              <label className="space-y-1.5 text-sm font-medium text-foreground">
+                <span className="block">{text.time}</span>
+                <Select {...form.register(field.time)} aria-invalid={problem ? true : undefined}>
                   <option value="">{text.chooseTime}</option>
                   {times.map((time) => (
                     <option key={time.value} value={time.value}>
                       {time.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
             </div>
             {problem ? (
-              <p id={problemId} className="text-sm text-destructive">
+              <p id={problemId} className="text-sm font-medium text-destructive">
                 {problem}
               </p>
             ) : null}
@@ -165,11 +157,11 @@ export function VisitRequestForm({
         );
       })}
       {failure === null ? null : (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-sm font-medium text-destructive">
           {failure}
         </p>
       )}
-      <Button type="submit" size="lg" disabled={isSubmitting}>
+      <Button type="submit" size="lg" shape="pill" disabled={isSubmitting}>
         {isSubmitting ? text.submitting : text.submit}
       </Button>
     </form>

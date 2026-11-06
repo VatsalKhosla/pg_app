@@ -78,6 +78,7 @@ export function DataRequests({
         <Button
           type="button"
           variant="outline"
+          shape="pill"
           disabled={busy}
           onClick={() => {
             ask("export");
@@ -88,6 +89,7 @@ export function DataRequests({
         <Button
           type="button"
           variant="outline"
+          shape="pill"
           disabled={busy}
           onClick={() => {
             ask("deletion");
@@ -97,19 +99,28 @@ export function DataRequests({
         </Button>
       </div>
       {failure === null ? null : (
-        <p role="alert" className="text-sm text-destructive">
+        <p
+          role="alert"
+          className="rounded-xl border border-destructive/25 bg-destructive-soft px-3.5 py-2.5 text-sm font-medium text-destructive"
+        >
           {failure}
         </p>
       )}
       {requests.length === 0 ? null : (
-        <ul className="divide-y rounded-lg border" aria-live="polite">
+        <ul
+          className="divide-y divide-border/80 rounded-xl border border-border bg-surface/60"
+          aria-live="polite"
+        >
           {requests.map((request) => (
-            <li key={request.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
-              <span className="text-sm">{describe(request)}</span>
+            <li
+              key={request.id}
+              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+            >
+              <span className="text-sm text-foreground">{describe(request)}</span>
               {request.kind === "export" && request.status === "ready" ? (
                 <a
                   href={`${apiOrigin}/v1/me/data-requests/${request.id}/file`}
-                  className="text-sm font-medium text-primary underline underline-offset-4"
+                  className="text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
                 >
                   {text.download}
                 </a>

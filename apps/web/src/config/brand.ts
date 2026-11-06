@@ -4,8 +4,10 @@
  * translated; facts about the company behind it live in company.ts.
  *
  * Colours reach the CSS through `brandStyle` (custom properties on <html>), so components only use
- * the design tokens in globals.css. Each foreground keeps at least 4.5:1 contrast with its
- * background (WCAG 2.2 AA): white on primary is 6.2:1, and the dark-mode pair is 7.4:1.
+ * the design tokens in globals.css, which also mixes the brand's soft tints from these. Each
+ * foreground keeps at least 4.5:1 contrast with its background (WCAG 2.2 AA): white on primary is
+ * 6.2:1, and the dark-mode pair is 7.4:1. Primary as text is 6.2:1 on the light page and 9.3:1 on
+ * the dark one.
  */
 export const brand = {
   name: "Fix Your Stay",
@@ -18,7 +20,7 @@ export const brand = {
   /** Page backgrounds, for the browser's theme colour; they match --background in globals.css. */
   surfaces: {
     light: "#ffffff",
-    dark: "#0f0f0f",
+    dark: "#0c1012",
   },
 } as const;
 

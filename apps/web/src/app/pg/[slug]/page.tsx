@@ -1,18 +1,21 @@
 import type { Schemas } from "@pg-platform/api-client";
+import { Check, MapPin, ShieldCheck, Sparkles, X } from "lucide-react";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { Check, ShieldCheck, X } from "lucide-react";
 
 import { LocationMap } from "@/components/map/location-map";
 import { Photo } from "@/components/pg/photo";
-import { JsonLd } from "@/components/seo/json-ld";
-import { buttonVariants } from "@/components/ui/button";
-import { TrackView } from "@/components/system/track-view";
-import { publicEnv } from "@/config/env";
 import { QuoteChecker } from "@/components/pg/quote-checker";
 import { ViewCounter } from "@/components/pg/view-counter";
+import { JsonLd } from "@/components/seo/json-ld";
+import { TrackView } from "@/components/system/track-view";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { publicEnv } from "@/config/env";
 import {
   getPriceCalendar,
   getPublicListing,
@@ -101,7 +104,7 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
   const localityPath = `/pg-in/${listing.locality.slug}`;
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-10 px-4 py-8 sm:py-12">
+    <div className="mx-auto w-full max-w-page space-y-10 px-gutter py-8 sm:space-y-12 sm:py-12">
       <TrackView event="pg_viewed" properties={{ slug }} />
       {/* Its owner's count of views (step 7.6): once a session, from the browser. */}
       <ViewCounter slug={slug} />
@@ -119,33 +122,42 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
           ]),
         ]}
       />
-      <header className="space-y-3">
-        <p className="text-sm text-muted-foreground">
-          <Link
-            href={localityPath as Route}
-            className="rounded underline underline-offset-4 outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            {listing.locality.name}
-          </Link>
-          {` · ${t(`genderShort.${listing.genderPolicy}`)} · ${t(`meals.${listing.meals}`)}`}
-        </p>
-        <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-          {listing.name}
-        </h1>
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          {listing.verified ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-accent px-3 py-1 font-medium text-primary">
-              <ShieldCheck aria-hidden="true" className="size-4" />
-              {t("verified")}
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-3">
+          <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-muted-foreground">
+            <MapPin aria-hidden="true" className="size-4 text-primary" />
+            <Link
+              href={localityPath as Route}
+              className="inline-flex min-h-6 items-center rounded underline underline-offset-4 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {listing.locality.name}
+            </Link>
+            <span>{`· ${t(`genderShort.${listing.genderPolicy}`)} · ${t(`meals.${listing.meals}`)}`}</span>
+          </p>
+          <h1 className="text-title-1 text-balance text-foreground">{listing.name}</h1>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            {listing.verified ? (
+              <Badge variant="brand" className="px-3 py-1 text-xs">
+                <ShieldCheck aria-hidden="true" className="size-3.5" />
+                {t("verified")}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="px-3 py-1 text-xs">
+                {t("notVerified")}
+              </Badge>
+            )}
+            <span className="text-muted-foreground">
+              {t("runBy", { business: listing.ownerBusinessName })}
             </span>
-          ) : (
-            <span className="rounded-full border px-3 py-1">{t("notVerified")}</span>
-          )}
-          <span className="text-muted-foreground">
-            {t("runBy", { business: listing.ownerBusinessName })}
-          </span>
+          </div>
         </div>
-        <Link href={visit} className={cn(buttonVariants({ size: "lg" }), "mt-2")}>
+        <Link
+          href={visit}
+          className={cn(
+            buttonVariants({ size: "lg", shape: "pill" }),
+            "shrink-0 self-start sm:self-auto",
+          )}
+        >
           {t("bookVisit")}
         </Link>
       </header>
@@ -161,51 +173,70 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
       )}
       <Safety listing={listing} />
 
-      <div className="grid gap-10 md:grid-cols-2">
-        {listing.amenities.length === 0 ? null : (
-          <section aria-labelledby="amenities-title" className="space-y-3">
-            <h2 id="amenities-title" className="text-xl font-semibold">
-              {t("amenities")}
-            </h2>
-            <ul className="flex flex-wrap gap-2">
-              {listing.amenities.map((amenity) => (
-                <li key={amenity.slug} className="rounded-full border px-3 py-1 text-sm">
-                  {amenity.name}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-        {listing.houseRules.length === 0 ? null : (
-          <section aria-labelledby="rules-title" className="space-y-3">
-            <h2 id="rules-title" className="text-xl font-semibold">
-              {t("rules")}
-            </h2>
-            <ul className="list-disc space-y-1 pl-5">
-              {listing.houseRules.map((rule) => (
-                <li key={rule}>{rule}</li>
-              ))}
-            </ul>
-          </section>
-        )}
-      </div>
+      {listing.amenities.length === 0 && listing.houseRules.length === 0 ? null : (
+        <div className="grid gap-6 md:grid-cols-2">
+          {listing.amenities.length === 0 ? null : (
+            <Card asChild className="space-y-4 rounded-2xl p-6">
+              <section aria-labelledby="amenities-title">
+                <h2 id="amenities-title" className="text-title-3 text-foreground">
+                  {t("amenities")}
+                </h2>
+                <ul className="flex flex-wrap gap-2">
+                  {listing.amenities.map((amenity) => (
+                    <li
+                      key={amenity.slug}
+                      className="rounded-full border bg-surface px-3.5 py-1.5 text-sm font-medium text-foreground"
+                    >
+                      {amenity.name}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </Card>
+          )}
+          {listing.houseRules.length === 0 ? null : (
+            <Card asChild className="space-y-4 rounded-2xl p-6">
+              <section aria-labelledby="rules-title">
+                <h2 id="rules-title" className="text-title-3 text-foreground">
+                  {t("rules")}
+                </h2>
+                <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-foreground">
+                  {listing.houseRules.map((rule) => (
+                    <li key={rule}>{rule}</li>
+                  ))}
+                </ul>
+              </section>
+            </Card>
+          )}
+        </div>
+      )}
 
       {listing.description === "" ? null : (
-        <section aria-labelledby="about-title" className="space-y-3">
-          <h2 id="about-title" className="text-xl font-semibold">
-            {t("about")}
-          </h2>
-          <p className="max-w-prose leading-7 whitespace-pre-line">{listing.description}</p>
-        </section>
+        <Card asChild className="space-y-3 rounded-2xl p-6 sm:p-8">
+          <section aria-labelledby="about-title">
+            <h2 id="about-title" className="text-title-3 text-foreground">
+              {t("about")}
+            </h2>
+            <p className="max-w-prose leading-7 whitespace-pre-line text-foreground">
+              {listing.description}
+            </p>
+          </section>
+        </Card>
       )}
 
       <Location listing={listing} />
 
-      <div className="border-t pt-6">
-        <Link href={visit} className={buttonVariants({ size: "lg" })}>
+      <Card
+        variant="flat"
+        className="flex flex-wrap items-center justify-between gap-4 rounded-2xl p-6"
+      >
+        <p className="text-sm font-medium text-muted-foreground">
+          {t("runBy", { business: listing.ownerBusinessName })}
+        </p>
+        <Link href={visit} className={buttonVariants({ size: "lg", shape: "pill" })}>
           {t("bookVisit")}
         </Link>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -215,19 +246,21 @@ async function Gallery({ listing }: { listing: PublicListing }) {
   const photos = listing.media.filter((media) => media.contentType.startsWith("image/"));
   const videos = listing.media.filter((media) => media.contentType.startsWith("video/"));
   return (
-    <section aria-labelledby="gallery-title" className="space-y-3">
+    <section aria-labelledby="gallery-title" className="space-y-4">
       <h2 id="gallery-title" className="sr-only">
         {t("title")}
       </h2>
       {photos.length === 0 ? (
-        <p className="rounded-md border border-dashed p-6 text-muted-foreground">{t("none")}</p>
+        <Card variant="flat" className="border-dashed p-8 text-center text-muted-foreground">
+          <p>{t("none")}</p>
+        </Card>
       ) : (
-        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-2.5 overflow-hidden rounded-2xl sm:grid-cols-4 sm:gap-3 sm:rounded-3xl">
           {photos.map((media, index) => (
             <li
               key={media.id}
               className={cn(
-                "relative overflow-hidden rounded-md bg-muted",
+                "group relative overflow-hidden rounded-xl bg-muted sm:rounded-none",
                 index === 0 && "col-span-2 row-span-2",
               )}
             >
@@ -235,15 +268,16 @@ async function Gallery({ listing }: { listing: PublicListing }) {
                 media={media}
                 alt={t("photo", { number: index + 1, name: listing.name })}
                 sizes={
-                  index === 0 ? "(min-width: 1024px) 512px, 100vw" : "(min-width: 640px) 25vw, 50vw"
+                  index === 0 ? "(min-width: 1024px) 620px, 100vw" : "(min-width: 640px) 25vw, 50vw"
                 }
                 first={index === 0}
-                className="aspect-[3/2] h-full w-full object-cover"
+                className="aspect-[3/2] h-full w-full object-cover transition-transform duration-(--duration-slow) ease-standard group-hover:scale-[1.02] motion-reduce:transition-none"
               />
               {media.verifiedCapture ? (
-                <span className="absolute bottom-2 left-2 rounded bg-background/90 px-2 py-0.5 text-xs font-medium">
+                <Badge variant="overlay" className="absolute bottom-3 left-3 shadow-xs">
+                  <ShieldCheck aria-hidden="true" className="size-3 text-primary" />
                   {t("verifiedPhoto")}
-                </span>
+                </Badge>
               ) : null}
             </li>
           ))}
@@ -262,7 +296,7 @@ async function Gallery({ listing }: { listing: PublicListing }) {
             preload="none"
             poster={poster?.url}
             aria-label={t("video", { name: listing.name })}
-            className="w-full rounded-md bg-muted"
+            className="w-full overflow-hidden rounded-2xl border bg-muted shadow-xs"
           >
             <source src={source.url} type="video/mp4" />
           </video>
@@ -299,58 +333,74 @@ async function Rooms({
       timeZone: "Asia/Kolkata",
     });
   return (
-    <section aria-labelledby="rooms-title" className="space-y-4">
-      <div className="space-y-1">
-        <h2 id="rooms-title" className="text-xl font-semibold">
+    <section aria-labelledby="rooms-title" className="space-y-5">
+      <div className="space-y-1.5">
+        <h2 id="rooms-title" className="text-title-2 text-foreground">
           {t("title")}
         </h2>
-        <p className="text-sm text-muted-foreground">{t("intro")}</p>
+        <p className="max-w-prose text-sm text-muted-foreground sm:text-base">{t("intro")}</p>
       </div>
       {categories.length === 0 ? (
-        <p className="text-muted-foreground">{t("none")}</p>
+        <Card variant="flat" className="p-6 text-muted-foreground">
+          <p>{t("none")}</p>
+        </Card>
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2">
+        <ul className="grid gap-5 md:grid-cols-2">
           {categories.map((category) => (
-            <li key={category.id} className="space-y-3 rounded-lg border p-4">
-              <div className="space-y-1">
-                <h3 className="font-semibold">{category.label}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {[
-                    t(`sharing.${category.occupancy}`),
-                    category.ac ? t("ac") : null,
-                    category.attachedBath ? t("attachedBath") : null,
-                    category.balcony ? t("balcony") : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
+            <li
+              key={category.id}
+              className="flex flex-col justify-between gap-5 rounded-2xl border bg-card p-6 text-card-foreground shadow-sm"
+            >
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">
+                    {category.label}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {[
+                      t(`sharing.${category.occupancy}`),
+                      category.ac ? t("ac") : null,
+                      category.attachedBath ? t("attachedBath") : null,
+                      category.balcony ? t("balcony") : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+                <RoomPrice
+                  rent={rentOf(category)}
+                  room={calendar?.rooms.find((room) => room.roomCategory === category.id)}
+                  stay={calendar?.stayMonths}
+                  day={day}
+                />
               </div>
-              <RoomPrice
-                rent={rentOf(category)}
-                room={calendar?.rooms.find((room) => room.roomCategory === category.id)}
-                stay={calendar?.stayMonths}
-                day={day}
-              />
-              <p>{t("deposit", { amount: formatINR(category.securityDepositPaise) })}</p>
-              <div className="space-y-1 text-sm">
-                <p className="font-medium">{t("charges")}</p>
-                {category.mandatoryCharges.length === 0 ? (
-                  <p>{t("noCharges")}</p>
-                ) : (
-                  <>
-                    <ul className="list-disc space-y-1 pl-5">
-                      {category.mandatoryCharges.map((charge) => (
-                        <li key={`${charge.type}-${charge.label}`}>{chargeText(charge, t)}</li>
-                      ))}
-                    </ul>
-                    <p className="text-muted-foreground">
-                      {t("totals", {
-                        monthly: formatINR(category.monthlyChargesPaise),
-                        once: formatINR(category.oneTimeChargesPaise),
-                      })}
-                    </p>
-                  </>
-                )}
+              <div className="space-y-3 rounded-xl border bg-surface/80 p-4 text-sm">
+                <p className="font-semibold text-foreground tabular-nums">
+                  {t("deposit", { amount: formatINR(category.securityDepositPaise) })}
+                </p>
+                <Separator />
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    {t("charges")}
+                  </p>
+                  {category.mandatoryCharges.length === 0 ? (
+                    <p className="text-muted-foreground">{t("noCharges")}</p>
+                  ) : (
+                    <>
+                      <ul className="list-disc space-y-1 pl-5 text-foreground tabular-nums">
+                        {category.mandatoryCharges.map((charge) => (
+                          <li key={`${charge.type}-${charge.label}`}>{chargeText(charge, t)}</li>
+                        ))}
+                      </ul>
+                      <p className="pt-1 text-xs text-muted-foreground tabular-nums">
+                        {t("totals", {
+                          monthly: formatINR(category.monthlyChargesPaise),
+                          once: formatINR(category.oneTimeChargesPaise),
+                        })}
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             </li>
           ))}
@@ -397,18 +447,28 @@ async function RoomPrice({
           .join(" · ");
   const scarce = room === undefined ? null : scarceBeds(room.bedsFree);
   return (
-    <div className="space-y-2">
-      <p className="text-2xl font-bold">{t("rent", { amount: formatINR(rent) })}</p>
-      {room === undefined || stay === undefined ? null : (
-        <p className="text-sm text-muted-foreground">{t("headlineNote", { months: stay })}</p>
-      )}
-      <p className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium">
-        <Check aria-hidden="true" className="size-4" />
-        {t("fixedForStay")}
+    <div className="space-y-2.5">
+      <p className="font-display text-2xl font-bold tracking-tight text-foreground tabular-nums">
+        {t("rent", { amount: formatINR(rent) })}
       </p>
-      {changes === null ? null : <p className="text-sm">{changes}</p>}
-      {scarce === null ? null : (
-        <p className="text-sm font-semibold">{t("bedsLeft", { count: scarce })}</p>
+      {room === undefined || stay === undefined ? null : (
+        <p className="text-xs text-muted-foreground">{t("headlineNote", { months: stay })}</p>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="success" className="px-3 py-1 text-xs">
+          <Check aria-hidden="true" className="size-3.5" />
+          {t("fixedForStay")}
+        </Badge>
+        {scarce === null ? null : (
+          <Badge variant="warning" className="px-3 py-1 text-xs font-semibold">
+            {t("bedsLeft", { count: scarce })}
+          </Badge>
+        )}
+      </div>
+      {changes === null ? null : (
+        <p className="rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-foreground tabular-nums">
+          {changes}
+        </p>
       )}
     </div>
   );
@@ -437,12 +497,18 @@ async function CheckPrice({
     "API_UNREACHABLE",
   ] as const;
   return (
-    <section aria-labelledby="quote-title" className="space-y-4">
-      <div className="space-y-1">
-        <h2 id="quote-title" className="text-xl font-semibold">
-          {t("title")}
-        </h2>
-        <p className="text-sm text-muted-foreground">
+    <section
+      aria-labelledby="quote-title"
+      className="space-y-5 rounded-3xl border bg-surface p-6 shadow-xs sm:p-8"
+    >
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <Sparkles aria-hidden="true" className="size-5 text-primary" />
+          <h2 id="quote-title" className="text-title-2 text-foreground">
+            {t("title")}
+          </h2>
+        </div>
+        <p className="max-w-prose text-sm text-muted-foreground sm:text-base">
           {visit === null ? t("intro") : t("atYourVisit")}
         </p>
       </div>
@@ -516,66 +582,90 @@ async function Safety({ listing }: { listing: PublicListing }) {
           [t("warden"), safety.warden],
         ] as const);
   return (
-    <section aria-labelledby="safety-title" className="space-y-4">
-      <h2 id="safety-title" className="text-xl font-semibold">
-        {t("title")}
-      </h2>
-      {safety === null ? (
-        <p className="text-muted-foreground">{t("notChecked")}</p>
-      ) : (
-        <div className="space-y-4">
-          <p>
-            {t("checked", {
-              date: format.dateTime(new Date(`${safety.verifiedOn}T00:00:00+05:30`), {
-                dateStyle: "long",
-              }),
-            })}
-          </p>
-          <ul className="grid gap-2 sm:grid-cols-2">
-            <li>{t("exits", { count: safety.exits })}</li>
-            {checks.map(([label, present]) => (
-              <li key={label} className="flex items-center gap-2">
-                {present ? (
-                  <Check aria-hidden="true" className="size-4 text-primary" />
-                ) : (
-                  <X aria-hidden="true" className="size-4 text-destructive" />
-                )}
-                <span>
-                  {label}: {present ? t("yes") : t("no")}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <div className="space-y-1">
-            <p className="font-medium">{t("womenSafety")}</p>
-            {safety.womenSafety.length === 0 ? (
-              <p className="text-muted-foreground">{t("womenSafetyNone")}</p>
-            ) : (
-              <ul className="list-disc space-y-1 pl-5">
-                {safety.womenSafety.map((feature) => (
-                  <li key={feature}>{t(`feature.${feature}`)}</li>
-                ))}
-              </ul>
-            )}
+    <Card asChild className="space-y-5 rounded-2xl p-6 sm:p-8">
+      <section aria-labelledby="safety-title">
+        <div className="flex items-center gap-2.5">
+          <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+            <ShieldCheck aria-hidden="true" className="size-5" />
           </div>
+          <h2 id="safety-title" className="text-title-2 text-foreground">
+            {t("title")}
+          </h2>
         </div>
-      )}
-      <ul className="space-y-1 text-sm text-muted-foreground">
-        <li>{t(`licence.${listing.licenceStatus}`)}</li>
-        <li>{t(`society.${listing.societyPermission}`)}</li>
-      </ul>
-    </section>
+        {safety === null ? (
+          <p className="text-muted-foreground">{t("notChecked")}</p>
+        ) : (
+          <div className="space-y-5">
+            <p className="rounded-xl bg-primary-soft/60 px-4 py-3 text-sm font-medium text-foreground">
+              {t("checked", {
+                date: format.dateTime(new Date(`${safety.verifiedOn}T00:00:00+05:30`), {
+                  dateStyle: "long",
+                }),
+              })}
+            </p>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              <li className="flex items-center gap-2.5 rounded-xl border bg-surface/60 px-4 py-3 text-sm font-medium text-foreground">
+                <Check aria-hidden="true" className="size-4 shrink-0 text-primary" />
+                <span>{t("exits", { count: safety.exits })}</span>
+              </li>
+              {checks.map(([label, present]) => (
+                <li
+                  key={label}
+                  className="flex items-center gap-2.5 rounded-xl border bg-surface/60 px-4 py-3 text-sm text-foreground"
+                >
+                  {present ? (
+                    <Check aria-hidden="true" className="size-4 shrink-0 text-primary" />
+                  ) : (
+                    <X aria-hidden="true" className="size-4 shrink-0 text-destructive" />
+                  )}
+                  <span>
+                    {label}: {present ? t("yes") : t("no")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-foreground">{t("womenSafety")}</p>
+              {safety.womenSafety.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("womenSafetyNone")}</p>
+              ) : (
+                <ul className="flex flex-wrap gap-2">
+                  {safety.womenSafety.map((feature) => (
+                    <li
+                      key={feature}
+                      className="inline-flex items-center gap-1.5 rounded-full border bg-surface px-3.5 py-1.5 text-sm text-foreground"
+                    >
+                      <Check aria-hidden="true" className="size-3.5 text-primary" />
+                      {t(`feature.${feature}`)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+        <Separator />
+        <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <li>{t(`licence.${listing.licenceStatus}`)}</li>
+          <li>{t(`society.${listing.societyPermission}`)}</li>
+        </ul>
+      </section>
+    </Card>
   );
 }
 
 async function Location({ listing }: { listing: PublicListing }) {
   const t = await getTranslations("Pg");
   return (
-    <section aria-labelledby="location-title" className="space-y-4">
-      <h2 id="location-title" className="text-xl font-semibold">
-        {t("location.title")}
-      </h2>
-      <p>{t("location.approximate", { locality: listing.locality.name })}</p>
+    <section aria-labelledby="location-title" className="space-y-5">
+      <div className="space-y-1.5">
+        <h2 id="location-title" className="text-title-2 text-foreground">
+          {t("location.title")}
+        </h2>
+        <p className="max-w-prose text-sm text-muted-foreground sm:text-base">
+          {t("location.approximate", { locality: listing.locality.name })}
+        </p>
+      </div>
       <LocationMap
         center={listing.displayLocation}
         radiusM={APPROXIMATE_RADIUS_M}
@@ -590,15 +680,15 @@ async function Location({ listing }: { listing: PublicListing }) {
           failed: t("map.failed"),
         }}
       />
-      <div className="grid gap-6 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
         {[
           { key: "campuses", title: t("location.campuses"), places: listing.campusesNearby },
           { key: "stations", title: t("location.stations"), places: listing.stationsNearby },
         ].map((group) =>
           group.places.length === 0 ? null : (
-            <div key={group.key} className="space-y-2">
-              <h3 className="font-medium">{group.title}</h3>
-              <ul className="space-y-1">
+            <Card key={group.key} variant="flat" className="space-y-2.5 rounded-2xl p-5">
+              <h3 className="font-display font-semibold text-foreground">{group.title}</h3>
+              <ul className="space-y-1.5 text-sm text-muted-foreground tabular-nums">
                 {group.places.map((place) => (
                   <li key={place.slug}>
                     {t("location.distance", {
@@ -608,7 +698,7 @@ async function Location({ listing }: { listing: PublicListing }) {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           ),
         )}
       </div>

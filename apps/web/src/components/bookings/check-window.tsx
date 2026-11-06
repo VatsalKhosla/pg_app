@@ -42,7 +42,11 @@ export function CheckWindow({ endsAt }: { endsAt: string }) {
           ? t("left", { hours, minutes })
           : t("leftMinutes", { minutes });
   return (
-    <p role="timer" aria-live="off" className="font-medium">
+    <p
+      role="timer"
+      aria-live="off"
+      className="rounded-xl bg-primary-soft px-3.5 py-2 text-sm font-semibold text-primary-soft-foreground tabular-nums"
+    >
       {said}
     </p>
   );

@@ -17,10 +17,11 @@ export function CancelMyVisit({
   const router = useRouter();
   const [state, setState] = useState<"idle" | "busy" | "failed">("idle");
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <Button
         variant="outline"
         size="sm"
+        shape="pill"
         disabled={state === "busy"}
         onClick={() => {
           setState("busy");
@@ -36,7 +37,7 @@ export function CancelMyVisit({
         {state === "busy" ? text.cancelling : text.cancel}
       </Button>
       {state === "failed" ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-sm font-medium text-destructive">
           {text.failed}
         </p>
       ) : null}

@@ -20,7 +20,10 @@ export function MarketingConsent({
 
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="flex items-start gap-3 text-sm">
+      <label
+        htmlFor={id}
+        className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface/50 p-3.5 text-sm transition-colors hover:bg-accent/50 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/50"
+      >
         <input
           id={id}
           type="checkbox"
@@ -41,13 +44,13 @@ export function MarketingConsent({
             );
           }}
         />
-        <span>{text.label}</span>
+        <span className="leading-snug text-foreground">{text.label}</span>
       </label>
-      <p role="status" className="text-sm text-muted-foreground">
+      <p role="status" className="text-sm font-medium text-success">
         {state === "saved" ? text.saved : ""}
       </p>
       {state === "failed" ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-sm font-medium text-destructive">
           {text.failed}
         </p>
       ) : null}

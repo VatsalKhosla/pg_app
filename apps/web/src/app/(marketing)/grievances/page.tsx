@@ -144,10 +144,17 @@ export default async function GrievancesPage() {
           ) : (
             <ul className="space-y-4">
               {mine.map((grievance) => (
-                <li key={grievance.ticketNumber} className="space-y-2 rounded-lg border p-4">
+                <li
+                  key={grievance.ticketNumber}
+                  className="space-y-2 rounded-xl border border-border/80 bg-surface/60 p-4"
+                >
                   <p className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="font-mono font-semibold">{grievance.ticketNumber}</span>
-                    <span className="text-sm font-medium">{t(`status.${grievance.status}`)}</span>
+                    <span className="font-mono font-semibold text-foreground">
+                      {grievance.ticketNumber}
+                    </span>
+                    <span className="text-sm font-medium text-foreground">
+                      {t(`status.${grievance.status}`)}
+                    </span>
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {t(`categories.${grievance.category}`)} ·{" "}
