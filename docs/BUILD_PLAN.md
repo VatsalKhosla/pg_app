@@ -461,9 +461,10 @@ Start the slow ones in week 1.
 
 ## Phase 6 — Payments and ledger → **Milestone B**
 
-- [ ] **6.1 Gateway port and Razorpay adapter.** Port per ARCHITECTURE §9.1; `FakeGateway` with signed webhook fixtures; Razorpay orders for the exact token amount; web checkout; server-side checkout-signature verification. **Read Razorpay's current docs first.** Test keys only.
+- [x] **6.1 Gateway port and Razorpay adapter.** Port per ARCHITECTURE §9.1; `FakeGateway` with signed webhook fixtures; Razorpay orders for the exact token amount; web checkout; server-side checkout-signature verification. **Read Razorpay's current docs first.** Test keys only.
   *Done when* a staging booking reaches TOKEN_SECURED through Razorpay test mode.
   *Note (2026-11-05): built, and open only for its last check,* which needs the founders' Razorpay test keys (their task below).
+  *Done (2026-11-06):* on the live test site, a booking reached token_secured through Razorpay's test mode. Its checkout opened for exactly ₹2,000 with the `rzp_test_` key, Razorpay's mock bank said yes, and the checkout callback settled it. Cancelling it afterwards sent the whole token back through Razorpay.
   - **API:** `POST /v1/bookings/{code}/payment` makes the order for exactly the token when the student taps, once per booking. `POST /v1/payments/{id}/checkout-callback` checks the signature, then fetches the payment, and only captured money of this order's exact amount moves the booking (ADR 0056).
   - **Web:** `/bookings/{code}/pay` opens Razorpay's checkout, or the test bank with the fake gateway. It's the only page whose security policy allows Razorpay.
   - **Staging:** the fake gateway moves no money, and production refuses it. Test and live keys can't mix.
