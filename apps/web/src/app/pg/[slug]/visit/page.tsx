@@ -1,8 +1,10 @@
+import { ArrowLeft } from "lucide-react";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { Card } from "@/components/ui/card";
 import { VisitRequestForm } from "@/components/visits/visit-request-form";
 import { getPublicListing } from "@/lib/api/public";
 import { OPS_VISITS_PATH } from "@/lib/auth/routes";
@@ -46,54 +48,57 @@ export default async function VisitPage({ params }: PageProps<"/pg/[slug]/visit"
   }));
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-10 sm:py-16">
+    <div className="mx-auto w-full max-w-2xl space-y-6 px-gutter py-10 sm:py-16">
       <div className="space-y-3">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          {t("title", { name: listing.name })}
-        </h1>
+        <Link
+          href={`/pg/${slug}` as Route}
+          className="inline-flex min-h-8 items-center gap-1.5 text-sm font-medium text-primary underline underline-offset-4"
+        >
+          <ArrowLeft aria-hidden="true" className="size-4" />
+          {t("back")}
+        </Link>
+        <h1 className="text-title-1 text-foreground">{t("title", { name: listing.name })}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       {isStaff(me) ? (
-        <Link
-          href={OPS_VISITS_PATH}
-          className="inline-flex min-h-6 items-center font-medium text-primary underline underline-offset-4"
-        >
-          {OPS_VISITS_PATH}
-        </Link>
+        <Card className="p-6">
+          <Link
+            href={OPS_VISITS_PATH}
+            className="inline-flex min-h-8 items-center font-medium text-primary underline underline-offset-4"
+          >
+            {OPS_VISITS_PATH}
+          </Link>
+        </Card>
       ) : (
-        <VisitRequestForm
-          slug={slug}
-          days={days}
-          times={times}
-          text={{
-            slots: Array.from({ length: CHOICES }, (_, index) =>
-              index === 0
-                ? t("slot", { number: index + 1 })
-                : `${t("slot", { number: index + 1 })} ${t("optional")}`,
-            ),
-            day: t("day"),
-            time: t("time"),
-            chooseDay: t("chooseDay"),
-            chooseTime: t("chooseTime"),
-            needOne: t("needOne"),
-            needBoth: t("needBoth"),
-            submit: t("submit"),
-            submitting: t("submitting"),
-            errors: {
-              VISIT_EXISTS: t("errors.VISIT_EXISTS"),
-              VISIT_LIMIT_REACHED: t("errors.VISIT_LIMIT_REACHED"),
-              RATE_LIMITED: t("errors.RATE_LIMITED"),
-              generic: t("errors.generic"),
-            },
-          }}
-        />
+        <Card className="rounded-3xl p-6 shadow-sm sm:p-8">
+          <VisitRequestForm
+            slug={slug}
+            days={days}
+            times={times}
+            text={{
+              slots: Array.from({ length: CHOICES }, (_, index) =>
+                index === 0
+                  ? t("slot", { number: index + 1 })
+                  : `${t("slot", { number: index + 1 })} ${t("optional")}`,
+              ),
+              day: t("day"),
+              time: t("time"),
+              chooseDay: t("chooseDay"),
+              chooseTime: t("chooseTime"),
+              needOne: t("needOne"),
+              needBoth: t("needBoth"),
+              submit: t("submit"),
+              submitting: t("submitting"),
+              errors: {
+                VISIT_EXISTS: t("errors.VISIT_EXISTS"),
+                VISIT_LIMIT_REACHED: t("errors.VISIT_LIMIT_REACHED"),
+                RATE_LIMITED: t("errors.RATE_LIMITED"),
+                generic: t("errors.generic"),
+              },
+            }}
+          />
+        </Card>
       )}
-      <Link
-        href={`/pg/${slug}` as Route}
-        className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
-      >
-        {t("back")}
-      </Link>
     </div>
   );
 }
