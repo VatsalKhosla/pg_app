@@ -69,5 +69,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0063](0063-owner-dashboard.md) | The owner dashboard: ops' own tools, scoped to an owner's PGs by one check, with a 404 for anyone else's | Accepted |
 | [0064](0064-upi-mandates.md) | Tokens blocked by a UPI one-time mandate: secured on the gateway's word, debited once after the notice when the booking settles, and released when it ends first | Accepted |
 | [0065](0065-security-review.md) | The launch security review: a STRIDE threat model, ASVS 5.0 level 2, ZAP's baseline on the test site and Schemathesis on a private copy of the API | Accepted |
+| [0066](0066-performance-and-load.md) | Performance and load: k6 at the planning load on a private copy of the API, query plans at load scale, and Lighthouse budgets in CI | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

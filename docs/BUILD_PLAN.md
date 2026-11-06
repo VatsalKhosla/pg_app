@@ -549,6 +549,10 @@ Start the slow ones in week 1.
   - **Fixed:** a year-0 month that crashed search, user sessions with no end (now 90 days), forms that could send what was typed by GET, and `staff add` auditing nothing new.
   - **Still open:** the checklist's gaps, among them encrypting owners' documents, verifying the database's certificate, a WAF and `SECRET_KEY` versions. For the founders: rotate the secrets pasted in chat, and enforce Workspace 2-Step Verification.
 - [ ] **8.2 Performance and load.** k6 at the planning load (ARCHITECTURE §18), including the hold race; `EXPLAIN ANALYZE` on top queries; caching verified; Lighthouse budgets enforced in CI.
+  *Note (2026-11-06):* measured, and left unticked until holds stop queueing in the race (ADR 0066).
+  - **Tools:** `make load-test` (k6: reads, quote writes and the hold race, on a private API with 3,000 fictional listings), `python -m tests.load.explain` (the top requests' query plans), and Lighthouse budgets in CI on every push.
+  - **Reads:** about 120 to 150 a second per 4-worker API on a 4-vCPU VM within the SLO, so about three containers for the planning load's 300. Database time per request stays under 15 ms; the API's own work is the cost.
+  - **The hold race:** correct (3 holds for 3 beds, 47 refused, no errors), but p95 is 1.65 s, because holds on a room type queue for its beds' locks. Next: lock only the beds a hold can take (`SKIP LOCKED`).
 - [ ] **8.3 Observability and runbooks.** Dashboards and alerts from ARCHITECTURE §19; a runbook per alert.
 - [ ] **8.4 Compliance pass.** DPDP (notice, consent, retention, export/delete, breach plan), grievance SLAs, a dark-pattern audit of every screen, lawyer-reviewed legal pages and owner agreement.
 - [ ] **8.5 Production infrastructure.** Terraform for AWS Mumbai (network, RDS with PITR, Redis, ECS services for API and worker, S3 + CloudFront, Secrets Manager, alarms), Vercel project, Cloudflare WAF and Turnstile; staging mirrors production at a smaller size.
