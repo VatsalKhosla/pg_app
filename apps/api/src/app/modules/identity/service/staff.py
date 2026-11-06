@@ -340,17 +340,23 @@ class StaffAdmin:
             msg = "give one or more staff roles"
             raise StaffAdminError(msg)
         async with self._db.begin():
-            user, _ = await self._users.get_or_create_by_phone(phone_e164)
+            user, created = await self._users.get_or_create_by_phone(phone_e164)
+            # Asking again for what's already so changes nothing, and writes no audit entry: the
+            # test site asks each time it starts.
+            changed = created or not roles <= await self._users.roles(user.id)
             if email is not None:
                 owner = await self._users.by_email(email)
                 if owner is not None and owner.id != user.id:
                     msg = "that address belongs to another account"
                     raise StaffAdminError(msg)
+                changed = changed or user.email != email
                 user.email = email
             if name is not None:
+                changed = changed or user.name != name
                 user.name = name
-            await self._users.add_roles(user.id, roles)
-            await self._audit(user, "staff.roles_granted", {"roles": sorted(roles)})
+            if changed:
+                await self._users.add_roles(user.id, roles)
+                await self._audit(user, "staff.roles_granted", {"roles": sorted(roles)})
             return await self._users.roles(user.id) & STAFF_ROLES
 
     async def remove(self, phone_e164: str, roles: frozenset[Role] | None) -> frozenset[Role]:

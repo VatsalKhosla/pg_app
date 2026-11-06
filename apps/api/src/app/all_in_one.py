@@ -7,10 +7,10 @@ staging for now (ADR 0047). Production runs the API and the worker as services o
 It brings the database up to date and loads the geo reference data, which changes only what
 differs. With ``SEED_SAMPLES=true`` (staging) it adds the fictional sample PGs, which a second run
 leaves alone and production refuses. ``TEST_SITE_REMOTE_BOOKING`` sets whether beds can be booked
-without a visit, and ``TEST_SITE_TOKEN_MODE`` how the token is taken (step 6.7). Then it runs the
-worker and the API side by side. When either
-stops, so does the other and the container exits, for the host to start it again. A SIGTERM from
-the host stops both gracefully.
+without a visit, ``TEST_SITE_TOKEN_MODE`` how the token is taken (step 6.7), and
+``TEST_SITE_STAFF`` who may use the staff tools. Then it runs the worker and the API side by
+side. When either stops, so does the other and the container exits, for the host to start it
+again. A SIGTERM from the host stops both gracefully.
 """
 
 import os
@@ -61,6 +61,24 @@ def supervise(commands: Sequence[Sequence[str]]) -> int:
             signal.signal(signum, handler)
 
 
+# What TEST_SITE_STAFF's people get: the ops console and the admin's tools, by Google sign-in.
+STAFF_ROLES: Final = ("--role", "ops", "--role", "admin")
+
+
+def _staff(raw: str) -> list[tuple[str, str]]:
+    """``TEST_SITE_STAFF``: each person's phone and Google address, the address last, people
+    separated by commas, e.g. ``+919876543210 name@example.in``. Someone without an address is
+    left out, since they'd have no way to sign in."""
+    people = []
+    for entry in raw.split(","):
+        phone, _, email = entry.strip().rpartition(" ")
+        if phone.strip() and "@" in email:
+            people.append((phone.strip(), email))
+        elif entry.strip():
+            print("TEST_SITE_STAFF: someone has no Google address; left out", file=sys.stderr)  # noqa: T201
+    return people
+
+
 def _run(*args: str) -> int:
     return subprocess.run([sys.executable, "-m", *args], check=False).returncode  # noqa: S603
 
@@ -81,6 +99,10 @@ def main() -> int:
     token_mode = os.environ.get("TEST_SITE_TOKEN_MODE")
     if token_mode is not None:
         _run("app.manage", "flags", "set", "token_mode", token_mode)
+    # Who may use the staff tools here: the host's free plan has no shell to run `staff add` in,
+    # so the site runs it as it starts. Asking again changes nothing.
+    for phone, email in _staff(os.environ.get("TEST_SITE_STAFF", "")):
+        _run("app.manage", "staff", "add", phone, *STAFF_ROLES, "--email", email)
     port = os.environ.get("PORT", "8000")
     return supervise(
         [

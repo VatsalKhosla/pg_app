@@ -722,6 +722,8 @@ def test_operators_manage_staff_from_the_command_line(
         return code_at(secret, time_step(clock.now()))
 
     assert cli("staff", "add", phone, "--role", "ops", "--email", email, "--name", "Asha") == 0
+    # Again, as the test site does each time it starts: nothing changes, nothing is audited.
+    assert cli("staff", "add", phone, "--role", "ops", "--email", email, "--name", "Asha") == 0
     assert cli("staff", "enrol-authenticator", phone, read_code=code_from_the_printed_key) == 0
     assert cli("staff", "list") == 0
     assert cli("staff", "remove", phone) == 0

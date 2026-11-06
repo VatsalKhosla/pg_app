@@ -119,6 +119,31 @@ def test_a_test_site_can_take_tokens_by_mandate_only_when_it_says_so(
     ]
 
 
+def test_a_test_site_makes_its_staff_as_it_starts(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    recorder = _Recorder()
+    monkeypatch.setattr(all_in_one, "_run", recorder.run)
+    monkeypatch.setattr(all_in_one, "supervise", recorder.supervise)
+
+    monkeypatch.setenv(
+        "TEST_SITE_STAFF", " +91 90000 00001 one@example.in,9000000002 two@example.in, 9000000003 "
+    )
+    assert all_in_one.main() == 0
+
+    add = ("app.manage", "staff", "add")
+    roles = ("--role", "ops", "--role", "admin")
+    assert recorder.ran == [
+        MIGRATE,
+        GEO,
+        (*add, "+91 90000 00001", *roles, "--email", "one@example.in"),
+        (*add, "9000000002", *roles, "--email", "two@example.in"),
+        ("supervise",),
+    ]
+    # Who was left out isn't said: a phone number stays out of the log.
+    assert capsys.readouterr().err == "TEST_SITE_STAFF: someone has no Google address; left out\n"
+
+
 def test_a_failed_migration_starts_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
     recorder = _Recorder(code=4)
     monkeypatch.setattr(all_in_one, "_run", recorder.run)

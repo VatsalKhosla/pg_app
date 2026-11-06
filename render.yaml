@@ -87,6 +87,19 @@ services:
         sync: false
       - key: RAZORPAY_WEBHOOK_SECRET
         sync: false
+      # Staff sign in with Google, from the company's Workspace only. The OAuth client's id and
+      # secret are set on the service; its redirect URI is the site's
+      # /v1/auth/staff/google/callback.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: STAFF_GOOGLE_DOMAINS
+        value: fixyourstay.in
+      # Who gets the staff tools here (ops and admin), made as the site starts: each person's
+      # phone and Workspace address, people separated by commas. Set on the service: it's personal.
+      - key: TEST_SITE_STAFF
+        sync: false
       # Cloudflare's published test secret, which always passes; the API refuses it in
       # production.
       - key: TURNSTILE_SECRET_KEY

@@ -47,7 +47,6 @@ Season one is visit-first, so anywhere else a bed is reserved only from a visit 
 
 - **Texts:** there's no SMS provider yet (a paid vendor the founders choose). Sign-in codes show on the sign-in page instead (`OTP_SENDER=screen`, ADR 0055), and visit and booking texts aren't sent.
   - Anyone can sign in with any number here, so never put real people's details on this site. Staff roles never come with a phone sign-in, and production refuses this setting.
-- **Staff sign-in** needs a Google OAuth client for staging (see [Later](#later)).
 - **Real listings:** staging shows the six fictional sample PGs, added on its first start. A banner on every page says they're samples (see [Later](#later)).
 - **Map:** it uses OpenStreetMap's tiles, which their policy allows for a site this lightly used. The live site needs a map provider the founders choose.
 - **Search engines** are kept out: `robots.txt` disallows everything on staging.
@@ -116,8 +115,8 @@ GoDaddy's own forwarding and parked page must go, or they answer instead of Rend
 ## Later
 
 - **Real listings** come through the ops console, once staff can sign in. To stop adding the samples, set `SEED_SAMPLES` to `false` on `fys-staging-api`; the ones already there stay until they're unpublished in the ops console.
-- **Staff sign-in:**
-  1. Create a Google OAuth client in a Google Cloud project, with the redirect URI `https://fixyourstay.in/v1/auth/staff/google/callback` (the site's address, as it serves the API).
-  2. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `STAFF_GOOGLE_EMAILS` on `fys-staging-api`.
-  3. Make the founders staff with `python -m app.manage staff add`, run with staging's settings ([staff access](staff-access.md)).
+- **Staff sign-in** (set up 2026-11-06). Staff sign in with Google from the company's Workspace (`STAFF_GOOGLE_DOMAINS=fixyourstay.in`), through an Internal OAuth client whose redirect URI is `https://fixyourstay.in/v1/auth/staff/google/callback`. Its id and secret are set on `fys-staging-api`.
+  - **Who's staff:** `TEST_SITE_STAFF` on `fys-staging-api`, set in Render's dashboard because it's personal. It lists each person's phone and Workspace address, address last, people separated by commas, for example `+91XXXXXXXXXX name@fixyourstay.in`. The site makes them staff (ops and admin) as it starts, so saving it is enough; asking again changes nothing and writes no audit entry ([staff access](staff-access.md)).
+    The phone only identifies the account. Anyone who signs in here with that number sees the account's name and address, but never its staff tools, which need the Google sign-in.
+  - **Taking access away:** deleting someone from `TEST_SITE_STAFF` leaves their roles, and Render's free plan has no shell for `staff remove`. Suspend their Workspace account instead: Google then refuses their sign-in, and a staff session ends within 12 hours.
 - **The move:** the planned Vercel and AWS staging replaces this one (BUILD_PLAN 8.5). Its images and deploy job stay much the same.
