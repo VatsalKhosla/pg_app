@@ -9100,6 +9100,60 @@
         }
       }
     },
+    "/v1/payments/{payment_id}/mandate-check": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Is the block in?",
+        "description": "After the student authorised a block on their token (step 6.7), whatever checkout handed\nthe browser: the gateway asked whether the mandate is confirmed, which alone moves the\nbooking. Safe to repeat; 409 INVALID_TRANSITION for a token taken as a payment.",
+        "operationId": "paymentsMandateCheck",
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResult"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/webhooks/razorpay": {
       "post": {
         "tags": [
@@ -14452,7 +14506,9 @@
           "not_settled",
           "stuck_authorized",
           "refund_stuck",
-          "link_mismatch"
+          "link_mismatch",
+          "mandate_debit_failed",
+          "mandate_cancelled"
         ],
         "title": "IssueKind",
         "description": "What reconciliation found that someone has to look at."
@@ -18045,6 +18101,14 @@
         "title": "PayLink",
         "description": "Where the balance can be paid: Razorpay's page, or the fake gateway's test bank."
       },
+      "PaymentMode": {
+        "type": "string",
+        "enum": [
+          "payment",
+          "upi_mandate"
+        ],
+        "title": "PaymentMode"
+      },
       "PaymentStart": {
         "properties": {
           "id": {
@@ -18081,6 +18145,20 @@
           },
           "prefill": {
             "$ref": "#/components/schemas/CheckoutPrefill"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/PaymentMode"
+          },
+          "customerId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customerid"
           }
         },
         "additionalProperties": false,
@@ -18094,7 +18172,9 @@
           "amountPaise",
           "currency",
           "expiresInSeconds",
-          "prefill"
+          "prefill",
+          "mode",
+          "customerId"
         ],
         "title": "PaymentStart",
         "description": "What the browser's checkout opens with."
@@ -18104,7 +18184,9 @@
         "enum": [
           "created",
           "authorized",
-          "captured"
+          "captured",
+          "blocked",
+          "released"
         ],
         "title": "PaymentStatus",
         "description": "Our payment: an order waiting to be paid, the bank's yes, and the money in."

@@ -2687,6 +2687,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payments/{payment_id}/mandate-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Is the block in?
+         * @description After the student authorised a block on their token (step 6.7), whatever checkout handed
+         *     the browser: the gateway asked whether the mandate is confirmed, which alone moves the
+         *     booking. Safe to repeat; 409 INVALID_TRANSITION for a token taken as a payment.
+         */
+        post: operations["paymentsMandateCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/webhooks/razorpay": {
         parameters: {
             query?: never;
@@ -4609,7 +4631,7 @@ export interface components {
          * @description What reconciliation found that someone has to look at.
          * @enum {string}
          */
-        IssueKind: "unknown_payment" | "unknown_refund" | "amount_mismatch" | "not_captured_here" | "refund_not_processed_here" | "unexpected_item" | "not_settled" | "stuck_authorized" | "refund_stuck" | "link_mismatch";
+        IssueKind: "unknown_payment" | "unknown_refund" | "amount_mismatch" | "not_captured_here" | "refund_not_processed_here" | "unexpected_item" | "not_settled" | "stuck_authorized" | "refund_stuck" | "link_mismatch" | "mandate_debit_failed" | "mandate_cancelled";
         /** IssuePage */
         IssuePage: {
             /** Items */
@@ -5875,6 +5897,11 @@ export interface components {
             url: string;
         };
         /**
+         * PaymentMode
+         * @enum {string}
+         */
+        PaymentMode: "payment" | "upi_mandate";
+        /**
          * PaymentStart
          * @description What the browser's checkout opens with.
          */
@@ -5898,13 +5925,16 @@ export interface components {
             /** Expiresinseconds */
             expiresInSeconds: number;
             prefill: components["schemas"]["CheckoutPrefill"];
+            mode: components["schemas"]["PaymentMode"];
+            /** Customerid */
+            customerId: string | null;
         };
         /**
          * PaymentStatus
          * @description Our payment: an order waiting to be paid, the bank's yes, and the money in.
          * @enum {string}
          */
-        PaymentStatus: "created" | "authorized" | "captured";
+        PaymentStatus: "created" | "authorized" | "captured" | "blocked" | "released";
         /** PhotoSize */
         PhotoSize: {
             /** Name */
@@ -13763,6 +13793,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckoutCallback"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    paymentsMandateCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutResult"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */
