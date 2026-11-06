@@ -67,5 +67,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0061](0061-owner-invoices.md) | Owners' invoices: issued as a booking settles, numbered without gaps, kept as issued, and paid through a payment link only the gateway's word marks paid | Accepted |
 | [0062](0062-reconciliation.md) | Reconciliation: the gateway asked about what hasn't come back, its settlement reports matched line by line, and what doesn't match kept for ops | Accepted |
 | [0063](0063-owner-dashboard.md) | The owner dashboard: ops' own tools, scoped to an owner's PGs by one check, with a 404 for anyone else's | Accepted |
+| [0064](0064-upi-mandates.md) | Tokens blocked by a UPI one-time mandate: secured on the gateway's word, debited once after the notice when the booking settles, and released when it ends first | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

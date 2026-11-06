@@ -27,7 +27,7 @@ The test site takes payments through Razorpay's test mode (since 2026-11-06): **
    - **URL:** `https://fys-staging-api.onrender.com/v1/webhooks/razorpay`
    - **Secret:** a long random one of your own, not the key's secret.
    - **Alert email:** yours. Razorpay turns a webhook off after 24 hours of failures, and says so there.
-   - **Active events:** `payment.authorized`, `payment.captured`, `payment.failed`, `order.paid`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`, and, for owners' invoices, `payment_link.paid`, `payment_link.expired` and `payment_link.cancelled`.
+   - **Active events:** `payment.authorized`, `payment.captured`, `payment.failed`, `order.paid`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`, and, for owners' invoices, `payment_link.paid`, `payment_link.expired` and `payment_link.cancelled`, and, for tokens blocked by mandate, `token.confirmed`, `token.rejected`, `token.cancelled` and `token.paused`.
 
    If it asks for a code in test mode, Razorpay's docs give `754081`.
 3. On `fys-staging-api` in Render, open **Environment** and add `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET`. Never paste them in a chat.
@@ -36,6 +36,8 @@ The test site takes payments through Razorpay's test mode (since 2026-11-06): **
 Razorpay's test card is `4100 2800 0000 1007`, with CVV `123` and expiry `12/26` (as Razorpay's onboarding gives them), and its test UPI id is `test@razorpay`.
 
 Test mode allows 30 payment links for the account, which owners' invoices use (ADR 0061).
+
+To take tokens as UPI one-time mandates in test mode (ADR 0064), set `TEST_SITE_TOKEN_MODE` to `upi_mandate` on `fys-staging-api`; `payment` goes back to normal payments. The site sets the `token_mode` flag as it starts.
 
 ## Booking without a visit
 

@@ -424,6 +424,8 @@ Adapters: `RazorpayGateway` and `FakeGateway` (deterministic, used in tests and 
 
 Verify Razorpay's current docs for order creation, checkout signature format, webhook headers and event names, OTM and Route before writing the adapter.
 
+In the code (step 6.7, ADR 0064): a token is taken by mandate only when `token_mode` is `upi_mandate` and the mandate can last past the last move-in day, the check window and a 26-hour debit notice (`UPI_MANDATE_MAX_DAYS`, 90). The gateway's confirmation secures the booking with nothing posted; `booking.token_earned` debits it once after the notice; refund paths release it, or debit only what a late cancellation keeps. Payments gain the statuses `blocked` and `released`, and reconciliation raises `mandate_debit_failed` and `mandate_cancelled`.
+
 In the code (step 6.1, ADR 0056): the order is made when the student taps Pay, outside any transaction, once per booking and gateway. The callback checks the signature, then fetches the payment; the booking moves only on the gateway's word that this order's exact amount is captured. Checkout runs on `/bookings/{code}/pay`, the only page whose policy allows it. `FakeGateway` stands in without keys, and production refuses it.
 
 ### 9.3 Webhooks

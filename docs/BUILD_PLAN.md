@@ -512,6 +512,11 @@ Start the slow ones in week 1.
 
 - [ ] **6.7 UPI one-time mandate mode (flagged).** Mandate create, capture and release in the adapter; validity check against move-in + window; fall back to payment mode. Build only after the founders confirm Razorpay has enabled it.
   *Done when* the full flow passes in test mode behind `token_mode = upi_mandate`.
+  *Note (2026-11-06):* built, and left unticked until its "done when" passes in Razorpay's test mode (ADR 0064).
+  - **Blocked at reservation** when the flag asks for it and the mandate can last past move-in, the check window and the debit's notice (90 days at most); a normal payment otherwise. The gateway's word secures the booking; nothing is posted until money moves.
+  - **Debited once** after a 26-hour notice when the booking settles; **released** when it ends first, or debited for only what a late cancellation keeps.
+  - **Ops hear** of a refused debit or a mandate cancelled before its debit; reconciliation chases what hasn't come back.
+  - **To verify on the test site:** set `TEST_SITE_TOKEN_MODE=upi_mandate`, then confirm the authorisation's amount, the debit's email (`void@razorpay.com`), the token webhooks' shape and banks' mandate length.
 
 - [ ] **6.8 Payments go-live checklist.** Live keys in the secret manager, webhook secret set, a ₹1 live payment and refund, alerts on payment failures, a refund runbook.
   *Done when* the founders sign off the checklist.
