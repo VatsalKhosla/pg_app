@@ -1,13 +1,10 @@
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
 from app.config import BRAND_NAME, TURNSTILE_TEST_SECRETS, Settings
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 DATABASE_URL = "postgresql+asyncpg://app:db-secret-password@db.internal:5432/app"
 REDIS_URL = "redis://:redis-secret-password@cache.internal:6379/0"
@@ -112,6 +109,22 @@ def test_empty_optional_values_mean_unset(environment: pytest.MonkeyPatch) -> No
 
     assert settings.sentry_dsn is None
     assert settings.otel_exporter_otlp_endpoint is None
+
+
+def test_the_example_settings_start_the_api_as_written(
+    environment: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """`make env` copies .env.example to .env: as written, with the founders' facts still empty,
+    it must start the API."""
+    example = Path(__file__).resolve().parents[2] / ".env.example"
+    (tmp_path / ".env").write_text(example.read_text())
+
+    settings = Settings()
+
+    assert settings.invoice_seller_name is None
+    assert settings.invoice_seller_address is None
+    assert settings.invoice_seller_gstin is None
+    assert settings.invoice_sac_code is None
 
 
 @pytest.mark.parametrize(

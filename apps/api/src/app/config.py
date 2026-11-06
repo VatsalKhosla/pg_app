@@ -225,6 +225,10 @@ class Settings(DatabaseSettings):
         "revalidate_secret",
         "posthog_project_key",
         "posthog_host",
+        "invoice_seller_name",
+        "invoice_seller_address",
+        "invoice_seller_gstin",
+        "invoice_sac_code",
         mode="before",
     )
     @classmethod
