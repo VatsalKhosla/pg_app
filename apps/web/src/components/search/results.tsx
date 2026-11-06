@@ -4,10 +4,12 @@ import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api/errors";
+import { DEFAULT_STAY } from "@/lib/pricing/calendar";
 import type { SearchPage } from "@/lib/search/client";
 import { cn } from "@/lib/utils";
-import { DEFAULT_STAY } from "@/lib/pricing/calendar";
 
 import { ResultCard } from "./result-card";
 
@@ -47,29 +49,31 @@ export function Results({
 
   if (invalid !== null) {
     return (
-      <div role="alert" className={cn("space-y-3 rounded-lg border p-4", className)}>
-        <p className="font-medium">{t("results.invalid")}</p>
+      <Card role="alert" variant="flat" className={cn("space-y-3 rounded-2xl p-5", className)}>
+        <p className="font-semibold text-foreground">{t("results.invalid")}</p>
         <p className="text-sm text-muted-foreground">{invalid}</p>
-        <Button variant="outline" onClick={onClear}>
-          {t("filters.clear")}
-        </Button>
-      </div>
+        <div>
+          <Button variant="outline" shape="pill" onClick={onClear}>
+            {t("filters.clear")}
+          </Button>
+        </div>
+      </Card>
     );
   }
   if (results.isPending) {
     return (
       <div className={className}>
-        <p role="status" className="mb-3 text-sm text-muted-foreground">
+        <p role="status" className="mb-3 text-sm font-medium text-muted-foreground">
           {t("results.loading")}
         </p>
         <ul aria-hidden="true" className="space-y-3">
           {[0, 1, 2, 3].map((index) => (
-            <li key={index} className="flex gap-3 rounded-lg border p-3 motion-safe:animate-pulse">
-              <div className="size-24 shrink-0 rounded-md bg-muted sm:size-28" />
-              <div className="flex-1 space-y-2 py-1">
-                <div className="h-4 w-3/4 rounded bg-muted" />
-                <div className="h-3 w-1/2 rounded bg-muted" />
-                <div className="h-4 w-1/3 rounded bg-muted" />
+            <li key={index} className="flex gap-3.5 rounded-2xl border bg-card p-3.5">
+              <Skeleton className="size-26 shrink-0 rounded-xl sm:size-30" />
+              <div className="flex-1 space-y-2.5 py-1">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3.5 w-1/2" />
+                <Skeleton className="h-4 w-1/3" />
               </div>
             </li>
           ))}
@@ -79,24 +83,33 @@ export function Results({
   }
   if (results.isError && cards.length === 0) {
     return (
-      <div role="alert" className={cn("space-y-3 rounded-lg border p-4", className)}>
-        <p>{t("results.failed")}</p>
-        <Button variant="outline" onClick={() => void results.refetch()}>
-          {t("results.retry")}
-        </Button>
-      </div>
+      <Card role="alert" variant="flat" className={cn("space-y-3 rounded-2xl p-5", className)}>
+        <p className="font-medium text-foreground">{t("results.failed")}</p>
+        <div>
+          <Button variant="outline" shape="pill" onClick={() => void results.refetch()}>
+            {t("results.retry")}
+          </Button>
+        </div>
+      </Card>
     );
   }
   if (cards.length === 0) {
     return (
-      <div className={cn("space-y-3 rounded-lg border border-dashed p-6 text-center", className)}>
-        <p role="status" className="font-medium">
+      <div
+        className={cn(
+          "space-y-3 rounded-2xl border border-dashed bg-surface p-8 text-center",
+          className,
+        )}
+      >
+        <p role="status" className="font-display text-base font-semibold text-foreground">
           {t("results.none")}
         </p>
         <p className="text-sm text-muted-foreground">{t("results.noneHint")}</p>
-        <Button variant="outline" onClick={onClear}>
-          {t("filters.clear")}
-        </Button>
+        <div className="pt-1">
+          <Button variant="outline" shape="pill" onClick={onClear}>
+            {t("filters.clear")}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -105,14 +118,18 @@ export function Results({
     results.isPlaceholderData || (results.isRefetching && !results.isFetchingNextPage);
   return (
     <div className={className}>
-      <p role="status" className="text-sm text-muted-foreground">
-        {t("results.count", { count: cards.length, more: String(results.hasNextPage) })}
-        {refreshing ? <span className="ms-2">{t("results.loading")}</span> : null}
-      </p>
-      {/* The engine prices a month's move-ins for a stay (ADR 0042): say which. */}
-      <p className="mb-3 text-sm text-muted-foreground">
-        {t("results.rents", { months: DEFAULT_STAY })}
-      </p>
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p role="status" className="text-sm font-semibold text-foreground">
+          {t("results.count", { count: cards.length, more: String(results.hasNextPage) })}
+          {refreshing ? (
+            <span className="ms-2 font-normal text-muted-foreground">{t("results.loading")}</span>
+          ) : null}
+        </p>
+        {/* The engine prices a month's move-ins for a stay (ADR 0042): say which. */}
+        <p className="text-xs text-muted-foreground">
+          {t("results.rents", { months: DEFAULT_STAY })}
+        </p>
+      </div>
       <ul
         aria-busy={refreshing}
         className={cn(
@@ -134,7 +151,9 @@ export function Results({
       {results.hasNextPage ? (
         <Button
           variant="outline"
-          className="mt-4 w-full"
+          shape="pill"
+          size="lg"
+          className="mt-5 w-full"
           disabled={results.isFetchingNextPage}
           onClick={() => void results.fetchNextPage()}
         >
@@ -142,7 +161,7 @@ export function Results({
         </Button>
       ) : null}
       {results.isError ? (
-        <p role="alert" className="mt-3 text-sm text-destructive">
+        <p role="alert" className="mt-3 text-sm font-medium text-destructive">
           {t("results.failed")}
         </p>
       ) : null}

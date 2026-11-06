@@ -6,7 +6,7 @@ import { useId, useState } from "react";
 
 import type { LatLng } from "@/components/map/map-provider";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { controlClasses, Input } from "@/components/ui/input";
 import { SORTS, type SearchQuery, type SearchState } from "@/lib/search/params";
 import { cn } from "@/lib/utils";
 
@@ -76,8 +76,7 @@ export function activeFilters(query: SearchQuery): number {
   ].filter((value) => value !== undefined && value !== null).length;
 }
 
-export const selectClasses =
-  "h-11 w-full rounded-md border bg-background px-3 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm dark:bg-input/30";
+export const selectClasses = cn(controlClasses, "h-11 pointer-fine:h-10");
 
 /**
  * The text search, the button that opens the filters and the order, above the results. The
@@ -126,7 +125,7 @@ export function SearchBar({
         <div className="relative flex-1">
           <Search
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
           />
           <Input
             id={textId}
@@ -139,23 +138,28 @@ export function SearchBar({
               setText(event.target.value);
               sendText(event.target.value);
             }}
-            className="ps-9"
+            className="rounded-full ps-10"
           />
         </div>
-        <Button type="button" variant="outline" className="h-11" onClick={onOpenFilters}>
+        <Button
+          type="button"
+          variant={count > 0 ? "soft" : "outline"}
+          shape="pill"
+          onClick={onOpenFilters}
+        >
           <SlidersHorizontal aria-hidden="true" />
           {t("filters.open")}
           {count > 0 ? (
-            <span className="rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+            <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
               <span className="sr-only">, </span>
               {t("filters.active", { count })}
             </span>
           ) : null}
         </Button>
       </form>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex items-center gap-2">
-          <label htmlFor={sortId} className="text-sm text-muted-foreground">
+          <label htmlFor={sortId} className="text-xs font-medium text-muted-foreground">
             {t("filters.sort")}
           </label>
           <select
@@ -165,7 +169,10 @@ export function SearchBar({
               const sort = event.target.value as (typeof SORTS)[number];
               onChange({ sort: sort === "recommended" ? null : sort });
             }}
-            className={cn(selectClasses, "h-9 w-auto")}
+            className={cn(
+              selectClasses,
+              "h-9 w-auto rounded-full px-3.5 text-xs font-medium pointer-fine:h-8",
+            )}
           >
             {sorts.map((sort) => (
               <option key={sort} value={sort}>
@@ -175,14 +182,14 @@ export function SearchBar({
           </select>
         </div>
         {query.bbox === undefined ? null : (
-          <p className="flex items-center gap-2 rounded-full border bg-accent px-3 py-1 text-sm">
+          <p className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary-soft px-3.5 py-1 text-xs font-medium text-primary-soft-foreground">
             {t("filters.mapArea")}
             <button
               type="button"
               onClick={() => {
                 onChange({ bbox: null });
               }}
-              className="rounded font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="inline-flex min-h-6 items-center rounded px-1 font-semibold text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
             >
               {t("filters.clearArea")}
             </button>

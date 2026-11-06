@@ -80,8 +80,9 @@ export function BottomSheet({
       }}
       style={dragHeight === null ? undefined : { height: `${String(dragHeight)}px` }}
       className={cn(
-        "absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-2xl border-t bg-background shadow-[0_-4px_16px_rgb(0_0_0/0.12)]",
-        dragHeight === null && "motion-safe:transition-[height] motion-safe:duration-200",
+        "absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-3xl border-t bg-background shadow-xl",
+        dragHeight === null &&
+          "motion-safe:transition-[height] motion-safe:duration-(--duration-slow) motion-safe:ease-emphasized",
         heights[snap],
       )}
     >
@@ -89,7 +90,7 @@ export function BottomSheet({
         type="button"
         aria-label={snap === "full" ? lessLabel : moreLabel}
         aria-expanded={snap !== "peek"}
-        className="flex h-8 w-full shrink-0 touch-none cursor-grab items-center justify-center rounded-t-2xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 active:cursor-grabbing"
+        className="flex h-9 w-full shrink-0 touch-none cursor-grab items-center justify-center rounded-t-3xl outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
         onFocus={(event) => {
           // The handle itself doesn't open the list: its press does.
           event.stopPropagation();
@@ -132,7 +133,7 @@ export function BottomSheet({
           onSnapChange(nextSnap(snap));
         }}
       >
-        <span aria-hidden="true" className="h-1.5 w-10 rounded-full bg-muted-foreground/40" />
+        <span aria-hidden="true" className="h-1.5 w-12 rounded-full bg-muted-foreground/35" />
       </button>
       <div
         className={cn(

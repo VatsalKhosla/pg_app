@@ -1,10 +1,11 @@
+import { ShieldCheck } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ShieldCheck } from "lucide-react";
 import type * as React from "react";
 
 import { Photo } from "@/components/pg/photo";
+import { Badge } from "@/components/ui/badge";
 import { formatDistance } from "@/lib/format/distance";
 import { formatINR } from "@/lib/money";
 import type { SearchCard } from "@/lib/search/client";
@@ -44,53 +45,63 @@ export function PgCard({
       href={`/pg/${card.slug}` as Route}
       {...handlers}
       className={cn(
-        "flex gap-3 rounded-lg border p-3 transition-colors outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none",
-        active && "border-primary bg-accent",
+        "group flex gap-3.5 rounded-2xl border bg-card p-3.5 text-card-foreground shadow-xs transition-[box-shadow,border-color,background-color,transform] duration-(--duration-base) ease-standard outline-none hover:-translate-y-0.5 hover:border-foreground/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        active && "border-primary bg-primary-soft/50 shadow-md ring-1 ring-primary",
       )}
     >
-      <div className="relative size-24 shrink-0 overflow-hidden rounded-md bg-muted sm:size-28">
+      <div className="relative size-26 shrink-0 overflow-hidden rounded-xl bg-muted sm:size-30">
         {card.cover === null ? null : (
           <Photo
             media={card.cover}
             alt=""
-            sizes="112px"
+            sizes="120px"
             first={first}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition-transform duration-(--duration-slow) ease-emphasized group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           />
         )}
       </div>
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="font-semibold leading-snug">{card.name}</p>
-        <p className="text-sm text-muted-foreground">
-          {[
-            card.locality.name,
-            tPg(`gender.${card.genderPolicy}`),
-            tPg(`meals.${card.meals}`),
-          ].join(" · ")}
-        </p>
-        <p className="font-medium">{price}</p>
-        <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          {card.distanceM === null ? null : (
-            <span>{t("fromCampus", { distance: formatDistance(card.distanceM) })}</span>
-          )}
-          {card.nearestStation === null ? null : (
-            <span>
-              {t("station", {
-                name: card.nearestStation.name,
-                distance: formatDistance(card.nearestStation.distanceM),
-              })}
-            </span>
-          )}
-        </p>
-        <p className="flex flex-wrap items-center gap-2 text-xs">
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-1 py-0.5">
+        <div className="space-y-0.5">
+          <p className="font-display text-base leading-snug font-semibold tracking-tight text-foreground">
+            {card.name}
+          </p>
+          <p className="text-xs font-medium text-muted-foreground sm:text-sm">
+            {[
+              card.locality.name,
+              tPg(`gender.${card.genderPolicy}`),
+              tPg(`meals.${card.meals}`),
+            ].join(" · ")}
+          </p>
+        </div>
+        <p className="text-base font-bold tracking-tight text-foreground">{price}</p>
+        {card.distanceM === null && card.nearestStation === null ? null : (
+          <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+            {card.distanceM === null ? null : (
+              <span>{t("fromCampus", { distance: formatDistance(card.distanceM) })}</span>
+            )}
+            {card.nearestStation === null ? null : (
+              <span>
+                {t("station", {
+                  name: card.nearestStation.name,
+                  distance: formatDistance(card.nearestStation.distanceM),
+                })}
+              </span>
+            )}
+          </p>
+        )}
+        <p className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
           {card.verified ? (
-            <span className="inline-flex items-center gap-1 font-medium text-primary">
-              <ShieldCheck aria-hidden="true" className="size-3.5" />
+            <Badge variant="brand" className="px-2 py-0 text-[11px]">
+              <ShieldCheck aria-hidden="true" className="size-3" />
               {t("verified")}
-            </span>
+            </Badge>
           ) : null}
-          {card.licensed ? <span>{t("licensed")}</span> : null}
-          <span className="text-muted-foreground">{t(`beds.${card.bedsFree}`)}</span>
+          {card.licensed ? (
+            <Badge variant="outline" className="px-2 py-0 text-[11px]">
+              {t("licensed")}
+            </Badge>
+          ) : null}
+          <span className="font-medium text-muted-foreground">{t(`beds.${card.bedsFree}`)}</span>
         </p>
       </div>
     </Link>

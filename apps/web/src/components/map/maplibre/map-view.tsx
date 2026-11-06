@@ -45,9 +45,9 @@ const OSM_CREDIT =
   '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 const pinClasses =
-  "rounded-full border bg-background px-2 py-1 text-xs font-semibold whitespace-nowrap shadow-sm outline-none transition-colors motion-reduce:transition-none focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[verified=true]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground";
+  "min-h-7 rounded-full border border-input bg-card px-2.5 py-1 text-xs font-bold text-card-foreground whitespace-nowrap shadow-md outline-none transition-[background-color,color,border-color,transform,box-shadow] duration-(--duration-fast) ease-standard hover:scale-105 hover:border-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:scale-100 data-[verified=true]:border-primary data-[state=active]:scale-105 data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg";
 const clusterClasses =
-  "rounded-full border-2 border-primary bg-background px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap shadow-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50";
+  "min-h-8 rounded-full border-2 border-primary bg-card px-3 py-1.5 text-xs font-bold text-card-foreground whitespace-nowrap shadow-lg outline-none transition-transform duration-(--duration-fast) ease-standard hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:scale-100";
 
 function features(pins: readonly MapPin[]) {
   return {
@@ -103,7 +103,7 @@ function lngLatBounds(bounds: Bounds): LngLatBoundsLike {
 function campusLabel(map: MapLibreMap, campus: MapPlace, template: string): Marker {
   const label = document.createElement("span");
   label.className =
-    "pointer-events-none rounded bg-background/90 px-1.5 py-0.5 text-[11px] font-medium text-primary shadow-sm";
+    "pointer-events-none rounded-full border border-primary/30 bg-background/95 px-2.5 py-0.5 text-[11px] font-semibold text-primary shadow-sm backdrop-blur-xs";
   label.textContent = template.replace("{name}", campus.name);
   return new Marker({ element: label, anchor: "bottom", offset: [0, -6] })
     .setLngLat([campus.location.lng, campus.location.lat])

@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 
 import { Photo } from "@/components/pg/photo";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { formatINR } from "@/lib/money";
 import { type MapPin, publicListing, type SearchCard } from "@/lib/search/client";
@@ -63,13 +64,13 @@ export function PinPreview({
         }
       }}
       className={cn(
-        "relative flex gap-3 rounded-xl border bg-background p-3 pe-11 shadow-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        "relative flex gap-3.5 rounded-2xl border bg-card p-3.5 pe-12 text-card-foreground shadow-xl outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
     >
-      <div className="relative size-20 shrink-0 overflow-hidden rounded-md bg-muted">
+      <div className="relative size-22 shrink-0 overflow-hidden rounded-xl bg-muted">
         {cover == null ? null : (
-          <Photo media={cover} alt="" sizes="80px" className="h-full w-full object-cover" />
+          <Photo media={cover} alt="" sizes="88px" className="h-full w-full object-cover" />
         )}
       </div>
       <div className="min-w-0 flex-1 space-y-1">
@@ -78,24 +79,26 @@ export function PinPreview({
             {t("preview.loading")}
           </p>
         ) : (
-          <p className="truncate font-semibold">{name}</p>
+          <p className="truncate font-display text-base font-semibold text-foreground">{name}</p>
         )}
-        <p className="truncate text-sm text-muted-foreground">
+        <p className="truncate text-xs font-medium text-muted-foreground">
           {[locality, tPg(`gender.${pin.genderPolicy}`)].filter(Boolean).join(" · ")}
         </p>
-        <p className="text-sm font-medium">{price}</p>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        <p className="text-sm font-bold text-foreground">{price}</p>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
           {pin.verified ? (
-            <span className="inline-flex items-center gap-1 font-medium text-primary">
-              <ShieldCheck aria-hidden="true" className="size-3.5" />
+            <Badge variant="brand" className="px-2 py-0 text-[11px]">
+              <ShieldCheck aria-hidden="true" className="size-3" />
               {t("card.verified")}
-            </span>
+            </Badge>
           ) : null}
-          <span className="text-muted-foreground">{t(`card.beds.${pin.bedsFree}`)}</span>
+          <span className="font-medium text-muted-foreground">
+            {t(`card.beds.${pin.bedsFree}`)}
+          </span>
         </div>
         <Link
           href={`/pg/${pin.slug}` as Route}
-          className={cn(buttonVariants({ size: "sm" }), "mt-1")}
+          className={cn(buttonVariants({ size: "sm", shape: "pill" }), "mt-1.5")}
         >
           {t("preview.open")}
         </Link>
@@ -103,7 +106,7 @@ export function PinPreview({
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-2 right-2 grid size-9 place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="absolute top-2.5 right-2.5 grid size-9 place-items-center rounded-full text-muted-foreground transition-colors outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
       >
         <XIcon aria-hidden="true" className="size-4" />
         <span className="sr-only">{t("preview.close")}</span>

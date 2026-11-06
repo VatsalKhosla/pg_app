@@ -157,7 +157,7 @@ export default function MapLibrePinPicker({
 
   if (failed) {
     return (
-      <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+      <p className="rounded-2xl border border-dashed bg-surface p-5 text-sm text-muted-foreground">
         {text.failed}
       </p>
     );
@@ -167,7 +167,7 @@ export default function MapLibrePinPicker({
   return (
     <div
       ref={attach}
-      className="h-72 w-full overflow-hidden rounded-md border sm:h-96 [&_.maplibregl-ctrl-attrib_a]:underline!"
+      className="h-72 w-full overflow-hidden rounded-2xl border shadow-xs sm:h-96 [&_.maplibregl-ctrl-attrib_a]:underline!"
     />
   );
 }

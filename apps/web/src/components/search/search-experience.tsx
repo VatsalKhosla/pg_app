@@ -294,12 +294,12 @@ export function SearchExperience({
     <div
       className={cn(
         hasSearchMap &&
-          "lg:grid lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]",
+          "lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,36rem)_minmax(0,1fr)]",
       )}
     >
       <div
         className={cn(
-          "space-y-4 px-4 pt-4 pb-24 sm:px-6 lg:pb-8",
+          "space-y-4 px-4 pt-4 pb-24 sm:px-6 lg:pb-10",
           !hasSearchMap && "mx-auto w-full max-w-3xl",
           state.view === "map" && "max-lg:hidden",
         )}
@@ -315,9 +315,9 @@ export function SearchExperience({
             if (event.key === "Escape" && selectedId !== null) closePreview();
           }}
           className={cn(
-            "lg:sticky lg:top-16 lg:h-[calc(100dvh-4rem)] lg:border-l",
+            "lg:sticky lg:top-18 lg:h-[calc(100dvh-4.5rem)] lg:border-l",
             state.view === "map"
-              ? "max-lg:fixed max-lg:inset-x-0 max-lg:top-16 max-lg:bottom-0 max-lg:z-30 max-lg:bg-background"
+              ? "max-lg:fixed max-lg:inset-x-0 max-lg:top-16 max-lg:bottom-0 max-lg:z-30 max-lg:bg-background sm:max-lg:top-18"
               : "max-lg:hidden",
           )}
         >
@@ -346,7 +346,8 @@ export function SearchExperience({
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-background shadow-sm lg:hidden"
+                shape="pill"
+                className="bg-background/95 shadow-md backdrop-blur-xs lg:hidden"
                 onClick={openFilters}
               >
                 <SlidersHorizontal aria-hidden="true" />
@@ -355,13 +356,14 @@ export function SearchExperience({
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-background shadow-sm lg:hidden"
+                shape="pill"
+                className="bg-background/95 shadow-md backdrop-blur-xs lg:hidden"
                 onClick={showList}
               >
                 <List aria-hidden="true" />
                 {t("map.hide")}
               </Button>
-              <label className="flex h-8 items-center gap-2 rounded-md border bg-background px-3 text-sm shadow-sm">
+              <label className="flex min-h-9 cursor-pointer items-center gap-2 rounded-full border border-input bg-background/95 px-3.5 text-xs font-medium text-foreground shadow-md backdrop-blur-xs pointer-fine:min-h-8">
                 <input
                   type="checkbox"
                   checked={searchAsMove}
@@ -374,14 +376,14 @@ export function SearchExperience({
                 {t("filters.searchAsMove")}
               </label>
               {!searchAsMove && movedAway ? (
-                <Button size="sm" className="shadow-sm" onClick={searchHere}>
+                <Button size="sm" shape="pill" className="shadow-md" onClick={searchHere}>
                   {t("map.searchHere")}
                 </Button>
               ) : null}
               {pins.data?.truncated === true ? (
                 <p
                   role="status"
-                  className="max-w-xs basis-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm"
+                  className="max-w-xs basis-full rounded-xl border bg-background/95 px-3.5 py-2 text-xs font-medium shadow-md backdrop-blur-xs"
                 >
                   {t("map.truncated")}
                 </p>
@@ -416,7 +418,9 @@ export function SearchExperience({
 
       {hasSearchMap && state.view !== "map" ? (
         <Button
-          className="fixed bottom-6 left-1/2 z-20 -translate-x-1/2 rounded-full px-5 shadow-lg lg:hidden"
+          size="lg"
+          shape="pill"
+          className="fixed bottom-6 left-1/2 z-20 -translate-x-1/2 shadow-xl lg:hidden"
           onClick={showMap}
         >
           <MapIcon aria-hidden="true" />
