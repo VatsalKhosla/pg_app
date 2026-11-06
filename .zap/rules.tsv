@@ -1,0 +1,10 @@
+# ZAP baseline rules (make zap-baseline): <rule id>, a tab, IGNORE/WARN/FAIL, a tab, why. A rule not listed
+# fails the scan when it finds something. Accept a finding here only with its reason (ADR 0065).
+10015	IGNORE	Public files meant to be cached: the manifest, robots.txt and the sitemap.
+10019	IGNORE	A redirect with an empty body has no type to declare.
+10031	IGNORE	React escapes every attribute value, and the API validates every parameter that is echoed back.
+10044	IGNORE	The body of a sign-in redirect is the public page shell, with nothing personal in it.
+10049	IGNORE	Pages render per request with a fresh CSP nonce, so they are not stored, on purpose (ADR 0014).
+10055	IGNORE	style-src allows inline styles, which React and Radix set as attributes that cannot carry a nonce; scripts stay strict (lib/security/csp.ts).
+10109	IGNORE	Information only: the site is a modern web application.
+90004	IGNORE	Cross-origin isolation (COEP) would block the map tiles and Razorpay checkout, and the site uses nothing that needs it.

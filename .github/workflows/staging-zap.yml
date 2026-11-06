@@ -1,0 +1,45 @@
+# OWASP ZAP's baseline scan of the test site (step 8.1, ADR 0065): a minute of spidering and
+# passive checks of what the site sends back (headers, cookies, leaks), with no attacks. Weekly,
+# and by hand from the Actions tab. It fails on any finding .zap/rules.tsv doesn't accept with a
+# reason; the report is kept with the run. GitHub emails a failed run to whoever last changed the
+# schedule.
+name: Staging ZAP baseline
+
+on:
+  schedule:
+    # Mondays, 04:23 UTC: early morning in India, when nobody is testing the site.
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  zap:
+    name: ZAP baseline
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Wake the test site
+        # Free instances sleep; the scan shouldn't spend its minute waiting.
+        run: curl --silent --show-error --max-time 180 --output /dev/null https://fixyourstay.in/
+      - name: Scan the test site
+        run: make zap-baseline
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: zap-baseline
+          path: test-results/zap/
+          retention-days: 30

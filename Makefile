@@ -40,7 +40,10 @@ GITLEAKS_IMAGE := ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79
 ACTIONLINT_IMAGE := rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
 # renovate: datasource=docker depName=ghcr.io/zizmorcore/zizmor
 ZIZMOR_IMAGE := ghcr.io/zizmorcore/zizmor:1.30.1@sha256:a2eb396d886c053073405c7a980f2139ba2248ec172243cfa3841e57196e8101
-export TRIVY_IMAGE OASDIFF_IMAGE ACTIONLINT_IMAGE ZIZMOR_IMAGE
+# ZAP rebuilds its stable image weekly; this one ran on the test site in step 8.1 (ADR 0065).
+# renovate: datasource=docker depName=ghcr.io/zaproxy/zaproxy
+ZAP_IMAGE := ghcr.io/zaproxy/zaproxy:stable@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af
+export TRIVY_IMAGE OASDIFF_IMAGE ACTIONLINT_IMAGE ZIZMOR_IMAGE ZAP_IMAGE
 
 ##@ Setup
 
@@ -260,6 +263,10 @@ secrets-scan: ## Scan the whole git history for committed secrets (gitleaks)
 .PHONY: scan-api-image
 scan-api-image: api-image ## Scan the API image for fixable HIGH and CRITICAL vulnerabilities (Trivy)
 	@scripts/scan-image.sh $(API_IMAGE)
+
+.PHONY: zap-baseline
+zap-baseline: ## Scan a deployed site with OWASP ZAP's passive baseline (url=…, default the test site); fails on findings .zap/rules.tsv doesn't accept
+	@scripts/zap-baseline.sh $(or $(url),https://fixyourstay.in)
 
 .PHONY: api-breaking
 api-breaking: ## Fail on breaking changes to the API schema since BASE (default origin/main; oasdiff)
