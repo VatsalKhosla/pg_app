@@ -47,7 +47,7 @@ export default async function OpsGrievancesPage({ searchParams }: PageProps<"/op
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       <nav aria-label={t("statusFilter")} className="flex flex-wrap gap-2">
@@ -57,8 +57,9 @@ export default async function OpsGrievancesPage({ searchParams }: PageProps<"/op
             href={`${OPS_GRIEVANCES_PATH}?status=${filter.status}` as Route}
             aria-current={filter.status === status ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-9 items-center rounded-full border px-3 text-sm outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50",
-              filter.status === status && "border-primary bg-accent font-medium",
+              "inline-flex min-h-9 items-center rounded-full border border-border/80 bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-surface hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              filter.status === status &&
+                "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
             )}
           >
             {filter.label}
@@ -68,18 +69,18 @@ export default async function OpsGrievancesPage({ searchParams }: PageProps<"/op
       {page.items.length === 0 ? (
         <p className="text-muted-foreground">{t("none")}</p>
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y divide-border/60 rounded-2xl border border-border/80 bg-card shadow-xs">
           {page.items.map((grievance) => (
             <li key={grievance.ticketNumber} className="space-y-1 p-4">
               <p className="flex flex-wrap items-center gap-2">
                 <Link
                   href={`${OPS_GRIEVANCES_PATH}/${grievance.ticketNumber}` as Route}
-                  className="font-mono font-semibold underline-offset-4 hover:underline"
+                  className="font-mono font-semibold text-primary underline-offset-4 hover:underline"
                 >
                   {grievance.ticketNumber}
                 </Link>
                 {grievance.late ? (
-                  <span className="rounded-full border border-destructive px-2 py-0.5 text-xs font-semibold text-destructive">
+                  <span className="rounded-full bg-destructive-soft px-2.5 py-0.5 text-xs font-semibold text-destructive-soft-foreground">
                     {t("late")}
                   </span>
                 ) : null}
@@ -89,7 +90,7 @@ export default async function OpsGrievancesPage({ searchParams }: PageProps<"/op
                 {tGrievances(`categories.${grievance.category}`)} ·{" "}
                 {grievance.complainant.name === "" ? t("noName") : grievance.complainant.name}
               </p>
-              <p className="text-sm">
+              <p className="text-sm tabular-nums">
                 {t("receivedOn", { when: when(grievance.receivedAt) })}
                 {grievance.status === "received"
                   ? ` · ${t("acknowledgeBy", { when: when(grievance.acknowledgeBy) })}`

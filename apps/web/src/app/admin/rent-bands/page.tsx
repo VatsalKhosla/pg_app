@@ -33,14 +33,17 @@ export default async function AdminRentBandsPage({ searchParams }: PageProps<"/a
   const tPolicies = await getTranslations("Admin.policies");
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
-      <section aria-labelledby="bands-title" className="space-y-4">
+      <section
+        aria-labelledby="bands-title"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="bands-title" className="text-xl font-semibold">
+          <h2 id="bands-title" className="font-display text-title-3 text-foreground">
             {t("title")}
           </h2>
           <Link
@@ -53,14 +56,14 @@ export default async function AdminRentBandsPage({ searchParams }: PageProps<"/a
         {bands.items.length === 0 ? (
           <p className="text-muted-foreground">{t("none")}</p>
         ) : (
-          <ul className="divide-y rounded-lg border">
+          <ul className="divide-y divide-border/60 rounded-xl border border-border/70">
             {bands.items.map((band) => {
               const label = `${band.locality.name}, ${t(`occupancies.${band.occupancy}`)}`;
               return (
                 <li key={band.id} className="flex flex-wrap items-start justify-between gap-3 p-4">
                   <div className="space-y-1">
-                    <p className="font-semibold">{label}</p>
-                    <p>
+                    <p className="font-semibold text-foreground">{label}</p>
+                    <p className="tabular-nums">
                       {t("range", {
                         min: formatINR(band.minRentPaise),
                         max: formatINR(band.maxRentPaise),
@@ -86,8 +89,11 @@ export default async function AdminRentBandsPage({ searchParams }: PageProps<"/a
           </ul>
         )}
       </section>
-      <section aria-labelledby="set-title" className="space-y-4 rounded-lg border p-5">
-        <h2 id="set-title" className="text-xl font-semibold">
+      <section
+        aria-labelledby="set-title"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="set-title" className="font-display text-title-3 text-foreground">
           {t("setTitle")}
         </h2>
         <RentBandForm

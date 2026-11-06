@@ -23,22 +23,22 @@ export default async function StudentVisitsPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       {items.length === 0 ? (
         <p className="text-muted-foreground">{t("none")}</p>
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y divide-border/60 rounded-2xl border border-border/80 bg-card shadow-xs">
           {items.map((visit) => (
             <li key={visit.id} className="space-y-1 p-4">
               <Link
                 href={`${FIELD_STUDENT_VISITS_PATH}/${visit.id}` as Route}
-                className="font-semibold underline-offset-4 hover:underline"
+                className="font-semibold text-primary underline-offset-4 hover:underline"
               >
                 {visit.property.name}
               </Link>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground tabular-nums">
                 {visit.scheduledAt === null
                   ? null
                   : format.dateTime(new Date(visit.scheduledAt), {

@@ -50,7 +50,12 @@ export function PayInvoice({
   if (pay.provider === "razorpay") {
     return (
       <div className="space-y-1">
-        <a href={pay.url} target="_blank" rel="noopener noreferrer" className={buttonVariants()}>
+        <a
+          href={pay.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonVariants({ shape: "pill" })}
+        >
           {text.pay}
         </a>
         <p className="text-sm text-muted-foreground">{text.payNote}</p>
@@ -80,6 +85,7 @@ export function PayInvoice({
   if (state === "idle") {
     return (
       <Button
+        shape="pill"
         onClick={() => {
           setState("testBank");
         }}
@@ -91,18 +97,19 @@ export function PayInvoice({
   return (
     <section
       aria-labelledby={titleId}
-      className="w-full space-y-3 rounded-lg border border-dashed p-4"
+      className="w-full space-y-3 rounded-xl border border-dashed border-border bg-surface/60 p-4"
     >
       <h3 id={titleId} className="font-semibold">
         {text.test.title}
       </h3>
       <p className="text-sm">{text.test.body}</p>
       <div className="flex flex-wrap gap-3">
-        <Button disabled={state === "busy"} onClick={payAtTestBank}>
+        <Button shape="pill" disabled={state === "busy"} onClick={payAtTestBank}>
           {text.test.pay}
         </Button>
         <Button
           variant="outline"
+          shape="pill"
           disabled={state === "busy"}
           onClick={() => {
             setState("idle");

@@ -51,7 +51,7 @@ export default async function OpsDisputePage({ params }: PageProps<"/ops/dispute
         >
           {t("back")}
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+        <h1 className="font-display text-title-1 text-foreground">
           {t("item", { code: booking.code, pg: booking.property.name })}
         </h1>
         <p className="text-muted-foreground">
@@ -60,27 +60,39 @@ export default async function OpsDisputePage({ params }: PageProps<"/ops/dispute
         </p>
       </div>
 
-      <section aria-labelledby="student" className="space-y-1">
-        <h2 id="student" className="text-lg font-semibold">
+      <section
+        aria-labelledby="student"
+        className="space-y-2 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="student" className="font-display text-title-3 text-foreground">
           {t("student")}
         </h2>
-        <p>{student.name ?? t("noName")}</p>
+        <p className="font-medium text-foreground">{student.name ?? t("noName")}</p>
         <p>
-          <a href={`tel:${student.phone}`} className="underline underline-offset-4">
+          <a
+            href={`tel:${student.phone}`}
+            className="font-medium text-primary underline underline-offset-4"
+          >
             {student.phone}
           </a>
         </p>
       </section>
 
-      <section aria-labelledby="said" className="space-y-2">
-        <h2 id="said" className="text-lg font-semibold">
+      <section
+        aria-labelledby="said"
+        className="space-y-2 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="said" className="font-display text-title-3 text-foreground">
           {t("said")}
         </h2>
         <p className="leading-7 whitespace-pre-line">{dispute.description}</p>
       </section>
 
-      <section aria-labelledby="photos" className="space-y-2">
-        <h2 id="photos" className="text-lg font-semibold">
+      <section
+        aria-labelledby="photos"
+        className="space-y-3 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="photos" className="font-display text-title-3 text-foreground">
           {t("photos")}
         </h2>
         {dispute.photos.length === 0 ? (
@@ -99,9 +111,9 @@ export default async function OpsDisputePage({ params }: PageProps<"/ops/dispute
                       href={full.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="block overflow-hidden rounded-lg border outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                      className="block overflow-hidden rounded-xl border border-border/80 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                     >
-                      <span className="relative block aspect-[4/3] bg-muted">
+                      <span className="relative block aspect-[4/3] bg-surface">
                         <Image
                           src={thumb.url}
                           alt={t("photo", { number: index + 1 })}
@@ -120,39 +132,47 @@ export default async function OpsDisputePage({ params }: PageProps<"/ops/dispute
         )}
       </section>
 
-      <section aria-labelledby="booking" className="space-y-2">
-        <h2 id="booking" className="text-lg font-semibold">
+      <section
+        aria-labelledby="booking"
+        className="space-y-3 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="booking" className="font-display text-title-3 text-foreground">
           {t("booking")}
         </h2>
         <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
           <div>
             <dt className="text-sm text-muted-foreground">{t("bed")}</dt>
-            <dd>{`${booking.roomType} · ${booking.room} · ${booking.bed}`}</dd>
+            <dd className="font-medium text-foreground">{`${booking.roomType} · ${booking.room} · ${booking.bed}`}</dd>
           </div>
           <div>
             <dt className="text-sm text-muted-foreground">{t("moveIn")}</dt>
-            <dd>{dayText(booking.moveIn)}</dd>
+            <dd className="font-medium text-foreground">{dayText(booking.moveIn)}</dd>
           </div>
           {booking.checkedInAt === null ? null : (
             <div>
               <dt className="text-sm text-muted-foreground">{t("movedIn")}</dt>
-              <dd>{when(booking.checkedInAt)}</dd>
+              <dd className="font-medium text-foreground">{when(booking.checkedInAt)}</dd>
             </div>
           )}
           {booking.checkWindowEndsAt === null ? null : (
             <div>
               <dt className="text-sm text-muted-foreground">{t("windowEnds")}</dt>
-              <dd>{when(booking.checkWindowEndsAt)}</dd>
+              <dd className="font-medium text-foreground">{when(booking.checkWindowEndsAt)}</dd>
             </div>
           )}
         </dl>
       </section>
 
       {dispute.status === "open" ? (
-        <DisputeResolve id={dispute.id} code={booking.code} />
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs">
+          <DisputeResolve id={dispute.id} code={booking.code} />
+        </div>
       ) : (
-        <section aria-labelledby="settled" className="space-y-1">
-          <h2 id="settled" className="text-lg font-semibold">
+        <section
+          aria-labelledby="settled"
+          className="space-y-2 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+        >
+          <h2 id="settled" className="font-display text-title-3 text-foreground">
             {t("settled")}
           </h2>
           <p>

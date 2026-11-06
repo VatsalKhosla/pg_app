@@ -70,7 +70,7 @@ export default async function PricingAlertsPage({
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="max-w-prose text-muted-foreground">{t("intro")}</p>
       </div>
       <nav aria-label={t("statusFilter")} className="flex flex-wrap gap-2">
@@ -80,8 +80,9 @@ export default async function PricingAlertsPage({
             href={`${OPS_PRICING_ALERTS_PATH}?status=${each}` as Route}
             aria-current={each === status ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-9 items-center rounded-full border px-3 text-sm outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50",
-              each === status && "border-primary bg-accent font-medium",
+              "inline-flex min-h-9 items-center rounded-full border border-border/80 bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-surface hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              each === status &&
+                "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
             )}
           >
             {t(each)}
@@ -91,15 +92,15 @@ export default async function PricingAlertsPage({
       {page.items.length === 0 ? (
         <p className="text-muted-foreground">{status === "open" ? t("none") : t("noneResolved")}</p>
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y divide-border/60 rounded-2xl border border-border/80 bg-card shadow-xs">
           {page.items.map((alert) => (
-            <li key={alert.id} className="space-y-3 p-4">
+            <li key={alert.id} className="space-y-3 p-5">
               <div className="space-y-1">
-                <h2 className="font-semibold">
+                <h2 className="font-semibold text-foreground">
                   {`${t(`kinds.${alert.kind}`)}: ${alert.property.name}`}
                 </h2>
                 <p>{about(alert)}</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground tabular-nums">
                   {t("raised", { when: when(alert.raisedAt) })}
                   {alert.resolvedAt === null
                     ? null

@@ -60,8 +60,11 @@ export function BookingAnswer({ code, text }: { code: string; text: BookingAnswe
   return (
     <div className="space-y-3">
       {step === "rejecting" ? (
-        <section aria-labelledby={`${formId}-title`} className="space-y-3 rounded-lg border p-4">
-          <h3 id={`${formId}-title`} className="font-semibold">
+        <section
+          aria-labelledby={`${formId}-title`}
+          className="space-y-3 rounded-xl border border-border bg-card p-4"
+        >
+          <h3 id={`${formId}-title`} className="font-semibold text-foreground">
             {text.rejectTitle}
           </h3>
           <Field
@@ -82,11 +85,12 @@ export function BookingAnswer({ code, text }: { code: string; text: BookingAnswe
             )}
           </Field>
           <div className="flex flex-wrap gap-3">
-            <Button variant="destructive" onClick={reject}>
+            <Button variant="destructive" shape="pill" onClick={reject}>
               {text.confirmReject}
             </Button>
             <Button
               variant="outline"
+              shape="pill"
               onClick={() => {
                 setNeedReason(false);
                 setStep("idle");
@@ -99,6 +103,7 @@ export function BookingAnswer({ code, text }: { code: string; text: BookingAnswe
       ) : (
         <div className="flex flex-wrap gap-3">
           <Button
+            shape="pill"
             disabled={step === "busy"}
             onClick={() => {
               answer(confirmBooking(code), "idle");
@@ -108,6 +113,7 @@ export function BookingAnswer({ code, text }: { code: string; text: BookingAnswe
           </Button>
           <Button
             variant="outline"
+            shape="pill"
             disabled={step === "busy"}
             onClick={() => {
               setStep("rejecting");
@@ -118,7 +124,7 @@ export function BookingAnswer({ code, text }: { code: string; text: BookingAnswe
         </div>
       )}
       {failure === null ? null : (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-sm font-medium text-destructive">
           {failure}
         </p>
       )}

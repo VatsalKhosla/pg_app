@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/fields";
 import { ApiError } from "@/lib/api/errors";
 import { checkIn, type Outcome, recordOutcome } from "@/lib/visits/client";
 
@@ -69,7 +70,7 @@ export function StudentVisitActions({ id, checkedIn }: { id: string; checkedIn: 
     <div className="space-y-4">
       {checkedIn ? (
         <form
-          className="space-y-4"
+          className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
           onSubmit={(event) => {
             event.preventDefault();
             if (outcome === null) return;
@@ -85,10 +86,13 @@ export function StudentVisitActions({ id, checkedIn }: { id: string; checkedIn: 
               });
           }}
         >
-          <fieldset className="space-y-1">
-            <legend className="font-medium">{t("outcome")}</legend>
+          <fieldset className="space-y-2">
+            <legend className="font-medium text-foreground">{t("outcome")}</legend>
             {OUTCOMES.map((value) => (
-              <label key={value} className="flex min-h-11 items-center gap-3">
+              <label
+                key={value}
+                className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-sm transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary-soft/50"
+              >
                 <input
                   type="radio"
                   name={name}
@@ -97,30 +101,29 @@ export function StudentVisitActions({ id, checkedIn }: { id: string; checkedIn: 
                   onChange={() => {
                     setOutcome(value);
                   }}
-                  className="size-5 accent-primary"
+                  className="size-4 accent-primary"
                 />
                 {t(value)}
               </label>
             ))}
           </fieldset>
           <label className="block space-y-1.5 text-sm">
-            <span className="font-medium">{t("note")}</span>
-            <textarea
+            <span className="font-medium text-foreground">{t("note")}</span>
+            <Textarea
               value={note}
               maxLength={500}
               rows={3}
               onChange={(event) => {
                 setNote(event.target.value);
               }}
-              className="w-full rounded-md border bg-background px-3 py-2 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
             />
           </label>
-          <Button type="submit" disabled={outcome === null || state !== "idle"}>
+          <Button type="submit" shape="pill" disabled={outcome === null || state !== "idle"}>
             {state === "saving" ? t("saving") : t("save")}
           </Button>
         </form>
       ) : (
-        <Button size="lg" onClick={locate} disabled={state !== "idle"}>
+        <Button size="lg" shape="pill" onClick={locate} disabled={state !== "idle"}>
           {state === "locating" ? t("locating") : t("checkIn")}
         </Button>
       )}

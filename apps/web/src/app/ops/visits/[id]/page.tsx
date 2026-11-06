@@ -77,34 +77,45 @@ export default async function OpsVisitPage({ params }: PageProps<"/ops/visits/[i
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{visit.property.name}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{visit.property.name}</h1>
         <p className="text-muted-foreground">
           {t(`status.${visit.status}`)} · {visit.property.addressLine}, {visit.property.locality}
         </p>
       </div>
-      <section aria-labelledby="student-title" className="space-y-1">
-        <h2 id="student-title" className="text-lg font-semibold">
+      <section
+        aria-labelledby="student-title"
+        className="space-y-2 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="student-title" className="font-display text-title-3 text-foreground">
           {t("student")}
         </h2>
-        <p>{visit.student.name ?? visit.student.phone}</p>
-        <a href={`tel:${visit.student.phone}`} className="text-sm underline underline-offset-4">
+        <p className="font-medium text-foreground">{visit.student.name ?? visit.student.phone}</p>
+        <a
+          href={`tel:${visit.student.phone}`}
+          className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+        >
           {t("detail.call", { phone: visit.student.phone })}
         </a>
       </section>
-      <StudentVisitForms
-        id={visit.id}
-        offered={visit.preferredStarts.map((start) => ({ value: start, label: when(start) }))}
-        agents={agents.items.map((agent) => ({ id: agent.id, name: agent.name ?? agent.id }))}
-        booked={visit.scheduledAt !== null}
-        open={
-          visit.status === "requested" || (visit.status === "scheduled" && visit.checkIn === null)
-        }
-      />
-      <section aria-labelledby="log-title" className="space-y-2">
-        <h2 id="log-title" className="text-lg font-semibold">
+      <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs">
+        <StudentVisitForms
+          id={visit.id}
+          offered={visit.preferredStarts.map((start) => ({ value: start, label: when(start) }))}
+          agents={agents.items.map((agent) => ({ id: agent.id, name: agent.name ?? agent.id }))}
+          booked={visit.scheduledAt !== null}
+          open={
+            visit.status === "requested" || (visit.status === "scheduled" && visit.checkIn === null)
+          }
+        />
+      </div>
+      <section
+        aria-labelledby="log-title"
+        className="space-y-3 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="log-title" className="font-display text-title-3 text-foreground">
           {t("detail.log")}
         </h2>
-        <ol className="list-decimal space-y-1 ps-5 text-sm">
+        <ol className="list-decimal space-y-1.5 ps-5 text-sm">
           {log.map((entry) => (
             <li key={entry}>{entry}</li>
           ))}

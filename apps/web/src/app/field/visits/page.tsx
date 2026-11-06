@@ -39,13 +39,13 @@ export default async function FieldVisitsPage() {
       <li key={visit.id}>
         <Link
           href={`/field/visits/${visit.id}` as Route}
-          className="block space-y-1 p-3 hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+          className="block space-y-1 p-4 transition-colors hover:bg-surface focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
         >
-          <span className="block font-medium">{visit.property.name}</span>
+          <span className="block font-semibold text-foreground">{visit.property.name}</span>
           <span className="block text-sm text-muted-foreground">
             {visit.property.locality.name} · {visit.property.addressLine}
           </span>
-          <span className="block text-sm">
+          <span className="block text-sm tabular-nums">
             {format.dateTime(new Date(visit.scheduledFor), {
               dateStyle: "medium",
               timeStyle: "short",
@@ -59,25 +59,29 @@ export default async function FieldVisitsPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{t("intro")}</p>
       </div>
       <section aria-labelledby="booked-title" className="space-y-3">
-        <h2 id="booked-title" className="text-lg font-semibold">
+        <h2 id="booked-title" className="font-display text-title-3 text-foreground">
           {t("booked")}
         </h2>
         {booked.items.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("noneBooked")}</p>
         ) : (
-          <ul className="divide-y rounded-md border">{booked.items.map(item)}</ul>
+          <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
+            {booked.items.map(item)}
+          </ul>
         )}
       </section>
       {done.items.length === 0 ? null : (
         <section aria-labelledby="done-title" className="space-y-3">
-          <h2 id="done-title" className="text-lg font-semibold">
+          <h2 id="done-title" className="font-display text-title-3 text-foreground">
             {t("done")}
           </h2>
-          <ul className="divide-y rounded-md border">{done.items.map(item)}</ul>
+          <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
+            {done.items.map(item)}
+          </ul>
         </section>
       )}
     </div>

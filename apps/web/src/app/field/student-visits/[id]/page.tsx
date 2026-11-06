@@ -50,15 +50,18 @@ export default async function StudentVisitPage({
     format.dateTime(new Date(moment), { dateStyle: "medium", timeStyle: "short" });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{place.name}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{place.name}</h1>
         {visit.scheduledAt === null ? null : (
-          <p className="text-muted-foreground">{when(visit.scheduledAt)}</p>
+          <p className="text-muted-foreground tabular-nums">{when(visit.scheduledAt)}</p>
         )}
       </div>
-      <section aria-labelledby="where-title" className="space-y-1">
-        <h2 id="where-title" className="text-lg font-semibold">
+      <section
+        aria-labelledby="where-title"
+        className="space-y-2 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="where-title" className="font-display text-title-3 text-foreground">
           {t("detail.where")}
         </h2>
         <p>
@@ -67,21 +70,27 @@ export default async function StudentVisitPage({
         </p>
         <a
           href={directions(place.location.lat, place.location.lng)}
-          className="text-sm underline underline-offset-4"
+          className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
         >
           {t("detail.directions")}
         </a>
       </section>
-      <section aria-labelledby="student-title" className="space-y-1">
-        <h2 id="student-title" className="text-lg font-semibold">
+      <section
+        aria-labelledby="student-title"
+        className="space-y-2 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="student-title" className="font-display text-title-3 text-foreground">
           {t("detail.student")}
         </h2>
-        <a href={`tel:${visit.student.phone}`} className="underline underline-offset-4">
+        <a
+          href={`tel:${visit.student.phone}`}
+          className="inline-flex min-h-6 items-center font-medium text-primary underline underline-offset-4"
+        >
           {t("detail.call", { name: visit.student.name ?? visit.student.phone })}
         </a>
       </section>
       {visit.checkIn === null ? null : (
-        <p className="text-sm">
+        <p className="text-sm text-muted-foreground">
           {t("detail.checkedIn", {
             when: when(visit.checkIn.at),
             distance: formatDistance(visit.checkIn.distanceM),

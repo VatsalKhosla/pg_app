@@ -33,18 +33,24 @@ export default async function StaffHomePage() {
   if (isAdmin(me)) tools.push({ href: ADMIN_POLICIES_PATH, label: t("adminConsole") });
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-8 px-4 py-10 sm:py-16">
+    <div className="mx-auto w-full max-w-2xl space-y-8 px-gutter py-10 sm:py-16">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("homeTitle")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("homeTitle")}</h1>
         <p className="text-muted-foreground">{t("signedInAs", { name: me.name ?? me.phone })}</p>
       </div>
-      <section aria-labelledby="roles-title" className="space-y-2">
-        <h2 id="roles-title" className="text-lg font-semibold">
+      <section
+        aria-labelledby="roles-title"
+        className="space-y-3 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2 id="roles-title" className="font-display text-title-3 text-foreground">
           {t("roles")}
         </h2>
         <ul className="flex flex-wrap gap-2">
           {roles.map((role) => (
-            <li key={role} className="rounded-full border px-3 py-1 text-sm">
+            <li
+              key={role}
+              className="rounded-full bg-surface px-3.5 py-1 text-sm font-medium text-foreground ring-1 ring-border/70"
+            >
               {t(`role.${role}`)}
             </li>
           ))}
@@ -52,13 +58,17 @@ export default async function StaffHomePage() {
       </section>
       <nav aria-label={t("tools")} className="flex flex-wrap gap-3">
         {tools.map((tool) => (
-          <Link key={tool.href} href={tool.href} className={buttonVariants({ size: "lg" })}>
+          <Link
+            key={tool.href}
+            href={tool.href}
+            className={buttonVariants({ size: "lg", shape: "pill" })}
+          >
             {tool.label}
           </Link>
         ))}
       </nav>
       {tools.length === 0 ? <p className="text-muted-foreground">{t("comingSoon")}</p> : null}
-      <div className="border-t pt-6">
+      <div className="border-t border-border/70 pt-6">
         <SignOutButton
           label={tAccount("signOut")}
           busyLabel={tAccount("signingOut")}

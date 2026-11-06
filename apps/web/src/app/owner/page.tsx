@@ -37,69 +37,89 @@ export default async function OwnerHomePage() {
   return (
     <>
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{owner.businessName}</h1>
-        <p className="text-muted-foreground">{t("intro")}</p>
+        <h1 className="text-title-1 font-semibold tracking-tight text-foreground">
+          {owner.businessName}
+        </h1>
+        <p className="text-body text-muted-foreground">{t("intro")}</p>
       </div>
 
-      <section aria-labelledby="business-title" className="space-y-4">
-        <h2 id="business-title" className="text-lg font-semibold">
+      <section
+        aria-labelledby="business-title"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs sm:p-6"
+      >
+        <h2 id="business-title" className="text-title-3 font-semibold tracking-tight">
           {t("detailsTitle")}
         </h2>
-        <dl className="divide-y rounded-md border">
+        <dl className="divide-y divide-border/80 rounded-xl border border-border/80 bg-surface/50">
           {details.map((detail) => (
-            <div key={detail.term} className="grid gap-1 p-3 sm:grid-cols-3">
-              <dt className="text-sm text-muted-foreground">{detail.term}</dt>
-              <dd className="break-words sm:col-span-2">{detail.value}</dd>
+            <div key={detail.term} className="grid gap-1 px-4 py-3 sm:grid-cols-3">
+              <dt className="text-sm font-medium text-muted-foreground">{detail.term}</dt>
+              <dd className="font-medium break-words text-foreground sm:col-span-2">
+                {detail.value}
+              </dd>
             </div>
           ))}
         </dl>
         <p className="text-sm text-muted-foreground">{t("changes")}</p>
       </section>
 
-      <section aria-labelledby="run-title" className="space-y-3">
-        <h2 id="run-title" className="text-lg font-semibold">
-          {t("runTitle")}
-        </h2>
-        <ul className="space-y-2">
-          <li>
-            <Link
-              href={OWNER_BOOKINGS_PATH}
-              className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
-            >
-              {t("bookingsLink")}
-            </Link>
-          </li>
-          <li>
-            <Link
-              href={OWNER_PGS_PATH}
-              className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
-            >
-              {t("pgsLink")}
-            </Link>
-          </li>
-        </ul>
-      </section>
-
-      <section aria-labelledby="invoices-title" className="space-y-3">
-        <h2 id="invoices-title" className="text-lg font-semibold">
-          {t("invoicesTitle")}
-        </h2>
-        <Link
-          href={OWNER_INVOICES_PATH}
-          className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+      <div className="grid gap-6 sm:grid-cols-2">
+        <section
+          aria-labelledby="run-title"
+          className="space-y-3 rounded-2xl border border-border/80 bg-card p-5 shadow-xs sm:p-6"
         >
-          {t("invoicesLink")}
-        </Link>
-      </section>
+          <h2 id="run-title" className="text-title-3 font-semibold tracking-tight">
+            {t("runTitle")}
+          </h2>
+          <ul className="space-y-2">
+            <li>
+              <Link
+                href={OWNER_BOOKINGS_PATH}
+                className="inline-flex min-h-6 items-center text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
+              >
+                {t("bookingsLink")}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href={OWNER_PGS_PATH}
+                className="inline-flex min-h-6 items-center text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
+              >
+                {t("pgsLink")}
+              </Link>
+            </li>
+          </ul>
+        </section>
 
-      <section aria-labelledby="agreement-title" className="space-y-3">
-        <h2 id="agreement-title" className="text-lg font-semibold">
+        <section
+          aria-labelledby="invoices-title"
+          className="space-y-3 rounded-2xl border border-border/80 bg-card p-5 shadow-xs sm:p-6"
+        >
+          <h2 id="invoices-title" className="text-title-3 font-semibold tracking-tight">
+            {t("invoicesTitle")}
+          </h2>
+          <Link
+            href={OWNER_INVOICES_PATH}
+            className="inline-flex min-h-6 items-center text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
+          >
+            {t("invoicesLink")}
+          </Link>
+        </section>
+      </div>
+
+      <section
+        aria-labelledby="agreement-title"
+        className="space-y-3 rounded-2xl border border-border/80 bg-card p-5 shadow-xs sm:p-6"
+      >
+        <h2 id="agreement-title" className="text-title-3 font-semibold tracking-tight">
           {t("agreementTitle")}
         </h2>
-        <p>{t("accepted", { version: owner.agreementVersion ?? "" })}</p>
+        <p className="text-sm text-muted-foreground">
+          {t("accepted", { version: owner.agreementVersion ?? "" })}
+        </p>
         <Link
           href={OWNER_AGREEMENT_PATH}
-          className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+          className="inline-flex min-h-6 items-center text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
         >
           {t("read")}
         </Link>

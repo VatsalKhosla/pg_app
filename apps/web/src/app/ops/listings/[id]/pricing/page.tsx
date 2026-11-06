@@ -140,7 +140,7 @@ export default async function PricingPage({
       .join(" · ");
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div className="space-y-2">
         <Link
           href={`/ops/listings/${id}` as Route}
@@ -148,13 +148,19 @@ export default async function PricingPage({
         >
           {t("back")}
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
+        <h1 className="font-display text-title-1 text-foreground">{t("title")}</h1>
         <p className="text-muted-foreground">{[listing.name, listing.locality.name].join(" · ")}</p>
         <p className="max-w-prose text-sm text-muted-foreground">{t("intro")}</p>
       </div>
 
-      <section aria-labelledby="versions-title" className="space-y-4">
-        <h2 id="versions-title" className="border-b pb-2 text-lg font-semibold">
+      <section
+        aria-labelledby="versions-title"
+        className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+      >
+        <h2
+          id="versions-title"
+          className="border-b border-border/60 pb-2 font-display text-title-3 text-foreground"
+        >
           {t("versions.title")}
         </h2>
         {versions.items.length === 0 ? <p>{t("versions.none")}</p> : null}
@@ -195,8 +201,14 @@ export default async function PricingPage({
 
       <div className="grid gap-10 lg:grid-cols-[3fr_2fr]">
         {set === null ? null : (
-          <section aria-labelledby="rules-title" className="min-w-0 space-y-4">
-            <h2 id="rules-title" className="border-b pb-2 text-lg font-semibold">
+          <section
+            aria-labelledby="rules-title"
+            className="min-w-0 space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+          >
+            <h2
+              id="rules-title"
+              className="border-b border-border/60 pb-2 font-display text-title-3 text-foreground"
+            >
               {`${t("rules.title")}: ${t("versions.version", { version: set.version })}`}
             </h2>
             <RulesEditor
@@ -209,7 +221,7 @@ export default async function PricingPage({
               <div className="space-y-4">
                 <div
                   role={set.problems.length > 0 ? "alert" : undefined}
-                  className="space-y-2 rounded-lg border p-4"
+                  className="space-y-2 rounded-xl border border-border/80 bg-surface/60 p-4"
                 >
                   <h3 className="font-medium">{t("problems.title")}</h3>
                   {set.problems.length === 0 ? (
@@ -240,8 +252,14 @@ export default async function PricingPage({
             ) : null}
           </section>
         )}
-        <section aria-labelledby="market-title" className="min-w-0 space-y-4">
-          <h2 id="market-title" className="border-b pb-2 text-lg font-semibold">
+        <section
+          aria-labelledby="market-title"
+          className="min-w-0 space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+        >
+          <h2
+            id="market-title"
+            className="border-b border-border/60 pb-2 font-display text-title-3 text-foreground"
+          >
             {t("market.title")}
           </h2>
           <MarketPanel market={market} />
@@ -249,8 +267,14 @@ export default async function PricingPage({
       </div>
 
       {set === null ? null : (
-        <section aria-labelledby="preview-title" className="space-y-4">
-          <h2 id="preview-title" className="border-b pb-2 text-lg font-semibold">
+        <section
+          aria-labelledby="preview-title"
+          className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+        >
+          <h2
+            id="preview-title"
+            className="border-b border-border/60 pb-2 font-display text-title-3 text-foreground"
+          >
             {t("preview.title")}
           </h2>
           <p className="text-sm text-muted-foreground">{t("preview.intro")}</p>
@@ -266,8 +290,14 @@ export default async function PricingPage({
       )}
 
       {set === null ? null : (
-        <section aria-labelledby="chart-title" className="space-y-4">
-          <h2 id="chart-title" className="border-b pb-2 text-lg font-semibold">
+        <section
+          aria-labelledby="chart-title"
+          className="space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+        >
+          <h2
+            id="chart-title"
+            className="border-b border-border/60 pb-2 font-display text-title-3 text-foreground"
+          >
             {t("chart.title")}
           </h2>
           <p className="text-sm text-muted-foreground">

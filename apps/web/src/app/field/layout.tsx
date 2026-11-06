@@ -22,7 +22,7 @@ export default async function FieldLayout({ children }: LayoutProps<"/field">) {
 
   return (
     <NextIntlClientProvider messages={{ Ops: messages.Ops, Field: messages.Field }}>
-      <div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8 sm:py-10">
+      <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-8 sm:py-10">
         <OpsNav
           label={t("label")}
           links={[

@@ -52,8 +52,8 @@ export default async function OwnerBookingsPage({ searchParams }: PageProps<"/ow
   return (
     <>
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("intro")}</p>
+        <h1 className="text-title-1 font-semibold tracking-tight text-foreground">{t("title")}</h1>
+        <p className="text-body text-muted-foreground">{t("intro")}</p>
       </div>
       <nav aria-label={t("filter")} className="flex flex-wrap gap-2">
         {filters.map((filter) => (
@@ -62,8 +62,8 @@ export default async function OwnerBookingsPage({ searchParams }: PageProps<"/ow
             href={filter.href}
             aria-current={filter.current ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-9 items-center rounded-md border px-3 text-sm",
-              filter.current && "border-primary bg-accent font-medium",
+              "inline-flex min-h-9 items-center rounded-full border border-border/80 bg-card px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+              filter.current && "border-primary bg-primary-soft font-semibold text-foreground",
             )}
           >
             {filter.label}
@@ -71,16 +71,21 @@ export default async function OwnerBookingsPage({ searchParams }: PageProps<"/ow
         ))}
       </nav>
       {bookings.items.length === 0 ? (
-        <p className="text-muted-foreground">{t("none")}</p>
+        <p className="rounded-2xl border border-dashed border-border bg-surface/60 p-6 text-sm text-muted-foreground">
+          {t("none")}
+        </p>
       ) : (
         <ul className="space-y-3">
           {bookings.items.map((booking) => (
-            <li key={booking.code} className="space-y-1 rounded-lg border p-4">
+            <li
+              key={booking.code}
+              className="space-y-1.5 rounded-2xl border border-border/80 bg-card p-4 shadow-xs sm:p-5"
+            >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <Link
                   href={`${OWNER_BOOKINGS_PATH}/${booking.code}` as Route}
                   aria-label={t("open", { code: booking.code })}
-                  className="font-medium text-primary underline underline-offset-4"
+                  className="font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
                 >
                   {t("line", {
                     code: booking.code,
@@ -88,9 +93,11 @@ export default async function OwnerBookingsPage({ searchParams }: PageProps<"/ow
                     roomType: booking.roomType,
                   })}
                 </Link>
-                <span className="text-sm font-medium">{t(`status.${booking.status}`)}</span>
+                <span className="rounded-full border border-border/80 bg-surface px-2.5 py-0.5 text-xs font-semibold text-foreground">
+                  {t(`status.${booking.status}`)}
+                </span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground tabular-nums">
                 {t("moveIn", {
                   date: day(booking.moveIn),
                   months: booking.stayMonths,
@@ -98,7 +105,7 @@ export default async function OwnerBookingsPage({ searchParams }: PageProps<"/ow
                 })}
               </p>
               {booking.status === "token_secured" && booking.confirmBy !== null ? (
-                <p className="text-sm font-medium">
+                <p className="text-sm font-medium text-warning">
                   {t("answerBy", { when: when(booking.confirmBy) })}
                 </p>
               ) : null}
@@ -106,16 +113,19 @@ export default async function OwnerBookingsPage({ searchParams }: PageProps<"/ow
           ))}
         </ul>
       )}
-      <section aria-labelledby="visits-title" className="space-y-3">
-        <h2 id="visits-title" className="text-lg font-semibold">
+      <section
+        aria-labelledby="visits-title"
+        className="space-y-3 rounded-2xl border border-border/80 bg-card p-5 shadow-xs sm:p-6"
+      >
+        <h2 id="visits-title" className="text-title-3 font-semibold tracking-tight">
           {t("visitsTitle")}
         </h2>
         {visits.items.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("visitsNone")}</p>
         ) : (
-          <ul className="divide-y rounded-lg border">
+          <ul className="divide-y divide-border/80 rounded-xl border border-border/80 bg-surface/50">
             {visits.items.map((visit) => (
-              <li key={visit.id} className="p-3 text-sm">
+              <li key={visit.id} className="px-4 py-3 text-sm">
                 {visit.student === null
                   ? t("visitNoName", { when: when(visit.scheduledAt), place: visit.place })
                   : t("visit", {
