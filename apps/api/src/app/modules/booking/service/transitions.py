@@ -74,6 +74,8 @@ if TYPE_CHECKING:
 NOTIFY: Final = "booking.notify"
 # Money goes back: the payments module takes it from here, since bookings never call payments.
 REFUND_DUE: Final = "booking.refund_due"
+# A settled booking's token is earned: payments debits a token that was only blocked (step 6.7).
+TOKEN_EARNED: Final = "booking.token_earned"  # noqa: S105 - a job's name, not a password
 # Rejected, cancelled, a no-show or refunded: the booking ended early, and the row says how.
 ENDED_EARLY: Final = frozenset(
     {
@@ -266,6 +268,15 @@ class Transitions:
                         await self._post(
                             booking,
                             token_applied(split.token_applied_paise, split.token_over_paise),
+                        )
+                        # A token only blocked by a mandate is debited now (step 6.7); a paid one
+                        # is in already, and the job finds nothing to do.
+                        await enqueue(
+                            self._db,
+                            TOKEN_EARNED,
+                            {"booking": str(booking.public_id), "amountPaise": booking.token_paise},
+                            clock=self._clock,
+                            dedupe_key=f"{TOKEN_EARNED}:{booking.public_id}",
                         )
                 case IssueOwnerInvoice():
                     # The invoice posts what the owner owes, with its number (step 6.5).

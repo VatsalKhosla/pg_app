@@ -67,6 +67,10 @@ class IssueKind(StrEnum):
     STUCK_AUTHORIZED = "stuck_authorized"
     REFUND_STUCK = "refund_stuck"
     LINK_MISMATCH = "link_mismatch"
+    # A token blocked by a mandate (step 6.7): its debit failed, or the mandate was cancelled
+    # before we debited or released it.
+    MANDATE_DEBIT_FAILED = "mandate_debit_failed"
+    MANDATE_CANCELLED = "mandate_cancelled"
 
 
 @dataclass(frozen=True, slots=True)

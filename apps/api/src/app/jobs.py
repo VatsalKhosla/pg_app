@@ -60,22 +60,32 @@ from app.modules.media.jobs import (
     process_handler,
 )
 from app.modules.payments.jobs import (
+    ASK,
     BALANCE_DUE,
     CHECK_STUCK,
+    DEBIT,
     MAKE_LINK,
     MATCH_SETTLEMENTS,
+    ORDER_DEBIT,
     PROCESS_EVENT,
     REFUND_DUE,
     REFUND_TEXT,
+    RELEASE,
     SEND_REFUND,
+    TOKEN_EARNED,
+    ask_handler,
     balance_due_handler,
     check_stuck_handler,
+    debit_handler,
     make_link_handler,
     match_settlements_handler,
+    order_debit_handler,
     process_event,
     refund_due,
     refund_text_handler,
+    release_handler,
     send_refund_handler,
+    token_earned,
 )
 from app.modules.payments.service import payments_part
 from app.modules.pricing.jobs import CHECK_INTEGRITY, check_integrity_handler
@@ -193,6 +203,13 @@ def build_registry(
     registry.register(BALANCE_DUE, balance_due_handler(gateway))
     registry.register(MAKE_LINK, make_link_handler(gateway))
     registry.register(CHECK_STUCK, check_stuck_handler(gateway))
+    # Tokens blocked by a UPI one-time mandate (step 6.7): debited once the booking settles,
+    # after the notice; released when it ends first.
+    registry.register(TOKEN_EARNED, token_earned)
+    registry.register(ASK, ask_handler(gateway))
+    registry.register(ORDER_DEBIT, order_debit_handler(gateway))
+    registry.register(DEBIT, debit_handler(gateway))
+    registry.register(RELEASE, release_handler(gateway))
     registry.register(MATCH_SETTLEMENTS, match_settlements_handler(gateway))
     registry.register(PROCESS, process_handler(storage, buckets))
     registry.register(DISCARD_UPLOAD, discard_upload_handler(storage, buckets))

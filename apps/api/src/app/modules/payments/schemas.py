@@ -9,7 +9,7 @@ from typing import Annotated, Final
 from pydantic import Field
 
 from app.core.schemas import ApiModel
-from app.modules.payments.domain.payments import PaymentStatus, Provider
+from app.modules.payments.domain.payments import PaymentMode, PaymentStatus, Provider
 from app.modules.payments.domain.reconciliation import IssueKind
 from app.modules.payments.domain.refunds import RefundKind, RefundStatus
 
@@ -49,6 +49,10 @@ class PaymentStart(ApiModel):
     # The hold's time left: checkout closes itself by then.
     expires_in_seconds: int
     prefill: CheckoutPrefill
+    # How the token is taken: paid, or blocked by a UPI one-time mandate (step 6.7), which the
+    # checkout opens as a recurring payment for this customer of the gateway's.
+    mode: PaymentMode
+    customer_id: str | None
 
 
 class CheckoutCallback(ApiModel):

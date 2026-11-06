@@ -45,6 +45,7 @@ from app.modules.payments.errors import (
 )
 from app.modules.payments.repository import PaymentRepository
 from app.modules.payments.schemas import OpsPayment, OpsRefund, StudentPayment, StudentRefund
+from app.modules.payments.service.mandates import Mandates
 from app.modules.payments.texts import REFUND_PROCESSED
 
 if TYPE_CHECKING:
@@ -67,6 +68,13 @@ _HIDDEN_FROM_STUDENTS: Final = frozenset({RefundStatus.AWAITING_APPROVAL, Refund
 
 logger = structlog.stdlib.get_logger(__name__)
 
+
+def taken_paise(payment: Payment) -> int:
+    """What actually came in: a mandate's debit can be less than the token it blocked, when a late
+    cancellation kept only part of it (step 6.7)."""
+    return payment.debit_amount_paise or payment.amount_paise
+
+
 _changes = metrics.get_meter("app.payments").create_counter(
     "payments.refunds", description="Refunds reaching a status, by kind"
 )
@@ -87,6 +95,13 @@ class Refunds:
         booking_id = await self._tokens.id_of(booking)
         payment = None if booking_id is None else await self._payments.captured_token_of(booking_id)
         if payment is None:
+            # A token only blocked by a mandate goes back by releasing the block (step 6.7).
+            mandate = None if booking_id is None else await self._payments.mandate_of(booking_id)
+            if mandate is not None:
+                await Mandates(self._db, self._clock).give_back(
+                    mandate, refund_paise=amount_paise, reason=reason
+                )
+                return
             logger.info("a refund was due, with no payment taken", reason=reason)
             return
         await self.automatic(payment, amount_paise=amount_paise, reason=reason)
@@ -257,7 +272,10 @@ class Refunds:
             refunds = await self._payments.refunds_of([payment.id for payment in payments])
         return [
             StudentPayment(
-                amount_paise=payment.amount_paise,
+                # What was taken, or, for a token still blocked, what's blocked (step 6.7).
+                amount_paise=taken_paise(payment)
+                if payment.status == PaymentStatus.CAPTURED
+                else payment.amount_paise,
                 status=PaymentStatus(payment.status),
                 captured_at=payment.captured_at,
                 refunds=[
@@ -296,7 +314,7 @@ class Refunds:
                 if payment.status != PaymentStatus.CAPTURED
                 or payment.purpose != PaymentPurpose.TOKEN
                 else refundable(
-                    payment.amount_paise,
+                    taken_paise(payment),
                     [
                         (row.amount_paise, RefundStatus(row.status))
                         for row in refunds.get(payment.id, [])
@@ -411,7 +429,7 @@ class Refunds:
     async def _left(self, payment: Payment, *, leaving_out: int | None = None) -> int:
         rows = (await self._payments.refunds_of([payment.id])).get(payment.id, [])
         return refundable(
-            payment.amount_paise,
+            taken_paise(payment),
             [(row.amount_paise, RefundStatus(row.status)) for row in rows if row.id != leaving_out],
         )
 

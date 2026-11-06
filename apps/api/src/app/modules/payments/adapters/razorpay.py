@@ -17,6 +17,13 @@ import structlog
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.modules.payments.domain.links import LINK_EVENTS, GatewayLink, LinkStatus
+from app.modules.payments.domain.mandates import (
+    MANDATE_EVENTS,
+    GatewayMandate,
+    MandateOrder,
+    MandatePayer,
+    MandateStatus,
+)
 from app.modules.payments.domain.payments import (
     INR,
     GatewayOrder,
@@ -34,7 +41,7 @@ from app.modules.payments.errors import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
     from datetime import date
 
     from pydantic import SecretStr
@@ -50,6 +57,9 @@ _DUPLICATE: Final = "duplicate"
 _ATTEMPTED: Final = "already attempted"
 # The most report items Razorpay gives in one answer.
 _REPORT_PAGE: Final = 1000
+# Razorpay asks a mandate's debit for an email; students sign in by phone, and this is Razorpay's
+# own address for a customer who gave none.
+_NO_EMAIL: Final = "void@razorpay.com"
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -75,6 +85,7 @@ class _Payment(_Answer):
     amount: int
     currency: str
     status: GatewayStatus
+    token_id: str | None = None
 
 
 class _Acquirer(_Answer):
@@ -137,6 +148,36 @@ class _Report(_Answer):
     items: list[_ReportItem]
 
 
+class _Customer(_Answer):
+    id: str
+
+
+class _RecurringDetails(_Answer):
+    status: MandateStatus
+
+
+class _Token(_Answer):
+    id: str
+    recurring_details: _RecurringDetails
+    customer_id: str | None = None
+
+
+class _Tokens(_Answer):
+    items: list[_Token]
+
+
+class _TokenEntity(_Answer):
+    entity: _Token
+
+
+class _WithToken(_Answer):
+    token: _TokenEntity
+
+
+class _RecurringPayment(_Answer):
+    razorpay_payment_id: str
+
+
 class _ErrorBody(_Answer):
     code: str = ""
     description: str = ""
@@ -183,7 +224,22 @@ def _as_payment(found: _Payment) -> GatewayPayment:
         amount_paise=found.amount,
         currency=found.currency,
         status=found.status,
+        token_id=found.token_id,
     )
+
+
+def _as_mandate(found: _Token) -> GatewayMandate:
+    return GatewayMandate(
+        id=found.id, status=found.recurring_details.status, customer_id=found.customer_id
+    )
+
+
+def _mandate_event(found: _Webhook, created_at: datetime) -> GatewayEvent:
+    try:
+        token = _WithToken.model_validate(found.payload).token.entity
+    except ValidationError:
+        return GatewayEvent(found.event, created_at, None, unreadable=True)
+    return GatewayEvent(found.event, created_at, None, mandate=_as_mandate(token))
 
 
 def _as_refund(found: _Refund) -> GatewayRefund:
@@ -262,10 +318,9 @@ def read_razorpay_webhook(raw_body: bytes) -> GatewayEvent | None:
     except ValidationError:
         return None
     created_at = datetime.fromtimestamp(found.created_at, tz=UTC)
-    if found.event in REFUND_EVENTS:
-        return _refund_event(found, created_at)
-    if found.event in LINK_EVENTS:
-        return _link_event(found, created_at)
+    reader = _READERS.get(found.event)
+    if reader is not None:
+        return reader(found, created_at)
     if found.event not in PAYMENT_EVENTS:
         return GatewayEvent(found.event, created_at, None)
     try:
@@ -273,6 +328,14 @@ def read_razorpay_webhook(raw_body: bytes) -> GatewayEvent | None:
     except ValidationError:
         return GatewayEvent(found.event, created_at, None, unreadable=True)
     return GatewayEvent(found.event, created_at, _as_payment(payment))
+
+
+# The events that are about something other than a payment, each with its reader.
+_READERS: Final[dict[str, Callable[[_Webhook, datetime], GatewayEvent]]] = {
+    **dict.fromkeys(REFUND_EVENTS, _refund_event),
+    **dict.fromkeys(LINK_EVENTS, _link_event),
+    **dict.fromkeys(MANDATE_EVENTS, _mandate_event),
+}
 
 
 def _error_of(response: httpx.Response) -> _ErrorBody:
@@ -285,6 +348,8 @@ def _error_of(response: httpx.Response) -> _ErrorBody:
 class RazorpayGateway:
     name: Provider = "razorpay"
     settles = True
+    # Razorpay enables them per account; the token_mode flag says whether we use them.
+    supports_mandates = True
 
     def __init__(
         self,
@@ -457,6 +522,147 @@ class RazorpayGateway:
             items += [_as_item(item) for item in page]
             if len(page) < _REPORT_PAGE:
                 return items
+
+    async def create_mandate(
+        self,
+        *,
+        amount_paise: int,
+        expires_at: datetime,
+        receipt: str,
+        payer: MandatePayer,
+        notes: Mapping[str, str],
+    ) -> MandateOrder:
+        customer = await self._customer(payer)
+        response = await self._send(
+            "POST",
+            "/orders",
+            json={
+                "amount": amount_paise,
+                "currency": INR,
+                "customer_id": customer,
+                "method": "upi",
+                "token": {
+                    "max_amount": amount_paise,
+                    "expire_at": int(expires_at.timestamp()),
+                    "frequency": "one_time",
+                },
+                "receipt": receipt,
+                "notes": dict(notes),
+            },
+        )
+        if response.is_success:
+            order = self._order(_Order, response)
+        elif _DUPLICATE in _error_of(response).description.lower():
+            order = await self._order_with_receipt(receipt)
+        else:
+            raise self._refused("create_mandate", response)
+        return MandateOrder(order.id, customer, order.amount_paise)
+
+    async def fetch_mandate(self, *, customer_id: str, mandate_id: str) -> GatewayMandate:
+        response = await self._fetch(f"/customers/{customer_id}/tokens")
+        if not response.is_success:
+            raise self._refused("fetch_mandate", response)
+        try:
+            tokens = _Tokens.model_validate_json(response.content).items
+        except ValidationError as error:
+            raise self._malformed("fetch_mandate") from error
+        for token in tokens:
+            if token.id == mandate_id:
+                return _as_mandate(token)
+        # Razorpay leaves out tokens that lapsed unused, and ones already debited.
+        return GatewayMandate(mandate_id, MandateStatus.CANCELLED, customer_id)
+
+    async def order_debit(
+        self,
+        *,
+        mandate_id: str,
+        amount_paise: int,
+        receipt: str,
+        after: datetime,
+        notes: Mapping[str, str],
+    ) -> GatewayOrder:
+        response = await self._send(
+            "POST",
+            "/orders",
+            json={
+                "amount": amount_paise,
+                "currency": INR,
+                "payment_capture": True,
+                "receipt": receipt,
+                # Razorpay sends the student the notice, and doesn't debit by itself: we do,
+                # from ``after``.
+                "notification": {"token_id": mandate_id, "payment_after": int(after.timestamp())},
+                "notes": dict(notes),
+            },
+        )
+        if response.is_success:
+            return self._order(_Order, response)
+        if _DUPLICATE in _error_of(response).description.lower():
+            return await self._order_with_receipt(receipt)
+        raise self._refused("order_debit", response)
+
+    async def debit(
+        self,
+        *,
+        order_id: str,
+        customer_id: str,
+        mandate_id: str,
+        amount_paise: int,
+        payer: MandatePayer,
+        notes: Mapping[str, str],
+    ) -> str:
+        response = await self._send(
+            "POST",
+            "/payments/create/recurring",
+            json={
+                "email": _NO_EMAIL,
+                "contact": payer.contact,
+                "amount": amount_paise,
+                "currency": INR,
+                "order_id": order_id,
+                "customer_id": customer_id,
+                "token": mandate_id,
+                "recurring": True,
+                "notes": dict(notes),
+            },
+        )
+        if response.is_success:
+            try:
+                return _RecurringPayment.model_validate_json(response.content).razorpay_payment_id
+            except ValidationError as error:
+                raise self._malformed("debit") from error
+        if self._may_pass(response):
+            raise self._refused("debit", response)
+        said = _error_of(response)
+        logger.error("razorpay won't debit a mandate", status=response.status_code, code=said.code)
+        raise PaymentGatewayRefusedError(said.description or "Razorpay refused this debit.")
+
+    async def release_mandate(self, *, customer_id: str, mandate_id: str) -> None:
+        response = await self._send("PUT", f"/customers/{customer_id}/tokens/{mandate_id}/cancel")
+        if response.is_success:
+            return
+        if self._may_pass(response):
+            raise self._refused("release_mandate", response)
+        # One already cancelled, used or lapsed has nothing left blocked.
+        logger.warning("razorpay wouldn't cancel a mandate", status=response.status_code)
+
+    async def _customer(self, payer: MandatePayer) -> str:
+        """The student as Razorpay's customer: the same one each time (``fail_existing`` 0)."""
+        response = await self._send(
+            "POST",
+            "/customers",
+            json={
+                "name": payer.name or "Student",
+                "contact": payer.contact,
+                "fail_existing": "0",
+            },
+        )
+        if not response.is_success:
+            raise self._refused("create_customer", response)
+        try:
+            return _Customer.model_validate_json(response.content).id
+        except ValidationError as error:
+            raise self._malformed("create_customer") from error
 
     def _link(self, response: httpx.Response, call: str) -> GatewayLink:
         try:

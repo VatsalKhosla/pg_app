@@ -95,6 +95,30 @@ def test_a_test_site_can_open_booking_without_a_visit_only_when_it_says_so(
     ]
 
 
+def test_a_test_site_can_take_tokens_by_mandate_only_when_it_says_so(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    recorder = _Recorder()
+    monkeypatch.setattr(all_in_one, "_run", recorder.run)
+    monkeypatch.setattr(all_in_one, "supervise", recorder.supervise)
+
+    monkeypatch.setenv("TEST_SITE_TOKEN_MODE", "upi_mandate")
+    assert all_in_one.main() == 0
+    monkeypatch.delenv("TEST_SITE_TOKEN_MODE")
+    assert all_in_one.main() == 0
+
+    serve = ("supervise",)
+    assert recorder.ran == [
+        MIGRATE,
+        GEO,
+        ("app.manage", "flags", "set", "token_mode", "upi_mandate"),
+        serve,
+        MIGRATE,
+        GEO,
+        serve,
+    ]
+
+
 def test_a_failed_migration_starts_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
     recorder = _Recorder(code=4)
     monkeypatch.setattr(all_in_one, "_run", recorder.run)

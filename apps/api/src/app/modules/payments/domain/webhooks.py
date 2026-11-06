@@ -12,6 +12,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Final, cast
 
 from app.modules.payments.domain.links import GatewayLink, LinkStatus
+from app.modules.payments.domain.mandates import GatewayMandate, MandateStatus
 from app.modules.payments.domain.payments import GatewayPayment, GatewayStatus
 from app.modules.payments.domain.refunds import GatewayRefund, GatewayRefundStatus
 
@@ -43,6 +44,8 @@ class GatewayEvent:
     refund: GatewayRefund | None = None
     # The payment link it's about, if it's a link event (step 6.5).
     link: GatewayLink | None = None
+    # The mandate it's about, if it's a mandate's event (step 6.7).
+    mandate: GatewayMandate | None = None
 
 
 def too_old(event: GatewayEvent, now: datetime) -> bool:
@@ -54,9 +57,21 @@ def kept_payload(event: GatewayEvent) -> dict[str, object]:
     payment = event.payment
     refund = event.refund
     link = event.link
+    mandate = event.mandate
     return {
         "createdAt": event.created_at.isoformat(),
         **({"unreadable": True} if event.unreadable else {}),
+        **(
+            {}
+            if mandate is None
+            else {
+                "mandate": {
+                    "id": mandate.id,
+                    "status": mandate.status,
+                    "customerId": mandate.customer_id,
+                }
+            }
+        ),
         **(
             {}
             if link is None
@@ -96,6 +111,8 @@ def kept_payload(event: GatewayEvent) -> dict[str, object]:
                     "amountPaise": payment.amount_paise,
                     "currency": payment.currency,
                     "status": payment.status,
+                    # Only a mandate's payments name one (step 6.7).
+                    **({} if payment.token_id is None else {"tokenId": payment.token_id}),
                 }
             }
         ),
@@ -114,6 +131,7 @@ def payment_in(payload: Mapping[str, object]) -> GatewayPayment | None:
         amount_paise=int(str(stored["amountPaise"])),
         currency=str(stored["currency"]),
         status=GatewayStatus(str(stored["status"])),
+        token_id=_text_or_none(stored.get("tokenId")),
     )
 
 
@@ -151,4 +169,17 @@ def link_in(payload: Mapping[str, object]) -> GatewayLink | None:
         status=LinkStatus(str(stored["status"])),
         url=str(stored["url"]),
         payment_id=_text_or_none(stored["paymentId"]),
+    )
+
+
+def mandate_in(payload: Mapping[str, object]) -> GatewayMandate | None:
+    """The mandate a stored event is about, if any."""
+    found = payload.get("mandate")
+    if found is None:
+        return None
+    stored = cast("Mapping[str, object]", found)
+    return GatewayMandate(
+        id=str(stored["id"]),
+        status=MandateStatus(str(stored["status"])),
+        customer_id=_text_or_none(stored["customerId"]),
     )

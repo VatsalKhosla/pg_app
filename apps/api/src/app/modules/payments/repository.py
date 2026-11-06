@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select, tuple_, update
 from sqlalchemy.dialects.postgresql import insert
 
-from app.modules.payments.domain.payments import PaymentPurpose, PaymentStatus
+from app.modules.payments.domain.payments import PaymentMode, PaymentPurpose, PaymentStatus
 from app.modules.payments.models import Payment, PaymentEvent, ReconciliationIssue, Refund
 
 if TYPE_CHECKING:
@@ -73,6 +73,56 @@ class PaymentRepository:
             .execution_options(populate_existing=True)
         )
 
+    # Mandates (step 6.7).
+
+    async def by_debit_order(self, provider: str, order_id: str) -> Payment | None:
+        """The mandate payment this debit order belongs to, locked, as it is now."""
+        return await self._db.scalar(
+            select(Payment)
+            .where(Payment.provider == provider, Payment.provider_debit_order_id == order_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+
+    async def by_mandate(self, provider: str, mandate_id: str) -> Payment | None:
+        """The payment a mandate blocks the token of, locked, as it is now."""
+        return await self._db.scalar(
+            select(Payment)
+            .where(Payment.provider == provider, Payment.provider_mandate_id == mandate_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+
+    async def mandate_of(self, booking_id: int) -> Payment | None:
+        """The booking's token taken by mandate, locked, as it is now."""
+        return await self._db.scalar(
+            select(Payment)
+            .where(
+                Payment.booking_id == booking_id,
+                Payment.purpose == PaymentPurpose.TOKEN,
+                Payment.mode == PaymentMode.UPI_MANDATE,
+            )
+            .order_by(Payment.id.desc())
+            .limit(1)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+
+    async def debits_waiting(self, *, sent_before: datetime, limit: int) -> list[Payment]:
+        """Mandate debits sent and not yet come back, the oldest first."""
+        rows = await self._db.scalars(
+            select(Payment)
+            .where(
+                Payment.mode == PaymentMode.UPI_MANDATE,
+                Payment.status == PaymentStatus.BLOCKED,
+                Payment.provider_debit_order_id.is_not(None),
+                Payment.debit_after <= sent_before,
+            )
+            .order_by(Payment.debit_after)
+            .limit(limit)
+        )
+        return list(rows)
+
     async def by_key(self, key: str) -> Payment | None:
         return await self._db.scalar(select(Payment).where(Payment.idempotency_key == key))
 
@@ -87,6 +137,7 @@ class PaymentRepository:
         amount_paise: int,
         made_at: datetime,
         invoice_id: int | None = None,
+        mandate_expires_at: datetime | None = None,
     ) -> Payment:
         """The payment with this key, added if there isn't one yet. Two requests at once get the
         same row."""
@@ -101,6 +152,7 @@ class PaymentRepository:
                 amount_paise=amount_paise,
                 made_at=made_at,
                 invoice_id=invoice_id,
+                mandate_expires_at=mandate_expires_at,
             )
             .on_conflict_do_nothing(index_elements=[Payment.idempotency_key])
         )
@@ -118,6 +170,14 @@ class PaymentRepository:
             .returning(Payment.id)
         )
         return changed is not None
+
+    async def set_customer_once(self, public_id: uuid.UUID, customer_id: str) -> None:
+        """A mandate's customer at the gateway, kept the first time it's given."""
+        await self._db.execute(
+            update(Payment)
+            .where(Payment.public_id == public_id, Payment.provider_customer_id.is_(None))
+            .values(provider_customer_id=customer_id)
+        )
 
     async def order_id_of(self, public_id: uuid.UUID) -> str | None:
         """The order as saved now, whatever this session read earlier."""

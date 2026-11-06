@@ -20,6 +20,12 @@ from typing import TYPE_CHECKING, Final
 
 from app.modules.payments.adapters.razorpay import read_razorpay_webhook
 from app.modules.payments.domain.links import GatewayLink, LinkStatus
+from app.modules.payments.domain.mandates import (
+    GatewayMandate,
+    MandateOrder,
+    MandatePayer,
+    MandateStatus,
+)
 from app.modules.payments.domain.payments import (
     INR,
     GatewayOrder,
@@ -43,7 +49,9 @@ if TYPE_CHECKING:
 
 _KEY_SECRET: Final = "fake-gateway-key-secret"  # noqa: S105 - not a secret: it signs fake payments
 _WEBHOOK_SECRET: Final = "fake-gateway-webhook-secret"  # noqa: S105 - as above
-_PAYMENT_ID: Final = re.compile(r"pay_fake_(?P<amount>[0-9]+)_(?P<digest>[0-9a-f]+)")
+# A mandate's order, and so its payment, ends in ``_otm`` (step 6.7): the fake keeps nothing.
+_ORDER_ID: Final = re.compile(r"order_fake_(?P<amount>[0-9]+)_(?P<digest>[0-9a-f]+)(?P<otm>_otm)?")
+_PAYMENT_ID: Final = re.compile(r"pay_fake_(?P<amount>[0-9]+)_(?P<digest>[0-9a-f]+)(?P<otm>_otm)?")
 _LINK_ID: Final = re.compile(r"plink_fake_(?P<amount>[0-9]+)_(?P<digest>[0-9a-f]+)")
 
 
@@ -72,6 +80,12 @@ class FakeGateway:
         self.unreachable = False
         # It pays no bank; a test can make it say it does.
         self.settles = False
+        # It takes mandates (step 6.7): a block it hasn't been told about is confirmed.
+        self.supports_mandates = True
+        self.mandates_said: dict[str, MandateStatus] = {}
+        self.debits_made: list[str] = []
+        self.released: list[str] = []
+        self.refuses_debits = False
         self.orders_made = 0
         self.refunds_made = 0
         # Each refund asked for, by its receipt: a test can count its own among others'.
@@ -240,8 +254,9 @@ class FakeGateway:
 
     def checkout(self, order_id: str) -> CheckoutProof:
         """The test bank says yes: the same order always gets the same payment."""
-        _, _, amount, digest = order_id.split("_")
-        payment_id = f"pay_fake_{amount}_{digest}"
+        if _ORDER_ID.fullmatch(order_id) is None:
+            raise PaymentGatewayUnavailableError
+        payment_id = f"pay_{order_id.removeprefix('order_')}"
         signature = checkout_signature(_KEY_SECRET, order_id=order_id, payment_id=payment_id)
         return CheckoutProof(payment_id, signature)
 
@@ -285,6 +300,8 @@ class FakeGateway:
                             "currency": payment.currency,
                             "status": payment.status,
                             "order_id": payment.order_id,
+                            # Only a mandate's payments name one.
+                            **({} if payment.token_id is None else {"token_id": payment.token_id}),
                             "method": "upi",
                             "vpa": "a.student@fakebank",
                             "email": "a.student@example.com",
@@ -353,18 +370,111 @@ class FakeGateway:
         match = _PAYMENT_ID.fullmatch(payment_id)
         if match is None:
             raise PaymentGatewayUnavailableError
-        amount, digest = match["amount"], match["digest"]
+        amount, digest, otm = match["amount"], match["digest"], match["otm"] or ""
         return GatewayPayment(
             id=payment_id,
-            order_id=f"order_fake_{amount}_{digest}",
+            order_id=f"order_fake_{amount}_{digest}{otm}",
             amount_paise=int(amount),
             currency=INR,
             status=GatewayStatus.CAPTURED,
+            # A mandate's order authorises the mandate its digest names.
+            token_id=f"token_fake_{digest}" if otm else None,
         )
 
     def _check_reachable(self) -> None:
         if self.unreachable:
             raise PaymentGatewayUnavailableError
+
+    # UPI one-time mandates (step 6.7). Everything is in the ids again: a mandate order's payment,
+    # its token and its customer all come from the order's digest.
+
+    async def create_mandate(
+        self,
+        *,
+        amount_paise: int,
+        expires_at: datetime,
+        receipt: str,
+        payer: MandatePayer,
+        notes: Mapping[str, str],
+    ) -> MandateOrder:
+        _ = expires_at, payer, notes
+        order = await self.create_order(amount_paise=amount_paise, receipt=receipt, notes={})
+        digest = order.id.rsplit("_", 1)[-1]
+        return MandateOrder(f"{order.id}_otm", f"cust_fake_{digest}", amount_paise)
+
+    async def fetch_mandate(self, *, customer_id: str, mandate_id: str) -> GatewayMandate:
+        self._check_reachable()
+        return GatewayMandate(
+            mandate_id, self.mandates_said.get(mandate_id, MandateStatus.CONFIRMED), customer_id
+        )
+
+    async def order_debit(
+        self,
+        *,
+        mandate_id: str,
+        amount_paise: int,
+        receipt: str,
+        after: datetime,
+        notes: Mapping[str, str],
+    ) -> GatewayOrder:
+        _ = mandate_id, after
+        return await self.create_order(amount_paise=amount_paise, receipt=receipt, notes=notes)
+
+    async def debit(
+        self,
+        *,
+        order_id: str,
+        customer_id: str,
+        mandate_id: str,
+        amount_paise: int,
+        payer: MandatePayer,
+        notes: Mapping[str, str],
+    ) -> str:
+        _ = customer_id, amount_paise, payer, notes
+        self._check_reachable()
+        if self.refuses_debits:
+            msg = "The test bank won't debit this mandate."
+            raise PaymentGatewayRefusedError(msg)
+        self.debits_made.append(mandate_id)
+        return self.checkout(order_id).payment_id
+
+    async def release_mandate(self, *, customer_id: str, mandate_id: str) -> None:
+        _ = customer_id
+        self._check_reachable()
+        self.released.append(mandate_id)
+        self.mandates_said[mandate_id] = MandateStatus.CANCELLED
+
+    def mandate_webhook(
+        self,
+        event: str,
+        mandate_id: str,
+        status: MandateStatus,
+        *,
+        at: datetime,
+        event_id: str = "",
+    ) -> SignedWebhook:
+        """A signed webhook about a mandate, in the shape of Razorpay's token events."""
+        return self.signed(
+            {
+                "entity": "event",
+                "event": event,
+                "contains": ["token"],
+                "created_at": int(at.timestamp()),
+                "payload": {
+                    "token": {
+                        "entity": {
+                            "id": mandate_id,
+                            "entity": "token",
+                            "method": "upi",
+                            "recurring": True,
+                            "recurring_details": {"status": status, "failure_reason": None},
+                            "vpa": {"username": "a.student", "handle": "fakebank"},
+                        }
+                    }
+                },
+            },
+            event_id=event_id,
+        )
 
 
 def _link_url(link_id: str) -> str:

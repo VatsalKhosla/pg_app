@@ -15,10 +15,11 @@ from opentelemetry import metrics
 
 from app.core import audit
 from app.core.outbox import enqueue
-from app.modules.payments.domain.payments import PaymentPurpose, Settlement
+from app.modules.payments.domain.payments import PaymentMode, PaymentPurpose, Settlement
 from app.modules.payments.domain.webhooks import (
     kept_payload,
     link_in,
+    mandate_in,
     payment_in,
     refund_in,
     too_old,
@@ -27,6 +28,7 @@ from app.modules.payments.errors import WebhookInvalidError
 from app.modules.payments.repository import PaymentRepository
 from app.modules.payments.schemas import WebhookReceipt
 from app.modules.payments.service.invoice_links import InvoiceLinks
+from app.modules.payments.service.mandates import Mandates
 from app.modules.payments.service.refunds import Refunds
 from app.modules.payments.service.settlement import PaymentSettlements
 
@@ -60,6 +62,7 @@ class PaymentWebhooks:
         self._settlements = PaymentSettlements(db, clock)
         self._refunds = Refunds(db, clock)
         self._links = InvoiceLinks(db, clock)
+        self._mandates = Mandates(db, clock)
 
     async def receive(
         self, gateway: PaymentGateway, *, raw_body: bytes, signature: str, event_id: str
@@ -107,10 +110,13 @@ class PaymentWebhooks:
         found = payment_in(event.payload)
         refund = refund_in(event.payload)
         link = link_in(event.payload)
+        mandate = mandate_in(event.payload)
         if refund is not None:
             event.error = await self._refunds.settle(event.provider, refund, found)
         elif link is not None:
             event.error = await self._links.settle(event.provider, link, found)
+        elif mandate is not None:
+            event.error = await self._mandates.event(event.provider, mandate)
         elif found is not None:
             event.error = await self._payment(event.provider, event.event_type, found)
 
@@ -121,6 +127,7 @@ class PaymentWebhooks:
             None
             if found.order_id is None
             else await self._payments.by_order(provider, found.order_id)
+            or await self._payments.by_debit_order(provider, found.order_id)
         )
         if payment is None:
             # Another environment's, on the same Razorpay account, or a payment link's, whose
@@ -129,5 +136,8 @@ class PaymentWebhooks:
             return "unknown_order"
         if payment.purpose != PaymentPurpose.TOKEN:
             return None  # a link's payment: its link's own event moves it
+        if payment.mode == PaymentMode.UPI_MANDATE:
+            # The authorisation names the mandate, which its own event confirms; or the debit.
+            return await self._mandates.payment_seen(payment, found)
         settled = await self._settlements.apply(payment, found, by=audit.SYSTEM)
         return "mismatch" if settled is Settlement.MISMATCH else None

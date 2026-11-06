@@ -16,11 +16,12 @@ from app.modules.booking.service.tokens import (
     TokenTaken,
     booking_codes_of,
 )
-from app.modules.booking.service.transitions import NOTIFY, REFUND_DUE
+from app.modules.booking.service.transitions import NOTIFY, REFUND_DUE, TOKEN_EARNED
 
 __all__ = [
     "NOTIFY",
     "REFUND_DUE",
+    "TOKEN_EARNED",
     "BookingBoard",
     "BookingDesk",
     "BookingNotices",

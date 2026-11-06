@@ -24,6 +24,8 @@ class PaymentPurpose(StrEnum):
 
 class PaymentMode(StrEnum):
     PAYMENT = "payment"
+    # A token blocked in the student's account by a UPI one-time mandate (step 6.7, ADR 0064).
+    UPI_MANDATE = "upi_mandate"
 
 
 class PaymentStatus(StrEnum):
@@ -32,6 +34,9 @@ class PaymentStatus(StrEnum):
     CREATED = "created"
     AUTHORIZED = "authorized"
     CAPTURED = "captured"
+    # A mandate's: the token blocked in the student's account, and given back unspent (step 6.7).
+    BLOCKED = "blocked"
+    RELEASED = "released"
 
 
 class GatewayStatus(StrEnum):
@@ -58,6 +63,8 @@ class GatewayPayment:
     amount_paise: int
     currency: str
     status: GatewayStatus
+    # The mandate a payment authorised or debited, for a mandate's payments (step 6.7).
+    token_id: str | None = None
 
 
 class Settlement(StrEnum):

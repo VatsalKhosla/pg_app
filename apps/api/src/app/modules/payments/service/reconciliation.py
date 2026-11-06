@@ -28,7 +28,7 @@ from app.modules.identity.service import Accounts
 from app.modules.ledger.domain.ledger import gateway_fee, refund_settled, settled
 from app.modules.ledger.service import Ledger
 from app.modules.payments.domain.links import LinkStatus
-from app.modules.payments.domain.payments import GatewayStatus, PaymentStatus
+from app.modules.payments.domain.payments import GatewayStatus, PaymentMode, PaymentStatus
 from app.modules.payments.domain.reconciliation import (
     AUTHORIZED_TOO_LONG,
     CHECKS_PER_RUN,
@@ -47,6 +47,7 @@ from app.modules.payments.errors import PaymentGatewayUnavailableError
 from app.modules.payments.repository import PaymentRepository
 from app.modules.payments.schemas import IssueView, ReconciliationSummary
 from app.modules.payments.service.invoice_links import InvoiceLinks
+from app.modules.payments.service.mandates import Mandates
 from app.modules.payments.service.refunds import Refunds
 from app.modules.payments.service.settlement import PaymentSettlements
 
@@ -100,6 +101,7 @@ class Reconciliation:
         self._settlements = PaymentSettlements(db, clock)
         self._refunds = Refunds(db, clock)
         self._links = InvoiceLinks(db, clock)
+        self._mandates = Mandates(db, clock)
         self._ledger = Ledger(db, clock)
         self._tokens = BookingTokens(db, clock)
         self._accounts = Accounts(db)
@@ -109,6 +111,7 @@ class Reconciliation:
         now = self._clock.now()
         try:
             await self._waiting_tokens(gateway)
+            await self._waiting_debits(gateway)
             await self._open_links(gateway, made_after=now - GIVE_UP_AFTER, limit=CHECKS_PER_RUN)
             await self._waiting_refunds(gateway)
         except PaymentGatewayUnavailableError:
@@ -182,6 +185,9 @@ class Reconciliation:
         ):
             if payment.provider != gateway.name or payment.provider_order_id is None:
                 continue
+            if payment.mode == PaymentMode.UPI_MANDATE:
+                await self._waiting_mandate(gateway, payment)
+                continue
             found = _best(await gateway.order_payments(payment.provider_order_id))
             if found is None:
                 continue
@@ -198,6 +204,36 @@ class Reconciliation:
                     detail="The bank said yes, but the payment hasn't been captured: the gateway "
                     "refunds it by itself in 5 days unless someone captures it.",
                 )
+
+    async def _waiting_mandate(self, gateway: PaymentGateway, payment: Payment) -> None:
+        """A block the student authorised that hasn't come back (step 6.7): the authorisation
+        names the mandate, and the gateway says whether it's confirmed."""
+        if payment.provider_order_id is None or payment.provider_customer_id is None:
+            return
+        attempts = await gateway.order_payments(payment.provider_order_id)
+        token = next((each.token_id for each in attempts if each.token_id is not None), None)
+        if token is None:
+            return
+        mandate = await gateway.fetch_mandate(
+            customer_id=payment.provider_customer_id, mandate_id=token
+        )
+        locked = await self._payments.by_id(payment.id, lock=True)
+        await self._mandates.note_mandate(locked, token)
+        await self._mandates.confirmed(locked, mandate, by=audit.SYSTEM)
+
+    async def _waiting_debits(self, gateway: PaymentGateway) -> None:
+        """Mandate debits sent over an hour ago that haven't come back (step 6.7)."""
+        now = self._clock.now()
+        for payment in await self._payments.debits_waiting(
+            sent_before=now - AUTHORIZED_TOO_LONG, limit=CHECKS_PER_RUN
+        ):
+            if payment.provider != gateway.name or payment.provider_debit_order_id is None:
+                continue
+            found = _best(await gateway.order_payments(payment.provider_debit_order_id))
+            if found is None:
+                continue
+            locked = await self._payments.by_id(payment.id, lock=True)
+            await self._mandates.debited(locked, found)
 
     async def _open_links(
         self, gateway: PaymentGateway, *, made_after: datetime | None, limit: int

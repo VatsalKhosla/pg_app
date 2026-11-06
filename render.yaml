@@ -117,6 +117,10 @@ services:
       # requires everywhere else: nobody could reach a booking on this copy otherwise (ADR 0058).
       - key: TEST_SITE_REMOTE_BOOKING
         value: "true"
+      # How the token is taken here: "payment", or "upi_mandate" to try Razorpay's one-time
+      # mandates in test mode (ADR 0064). The site sets the token_mode flag from it as it starts.
+      - key: TEST_SITE_TOKEN_MODE
+        value: payment
       # The six fictional sample PGs, added once (the founders' choice; ADR 0047). The web app
       # says on every page that they're samples.
       - key: SEED_SAMPLES

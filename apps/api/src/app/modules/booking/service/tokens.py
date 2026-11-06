@@ -23,11 +23,12 @@ from app.modules.booking.service.views import BookingViews
 from app.modules.inventory.domain.allocations import Period
 from app.modules.inventory.errors import BedUnavailableError
 from app.modules.inventory.service import BedHolds
+from app.modules.pricing.service import BookingTerms
 
 if TYPE_CHECKING:
     import uuid
     from collections.abc import Collection
-    from datetime import datetime
+    from datetime import date, datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,6 +43,11 @@ class TokenDue:
     code: str
     amount_paise: int
     hold_expires_at: datetime
+    # What a mandate blocking the token has to outlast (step 6.7): the move-in, the days a student
+    # may still move in after it, and their hours to check the room.
+    move_in: date
+    no_show_days: int
+    check_window_hours: int
 
 
 class TokenTaken(StrEnum):
@@ -65,6 +71,7 @@ class BookingTokens:
         self._system = BookingSystem(db, clock)
         self._transitions = Transitions(db, clock)
         self._beds = BedHolds(db, clock)
+        self._terms = BookingTerms(db)
 
     async def due(self, actor: Actor, code: str) -> TokenDue:
         """The token the student's own booking is waiting for, which the server alone decides.
@@ -77,7 +84,16 @@ class BookingTokens:
         now = self._clock.now()
         if not token_due(facts_of(booking, place), now) or booking.hold_expires_at is None:
             raise InvalidTransitionError("This booking isn't waiting for its token any more.")
-        return TokenDue(booking.id, booking.code, booking.token_paise, booking.hold_expires_at)
+        terms = await self._terms.of(booking.booking_policy_id)
+        return TokenDue(
+            booking.id,
+            booking.code,
+            booking.token_paise,
+            booking.hold_expires_at,
+            move_in=booking.move_in,
+            no_show_days=terms.no_show_days,
+            check_window_hours=terms.check_window_hours,
+        )
 
     async def id_of(self, public_id: uuid.UUID) -> int | None:
         booking = await self._bookings.by_public_id(public_id)

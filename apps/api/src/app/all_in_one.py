@@ -7,7 +7,8 @@ staging for now (ADR 0047). Production runs the API and the worker as services o
 It brings the database up to date and loads the geo reference data, which changes only what
 differs. With ``SEED_SAMPLES=true`` (staging) it adds the fictional sample PGs, which a second run
 leaves alone and production refuses. ``TEST_SITE_REMOTE_BOOKING`` sets whether beds can be booked
-without a visit. Then it runs the worker and the API side by side. When either
+without a visit, and ``TEST_SITE_TOKEN_MODE`` how the token is taken (step 6.7). Then it runs the
+worker and the API side by side. When either
 stops, so does the other and the container exits, for the host to start it again. A SIGTERM from
 the host stops both gracefully.
 """
@@ -76,6 +77,10 @@ def main() -> int:
     remote_booking = os.environ.get("TEST_SITE_REMOTE_BOOKING")
     if remote_booking is not None:
         _run("app.manage", "flags", "set", "remote_booking_enabled", remote_booking)
+    # And try taking the token as a UPI one-time mandate in the gateway's test mode (ADR 0064).
+    token_mode = os.environ.get("TEST_SITE_TOKEN_MODE")
+    if token_mode is not None:
+        _run("app.manage", "flags", "set", "token_mode", token_mode)
     port = os.environ.get("PORT", "8000")
     return supervise(
         [

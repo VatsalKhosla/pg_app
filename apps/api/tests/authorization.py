@@ -567,6 +567,11 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
         signed_in(404, field_agent=403, ops=403, admin=403),
         path={"payment_id": "a_missing_payment"},
     ),
+    # A token blocked by mandate (ADR 0064): only the student whose payment it is asks.
+    ("POST", "/v1/payments/{payment_id}/mandate-check"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403),
+        path={"payment_id": "a_missing_payment"},
+    ),
     # Money given back (ADR 0059): a student sees their own; ops run it. A refund without an
     # Idempotency-Key is refused before anything else.
     ("GET", "/v1/bookings/{code}/payments"): Rule(

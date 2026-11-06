@@ -115,6 +115,7 @@ def _set_shared_state(app: FastAPI, settings: Settings, agreements: AgreementLib
     app.state.authenticate = authenticate_session
     app.state.site_url = settings.site_url
     app.state.refund_second_person_above_paise = settings.refund_second_person_above_paise
+    app.state.upi_mandate_max_days = settings.upi_mandate_max_days
     app.state.privacy_notice_version = settings.privacy_notice_version
     # The owner agreement's versions, and the one owners accept now; a version without its text
     # stops the API starting rather than failing owners later.

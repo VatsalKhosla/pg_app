@@ -12,11 +12,13 @@ from app.core.clock import ClockDep
 from app.core.current_actor import CurrentActor
 from app.core.db import DbSession
 from app.core.errors import ForbiddenError, NotFoundError
+from app.core.flags import Flag
 from app.core.idempotency import OPENAPI_HEADER, StoredResponse, idempotent_request, replay
 from app.core.pagination import PageParams
 from app.core.ratelimit import RateLimit, enforce
 from app.modules.payments.adapters.fake import FakeGateway
 from app.modules.payments.adapters.razorpay import EVENT_ID_HEADER, SIGNATURE_HEADER
+from app.modules.payments.domain.mandates import TokenMode
 from app.modules.payments.domain.refunds import RefundStatus
 from app.modules.payments.policies import can_pay, can_pay_invoices, can_reconcile, can_refund
 from app.modules.payments.schemas import (
@@ -57,8 +59,14 @@ def _ops(actor: CurrentActor) -> None:
         raise ForbiddenError
 
 
-def _checkout(request: Request, db: DbSession, clock: ClockDep) -> TokenCheckout:
-    return TokenCheckout(db, clock, request.app.state.payment_gateway)
+async def _checkout(request: Request, db: DbSession, clock: ClockDep) -> TokenCheckout:
+    return TokenCheckout(
+        db,
+        clock,
+        request.app.state.payment_gateway,
+        token_mode=TokenMode(await request.app.state.flags.choice(Flag.TOKEN_MODE)),
+        mandate_max_days=request.app.state.upi_mandate_max_days,
+    )
 
 
 @router.post("/bookings/{code}/payment", summary="Start paying your booking's token")
@@ -71,7 +79,7 @@ async def start_token_payment(
     if not can_pay(actor):
         raise ForbiddenError
     await enforce(request.app.state.rate_limiter, STARTS_PER_USER, f"user:{actor.user_id}")
-    return await _checkout(request, db, clock).start(actor, code)
+    return await (await _checkout(request, db, clock)).start(actor, code)
 
 
 @router.post("/payments/{payment_id}/checkout-callback", summary="Checkout has finished")
@@ -90,7 +98,7 @@ async def checkout_callback(
     if not can_pay(actor):
         raise ForbiddenError
     await enforce(request.app.state.rate_limiter, CHECKOUTS_PER_USER, f"user:{actor.user_id}")
-    return await _checkout(request, db, clock).finish(actor, payment_id, body)
+    return await (await _checkout(request, db, clock)).finish(actor, payment_id, body)
 
 
 @router.post("/payments/{payment_id}/test-checkout", summary="Pay at the test bank")
@@ -102,7 +110,20 @@ async def test_checkout(
     real gateway."""
     if not can_pay(actor):
         raise ForbiddenError
-    return await _checkout(request, db, clock).test_checkout(actor, payment_id)
+    return await (await _checkout(request, db, clock)).test_checkout(actor, payment_id)
+
+
+@router.post("/payments/{payment_id}/mandate-check", summary="Is the block in?")
+async def mandate_check(
+    payment_id: uuid.UUID, request: Request, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> CheckoutResult:
+    """After the student authorised a block on their token (step 6.7), whatever checkout handed
+    the browser: the gateway asked whether the mandate is confirmed, which alone moves the
+    booking. Safe to repeat; 409 INVALID_TRANSITION for a token taken as a payment."""
+    if not can_pay(actor):
+        raise ForbiddenError
+    await enforce(request.app.state.rate_limiter, CHECKOUTS_PER_USER, f"user:{actor.user_id}")
+    return await (await _checkout(request, db, clock)).check_mandate(actor, payment_id)
 
 
 @router.post("/webhooks/razorpay", summary="What Razorpay tells us")

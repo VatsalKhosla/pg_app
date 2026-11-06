@@ -123,6 +123,10 @@ class Settings(DatabaseSettings):
     refund_speed: Literal["normal", "optimum"] = "normal"
     # Ops' refunds above this wait for a second person (ARCHITECTURE §17): ₹5,000.
     refund_second_person_above_paise: int = Field(default=500_000, gt=0)
+    # The longest a UPI one-time mandate may block a token (step 6.7, ADR 0064). Razorpay allows
+    # far longer; this is what we ask of a student's bank, until Razorpay tells us otherwise. A
+    # move-in further off takes the token as a normal payment.
+    upi_mandate_max_days: int = Field(default=90, ge=1, le=3650)
     # Who invoices owners (step 6.5, ADR 0061): the company's registered name and address, its
     # GSTIN and the service's SAC code, as its accountant gives them. Until all four are set an
     # invoice says it's a draft and not a tax invoice; production refuses to start without them.

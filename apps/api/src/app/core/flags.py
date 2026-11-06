@@ -103,6 +103,8 @@ class FlagReader(Protocol):
 
     async def is_enabled(self, flag: Flag) -> bool: ...
 
+    async def choice(self, flag: Flag) -> str: ...
+
 
 def parse_flag_value(flag: Flag, raw: str) -> FlagValue | None:
     """A value as an operator typed it, if this flag takes it: true or false for an on/off flag,

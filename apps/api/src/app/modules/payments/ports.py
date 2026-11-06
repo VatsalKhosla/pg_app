@@ -5,9 +5,10 @@ from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
-    from datetime import date
+    from datetime import date, datetime
 
     from app.modules.payments.domain.links import GatewayLink
+    from app.modules.payments.domain.mandates import GatewayMandate, MandateOrder, MandatePayer
     from app.modules.payments.domain.payments import GatewayOrder, GatewayPayment, Provider
     from app.modules.payments.domain.reconciliation import SettlementItem
     from app.modules.payments.domain.refunds import GatewayRefund
@@ -24,6 +25,8 @@ class PaymentGateway(Protocol):
     key_id: str
     # Whether it pays a bank, so a payment no report has settled means something (step 6.6).
     settles: bool
+    # Whether it takes tokens as UPI one-time mandates (step 6.7).
+    supports_mandates: bool
 
     async def create_order(
         self, *, amount_paise: int, receipt: str, notes: Mapping[str, str]
@@ -80,4 +83,54 @@ class PaymentGateway(Protocol):
     async def settlement_items(self, on: date) -> list[SettlementItem]:
         """The settlement report for a day in India: every payment, refund, fee and payout the
         gateway settled that day (step 6.6)."""
+        ...
+
+    # UPI one-time mandates (step 6.7, ADR 0064).
+
+    async def create_mandate(
+        self,
+        *,
+        amount_paise: int,
+        expires_at: datetime,
+        receipt: str,
+        payer: MandatePayer,
+        notes: Mapping[str, str],
+    ) -> MandateOrder:
+        """An order the student authorises a block of exactly ``amount_paise`` on, lasting until
+        ``expires_at``. ``receipt`` is unique to it: asking again gives back the same order."""
+        ...
+
+    async def fetch_mandate(self, *, customer_id: str, mandate_id: str) -> GatewayMandate:
+        """The mandate as the gateway has it now."""
+        ...
+
+    async def order_debit(
+        self,
+        *,
+        mandate_id: str,
+        amount_paise: int,
+        receipt: str,
+        after: datetime,
+        notes: Mapping[str, str],
+    ) -> GatewayOrder:
+        """The debit's order, which sends the student the notice the rules ask for; the debit may
+        be made from ``after``. ``receipt`` is unique to it: asking again gives back the same."""
+        ...
+
+    async def debit(
+        self,
+        *,
+        order_id: str,
+        customer_id: str,
+        mandate_id: str,
+        amount_paise: int,
+        payer: MandatePayer,
+        notes: Mapping[str, str],
+    ) -> str:
+        """The debit, against the mandate, for exactly the order's amount: the gateway's payment.
+        Its webhook says how it went; a mandate is debited once, so a second try is refused."""
+        ...
+
+    async def release_mandate(self, *, customer_id: str, mandate_id: str) -> None:
+        """The block given back: the mandate cancelled, and the bank unblocks the money."""
         ...

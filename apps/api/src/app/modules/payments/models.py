@@ -61,6 +61,14 @@ class Payment(Model):
     provider_link_id: Mapped[str | None] = mapped_column(Text)
     # When its link stopped being payable: expired, cancelled, or refused. Another can follow.
     link_ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # A UPI one-time mandate's (step 6.7, ADR 0064): the gateway's customer and mandate (its token),
+    # until when the block lasts, and the debit: its order, how much, and not before when.
+    provider_customer_id: Mapped[str | None] = mapped_column(Text)
+    provider_mandate_id: Mapped[str | None] = mapped_column(Text)
+    mandate_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    provider_debit_order_id: Mapped[str | None] = mapped_column(Text)
+    debit_amount_paise: Mapped[int | None] = mapped_column(BigInteger)
+    debit_after: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (
         CheckConstraint(_one_of("purpose", PaymentPurpose), name="purpose"),
@@ -69,7 +77,32 @@ class Payment(Model):
         CheckConstraint("amount_paise > 0", name="amount"),
         CheckConstraint("(status = 'captured') = (captured_at IS NOT NULL)", name="captured"),
         CheckConstraint(
-            "status = 'created' OR provider_payment_id IS NOT NULL", name="provider_payment"
+            "status IN ('created', 'blocked', 'released') OR provider_payment_id IS NOT NULL",
+            name="provider_payment",
+        ),
+        CheckConstraint(
+            "mode = 'upi_mandate' OR (provider_customer_id IS NULL AND provider_mandate_id IS NULL"
+            " AND provider_debit_order_id IS NULL AND status NOT IN ('blocked', 'released'))",
+            name="mandate",
+        ),
+        CheckConstraint(
+            "debit_amount_paise IS NULL OR (debit_amount_paise > 0"
+            " AND debit_amount_paise <= amount_paise)",
+            name="debit_amount",
+        ),
+        Index(
+            "uq_payments_provider_mandate_id",
+            "provider",
+            "provider_mandate_id",
+            unique=True,
+            postgresql_where=sql("provider_mandate_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_payments_provider_debit_order_id",
+            "provider",
+            "provider_debit_order_id",
+            unique=True,
+            postgresql_where=sql("provider_debit_order_id IS NOT NULL"),
         ),
         Index("ix_payments_booking_id", "booking_id"),
         CheckConstraint("(purpose = 'owner_invoice') = (invoice_id IS NOT NULL)", name="invoice"),
