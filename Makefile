@@ -43,7 +43,9 @@ ZIZMOR_IMAGE := ghcr.io/zizmorcore/zizmor:1.30.1@sha256:a2eb396d886c053073405c7a
 # ZAP rebuilds its stable image weekly; this one ran on the test site in step 8.1 (ADR 0065).
 # renovate: datasource=docker depName=ghcr.io/zaproxy/zaproxy
 ZAP_IMAGE := ghcr.io/zaproxy/zaproxy:stable@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af
-export TRIVY_IMAGE OASDIFF_IMAGE ACTIONLINT_IMAGE ZIZMOR_IMAGE ZAP_IMAGE
+# renovate: datasource=docker depName=grafana/k6
+K6_IMAGE := grafana/k6:2.3.0@sha256:2dd4756ec6e14e62778916e1eb850108e4b499304c02df56760fa0bdb0fba0b8
+export TRIVY_IMAGE OASDIFF_IMAGE ACTIONLINT_IMAGE ZIZMOR_IMAGE ZAP_IMAGE K6_IMAGE
 
 ##@ Setup
 
@@ -263,6 +265,10 @@ secrets-scan: ## Scan the whole git history for committed secrets (gitleaks)
 .PHONY: scan-api-image
 scan-api-image: api-image ## Scan the API image for fixable HIGH and CRITICAL vulnerabilities (Trivy)
 	@scripts/scan-image.sh $(API_IMAGE)
+
+.PHONY: load-test
+load-test: infra-up ## Put the planning load on a local API with its own database (k6: reads, writes, the hold race); SCENARIOS, DURATION
+	@scripts/load-test.sh
 
 .PHONY: zap-baseline
 zap-baseline: ## Scan a deployed site with OWASP ZAP's passive baseline (url=…, default the test site); fails on findings .zap/rules.tsv doesn't accept
