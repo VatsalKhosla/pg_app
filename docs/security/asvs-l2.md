@@ -10,7 +10,7 @@ Each requirement gets one of four statuses:
 
 Recount and re-tick this file whenever a change touches what it cites.
 
-**Summary:** 160 Met, 20 Partial, 4 Open, 69 N/A. The open items and partial ones needing work are the [Gaps](#gaps) at the end.
+**Summary:** 159 Met, 21 Partial, 4 Open, 69 N/A. The open items and partial ones needing work are the [Gaps](#gaps) at the end.
 
 ## What ASVS asks to have written down
 
@@ -323,7 +323,7 @@ We're an OIDC client of Google, and nothing more.
 |---|---|---|---|
 | 14.1.1 | Classify sensitive data | Met | [Data and its protection](#data-and-its-protection-1411-1412). |
 | 14.1.2 | Protection rules per class | Met | As above. |
-| 14.2.1 | No sensitive data in URLs | Met | Phone numbers and codes travel in bodies; booking codes in URLs aren't secrets. |
+| 14.2.1 | No sensitive data in URLs | Partial | Phone numbers and codes travel in bodies, and every form names its method, so nothing typed goes by GET before the page's script has loaded (`tests/unit/form-methods.test.ts`). Ops' owner and listing searches still take an owner's phone by GET (gap 8). Booking codes in URLs aren't secrets. |
 | 14.2.2 | No caching in servers | Met | The API defaults to `Cache-Control: no-store`; only public listings and search are cached. |
 | 14.2.3 | Nothing sensitive to trackers | Met | Analytics events carry no unmasked personal data (ADR 0035). |
 | 14.2.4 | Controls documented per class | Met | As 14.1.1, with the DPDP export and erasure (`compliance` module). |
@@ -384,3 +384,4 @@ We're an OIDC client of Google, and nothing more.
 5. **Enforce 2-Step Verification** for every account in the Workspace admin console. This is for the founders, and free (6.3.3).
 6. **Version `SECRET_KEY`** so it can be rotated without signing everyone out or re-enrolling every authenticator (11.1.1, 11.2.2).
 7. **Trust only the load balancer's addresses for `X-Forwarded-For`** in production (8.5), and confirm how Render treats a client's own header (4.1.3, 15.3.4).
+8. **Keep owners' phone numbers out of ops' search addresses**: make the owner and listing searches send their query by POST, or look owners up by an opaque id (14.2.1).

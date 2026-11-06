@@ -543,6 +543,11 @@ Start the slow ones in week 1.
 ## Phase 8 — Launch hardening (finish before June 2027)
 
 - [ ] **8.1 Security review.** STRIDE threat model for auth, booking and payments; ASVS L2 checklist; ZAP baseline and Schemathesis on staging; authorization matrix complete; dependency and image scans clean; secrets rotated.
+  *Note (2026-11-06):* reviewed, and left unticked for its open gaps (ADR 0065).
+  - **Written down:** the [threat model](security/threat-model.md) and the [ASVS 5.0 level 2 checklist](security/asvs-l2.md), all 253 requirements: 159 met, 21 partial, 4 open, 69 not applicable.
+  - **Scanned:** ZAP's baseline on the test site (`make zap-baseline`, weekly in CI) and Schemathesis on a private copy of the API, signed out and signed in. The authorization matrix covers every route, and the dependency and image scans are clean.
+  - **Fixed:** a year-0 month that crashed search, user sessions with no end (now 90 days), forms that could send what was typed by GET, and `staff add` auditing nothing new.
+  - **Still open:** the checklist's gaps, among them encrypting owners' documents, verifying the database's certificate, a WAF and `SECRET_KEY` versions. For the founders: rotate the secrets pasted in chat, and enforce Workspace 2-Step Verification.
 - [ ] **8.2 Performance and load.** k6 at the planning load (ARCHITECTURE §18), including the hold race; `EXPLAIN ANALYZE` on top queries; caching verified; Lighthouse budgets enforced in CI.
 - [ ] **8.3 Observability and runbooks.** Dashboards and alerts from ARCHITECTURE §19; a runbook per alert.
 - [ ] **8.4 Compliance pass.** DPDP (notice, consent, retention, export/delete, breach plan), grievance SLAs, a dark-pattern audit of every screen, lawyer-reviewed legal pages and owner agreement.
