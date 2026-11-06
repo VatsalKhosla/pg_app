@@ -10,7 +10,7 @@ Each requirement gets one of four statuses:
 
 Recount and re-tick this file whenever a change touches what it cites.
 
-**Summary:** 158 Met, 22 Partial, 4 Open, 69 N/A. The open items and partial ones needing work are the [Gaps](#gaps) at the end.
+**Summary:** 160 Met, 20 Partial, 4 Open, 69 N/A. The open items and partial ones needing work are the [Gaps](#gaps) at the end.
 
 ## What ASVS asks to have written down
 
@@ -203,7 +203,7 @@ Updates wait 7 days after release.
 
 | ID | Requirement | Status | Evidence |
 |---|---|---|---|
-| 7.1.1 | Document timeouts, with reasons | Met | 30 idle days for users and 12 hours for staff, idle or not (`identity/domain/sessions.py`, ADR 0014). |
+| 7.1.1 | Document timeouts, with reasons | Met | Users: 30 idle days, and 90 days from sign-in at most. Staff: 12 hours, idle or not (`identity/domain/sessions.py`, ADR 0014). |
 | 7.1.2 | Document concurrent sessions | Met | Any number per account. People see them and can end them (`GET /v1/me/sessions`), or end them all. |
 | 7.1.3 | Document federated sessions | Met | A staff session doesn't depend on the Google session; it ends after 12 hours. |
 | 7.2.1 | Verify sessions in the backend | Met | Every request looks the session up by its hash. |
@@ -211,7 +211,7 @@ Updates wait 7 days after release.
 | 7.2.3 | CSPRNG, at least 128 bits | Met | 256 bits. |
 | 7.2.4 | New token at sign-in, old one ended | Met | Signing in issues a new session; moving up to a staff session issues another. |
 | 7.3.1 | Inactivity timeout | Met | As 7.1.1. |
-| 7.3.2 | Absolute lifetime | Partial | Staff 12 hours. User sessions have none; add 90 days (gap 8). |
+| 7.3.2 | Absolute lifetime | Met | 90 days from sign-in for users, however active; 12 hours for staff. |
 | 7.4.1 | Ended means unusable | Met | Sign-out and expiry end the session server-side. |
 | 7.4.2 | Disabling an account ends its sessions | Met | Suspended accounts' sessions are refused; removing staff roles stops staff sessions. |
 | 7.4.3 | Offer to end other sessions after a factor changes | Met | No factor can be changed by the person; "Sign out on every device" is always there. |
@@ -327,7 +327,7 @@ We're an OIDC client of Google, and nothing more.
 | 14.2.2 | No caching in servers | Met | The API defaults to `Cache-Control: no-store`; only public listings and search are cached. |
 | 14.2.3 | Nothing sensitive to trackers | Met | Analytics events carry no unmasked personal data (ADR 0035). |
 | 14.2.4 | Controls documented per class | Met | As 14.1.1, with the DPDP export and erasure (`compliance` module). |
-| 14.3.1 | Clear the browser's data at sign-out | Partial | The session ends server-side and its cookie is cleared, but no `Clear-Site-Data` header is sent. |
+| 14.3.1 | Clear the browser's data at sign-out | Met | The session ends server-side and its cookies are cleared. The page then reloads from scratch, which drops everything held in memory. Browser storage holds nothing personal (14.3.3). |
 | 14.3.2 | Anti-caching headers | Met | `no-store` on the API; signed-in pages are dynamic and uncached. |
 | 14.3.3 | Nothing sensitive in browser storage | Met | Only `sessionStorage`, for an anonymous analytics id and a view counter. |
 
@@ -384,4 +384,3 @@ We're an OIDC client of Google, and nothing more.
 5. **Enforce 2-Step Verification** for every account in the Workspace admin console. This is for the founders, and free (6.3.3).
 6. **Version `SECRET_KEY`** so it can be rotated without signing everyone out or re-enrolling every authenticator (11.1.1, 11.2.2).
 7. **Trust only the load balancer's addresses for `X-Forwarded-For`** in production (8.5), and confirm how Render treats a client's own header (4.1.3, 15.3.4).
-8. **An absolute lifetime for user sessions**, for example 90 days (7.3.2).

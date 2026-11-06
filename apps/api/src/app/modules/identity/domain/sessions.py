@@ -38,8 +38,12 @@ class SessionPolicy:
 
 
 POLICIES: Final = {
+    # Students, parents and owners: a month idle, and 90 days from sign-in however active, so a
+    # session left on a shared phone ends (ASVS 7.3.2; docs/security/asvs-l2.md).
     SessionKind.USER: SessionPolicy(
-        idle_ttl=timedelta(days=30), absolute_ttl=None, touch_interval=timedelta(minutes=10)
+        idle_ttl=timedelta(days=30),
+        absolute_ttl=timedelta(days=90),
+        touch_interval=timedelta(minutes=10),
     ),
     SessionKind.STAFF: SessionPolicy(
         idle_ttl=timedelta(hours=12),

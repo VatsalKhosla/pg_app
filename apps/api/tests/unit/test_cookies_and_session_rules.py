@@ -63,11 +63,14 @@ def test_clearing_a_cookie_expires_it_with_the_same_attributes() -> None:
     assert {"secure", "httponly"} <= attributes.keys()
 
 
-def test_user_sessions_slide_30_days_from_the_last_activity() -> None:
+def test_user_sessions_slide_30_days_from_the_last_activity_for_90_days_at_most() -> None:
     policy = POLICIES[SessionKind.USER]
+    absolute = absolute_expiry(policy, started_at=NOW)
 
-    assert absolute_expiry(policy, started_at=NOW) is None
-    assert sliding_expiry(policy, now=NOW, absolute_expires_at=None) == NOW + timedelta(days=30)
+    assert absolute == NOW + timedelta(days=90)
+    assert sliding_expiry(policy, now=NOW, absolute_expires_at=absolute) == NOW + timedelta(days=30)
+    later = NOW + timedelta(days=75)
+    assert sliding_expiry(policy, now=later, absolute_expires_at=absolute) == absolute
 
 
 def test_staff_sessions_never_outlive_12_hours_from_sign_in() -> None:
