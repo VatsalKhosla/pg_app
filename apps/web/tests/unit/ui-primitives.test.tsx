@@ -109,11 +109,23 @@ describe("UI primitives", () => {
           </CardContent>
           <CardFooter>
             <Badge variant="brand">New</Badge>
+            <Badge variant="coral">Coral</Badge>
+            <Badge variant="saffron">Saffron</Badge>
+            <Badge variant="indigo">Indigo</Badge>
+            <Badge variant="sage">Sage</Badge>
             <Badge variant="warning">Pending</Badge>
             <Badge variant="destructive">Expired</Badge>
             <Button type="button">Continue</Button>
           </CardFooter>
         </Card>
+        <div className="grid gap-2">
+          <Card variant="warm">Warm card</Card>
+          <Card variant="teal">Teal card</Card>
+          <Card variant="coral">Coral card</Card>
+          <Card variant="saffron">Saffron card</Card>
+          <Card variant="indigo">Indigo card</Card>
+          <Card variant="sage">Sage card</Card>
+        </div>
       </main>,
     );
 

@@ -16,6 +16,18 @@ export const brand = {
     primaryForeground: "#ffffff",
     primaryDark: "#5ec4cc",
     primaryForegroundDark: "#062a2e",
+    /** Warm Jaipur terracotta / coral accent for hospitality energy and focal highlights. */
+    coral: "#b43625",
+    coralDark: "#ff9485",
+    /** Sunlit marigold saffron accent for courtyard warmth, meals and pricing callouts. */
+    saffron: "#944d00",
+    saffronDark: "#f7c36a",
+    /** Deep twilight indigo accent for architectural structure, reserve protection and policies. */
+    indigo: "#3f3796",
+    indigoDark: "#a8b1ff",
+    /** Botanical courtyard sage accent for verified safety, campuses and calm living spaces. */
+    sage: "#14633c",
+    sageDark: "#74d9a3",
   },
   /** Page backgrounds, for the browser's theme colour; they match --background in globals.css. */
   surfaces: {
@@ -30,6 +42,14 @@ export const brandStyle = {
   "--brand-primary-foreground": brand.colors.primaryForeground,
   "--brand-primary-dark": brand.colors.primaryDark,
   "--brand-primary-foreground-dark": brand.colors.primaryForegroundDark,
+  "--brand-coral": brand.colors.coral,
+  "--brand-coral-dark": brand.colors.coralDark,
+  "--brand-saffron": brand.colors.saffron,
+  "--brand-saffron-dark": brand.colors.saffronDark,
+  "--brand-indigo": brand.colors.indigo,
+  "--brand-indigo-dark": brand.colors.indigoDark,
+  "--brand-sage": brand.colors.sage,
+  "--brand-sage-dark": brand.colors.sageDark,
 } as const;
 
 /** The letter on the brand mark and the app icons. */

@@ -12,12 +12,17 @@ Every text pair meets at least 4.5:1 contrast, and control outlines (`--input`) 
 | --- | --- | --- | --- | --- |
 | `--foreground` on `--background` | `#121718` on `#ffffff` | 18.1:1 | `#f2f6f6` on `#0c1012` | 17.5:1 |
 | `--foreground` on `--surface` | `#121718` on `#f6f9f9` | 17.1:1 | `#f2f6f6` on `#111618` | 16.9:1 |
+| `--foreground` on `--surface-warm` | `#121718` on `#fbf7f0` | 16.9:1 | `#f2f6f6` on `#181512` | 16.4:1 |
 | `--card-foreground` on `--card` | `#121718` on `#ffffff` | 18.1:1 | `#f2f6f6` on `#14191b` | 16.2:1 |
 | `--muted-foreground` on `--background` | `#566061` on `#ffffff` | 6.5:1 | `#a6b0b2` on `#0c1012` | 8.6:1 |
 | `--muted-foreground` on `--muted` | `#566061` on `#f2f6f6` | 6.0:1 | `#a6b0b2` on `#1e2426` | 7.1:1 |
 | `--primary-foreground` on `--primary` | `#ffffff` on `#0e6b74` | 6.2:1 | `#062a2e` on `#5ec4cc` | 7.4:1 |
 | `--primary` on `--background` | `#0e6b74` on `#ffffff` | 6.2:1 | `#5ec4cc` on `#0c1012` | 9.3:1 |
 | `--primary-soft-foreground` on `--primary-soft` | `#074e54` on `#eaf1f2` | 8.3:1 | `#94d6db` on `#19282c` | 9.4:1 |
+| `--coral-soft-foreground` on `--coral-soft` | `#802215` on `#fff1ed` | 9.1:1 | `#ffb5aa` on `#2d1916` | 9.2:1 |
+| `--saffron-soft-foreground` on `--saffron-soft` | `#6b3600` on `#fef5e4` | 9.4:1 | `#fad693` on `#2b2111` | 11.4:1 |
+| `--indigo-soft-foreground` on `--indigo-soft` | `#2b246b` on `#eff1fe` | 11.4:1 | `#c7cdff` on `#1b1a30` | 10.6:1 |
+| `--sage-soft-foreground` on `--sage-soft` | `#0d4a2b` on `#eaf8f0` | 9.6:1 | `#9ce5be` on `#12271d` | 10.4:1 |
 | `--destructive-foreground` on `--destructive` | `#ffffff` on `#c51e21` | 5.9:1 | `#0c1012` on `#f96f70` | 6.9:1 |
 | `--destructive` on `--background` | `#c51e21` on `#ffffff` | 5.9:1 | `#f96f70` on `#0c1012` | 6.9:1 |
 | `--destructive-soft-foreground` on `--destructive-soft` | `#b7191c` on `#ffeeee` | 5.9:1 | `#fda19e` on `#3f1919` | 7.9:1 |
@@ -59,7 +64,8 @@ Fluid display scale in `@theme inline`:
 - [`button.tsx`](../../apps/web/src/components/ui/button.tsx): `default`, `soft`, `destructive`, `outline`, `secondary`, `ghost` and `link` variants; `default`, `sm`, `lg`, `icon`, `icon-sm` and `icon-lg` sizes; `default` and `pill` shapes. Touch targets are 44 px tall (`h-11`, `size-11`) on coarse pointers and tighten to 40 px (`pointer-fine:h-10`) under a mouse so owner and ops screens stay compact. Every size including `sm` and `link` stays at or above 24×24 px (WCAG 2.5.8).
 - [`input.tsx`](../../apps/web/src/components/ui/input.tsx) & [`fields.tsx`](../../apps/web/src/components/ui/fields.tsx): shared `controlClasses` with a 3:1 `--input` border, 16 px text on phones (preventing iOS zoom on focus), 44 px touch height (`pointer-fine:h-10`), and a 2 px focus ring (`border-ring` + `ring-1 ring-ring`). `Choices` highlights the checked radio card with `border-primary`, `bg-primary-soft` and `ring-1 ring-primary` so selection never relies on colour alone (WCAG 1.4.1).
 - [`sheet.tsx`](../../apps/web/src/components/ui/sheet.tsx): Radix Dialog drawer with `ease-emphasized` entrance, `ease-exit` close, rounded top/bottom sheet corners (`rounded-t-3xl` / `rounded-b-3xl`), safe-area bottom padding, and a 44 px (`pointer-fine:size-9`) close button.
-- [`card.tsx`](../../apps/web/src/components/ui/card.tsx): `Card` (`flat`, `raised`, `interactive` variants, plus `asChild`), `CardHeader`, `CardTitle` (`asChild` for semantic headings), `CardDescription`, `CardContent` and `CardFooter`.
-- [`badge.tsx`](../../apps/web/src/components/ui/badge.tsx): `Badge` (`neutral`, `brand`, `success`, `warning`, `destructive`, `outline` and `overlay` variants, plus `asChild`) for factual API-driven statuses and attributes.
+- [`card.tsx`](../../apps/web/src/components/ui/card.tsx): `Card` (`flat`, `raised`, `interactive`, `warm`, `teal`, `coral`, `saffron`, `indigo`, and `sage` variants, plus `asChild`), `CardHeader`, `CardTitle` (`asChild` for semantic headings), `CardDescription`, `CardContent` and `CardFooter`.
+- [`badge.tsx`](../../apps/web/src/components/ui/badge.tsx): `Badge` (`neutral`, `brand`, `coral`, `saffron`, `indigo`, `sage`, `success`, `warning`, `destructive`, `outline` and `overlay` variants, plus `asChild`) for factual API-driven statuses and attributes.
+- [`editorial-art.tsx`](../../apps/web/src/components/brand/editorial-art.tsx): Server-rendered decorative (`aria-hidden="true"`) hospitality illustrations (`HeroCourtyardIllustration`, `ArchWatermark`, `StepCornerMotif`, `ListingPlaceholderArt`) coloured via CSS custom properties so light and dark themes adapt automatically.
 - [`skeleton.tsx`](../../apps/web/src/components/ui/skeleton.tsx): `Skeleton` (`aria-hidden`, stops pulsing under `prefers-reduced-motion`).
 - [`separator.tsx`](../../apps/web/src/components/ui/separator.tsx): `Separator` on Radix Separator (`decorative` by default, horizontal or vertical).

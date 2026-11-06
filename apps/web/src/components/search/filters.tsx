@@ -110,7 +110,7 @@ export function SearchBar({
   const sorts = SORTS.filter((sort) => sort !== "distance" || query.campus !== undefined);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 rounded-2xl border border-saffron-border/80 bg-surface-warm p-3.5 shadow-xs">
       <form
         method="get"
         role="search"
@@ -126,7 +126,7 @@ export function SearchBar({
         <div className="relative flex-1">
           <Search
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-primary"
           />
           <Input
             id={textId}
@@ -139,13 +139,14 @@ export function SearchBar({
               setText(event.target.value);
               sendText(event.target.value);
             }}
-            className="rounded-full ps-10"
+            className="rounded-full bg-card ps-10"
           />
         </div>
         <Button
           type="button"
           variant={count > 0 ? "soft" : "outline"}
           shape="pill"
+          className="bg-card"
           onClick={onOpenFilters}
         >
           <SlidersHorizontal aria-hidden="true" />
@@ -160,7 +161,7 @@ export function SearchBar({
       </form>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex items-center gap-2">
-          <label htmlFor={sortId} className="text-xs font-medium text-muted-foreground">
+          <label htmlFor={sortId} className="text-xs font-semibold text-muted-foreground">
             {t("filters.sort")}
           </label>
           <select
@@ -172,7 +173,7 @@ export function SearchBar({
             }}
             className={cn(
               selectClasses,
-              "h-9 w-auto rounded-full px-3.5 text-xs font-medium pointer-fine:h-8",
+              "h-9 w-auto rounded-full bg-card px-3.5 text-xs font-medium pointer-fine:h-8",
             )}
           >
             {sorts.map((sort) => (
@@ -183,14 +184,14 @@ export function SearchBar({
           </select>
         </div>
         {query.bbox === undefined ? null : (
-          <p className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary-soft px-3.5 py-1 text-xs font-medium text-primary-soft-foreground">
+          <p className="flex items-center gap-2 rounded-full border border-indigo-border bg-indigo-soft px-3.5 py-1 text-xs font-medium text-indigo-soft-foreground">
             {t("filters.mapArea")}
             <button
               type="button"
               onClick={() => {
                 onChange({ bbox: null });
               }}
-              className="inline-flex min-h-6 items-center rounded px-1 font-semibold text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex min-h-6 items-center rounded px-1 font-semibold text-indigo-soft-foreground underline underline-offset-4 outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
             >
               {t("filters.clearArea")}
             </button>

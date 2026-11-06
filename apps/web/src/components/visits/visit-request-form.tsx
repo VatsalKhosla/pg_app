@@ -42,6 +42,12 @@ const FIELDS = [
   { day: "slots.2.day", time: "slots.2.time" },
 ] as const;
 
+const SLOT_STYLES = [
+  "border-primary-border bg-primary-soft",
+  "border-saffron-border bg-saffron-soft",
+  "border-indigo-border bg-indigo-soft",
+] as const;
+
 /**
  * Up to three times a student could come (step 3.7): a day and a time each, the first needed.
  * Nothing is chosen for them. Ops call to book one; the API checks the times again.
@@ -119,16 +125,20 @@ export function VisitRequestForm({
         return (
           <fieldset
             key={label}
-            className="space-y-3 rounded-2xl border bg-surface/60 p-4"
+            className={`space-y-3 rounded-2xl border p-4 ${SLOT_STYLES[index % SLOT_STYLES.length] ?? SLOT_STYLES[0]}`}
             aria-describedby={problem ? problemId : undefined}
           >
-            <legend className="px-1 font-display text-sm font-semibold text-foreground">
+            <legend className="rounded-full border bg-card px-3 py-0.5 font-display text-xs font-semibold text-foreground shadow-2xs">
               {label}
             </legend>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1.5 text-sm font-medium text-foreground">
                 <span className="block">{text.day}</span>
-                <Select {...form.register(field.day)} aria-invalid={problem ? true : undefined}>
+                <Select
+                  className="bg-card"
+                  {...form.register(field.day)}
+                  aria-invalid={problem ? true : undefined}
+                >
                   <option value="">{text.chooseDay}</option>
                   {days.map((day) => (
                     <option key={day.value} value={day.value}>
@@ -139,7 +149,11 @@ export function VisitRequestForm({
               </label>
               <label className="space-y-1.5 text-sm font-medium text-foreground">
                 <span className="block">{text.time}</span>
-                <Select {...form.register(field.time)} aria-invalid={problem ? true : undefined}>
+                <Select
+                  className="bg-card"
+                  {...form.register(field.time)}
+                  aria-invalid={problem ? true : undefined}
+                >
                   <option value="">{text.chooseTime}</option>
                   {times.map((time) => (
                     <option key={time.value} value={time.value}>

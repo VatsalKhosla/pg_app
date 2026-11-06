@@ -29,7 +29,11 @@ export async function SiteHeader() {
   }));
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md supports-backdrop-filter:bg-background/75">
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-md supports-backdrop-filter:bg-background/85">
+      <div
+        aria-hidden="true"
+        className="h-1 w-full bg-[linear-gradient(90deg,var(--primary)_0%,var(--sage)_32%,var(--saffron)_68%,var(--coral)_100%)]"
+      />
       <div className="mx-auto flex h-16 max-w-page items-center justify-between gap-4 px-gutter sm:h-18">
         {/* Named by its visible text: the mark beside it is decorative. */}
         <Link
@@ -45,7 +49,7 @@ export async function SiteHeader() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="inline-flex min-h-10 items-center rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+                  className="inline-flex min-h-10 items-center rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-primary-soft hover:text-primary-soft-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
                 >
                   {link.label}
                 </Link>
