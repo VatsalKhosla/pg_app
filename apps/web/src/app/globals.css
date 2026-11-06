@@ -2,30 +2,64 @@
 @import "tw-animate-css";
 
 /*
- * Design tokens (shadcn/ui). Brand colours arrive through the --brand-* custom properties that
- * the root layout sets from src/config/brand.ts; everything else is neutral. Neutrals keep text
- * at 4.5:1 or more against the backgrounds they sit on (WCAG 2.2 AA).
+ * Design tokens (shadcn/ui), documented in docs/design/design-system.md. Brand colours arrive
+ * through the --brand-* custom properties that the root layout sets from src/config/brand.ts; the
+ * brand tints below are mixed from them, so the brand still lives in one place. Neutrals carry a
+ * faint cool tint that sits well beside the brand. Every text pair keeps 4.5:1 or more against the
+ * background it sits on, and control borders and focus rings keep 3:1 (WCAG 2.2 AA), in both
+ * themes; the ratios are listed in the design-system doc.
  */
 :root {
-  --radius: 0.625rem;
+  /* Surfaces and text */
   --background: oklch(1 0 0);
-  --foreground: oklch(0.18 0 0);
+  --foreground: oklch(0.2 0.008 210);
+  --surface: oklch(0.98 0.003 210);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0 0);
+  --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0 0);
+  --popover-foreground: var(--foreground);
+  --muted: oklch(0.97 0.004 210);
+  --muted-foreground: oklch(0.48 0.012 210);
+
+  /* Brand */
   --primary: var(--brand-primary);
   --primary-foreground: var(--brand-primary-foreground);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.2 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.46 0 0);
-  --accent: oklch(0.96 0.01 200);
-  --accent-foreground: oklch(0.2 0 0);
-  --destructive: oklch(0.55 0.22 27);
-  --border: oklch(0.91 0 0);
-  --input: oklch(0.91 0 0);
-  --ring: var(--brand-primary);
+  --primary-hover: color-mix(in oklch, var(--primary) 86%, black);
+  --primary-soft: color-mix(in oklch, var(--background), var(--primary) 9%);
+  --primary-soft-hover: color-mix(in oklch, var(--background), var(--primary) 15%);
+  --primary-soft-foreground: color-mix(in oklch, var(--primary) 80%, black);
+
+  /* Quiet fills: secondary buttons, chips, hover states */
+  --secondary: oklch(0.955 0.006 210);
+  --secondary-hover: oklch(0.925 0.008 210);
+  --secondary-foreground: var(--foreground);
+  --accent: color-mix(in oklch, var(--background), var(--primary) 6%);
+  --accent-foreground: var(--foreground);
+
+  /* Status: each has a strong colour for text and icons, and a soft fill to sit behind it */
+  --destructive: oklch(0.53 0.2 27);
+  --destructive-foreground: oklch(1 0 0);
+  --destructive-soft: oklch(0.965 0.02 20);
+  --destructive-soft-foreground: oklch(0.5 0.19 27);
+  --success: oklch(0.5 0.12 155);
+  --success-soft: oklch(0.96 0.035 155);
+  --success-soft-foreground: oklch(0.45 0.11 155);
+  --warning-soft: oklch(0.965 0.05 85);
+  --warning-soft-foreground: oklch(0.47 0.11 60);
+
+  /*
+   * Lines. --border is decorative (cards, dividers); --input outlines a control, so it keeps 3:1.
+   * The focus ring is near-black, not the brand colour, so it stays 3:1 or more even where older
+   * components draw it at half strength (ring-ring/50).
+   */
+  --border: oklch(0.915 0.005 210);
+  --input: oklch(0.64 0.012 210);
+  --ring: var(--foreground);
+
+  /* Elevation: shadows are tinted toward the foreground, and stronger in the dark theme */
+  --shadow-tint: 16 24 28;
+  --shadow-strength: 1;
+
   /*
    * Charts (the pricing editor): the reference palette's first categorical slot, checked with
    * the dataviz validator against these backgrounds in both themes, with hairline grey chrome.
@@ -39,24 +73,41 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: oklch(0.17 0 0);
-    --foreground: oklch(0.97 0 0);
-    --card: oklch(0.21 0 0);
-    --card-foreground: oklch(0.97 0 0);
-    --popover: oklch(0.21 0 0);
-    --popover-foreground: oklch(0.97 0 0);
+    --background: oklch(0.17 0.008 220);
+    --foreground: oklch(0.97 0.004 210);
+    --surface: oklch(0.195 0.009 220);
+    --card: oklch(0.21 0.009 220);
+    --popover: oklch(0.23 0.01 220);
+    --muted: oklch(0.255 0.01 220);
+    --muted-foreground: oklch(0.75 0.012 210);
+
     --primary: var(--brand-primary-dark);
     --primary-foreground: var(--brand-primary-foreground-dark);
-    --secondary: oklch(0.27 0 0);
-    --secondary-foreground: oklch(0.97 0 0);
-    --muted: oklch(0.27 0 0);
-    --muted-foreground: oklch(0.75 0 0);
-    --accent: oklch(0.27 0.02 200);
-    --accent-foreground: oklch(0.97 0 0);
-    --destructive: oklch(0.7 0.19 22);
-    --border: oklch(1 0 0 / 12%);
-    --input: oklch(1 0 0 / 16%);
-    --ring: var(--brand-primary-dark);
+    --primary-hover: color-mix(in oklch, var(--primary) 85%, white);
+    --primary-soft: color-mix(in oklch, var(--background), var(--primary) 16%);
+    --primary-soft-hover: color-mix(in oklch, var(--background), var(--primary) 24%);
+    --primary-soft-foreground: color-mix(in oklch, var(--primary) 70%, white);
+
+    --secondary: oklch(0.26 0.01 220);
+    --secondary-hover: oklch(0.3 0.012 220);
+    --accent: color-mix(in oklch, var(--background), var(--primary) 12%);
+
+    --destructive: oklch(0.71 0.17 22);
+    --destructive-foreground: oklch(0.17 0.008 220);
+    --destructive-soft: oklch(0.27 0.06 22);
+    --destructive-soft-foreground: oklch(0.8 0.11 22);
+    --success: oklch(0.76 0.13 155);
+    --success-soft: oklch(0.27 0.045 155);
+    --success-soft-foreground: oklch(0.82 0.12 155);
+    --warning-soft: oklch(0.28 0.045 70);
+    --warning-soft-foreground: oklch(0.85 0.11 85);
+
+    --border: oklch(1 0 0 / 11%);
+    --input: oklch(1 0 0 / 36%);
+
+    --shadow-tint: 0 0 0;
+    --shadow-strength: 3;
+
     --chart-series: #3987e5;
     --chart-grid: #2c2c2a;
     --chart-axis: #383835;
@@ -66,29 +117,132 @@
 }
 
 @theme inline {
+  /* Colour */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-hover: var(--primary-soft-hover);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-destructive-soft-foreground: var(--destructive-soft-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-foreground: var(--success-soft-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-foreground: var(--warning-soft-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Type: Inter for text and figures, Plus Jakarta Sans for headings */
   --font-sans: var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-display-face), var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
+
+  /*
+   * Display sizes grow with the viewport between a phone and a wide desktop; body sizes stay
+   * Tailwind's (text-xs to text-xl), which are already tuned for reading.
+   */
+  --text-display: clamp(2.25rem, 1.65rem + 3vw, 4rem);
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.03em;
+  --text-title-1: clamp(1.75rem, 1.5rem + 1.25vw, 2.5rem);
+  --text-title-1--line-height: 1.12;
+  --text-title-1--letter-spacing: -0.025em;
+  --text-title-2: clamp(1.375rem, 1.25rem + 0.7vw, 1.875rem);
+  --text-title-2--line-height: 1.2;
+  --text-title-2--letter-spacing: -0.02em;
+  --text-title-3: 1.25rem;
+  --text-title-3--line-height: 1.3;
+  --text-title-3--letter-spacing: -0.015em;
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1.33;
+  --text-eyebrow--letter-spacing: 0.08em;
+
+  /*
+   * Space: Tailwind's 4 px step, plus the page's own rhythm. px-gutter is the page's side
+   * margin, py-section the space between a page's bands, and max-w-page its width.
+   */
+  --spacing-gutter: clamp(1rem, 0.6rem + 2vw, 2.5rem);
+  --spacing-section: clamp(3rem, 2rem + 5vw, 6.5rem);
+  --container-page: 78rem;
+  --container-prose: 42rem;
+
+  /* Radius: controls 12 px, cards 16 px, sheets and hero panels 24 px or more */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+  --radius-4xl: 2.25rem;
+
+  /* Elevation: soft, layered shadows (a tight contact shadow plus a wide ambient one) */
+  --shadow-2xs: 0 1px 0 rgb(var(--shadow-tint) / calc(0.04 * var(--shadow-strength)));
+  --shadow-xs: 0 1px 2px rgb(var(--shadow-tint) / calc(0.06 * var(--shadow-strength)));
+  --shadow-sm:
+    0 1px 2px rgb(var(--shadow-tint) / calc(0.05 * var(--shadow-strength))),
+    0 2px 6px rgb(var(--shadow-tint) / calc(0.06 * var(--shadow-strength)));
+  --shadow-md:
+    0 2px 4px rgb(var(--shadow-tint) / calc(0.04 * var(--shadow-strength))),
+    0 6px 16px rgb(var(--shadow-tint) / calc(0.1 * var(--shadow-strength)));
+  --shadow-lg:
+    0 4px 8px rgb(var(--shadow-tint) / calc(0.05 * var(--shadow-strength))),
+    0 12px 32px rgb(var(--shadow-tint) / calc(0.12 * var(--shadow-strength)));
+  --shadow-xl:
+    0 8px 16px rgb(var(--shadow-tint) / calc(0.06 * var(--shadow-strength))),
+    0 24px 56px rgb(var(--shadow-tint) / calc(0.16 * var(--shadow-strength)));
+
+  /*
+   * Motion. ease-standard for most changes of state, ease-emphasized (a long, soft landing) for
+   * things that enter, ease-exit for things that leave. Durations are custom properties, used as
+   * duration-(--duration-base). All of it stops under prefers-reduced-motion (see the base layer).
+   */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  --animate-rise: rise 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-fade: fade 320ms cubic-bezier(0.2, 0, 0, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+:root {
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --duration-slower: 480ms;
 }
 
 @layer base {
@@ -98,15 +252,57 @@
 
   html {
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-background text-foreground;
+    font-optical-sizing: auto;
   }
 
+  /*
+   * Headings use the display face and wrap evenly; their size and weight still come from the
+   * classes on each heading. Paragraphs avoid a lone last word.
+   */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: var(--primary-soft-hover);
+    color: var(--foreground);
+  }
+
+  /*
+   * Decorative motion stops, not just slows, for people who ask for less motion (WCAG 2.3.3):
+   * animations jump to their end state and transitions finish at once.
+   */
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
+    }
+
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      animation-delay: 0s !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0s !important;
+    }
+
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
     }
   }
 }

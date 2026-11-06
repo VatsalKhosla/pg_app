@@ -30,7 +30,7 @@ function SheetOverlay({
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 motion-reduce:animate-none",
+        "fixed inset-0 z-50 bg-black/45 backdrop-blur-[2px] data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:duration-(--duration-base) data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:duration-(--duration-slow) motion-reduce:animate-none",
         className,
       )}
       {...props}
@@ -38,13 +38,15 @@ function SheetOverlay({
   );
 }
 
+// Edge sheets fill the height; top and bottom sheets round their inner corners and never cover the
+// whole screen, so the page behind still shows.
 const sides = {
-  top: "inset-x-0 top-0 h-auto border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
+  top: "inset-x-0 top-0 h-auto max-h-[90dvh] rounded-b-3xl border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
   right:
-    "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
+    "inset-y-0 right-0 h-full w-[85%] border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
   bottom:
-    "inset-x-0 bottom-0 h-auto border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-  left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
+    "inset-x-0 bottom-0 h-auto max-h-[90dvh] rounded-t-3xl border-t pb-[env(safe-area-inset-bottom)] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+  left: "inset-y-0 left-0 h-full w-[85%] border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
 } as const;
 
 type SheetContentProps = React.ComponentProps<typeof SheetPrimitive.Content> & {
@@ -66,14 +68,15 @@ function SheetContent({
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          "fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500 motion-reduce:animate-none",
+          // Opens with a long, soft landing; closes quicker, accelerating away.
+          "fixed z-50 flex flex-col gap-4 overflow-y-auto bg-background shadow-xl outline-none data-[state=closed]:animate-out data-[state=closed]:duration-(--duration-base) data-[state=closed]:ease-exit data-[state=open]:animate-in data-[state=open]:duration-(--duration-slower) data-[state=open]:ease-emphasized motion-reduce:animate-none",
           sides[side],
           className,
         )}
         {...props}
       >
         {children}
-        <SheetPrimitive.Close className="absolute top-3 right-3 grid size-9 place-items-center rounded-md opacity-70 transition-opacity outline-none hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50">
+        <SheetPrimitive.Close className="absolute top-3 right-3 grid size-11 place-items-center rounded-full text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none pointer-fine:size-9">
           <XIcon className="size-5" aria-hidden />
           <span className="sr-only">{closeLabel}</span>
         </SheetPrimitive.Close>
@@ -96,7 +99,7 @@ function SheetTitle({ className, ...props }: React.ComponentProps<typeof SheetPr
   return (
     <SheetPrimitive.Title
       data-slot="sheet-title"
-      className={cn("font-semibold text-foreground", className)}
+      className={cn("font-display text-lg font-semibold tracking-tight text-foreground", className)}
       {...props}
     />
   );

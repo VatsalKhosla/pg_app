@@ -1,7 +1,7 @@
 import "./globals.css";
 
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { connection } from "next/server";
 import { getLocale, getTranslations } from "next-intl/server";
 
@@ -15,7 +15,16 @@ import { assertReadyFor } from "@/config/launch";
 import { serverEnv } from "@/config/server-env";
 
 // Self-hosted at build time by next/font: no request to Google from the browser, no layout shift.
+// Both are variable fonts under the SIL Open Font License. Inter sets text, forms and figures
+// (rents read best in it); Plus Jakarta Sans, rounder and warmer, sets the headings (h1 to h3, see
+// globals.css). Only the Latin files are preloaded; the browser fetches Latin Extended, which
+// holds the rupee sign, the first time a page uses it.
 const sans = Inter({ subsets: ["latin"], display: "swap", variable: "--font-sans-face" });
+const display = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-display-face",
+});
 
 // No placeholder for a company fact, and no unreviewed legal text, in production (ADR 0034): a
 // production build fails here, as every page it prerenders loads this layout.
@@ -61,7 +70,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Client components get their text translated on the server, as props or (for the error page,
   // which can't take props) through ErrorTextProvider, so the browser ships no message formatter.
   return (
-    <html lang={locale} className={sans.variable} style={brandStyle}>
+    <html lang={locale} className={`${sans.variable} ${display.variable}`} style={brandStyle}>
       <body className="flex min-h-dvh flex-col font-sans antialiased">
         <a
           href="#main"
