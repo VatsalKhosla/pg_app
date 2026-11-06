@@ -29,7 +29,9 @@
 3. **Schemathesis runs against a private copy of the API, not the test site.** That copy has its own database and cache index on a developer's machine or a CI runner.
    - Fuzzing the test site would fill the founders' copy with junk accounts and visits, and trip its per-address limits for everyone behind the same address.
    - It's the same code and schema, so it finds the same faults.
-   - It runs twice: once signed out, and once signed in, with a session and its CSRF token.
+   - For this review it ran twice: once signed out, and once signed in, with a session and its CSRF token. That copy had a fresh database, the API on its own port and the console sign-in codes.
+   - The signed-in pass found nothing; the signed-out pass found the year-0 month.
+   - A `make fuzz-api` that repeats both passes is still to come.
 4. **What the review fixed:**
    - a move-in month in year 0, which crashed search and the map (found by Schemathesis);
    - user sessions with no end while in use, which now end 90 days after sign-in (ASVS 7.3.2);
