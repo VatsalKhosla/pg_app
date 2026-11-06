@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, tuple_, update
 from sqlalchemy.dialects.postgresql import insert
 
 from app.modules.payments.domain.payments import PaymentPurpose, PaymentStatus
@@ -197,18 +197,23 @@ class PaymentRepository:
         return list(rows)
 
     async def captured_between(
-        self, *, after: datetime, before: datetime, limit: int
+        self,
+        *,
+        after: datetime,
+        before: datetime,
+        limit: int,
+        past: tuple[datetime, int] | None = None,
     ) -> list[Payment]:
-        rows = await self._db.scalars(
-            select(Payment)
-            .where(
-                Payment.status == PaymentStatus.CAPTURED,
-                Payment.captured_at >= after,
-                Payment.captured_at < before,
-            )
-            .order_by(Payment.captured_at)
-            .limit(limit)
+        """Payments captured in ``[after, before)``, oldest first, ``limit`` at a time: the
+        next ones from just after ``past``, a payment's capture time and id."""
+        query = select(Payment).where(
+            Payment.status == PaymentStatus.CAPTURED,
+            Payment.captured_at >= after,
+            Payment.captured_at < before,
         )
+        if past is not None:
+            query = query.where(tuple_(Payment.captured_at, Payment.id) > tuple_(*past))
+        rows = await self._db.scalars(query.order_by(Payment.captured_at, Payment.id).limit(limit))
         return list(rows)
 
     async def refunds_waiting(self, *, limit: int) -> list[Refund]:

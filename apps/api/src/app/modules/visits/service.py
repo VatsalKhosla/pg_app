@@ -63,6 +63,13 @@ VISIT_COMPLETED: Final = "visit_completed"
 LIST_LIMIT: Final = 100
 # An agent's list starts with the visits of the day before, which they may still be finishing.
 AGENT_LOOKBACK: Final = timedelta(days=1)
+# An owner's list keeps a visit for two hours after its time, while the student may be there.
+OWNER_LOOKBACK: Final = timedelta(hours=2)
+
+
+def _first_name(name: str | None) -> str | None:
+    """A first name only: enough for the owner to greet the student."""
+    return None if not name else name.split()[0]
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +115,10 @@ class VisitLookup:
             raise VisitNotOnSiteError(f"{problem[0].upper()}{problem[1:]}.")
         return OnSpotVisit(id=visit.id, property_id=visit.property_id)
 
+    async def requested_at(self, property_id: int, start: datetime, end: datetime) -> int:
+        """Visits asked for at a PG in ``[start, end)``, in the caller's transaction (step 7.6)."""
+        return await self._visits.requested_between(property_id, start, end)
+
     async def public_id(self, visit_id: int) -> uuid.UUID | None:
         """A visit's id as the API gives it."""
         return await self._visits.public_id(visit_id)
@@ -120,6 +131,17 @@ class VisitLookup:
 def when(moment: datetime) -> str:
     """A visit's time as a text says it, in India: "Sat 2 Nov, 11:30 am"."""
     return spoken_time(moment)
+
+
+@dataclass(frozen=True, slots=True)
+class OwnerVisitView:
+    """A visit to one of an owner's PGs, as its owner sees it (step 7.2): when, where, and the
+    student's first name, to greet them."""
+
+    public_id: uuid.UUID
+    place: str
+    scheduled_at: datetime
+    student: str | None
 
 
 class VisitService:
@@ -354,6 +376,33 @@ class VisitService:
             entity_id=str(visit.public_id),
             details=details,
         )
+
+    # Owners (step 7.2).
+
+    async def for_owner(self, actor: Actor, *, days: int) -> list[OwnerVisitView]:
+        """Visits scheduled to the owner's PGs from two hours ago to ``days`` ahead, soonest
+        first."""
+        now = self._clock.now()
+        async with self._db.begin():
+            owned = await self._catalog.owned_properties(actor.user_id)
+            visits = await self._visits.scheduled_at(
+                [place.id for place in owned],
+                start=now - OWNER_LOOKBACK,
+                end=now + timedelta(days=days),
+                limit=LIST_LIMIT,
+            )
+            people = await self._accounts.many({visit.student_id for visit in visits})
+        names = {place.id: place.name for place in owned}
+        return [
+            OwnerVisitView(
+                public_id=visit.public_id,
+                place=names[visit.property_id],
+                scheduled_at=visit.scheduled_at,
+                student=_first_name(people[visit.student_id].name),
+            )
+            for visit in visits
+            if visit.scheduled_at is not None
+        ]
 
     async def _views(self, visits: Sequence[Visit]) -> list[VisitView]:
         """The visits with their PGs, people and positions: four queries, however many."""

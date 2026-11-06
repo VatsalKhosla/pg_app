@@ -136,3 +136,16 @@ class VisitOutcomeRequest(ApiModel):
 
 class VisitCancelRequest(ApiModel):
     reason: str = Field(min_length=1, max_length=NOTE_MAX_LENGTH)
+
+
+class OwnerVisit(ApiModel):
+    """A visit to one of the owner's PGs (step 7.2): when, where, and the student's first name."""
+
+    id: uuid.UUID
+    place: str
+    scheduled_at: datetime
+    student: str | None
+
+
+class OwnerVisitList(ApiModel):
+    items: list[OwnerVisit]

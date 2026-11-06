@@ -14,6 +14,7 @@ from sqlalchemy import BigInteger, CheckConstraint, DateTime, Index, Text, inser
 from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.actor import Role
 from app.core.db import AppendOnlyModel
 from app.core.pii import mask_pii
 
@@ -22,6 +23,7 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
+    from app.core import actor as actors
     from app.core.clock import Clock
 
 type ActorType = Literal["user", "owner", "staff", "system"]
@@ -36,6 +38,16 @@ class Actor:
 
 
 SYSTEM: Final = Actor("system")
+
+
+def by(actor: actors.Actor) -> Actor:
+    """Who did it, as the log names them: staff in a staff session, an owner, or anyone else
+    signed in (step 7.x: owners run their own PGs)."""
+    if actor.is_staff:
+        return Actor("staff", actor.user_id)
+    if actor.has_role(Role.OWNER):
+        return Actor("owner", actor.user_id)
+    return Actor("user", actor.user_id)
 
 
 class AuditLog(AppendOnlyModel):

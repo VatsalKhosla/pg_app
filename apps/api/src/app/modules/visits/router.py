@@ -17,8 +17,15 @@ from app.core.pagination import PageParams
 from app.core.ratelimit import RateLimit, enforce
 from app.modules.catalog.schemas import LatLng
 from app.modules.visits.domain.visits import CancelledBy, Outcome, StudentVisitStatus, next_statuses
-from app.modules.visits.policies import can_request_visits, can_run_visits, can_schedule_visits
+from app.modules.visits.policies import (
+    can_request_visits,
+    can_run_visits,
+    can_schedule_visits,
+    can_see_own_visits,
+)
 from app.modules.visits.schemas import (
+    OwnerVisit,
+    OwnerVisitList,
     StaffVisit,
     StaffVisitList,
     StaffVisitPage,
@@ -291,3 +298,28 @@ async def record_outcome(
         actor, visit_id, outcome=body.outcome, note=body.note
     )
     return _staff(view)
+
+
+@router.get("/owner/visits", summary="Visits booked to your PGs")
+async def owner_visits(
+    request: Request,
+    actor: CurrentActor,
+    db: DbSession,
+    clock: ClockDep,
+    days: Annotated[int, Query(ge=1, le=60)] = 14,
+) -> OwnerVisitList:
+    """Soonest first, from two hours ago to ``days`` ahead (step 7.2)."""
+    if not can_see_own_visits(actor):
+        raise ForbiddenError
+    views = await _service(request, db, clock).for_owner(actor, days=days)
+    return OwnerVisitList(
+        items=[
+            OwnerVisit(
+                id=view.public_id,
+                place=view.place,
+                scheduled_at=view.scheduled_at,
+                student=view.student,
+            )
+            for view in views
+        ]
+    )

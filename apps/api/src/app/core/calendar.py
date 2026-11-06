@@ -4,11 +4,12 @@ Timestamps are stored and compared in UTC; calendar dates that people see (move-
 cancellation cutoffs) are dates in Asia/Kolkata (CLAUDE.md).
 """
 
+from datetime import datetime, time
 from typing import TYPE_CHECKING, Final
 from zoneinfo import ZoneInfo
 
 if TYPE_CHECKING:
-    from datetime import date, datetime
+    from datetime import date
 
 INDIA: Final = ZoneInfo("Asia/Kolkata")
 
@@ -19,6 +20,11 @@ def india_date(moment: datetime) -> date:
         msg = "moment must be timezone-aware"
         raise ValueError(msg)
     return moment.astimezone(INDIA).date()
+
+
+def india_start(day: date) -> datetime:
+    """The moment a day in India begins."""
+    return datetime.combine(day, time.min, tzinfo=INDIA)
 
 
 def spoken_date(moment: datetime) -> str:

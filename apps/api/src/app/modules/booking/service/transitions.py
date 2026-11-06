@@ -204,6 +204,18 @@ class Transitions:
         )
         return sent
 
+    async def remind_owner(self, booking: Booking) -> bool:
+        """A text to the owner of a booking still waiting for their answer, once: whether it
+        went now (step 7.3). Nothing about the booking changes."""
+        return await self._notify(
+            booking,
+            BookingEvent.CONFIRM,
+            Party.OWNER,
+            BookingStatus.TOKEN_SECURED,
+            instant=False,
+            dedupe_key=f"{NOTIFY}:{booking.public_id}:confirm_reminder",
+        )
+
     async def carry_out(  # noqa: PLR0912 - a case for each effect
         self, booking: Booking, event: str, step: Transition, *, by: int | None
     ) -> None:

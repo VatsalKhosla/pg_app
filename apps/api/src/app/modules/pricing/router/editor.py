@@ -29,7 +29,7 @@ from app.modules.pricing.schemas import (
     RuleSetRoomInfo,
     RuleSetWeekInfo,
 )
-from app.modules.pricing.service import QuoteService
+from app.modules.pricing.service import CalendarView, MarketView, PreviewView, QuoteService
 
 router = APIRouter(prefix="/v1/ops", tags=["pricing"])
 
@@ -66,6 +66,47 @@ async def preview(
     view = await _service(request, db, clock).preview(
         rule_set_id, room, move_in=move_in, stay_months=stay
     )
+    return _preview(rule_set_id, view, move_in=move_in, stay=stay)
+
+
+@router.get(
+    "/rule-sets/{rule_set_id}/calendar", summary="Each room's rent by move-in with a rule set"
+)
+async def rule_set_calendar(
+    rule_set_id: uuid.UUID,
+    *,
+    actor: CurrentActor,
+    request: Request,
+    db: DbSession,
+    clock: ClockDep,
+    start: Annotated[date | None, Query(alias="from")] = None,
+    weeks: Annotated[int, Query(ge=1, le=MAX_WEEKS)] = MAX_WEEKS,
+    stay: Stay = DEFAULT_STAY_MONTHS,
+) -> RuleSetCalendar:
+    """Ops and admins, for any version: each active room's rent for a move-in each week from
+    ``from`` (today at the earliest), 12 weeks by default, up to a year ahead, were it in force,
+    with the limits that held each week's rent back; and the room's free beds."""
+    _ops(actor)
+    view = await _service(request, db, clock).set_calendar(
+        rule_set_id, start=start, weeks=weeks, stay_months=stay
+    )
+    return _calendar(rule_set_id, view)
+
+
+@router.get("/properties/{property_id}/market", summary="The band and market beside a PG's rents")
+async def market(
+    property_id: uuid.UUID, actor: CurrentActor, request: Request, db: DbSession, clock: ClockDep
+) -> PricingMarket:
+    """Ops and admins: for each of the PG's active rooms, its listed rent and the owner's
+    bounds beside the band in force for its locality and occupancy, and the middle of the rents
+    the locality's other published PGs list for that occupancy; and the caps in force."""
+    _ops(actor)
+    return _market(await _service(request, db, clock).market(property_id))
+
+
+def _preview(
+    rule_set_id: uuid.UUID, view: PreviewView, *, move_in: date, stay: int
+) -> PricingPreview:
     result, category = view.quote, view.category
     return PricingPreview(
         rule_set=rule_set_id,
@@ -101,59 +142,7 @@ async def preview(
     )
 
 
-@router.get(
-    "/rule-sets/{rule_set_id}/calendar", summary="Each room's rent by move-in with a rule set"
-)
-async def rule_set_calendar(
-    rule_set_id: uuid.UUID,
-    *,
-    actor: CurrentActor,
-    request: Request,
-    db: DbSession,
-    clock: ClockDep,
-    start: Annotated[date | None, Query(alias="from")] = None,
-    weeks: Annotated[int, Query(ge=1, le=MAX_WEEKS)] = MAX_WEEKS,
-    stay: Stay = DEFAULT_STAY_MONTHS,
-) -> RuleSetCalendar:
-    """Ops and admins, for any version: each active room's rent for a move-in each week from
-    ``from`` (today at the earliest), 12 weeks by default, up to a year ahead, were it in force,
-    with the limits that held each week's rent back; and the room's free beds."""
-    _ops(actor)
-    view = await _service(request, db, clock).set_calendar(
-        rule_set_id, start=start, weeks=weeks, stay_months=stay
-    )
-    return RuleSetCalendar(
-        rule_set=rule_set_id,
-        stay_months=view.stay_months,
-        rooms=[
-            RuleSetRoomInfo(
-                room_category=room.category.public_id,
-                label=room.category.label,
-                base_rent_paise=room.category.base_rent,
-                beds_free=room.beds_free,
-                weeks=[
-                    RuleSetWeekInfo(
-                        move_in=week.move_in,
-                        monthly_rent_paise=week.monthly_rent_paise,
-                        clamps=list(week.clamps),
-                    )
-                    for week in room.weeks
-                ],
-            )
-            for room in view.rooms
-        ],
-    )
-
-
-@router.get("/properties/{property_id}/market", summary="The band and market beside a PG's rents")
-async def market(
-    property_id: uuid.UUID, actor: CurrentActor, request: Request, db: DbSession, clock: ClockDep
-) -> PricingMarket:
-    """Ops and admins: for each of the PG's active rooms, its listed rent and the owner's
-    bounds beside the band in force for its locality and occupancy, and the middle of the rents
-    the locality's other published PGs list for that occupancy; and the caps in force."""
-    _ops(actor)
-    view = await _service(request, db, clock).market(property_id)
+def _market(view: MarketView) -> PricingMarket:
     return PricingMarket(
         property=RuleSetProperty(id=view.property.public_id, name=view.property.name),
         locality=view.locality,
@@ -180,6 +169,30 @@ async def market(
                 ),
                 median_rent_paise=room.median_rent,
                 comparables=room.comparables,
+            )
+            for room in view.rooms
+        ],
+    )
+
+
+def _calendar(rule_set_id: uuid.UUID, view: CalendarView) -> RuleSetCalendar:
+    return RuleSetCalendar(
+        rule_set=rule_set_id,
+        stay_months=view.stay_months,
+        rooms=[
+            RuleSetRoomInfo(
+                room_category=room.category.public_id,
+                label=room.category.label,
+                base_rent_paise=room.category.base_rent,
+                beds_free=room.beds_free,
+                weeks=[
+                    RuleSetWeekInfo(
+                        move_in=week.move_in,
+                        monthly_rent_paise=week.monthly_rent_paise,
+                        clamps=list(week.clamps),
+                    )
+                    for week in room.weeks
+                ],
             )
             for room in view.rooms
         ],

@@ -142,6 +142,55 @@ class BookingRepository:
         )
         return list(rows)
 
+    async def awaiting_answer(self, now: datetime, until: datetime, *, limit: int) -> list[Booking]:
+        """Bookings with the token in whose owner hasn't answered, due between ``now`` and
+        ``until``, the soonest first."""
+        rows = await self._db.scalars(
+            select(Booking)
+            .where(
+                Booking.status == BookingStatus.TOKEN_SECURED,
+                Booking.confirm_by > now,
+                Booking.confirm_by <= until,
+            )
+            .order_by(Booking.confirm_by, Booking.id)
+            .limit(limit)
+        )
+        return list(rows)
+
+    async def owner_page(
+        self,
+        owner_id: int,
+        *,
+        statuses: Collection[str] | None,
+        after: uuid.UUID | None,
+        limit: int,
+    ) -> list[Booking]:
+        """An owner's bookings, newest first, of these statuses if given, ``limit + 1`` of them
+        (the extra says there's more)."""
+        query = select(Booking).where(Booking.owner_id == owner_id)
+        if statuses is not None:
+            query = query.where(Booking.status.in_(statuses))
+        if after is not None:
+            query = query.where(Booking.public_id < after)
+        rows = await self._db.scalars(query.order_by(Booking.public_id.desc()).limit(limit + 1))
+        return list(rows)
+
+    async def secured_between(self, property_id: int, start: datetime, end: datetime) -> int:
+        """Bookings at this PG whose token came in during ``[start, end)``, whatever became of
+        them since (step 7.6)."""
+        return int(
+            await self._db.scalar(
+                select(func.count())
+                .select_from(Booking)
+                .where(
+                    Booking.property_id == property_id,
+                    Booking.token_secured_at >= start,
+                    Booking.token_secured_at < end,
+                )
+            )
+            or 0
+        )
+
     async def by_quote(self, quote_id: int) -> Booking | None:
         return await self._db.scalar(select(Booking).where(Booking.quote_id == quote_id))
 

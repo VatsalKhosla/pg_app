@@ -254,6 +254,28 @@ class RuleSetService:
 
     # Shared.
 
+    async def owned_by(
+        self,
+        user_id: int,
+        *,
+        property_id: uuid.UUID | None = None,
+        rule_set_id: uuid.UUID | None = None,
+        rule_id: uuid.UUID | None = None,
+    ) -> bool:
+        """Whether the PG that a PG id, a rule set or a rule belongs to is owned by the person
+        signed in as ``user_id``, for owners' own editor (step 7.4)."""
+        async with self._db.begin():
+            if property_id is not None:
+                return await self._catalog.owned_property(user_id, property_id) is not None
+            internal: int | None = None
+            if rule_set_id is not None:
+                found = await self._sets.get(rule_set_id)
+                internal = None if found is None else found.property_id
+            elif rule_id is not None:
+                rule = await self._sets.rule(rule_id)
+                internal = None if rule is None else (await self._sets.set_of(rule)).property_id
+            return internal is not None and await self._catalog.owns(user_id, internal)
+
     async def _place(self, property_id: uuid.UUID) -> PricedProperty:
         place = await self._catalog.priced_property(property_id)
         if place is None:
@@ -360,7 +382,7 @@ class RuleSetService:
         await audit.record(
             self._db,
             clock=self._clock,
-            actor=audit.Actor("staff", actor.user_id),
+            actor=audit.by(actor),
             action=action,
             entity_type="pricing_rule_set",
             entity_id=str(rule_set.public_id),

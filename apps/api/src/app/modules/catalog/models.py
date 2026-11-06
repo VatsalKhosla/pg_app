@@ -7,7 +7,7 @@ scheduled visit or a confirmed booking; everyone else sees the display location 
 """
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
 from geoalchemy2 import Geography, WKBElement
@@ -15,6 +15,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -30,6 +31,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import AppendOnlyModel, Model
 from app.core.ids import new_public_id
+from app.modules.catalog.domain.documents import DocumentKind, DocumentStatus
 from app.modules.catalog.domain.listing import (
     HOUSE_RULES_MAX,
     SLUG_MAX_LENGTH,
@@ -364,4 +366,55 @@ class OwnerAgreement(AppendOnlyModel):
         CheckConstraint("version ~ '^[a-z0-9][a-z0-9.-]{0,63}$'", name="version"),
         CheckConstraint("document_sha256 ~ '^[0-9a-f]{64}$'", name="document_sha256"),
         Index("ix_owner_agreements_owner_id_accepted_at", "owner_id", "accepted_at"),
+    )
+
+
+class PropertyDocument(Model):
+    """A PG's licence or society permission, as its owner uploaded it, and ops' word on it (step
+    7.1, ADR 0063). The file itself is a private media asset."""
+
+    __tablename__ = "property_documents"
+
+    public_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, default=new_public_id)
+    property_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("properties.id"))
+    kind: Mapped[str] = mapped_column(Text)
+    media_asset_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("media_assets.id"), unique=True
+    )
+    uploaded_by: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
+    # By the app's clock.
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(Text)
+    reviewed_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Ops' words to the owner, with a rejection above all.
+    note: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        CheckConstraint(_one_of("kind", DocumentKind), name="kind"),
+        CheckConstraint(_one_of("status", DocumentStatus), name="status"),
+        CheckConstraint(
+            "(status = 'submitted') = (reviewed_at IS NULL)"
+            " AND (reviewed_at IS NULL) = (reviewed_by IS NULL)",
+            name="reviewed",
+        ),
+        Index("ix_property_documents_property_id", "property_id", "public_id"),
+        Index("ix_property_documents_uploaded_by", "uploaded_by"),
+        Index("ix_property_documents_reviewed_by", "reviewed_by"),
+    )
+
+
+class PropertyViewDay(Model):
+    """How many times a PG's page was opened on a day in India (step 7.6): one row a PG a day,
+    whatever the traffic."""
+
+    __tablename__ = "property_view_days"
+
+    property_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("properties.id"))
+    day: Mapped[date] = mapped_column(Date)
+    views: Mapped[int] = mapped_column(Integer)
+
+    __table_args__ = (
+        UniqueConstraint("property_id", "day", name="uq_property_view_days_property_day"),
+        CheckConstraint("views > 0", name="views"),
     )

@@ -22,3 +22,8 @@ def can_schedule_visits(actor: Actor) -> bool:
 def can_run_visits(actor: Actor) -> bool:
     """Field agents see the visits booked for them, check in and record how they went."""
     return actor.has_role(Role.FIELD_AGENT)
+
+
+def can_see_own_visits(actor: Actor) -> bool:
+    """Owners, signed in by phone, see the visits booked to their own PGs (step 7.2)."""
+    return actor.has_role(Role.OWNER)

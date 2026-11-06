@@ -19,9 +19,11 @@ from app.modules.booking.jobs import (
     EXPIRE_HOLDS,
     NO_SHOWS,
     NOTIFY,
+    REMIND_OWNERS,
     expire_holds,
     mark_no_shows,
     notify_handler,
+    remind_owners,
     settle_check_windows,
     time_out_confirmations,
 )
@@ -147,6 +149,8 @@ SCHEDULES: Final = (
         kind=CONFIRMATION_TIMEOUTS,
         schedule=Every(timedelta(minutes=5)),
     ),
+    # ...owners with a booking due within three hours are reminded once (step 7.3)...
+    ScheduledJob(name=REMIND_OWNERS, kind=REMIND_OWNERS, schedule=Every(timedelta(minutes=15))),
     # ...a check window that ended without a dispute settles the booking...
     ScheduledJob(name=CHECK_WINDOWS, kind=CHECK_WINDOWS, schedule=Every(timedelta(minutes=5))),
     # ...and in the morning, a student who never moved in loses the booking.
@@ -213,6 +217,7 @@ def build_registry(
     registry.register(NOTIFY, notify_handler(texts))
     registry.register(EXPIRE_HOLDS, expire_holds)
     registry.register(CONFIRMATION_TIMEOUTS, time_out_confirmations)
+    registry.register(REMIND_OWNERS, remind_owners)
     registry.register(CHECK_WINDOWS, settle_check_windows)
     registry.register(NO_SHOWS, mark_no_shows)
     registry.register(GRIEVANCE_TEXT, grievance_text_handler(texts))

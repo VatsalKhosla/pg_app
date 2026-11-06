@@ -27,3 +27,9 @@ def can_make_visits(actor: Actor) -> bool:
 def can_act_as_owner(actor: Actor) -> bool:
     """Owners, signed in by phone, see their own record and accept the owner agreement."""
     return actor.has_role(Role.OWNER)
+
+
+def can_review_documents(actor: Actor) -> bool:
+    """Ops and admins read every PG's licence and society permission, and say whether each is
+    good (step 7.1)."""
+    return can_manage_listings(actor)

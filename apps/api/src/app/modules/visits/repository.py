@@ -95,6 +95,40 @@ class VisitRepository:
         found = await self._db.scalars(query.order_by(Visit.public_id.desc()).limit(limit + 1))
         return list(found)
 
+    async def scheduled_at(
+        self, property_ids: Collection[int], *, start: datetime, end: datetime, limit: int
+    ) -> list[Visit]:
+        """Scheduled visits to these PGs between ``start`` and ``end``, soonest first."""
+        if not property_ids:
+            return []
+        found = await self._db.scalars(
+            select(Visit)
+            .where(
+                Visit.property_id.in_(property_ids),
+                Visit.status == StudentVisitStatus.SCHEDULED,
+                Visit.scheduled_at >= start,
+                Visit.scheduled_at <= end,
+            )
+            .order_by(Visit.scheduled_at, Visit.id)
+            .limit(limit)
+        )
+        return list(found)
+
+    async def requested_between(self, property_id: int, start: datetime, end: datetime) -> int:
+        """Visits students asked for at this PG in ``[start, end)``, whatever became of them."""
+        return int(
+            await self._db.scalar(
+                select(func.count())
+                .select_from(Visit)
+                .where(
+                    Visit.property_id == property_id,
+                    Visit.requested_at >= start,
+                    Visit.requested_at < end,
+                )
+            )
+            or 0
+        )
+
     async def of_agent(self, agent_id: int, *, since: datetime, limit: int) -> list[Visit]:
         """An agent's booked visits from ``since``, soonest first."""
         found = await self._db.scalars(

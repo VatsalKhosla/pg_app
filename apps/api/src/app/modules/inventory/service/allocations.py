@@ -103,15 +103,21 @@ class AllocationService:
         self._allocations = AllocationRepository(db)
 
     async def window(
-        self, property_id: uuid.UUID, *, start: date | None, days: int = WINDOW_DAYS
+        self,
+        property_id: uuid.UUID,
+        *,
+        start: date | None,
+        days: int = WINDOW_DAYS,
+        owner: int | None = None,
     ) -> InventoryWindow:
         """Every bed of a PG with what holds it in ``[start, start + days)`` (today unless
-        given), and each room type's beds free for all of it."""
+        given), and each room type's beds free for all of it. With ``owner`` (a user id), only
+        that owner's own PG: anyone else's is a 404 (Phase 7)."""
         first = start or india_date(self._clock.now())
         window = Period(first, first + timedelta(days=days))
         async with self._db.begin():
             layout = await self._catalog.bed_layout_of(property_id)
-            if layout is None:
+            if layout is None or not await self._may(owner, layout.property_id):
                 raise NotFoundError
             bed_ids = [
                 bed.id
@@ -145,14 +151,22 @@ class AllocationService:
             return InventoryWindow(layout, window, tuple(categories))
 
     async def block(
-        self, actor: Actor, bed_id: uuid.UUID, *, kind: AllocationKind, period: Period, note: str
+        self,
+        actor: Actor,
+        bed_id: uuid.UUID,
+        *,
+        kind: AllocationKind,
+        period: Period,
+        note: str,
+        owner: int | None = None,
     ) -> BlockView:
         """Holds a bed for an offline tenant or maintenance. 409 BED_UNAVAILABLE, saying what
-        holds it, when something does on any of those days."""
+        holds it, when something does on any of those days. With ``owner``, only a bed of that
+        owner's own PG."""
         now = self._clock.now()
         async with self._db.begin():
             bed = await self._catalog.locked_bed(bed_id)
-            if bed is None:
+            if bed is None or not await self._may(owner, bed.property_id):
                 raise NotFoundError
             if problems := block_problems(kind, period, today=india_date(now), note=note):
                 raise BlockInvalidError(problems)
@@ -170,19 +184,24 @@ class AllocationService:
             await self._changed(actor, "inventory.block_placed", row, bed, period)
             return BlockView(row, period, bed)
 
-    async def end(self, actor: Actor, block_id: uuid.UUID, *, on: date) -> BlockView:
+    async def end(
+        self, actor: Actor, block_id: uuid.UUID, *, on: date, owner: int | None = None
+    ) -> BlockView:
         """Ends a block on ``on`` (the bed is free that day), later or sooner than planned; on
-        or before its first day, the block is cancelled and holds nothing."""
+        or before its first day, the block is cancelled and holds nothing. With ``owner``, only
+        a block on that owner's own PG."""
         now = self._clock.now()
         async with self._db.begin():
             row = await self._allocations.get(block_id, lock=True)
             if row is None:
                 raise NotFoundError
+            bed = await self._catalog.bed_ref(row.bed_id)
+            if not await self._may(owner, bed.property_id):
+                raise NotFoundError
             if AllocationKind(row.kind) not in BLOCK_KINDS:
                 raise InvalidTransitionError("A booking's bed changes with the booking.")
             if not row.is_active:
                 raise InvalidTransitionError("That block was cancelled already.")
-            bed = await self._catalog.bed_ref(row.bed_id)
             period = to_period(row.period)
             row.ended_at, row.ended_by = now, actor.user_id
             if on <= period.start:
@@ -203,6 +222,10 @@ class AllocationService:
             await self._changed(actor, action, row, bed, period)
             return BlockView(row, period, bed)
 
+    async def _may(self, owner: int | None, property_id: int) -> bool:
+        """Staff may touch any PG; an owner only their own."""
+        return owner is None or await self._catalog.owns(owner, property_id)
+
     async def _write(self, bed: BedRef) -> None:
         """Flushes the change; the constraint, should it fire, is answered as a held bed."""
         try:
@@ -218,7 +241,7 @@ class AllocationService:
         await audit.record(
             self._db,
             clock=self._clock,
-            actor=audit.Actor("staff", actor.user_id),
+            actor=audit.by(actor),
             action=action,
             entity_type="inventory_allocation",
             entity_id=str(row.public_id),

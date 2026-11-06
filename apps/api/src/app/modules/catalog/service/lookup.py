@@ -200,6 +200,20 @@ class BookingPlace:
 
 
 @dataclass(frozen=True, slots=True)
+class OwnedProperty:
+    """A PG as its owner runs it (Phase 7): theirs, whatever its status."""
+
+    id: int
+    public_id: uuid.UUID
+    slug: str
+    name: str
+    locality: str
+    status: str
+    verification_status: str
+    licence_status: str
+
+
+@dataclass(frozen=True, slots=True)
 class InvoiceParty:
     """Who an invoice is to, and for which PG, as the invoice prints it (step 6.5). The owner sees
     their own PG's address on it."""
@@ -513,6 +527,43 @@ class CatalogLookup:
         """The owner record of a person signed in by phone, if they're an owner."""
         owner = await self._catalog.owner_of_user(user_id)
         return None if owner is None else owner.id
+
+    async def owned_properties(self, user_id: int) -> list[OwnedProperty]:
+        """The PGs of the owner signed in as ``user_id``, by name; none for anyone else."""
+        owner = await self._catalog.owner_of_user(user_id)
+        if owner is None:
+            return []
+        found = await self._catalog.properties_of_owner(owner.id)
+        localities = await self._geo.localities({row.locality_id for row in found})
+        return [
+            OwnedProperty(
+                id=row.id,
+                public_id=row.public_id,
+                slug=row.slug,
+                name=row.name,
+                locality=localities[row.locality_id].name,
+                status=row.status,
+                verification_status=row.verification_status,
+                licence_status=row.licence_status,
+            )
+            for row in found
+        ]
+
+    async def owned_property(self, user_id: int, public_id: uuid.UUID) -> OwnedProperty | None:
+        """The PG, if the owner signed in as ``user_id`` owns it: anyone else's is None, and their
+        route answers 404."""
+        for owned in await self.owned_properties(user_id):
+            if owned.public_id == public_id:
+                return owned
+        return None
+
+    async def owns(self, user_id: int, property_id: int) -> bool:
+        """Whether the person signed in as ``user_id`` owns the PG with this internal id."""
+        owner = await self._catalog.owner_of_user(user_id)
+        if owner is None:
+            return False
+        found = (await self._catalog.properties_by_id({property_id})).get(property_id)
+        return found is not None and found.owner_id == owner.id
 
     async def owner_names(self, owner_ids: Collection[int]) -> dict[int, str]:
         """Owners' business names by owner id: one query, however many."""

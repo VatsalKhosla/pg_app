@@ -11,10 +11,12 @@ if TYPE_CHECKING:
 
 def can_upload(actor: Actor, purpose: Purpose) -> bool:
     """Staff, in a staff session, upload anything. People signed in by phone, who book, upload
-    the photos for a report that their room isn't as shown (ADR 0051); owners get their own
-    uploads with the features that need them."""
+    the photos for a report that their room isn't as shown (ADR 0051); owners upload their PGs'
+    licences and society permissions as documents (step 7.1)."""
     if actor.is_staff:
         return purpose in Purpose
+    if purpose is Purpose.DOCUMENT:
+        return actor.has_role(Role.OWNER)
     return purpose is Purpose.DISPUTE_PHOTO
 
 

@@ -25,9 +25,11 @@ __all__ = [
     "EXPIRE_HOLDS",
     "NOTIFY",
     "NO_SHOWS",
+    "REMIND_OWNERS",
     "expire_holds",
     "mark_no_shows",
     "notify_handler",
+    "remind_owners",
     "settle_check_windows",
     "time_out_confirmations",
 ]
@@ -36,6 +38,8 @@ __all__ = [
 EXPIRE_HOLDS: Final = "booking.expire_holds"
 # ...every five minutes, the bookings whose owners didn't confirm in time are rejected...
 CONFIRMATION_TIMEOUTS: Final = "booking.confirmation_timeouts"
+# ...and owners with a booking due within three hours are reminded once (step 7.3)...
+REMIND_OWNERS: Final = "booking.remind_owners"
 # ...and the ones whose 24 hours to check the room are over are settled...
 CHECK_WINDOWS: Final = "booking.check_windows"
 # ...and every morning, confirmed bookings whose student never moved in end.
@@ -78,6 +82,11 @@ def notify_handler(texts: Texts) -> JobHandler:
 async def expire_holds(context: JobContext, _payload: JobPayload) -> None:
     expired = await BookingSystem(context.session, context.clock).expire_holds()
     _moved(EXPIRE_HOLDS, expired, "holds whose time was up ended")
+
+
+async def remind_owners(context: JobContext, _payload: JobPayload) -> None:
+    sent = await BookingSystem(context.session, context.clock).remind_owners()
+    _moved(REMIND_OWNERS, sent, "owners were reminded to answer a booking")
 
 
 async def time_out_confirmations(context: JobContext, _payload: JobPayload) -> None:

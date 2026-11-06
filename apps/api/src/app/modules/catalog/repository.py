@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 
 from geoalchemy2 import Geography
 from sqlalchemy import and_, cast, delete, func, insert, or_, select, update
+from sqlalchemy.dialects.postgresql import insert as upsert
 
 from app.core import postgis
 from app.core.geometry import Point
@@ -38,7 +39,9 @@ from app.modules.catalog.models import (
     OwnerAgreement,
     Property,
     PropertyAmenity,
+    PropertyDocument,
     PropertyMedia,
+    PropertyViewDay,
     Room,
     RoomCategory,
     VerificationPhoto,
@@ -48,6 +51,7 @@ from app.modules.catalog.models import (
 if TYPE_CHECKING:
     import uuid
     from collections.abc import Collection, Iterable, Sequence
+    from datetime import date
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -726,6 +730,56 @@ class CatalogRepository:
             .order_by(Property.public_id)
         )
         return list(found)
+
+    # The owner's area (steps 7.1 and 7.6).
+
+    async def properties_of_owner(self, owner_id: int) -> list[Property]:
+        rows = await self._db.scalars(
+            select(Property)
+            .where(Property.owner_id == owner_id)
+            .order_by(Property.name, Property.id)
+        )
+        return list(rows)
+
+    async def add_document(self, document: PropertyDocument) -> None:
+        self._db.add(document)
+        await self._db.flush()
+
+    async def documents_of(self, property_id: int) -> list[PropertyDocument]:
+        rows = await self._db.scalars(
+            select(PropertyDocument)
+            .where(PropertyDocument.property_id == property_id)
+            .order_by(PropertyDocument.public_id.desc())
+        )
+        return list(rows)
+
+    async def document(
+        self, public_id: uuid.UUID, *, lock: bool = False
+    ) -> PropertyDocument | None:
+        query = select(PropertyDocument).where(PropertyDocument.public_id == public_id)
+        if lock:
+            query = query.with_for_update().execution_options(populate_existing=True)
+        return await self._db.scalar(query)
+
+    async def count_view(self, property_id: int, day: date) -> None:
+        await self._db.execute(
+            upsert(PropertyViewDay)
+            .values(property_id=property_id, day=day, views=1)
+            .on_conflict_do_update(
+                constraint="uq_property_view_days_property_day",
+                set_={"views": PropertyViewDay.views + 1, "updated_at": func.now()},
+            )
+        )
+
+    async def views_between(self, property_id: int, first: date, last: date) -> int:
+        total = await self._db.scalar(
+            select(func.coalesce(func.sum(PropertyViewDay.views), 0)).where(
+                PropertyViewDay.property_id == property_id,
+                PropertyViewDay.day >= first,
+                PropertyViewDay.day <= last,
+            )
+        )
+        return int(total or 0)
 
 
 class VisitRepository:

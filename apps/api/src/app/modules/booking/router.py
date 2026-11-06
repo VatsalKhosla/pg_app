@@ -32,6 +32,7 @@ from app.modules.booking.schemas import (
     OpsBookingSummary,
     OpsDispute,
     OpsDisputePage,
+    OwnerBookingPage,
     ReasonRequest,
     ResolveRequest,
     StudentBooking,
@@ -171,6 +172,22 @@ def _ops(actor: CurrentActor) -> Party:
     if not can_run_bookings(actor):
         raise ForbiddenError
     return Party.OPS
+
+
+@router.get("/owner/bookings", summary="Bookings at your PGs")
+async def owner_bookings(
+    actor: CurrentActor,
+    *,
+    page: PageParams,
+    db: DbSession,
+    clock: ClockDep,
+    booking_status: Annotated[BookingStatus | None, Query(alias="status")] = None,
+) -> OwnerBookingPage:
+    """Newest first, of one status if asked: ``token_secured`` are the ones waiting for your
+    answer, each with its deadline."""
+    _owner(actor)
+    items, next_cursor = await BookingDesk(db, clock).inbox(actor, page, status=booking_status)
+    return OwnerBookingPage(items=items, next_cursor=next_cursor)
 
 
 @router.get("/owner/bookings/{code}", summary="A booking at one of your PGs")

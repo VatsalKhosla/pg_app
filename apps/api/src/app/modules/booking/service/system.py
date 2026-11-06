@@ -18,6 +18,7 @@ booking moves through the state machine, so running a job twice changes nothing 
 (step 5.8, ADR 0052).
 """
 
+from datetime import timedelta
 from typing import TYPE_CHECKING, Final
 
 from app.core.errors import NotFoundError
@@ -37,6 +38,8 @@ if TYPE_CHECKING:
 
 # How many bookings one run of a job takes on; the next run takes the rest.
 BATCH: Final = 100
+# How long before their deadline owners are reminded to answer a booking (step 7.3).
+REMIND_OWNERS_BEFORE: Final = timedelta(hours=3)
 # The no-show run looks at every confirmed booking past its move-in, most of which are still
 # within their wait, so it takes on more at once; it runs once a day.
 NO_SHOW_BATCH: Final = 1_000
@@ -108,6 +111,16 @@ class BookingSystem:
                 by=None,
             )
         return len(over)
+
+    async def remind_owners(self) -> int:
+        """A reminder to each owner whose booking's deadline is under three hours away: how many
+        went now. Each booking's owner hears once."""
+        now = self._clock.now()
+        due = await self._bookings.awaiting_answer(now, now + REMIND_OWNERS_BEFORE, limit=BATCH)
+        sent = 0
+        for booking in due:
+            sent += await self._transitions.remind_owner(booking)
+        return sent
 
     async def time_out_confirmations(self) -> int:
         """Rejects the bookings whose owners didn't confirm in time: how many."""

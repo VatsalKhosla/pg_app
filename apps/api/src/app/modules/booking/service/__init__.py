@@ -8,6 +8,7 @@ from app.modules.booking.service.disputes import Disputes
 from app.modules.booking.service.exports import bookings_part
 from app.modules.booking.service.holds import BookingService
 from app.modules.booking.service.notices import BookingNotices
+from app.modules.booking.service.stats import bookings_made
 from app.modules.booking.service.system import BookingSystem
 from app.modules.booking.service.tokens import (
     BookingTokens,
@@ -30,5 +31,6 @@ __all__ = [
     "TokenDue",
     "TokenTaken",
     "booking_codes_of",
+    "bookings_made",
     "bookings_part",
 ]

@@ -42,6 +42,8 @@ from app.modules.identity.adapters.unavailable_otp import UnavailableOtpSender
 from app.modules.identity.auth import authenticate_session
 from app.modules.identity.router import GOOGLE_CALLBACK_PATH
 from app.modules.identity.router import router as identity_router
+from app.modules.insights.router import router as insights_router
+from app.modules.inventory.router import owner_router as owner_inventory_router
 from app.modules.inventory.router import router as inventory_router
 from app.modules.inventory.service import AllocationsTaken
 from app.modules.invoices.router import router as invoices_router
@@ -94,6 +96,8 @@ ROUTERS: Final = (
     search_router,
     pricing_router,
     inventory_router,
+    owner_inventory_router,
+    insights_router,
     booking_router,
     payments_router,
     ledger_router,

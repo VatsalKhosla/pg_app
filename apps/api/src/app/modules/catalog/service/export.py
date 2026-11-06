@@ -24,6 +24,17 @@ async def owner_data(db: AsyncSession, user_id: int) -> dict[str, object]:
             "kycStatus": owner.kyc_status,
             "status": owner.status,
             "agreementVersion": owner.agreement_version,
+            "documents": [
+                {
+                    "property": str(place.public_id),
+                    "kind": document.kind,
+                    "status": document.status,
+                    "addedAt": document.added_at.isoformat(),
+                    "note": document.note,
+                }
+                for place in await catalog.properties_of_owner(owner.id)
+                for document in await catalog.documents_of(place.id)
+            ],
             "agreementAcceptances": [
                 {
                     "version": acceptance.version,

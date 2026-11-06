@@ -9,6 +9,8 @@ from app.modules.booking.domain.state_machine import BookingEvent, Party
 TOKEN_IN: Final = "booking_token_in"  # noqa: S105 - a template name, not a secret
 # The same news for a PG that confirms its bookings itself: nothing for the owner to do.
 NEW_CONFIRMED: Final = "booking_new_confirmed"
+# A booking still waiting for the owner's answer as its deadline nears (step 7.3).
+CONFIRM_REMINDER: Final = "booking_confirm_reminder"
 CONFIRMED: Final = "booking_confirmed"
 REJECTED: Final = "booking_rejected"
 NOT_CONFIRMED: Final = "booking_not_confirmed"
@@ -38,6 +40,10 @@ TEMPLATES: Final = {
     LATE_REFUND: (
         "{brand}: your token for booking {code} at {pg} came in after your hold ended, and the bed "
         "had gone. Your token is refunded in full, and we'll help you find another PG."
+    ),
+    CONFIRM_REMINDER: (
+        "{brand}: booking {code} at {pg} ({room_type}, moving in on {move_in}) still needs your "
+        "answer. Confirm it by {confirm_by}, or it is cancelled and the student refunded."
     ),
     TOKEN_IN: (
         "{brand}: a student has booked a bed at {pg}: {room_type}, moving in on {move_in}. "
@@ -125,6 +131,8 @@ FOR: Final = {
     (Party.OWNER, BookingEvent.LATE_PAYMENT_REVIVE): TOKEN_IN,
     (Party.STUDENT, BookingEvent.LATE_PAYMENT_REFUND): LATE_REFUND,
     (Party.STUDENT, BookingEvent.CONFIRM): CONFIRMED,
+    # Not a change of its own: a reminder while the booking waits for the owner (step 7.3).
+    (Party.OWNER, BookingEvent.CONFIRM): CONFIRM_REMINDER,
     (Party.STUDENT, BookingEvent.REJECT): REJECTED,
     (Party.STUDENT, BookingEvent.CONFIRM_TIMEOUT): NOT_CONFIRMED,
     (Party.OWNER, BookingEvent.CONFIRM_TIMEOUT): CONFIRMATION_MISSED,

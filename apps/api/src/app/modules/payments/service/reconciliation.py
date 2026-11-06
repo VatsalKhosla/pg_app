@@ -293,13 +293,25 @@ class Reconciliation:
             )
 
     async def _unsettled(self, provider: str) -> None:
+        """Every payment captured in the window, a page at a time, however many there are."""
         now = self._clock.now()
         due_by = now - UNSETTLED_TOO_LONG
+        past: tuple[datetime, int] | None = None
+        while True:
+            page = await self._payments.captured_between(
+                after=due_by - UNSETTLED_WINDOW, before=due_by, limit=DAILY_LIMIT, past=past
+            )
+            await self._unsettled_among(provider, page)
+            if len(page) < DAILY_LIMIT:
+                return
+            last = page[-1]
+            assert last.captured_at is not None  # noqa: S101 - a captured payment's
+            past = (last.captured_at, last.id)
+
+    async def _unsettled_among(self, provider: str, page: list[Payment]) -> None:
         captured = [
             payment
-            for payment in await self._payments.captured_between(
-                after=due_by - UNSETTLED_WINDOW, before=due_by, limit=DAILY_LIMIT
-            )
+            for payment in page
             if payment.provider == provider and payment.provider_payment_id is not None
         ]
         posted = await self._ledger.posted(

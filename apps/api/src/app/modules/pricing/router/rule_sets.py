@@ -11,6 +11,7 @@ from app.core.current_actor import CurrentActor
 from app.core.db import DbSession
 from app.core.errors import ForbiddenError
 from app.core.money import Paise
+from app.modules.catalog.service import PricedProperty
 from app.modules.pricing.domain.engine import (
     EarlyBirdRule,
     LastMinuteRule,
@@ -47,7 +48,7 @@ from app.modules.pricing.schemas import (
     SeasonRuleParams,
     StayRuleTier,
 )
-from app.modules.pricing.service import RuleDraft, RuleSetService, RuleSetView
+from app.modules.pricing.service import RuleDraft, RuleSetService, RuleSetSummary, RuleSetView
 
 router = APIRouter(prefix="/v1/ops", tags=["pricing"])
 
@@ -168,13 +169,7 @@ def _info(view: RuleSetView) -> RuleSetInfo:
     )
 
 
-@router.get("/properties/{property_id}/rule-sets", summary="A PG's pricing rule sets")
-async def rule_sets(
-    property_id: uuid.UUID, actor: CurrentActor, db: DbSession, clock: ClockDep
-) -> RuleSetList:
-    """Ops and admins: every version, newest first: at most one draft and one active."""
-    _ops(actor)
-    place, sets = await RuleSetService(db, clock).sets(property_id)
+def _set_list(place: PricedProperty, sets: list[RuleSetSummary]) -> RuleSetList:
     return RuleSetList(
         property=RuleSetProperty(id=place.public_id, name=place.name),
         items=[
@@ -190,6 +185,15 @@ async def rule_sets(
             for found in sets
         ],
     )
+
+
+@router.get("/properties/{property_id}/rule-sets", summary="A PG's pricing rule sets")
+async def rule_sets(
+    property_id: uuid.UUID, actor: CurrentActor, db: DbSession, clock: ClockDep
+) -> RuleSetList:
+    """Ops and admins: every version, newest first: at most one draft and one active."""
+    _ops(actor)
+    return _set_list(*await RuleSetService(db, clock).sets(property_id))
 
 
 @router.post("/properties/{property_id}/rule-sets/draft", summary="Start a draft rule set")

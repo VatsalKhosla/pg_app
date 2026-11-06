@@ -12,19 +12,24 @@ from typing import TYPE_CHECKING
 
 from app.core.errors import NotFoundError
 from app.core.ids import normalize_booking_code
+from app.core.pagination import split_page
 from app.modules.booking.domain.state_machine import BookingEvent, Moment, Party
 from app.modules.booking.repository import BookingRepository
+from app.modules.booking.schemas import BookingPlace, OwnerBookingItem
 from app.modules.booking.service.transitions import Transitions
 from app.modules.booking.service.views import BookingViews
 from app.modules.catalog.service import CatalogLookup
 
 if TYPE_CHECKING:
+    import uuid
     from datetime import date
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.core.actor import Actor
     from app.core.clock import Clock
+    from app.core.pagination import PageRequest
+    from app.modules.booking.domain.state_machine import BookingStatus
     from app.modules.booking.models import Booking
     from app.modules.booking.schemas import ManagedBooking
 
@@ -42,6 +47,45 @@ class BookingDesk:
         async with self._db.begin():
             booking = await self._find(actor, code, party=party, lock=False)
             return await self._views.managed(booking, await self._views.place(booking))
+
+    async def inbox(
+        self, actor: Actor, request: PageRequest, *, status: BookingStatus | None
+    ) -> tuple[list[OwnerBookingItem], uuid.UUID | None]:
+        """The owner's bookings at all their PGs, newest first, of one status if asked (step
+        7.3). The same few queries, however long the page."""
+        async with self._db.begin():
+            owner = await self._catalog.owner_id_of_user(actor.user_id)
+            if owner is None:
+                return [], None
+            found = await self._bookings.owner_page(
+                owner,
+                statuses=None if status is None else [status],
+                after=request.after,
+                limit=request.limit,
+            )
+            items, next_cursor = split_page(found, request, cursor_of=lambda row: row.public_id)
+            places = await self._catalog.booking_places(
+                {row.property_id for row in items}, verified_only=False
+            )
+            labels = await self._catalog.category_labels({row.room_category_id for row in items})
+        return [
+            OwnerBookingItem(
+                code=row.code,
+                status=row.status,  # type: ignore[arg-type]
+                property=BookingPlace(
+                    slug=places[row.property_id].slug,
+                    name=places[row.property_id].name,
+                    locality=places[row.property_id].locality,
+                ),
+                room_type=labels[row.room_category_id],
+                move_in=row.move_in,
+                stay_months=row.stay_months,
+                monthly_rent_paise=row.monthly_rent_paise,
+                confirm_by=row.confirm_by,
+                created_at=row.created_at,
+            )
+            for row in items
+        ], next_cursor
 
     async def confirm(
         self, actor: Actor, code: str, *, party: Party, reason: str | None = None

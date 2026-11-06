@@ -6,6 +6,7 @@ from fastapi import APIRouter
 
 from app.modules.pricing.router.alerts import router as alerts_router
 from app.modules.pricing.router.editor import router as editor_router
+from app.modules.pricing.router.owner import router as owner_router
 from app.modules.pricing.router.policies import router as policies_router
 from app.modules.pricing.router.quotes import router as quotes_router
 from app.modules.pricing.router.rule_sets import router as rule_sets_router
@@ -16,3 +17,4 @@ router.include_router(quotes_router)
 router.include_router(rule_sets_router)
 router.include_router(editor_router)
 router.include_router(alerts_router)
+router.include_router(owner_router)

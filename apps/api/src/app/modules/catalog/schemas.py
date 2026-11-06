@@ -10,6 +10,7 @@ from pydantic import AwareDatetime, Field
 
 from app.core.schemas import ApiModel
 from app.modules.catalog.domain.charges import LABEL_MAX_LENGTH, UNIT_MAX_LENGTH, ChargeKind
+from app.modules.catalog.domain.documents import DocumentKind, DocumentStatus
 from app.modules.catalog.domain.listing import (
     GenderPolicy,
     LicenceStatus,
@@ -557,3 +558,52 @@ class AcceptanceInfo(ApiModel):
 
 class AcceptanceList(ApiModel):
     items: list[AcceptanceInfo]
+
+
+# The owner's area (Phase 7, ADR 0063).
+
+
+class OwnedPropertyInfo(ApiModel):
+    id: uuid.UUID
+    slug: str
+    name: str
+    locality: str
+    status: PropertyStatus
+    verification_status: VerificationStatus
+    licence_status: LicenceStatus
+
+
+class OwnedPropertyList(ApiModel):
+    items: list[OwnedPropertyInfo]
+
+
+class DocumentFile(ApiModel):
+    content_type: str
+    # Works for 5 minutes.
+    url: str
+
+
+class DocumentInfo(ApiModel):
+    id: uuid.UUID
+    kind: DocumentKind
+    status: DocumentStatus
+    added_at: datetime
+    reviewed_at: datetime | None
+    note: str | None
+    # None while the file is still being checked.
+    files: list[DocumentFile]
+
+
+class DocumentList(ApiModel):
+    items: list[DocumentInfo]
+
+
+class DocumentCreate(ApiModel):
+    kind: DocumentKind
+    # The owner's own upload, as a document, said to be done.
+    media: uuid.UUID
+
+
+class DocumentReview(ApiModel):
+    accepted: bool
+    note: Annotated[str, Field(max_length=500)] = ""

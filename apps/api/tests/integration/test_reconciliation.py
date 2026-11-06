@@ -8,6 +8,7 @@ from datetime import timedelta
 from typing import Any
 
 import pytest
+from sqlalchemy import select
 
 from app.config import Settings
 from app.core.calendar import india_date
@@ -16,6 +17,7 @@ from app.modules.identity.domain.sessions import SessionKind
 from app.modules.payments.domain.payments import INR, GatewayPayment, GatewayStatus
 from app.modules.payments.domain.reconciliation import SettlementItem
 from app.modules.payments.domain.refunds import GatewayRefund, GatewayRefundStatus
+from app.modules.payments.models import ReconciliationIssue
 from app.modules.payments.service import CHECK_STUCK, MATCH_SETTLEMENTS
 from tests.flags import FixedFlags
 from tests.integration.test_booking_confirmation import _held
@@ -55,6 +57,18 @@ async def _job(ops: Staff, kind: str) -> None:
     async with ops.app.state.sessionmaker() as db, db.begin():
         await enqueue(db, kind, {}, clock=ops.app.state.clock)
     await run_due_jobs(ops.app)
+
+
+async def _raised(ops: Staff, reference: str) -> list[tuple[str, str | None]]:
+    """What was raised about this gateway reference, straight from the table: the shared
+    database holds many more issues than one page shows."""
+    async with ops.app.state.sessionmaker() as db:
+        rows = await db.execute(
+            select(ReconciliationIssue.kind, ReconciliationIssue.booking_code).where(
+                ReconciliationIssue.reference == reference
+            )
+        )
+        return [(kind, code) for kind, code in rows]
 
 
 async def _issues(ops: Staff, references: set[str], *, open_only: bool = True) -> list[Any]:
@@ -225,15 +239,19 @@ def test_a_payment_no_report_has_settled_in_a_week_is_an_issue(run: Callable[...
         assert payment.provider_payment_id is not None
         gateway = _gateway(ops)
         await _job(ops, MATCH_SETTLEMENTS)
-        fresh = await _issues(ops, {payment.provider_payment_id})
+        fresh = await _raised(ops, payment.provider_payment_id)
         gateway.settles = True
         ops.app.state.clock.advance(timedelta(days=8))
         ops = await _again(ops, kind=SessionKind.STAFF)
         await _job(ops, MATCH_SETTLEMENTS)
-        late = await _issues(ops, {payment.provider_payment_id})
         return {
             "fresh": fresh,
-            "late": [(item["kind"], item["booking"] == code) for item in late],
+            "late": await _raised(ops, payment.provider_payment_id),
+            "code": code,
         }
 
-    assert run(scenario) == {"fresh": [], "late": [("not_settled", True)]}
+    seen = run(scenario)
+
+    assert seen["fresh"] == []
+    # However many other payments the database holds: the check reads them all, a page at a time.
+    assert seen["late"] == [("not_settled", seen["code"])]

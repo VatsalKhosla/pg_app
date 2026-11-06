@@ -348,3 +348,23 @@ class ResolveRequest(ApiModel):
     outcome: DisputeOutcome
     # What ops found, for the record: the student and the owner get the outcome, not this.
     notes: str = Field(min_length=1, max_length=NOTES_MAX_LENGTH)
+
+
+class OwnerBookingItem(ApiModel):
+    """A booking in its owner's inbox (step 7.3): enough to see what needs an answer."""
+
+    code: str
+    status: BookingStatus
+    property: BookingPlace
+    room_type: str
+    move_in: date
+    stay_months: int
+    monthly_rent_paise: int
+    # Once the token is in: the owner answers by then, or the booking is rejected and refunded.
+    confirm_by: datetime | None
+    created_at: datetime
+
+
+class OwnerBookingPage(ApiModel):
+    items: list[OwnerBookingItem]
+    next_cursor: uuid.UUID | None

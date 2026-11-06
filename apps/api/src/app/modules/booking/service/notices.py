@@ -12,6 +12,7 @@ from app.modules.booking.domain.state_machine import BookingEvent, BookingStatus
 from app.modules.booking.repository import BookingRepository
 from app.modules.booking.texts import (
     CONFIRM_MOVE_IN,
+    CONFIRM_REMINDER,
     CONFIRMED,
     FOR,
     MOVED_IN,
@@ -70,10 +71,10 @@ class BookingNotices:
             user = booking.student_id
         phone = (await self._accounts.many([user]))[user].phone_e164
         values = {"brand": BRAND_NAME, "pg": place.name, "code": booking.code}
-        if template in {TOKEN_IN, NEW_CONFIRMED}:
+        if template in {TOKEN_IN, NEW_CONFIRMED, CONFIRM_REMINDER}:
             bed = await self._catalog.bed_ref(booking.bed_id)
             values |= {"room_type": bed.category_label, "move_in": _day(booking.move_in)}
-        if template == TOKEN_IN:
+        if template in {TOKEN_IN, CONFIRM_REMINDER}:
             assert booking.confirm_by is not None  # noqa: S101 - set as the token came in
             values["confirm_by"] = spoken_time(booking.confirm_by)
         elif template == CONFIRMED:

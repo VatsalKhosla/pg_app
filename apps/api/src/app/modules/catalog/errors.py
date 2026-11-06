@@ -72,3 +72,16 @@ class ContactHiddenError(AppError):
     status = 403
     code = "CONTACT_HIDDEN"
     title = "The owner's contact details show once you've booked a visit"
+
+
+class DocumentInvalidError(AppError):
+    """A document the rules refuse: a file that isn't the owner's own, isn't a document, or was
+    refused as a file (step 7.1). The detail names every problem at once."""
+
+    status = 422
+    code = "DOCUMENT_INVALID"
+    title = "That document can't be added"
+
+    def __init__(self, problems: Sequence[str]) -> None:
+        super().__init__("; ".join(problems))
+        self.problems = list(problems)

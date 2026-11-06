@@ -69,6 +69,7 @@ PATH_VALUES: Final = frozenset(
         "a_missing_refund",
         "a_missing_invoice",
         "a_missing_issue",
+        "a_missing_document",
         "a_missing_dispute",
         "an_owner",
         "a_live_listing",
@@ -614,6 +615,82 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
         ops_only(404),
         lambda: {"json": {"resolution": "Looked, and it's fine."}},
         path={"issue_id": "a_missing_issue"},
+    ),
+    # The owner's area (ADR 0063): an owner reaches only their own PGs, and every listing here is
+    # someone else's, so an owner gets a 404; everyone else, a 403.
+    ("GET", "/v1/owner/properties"): Rule(signed_in(403, owner=200)),
+    ("GET", "/v1/owner/properties/{property_id}"): Rule(
+        signed_in(403, owner=404), path={"property_id": "a_listing"}
+    ),
+    ("GET", "/v1/owner/rule-sets/{rule_set_id}/calendar"): Rule(
+        signed_in(403, owner=404), path={"rule_set_id": "a_draft_rule_set"}
+    ),
+    ("GET", "/v1/owner/properties/{property_id}/documents"): Rule(
+        signed_in(403, owner=404), path={"property_id": "a_listing"}
+    ),
+    ("POST", "/v1/owner/properties/{property_id}/documents"): Rule(
+        signed_in(403, owner=404),
+        lambda: {"json": {"kind": "licence", "media": str(uuid.uuid7())}},
+        path={"property_id": "a_listing"},
+    ),
+    ("GET", "/v1/ops/properties/{property_id}/documents"): Rule(
+        ops_only(200), path={"property_id": "a_listing"}
+    ),
+    ("POST", "/v1/ops/documents/{document_id}/review"): Rule(
+        ops_only(404),
+        lambda: {"json": {"accepted": True}},
+        path={"document_id": "a_missing_document"},
+    ),
+    ("POST", "/v1/listings/{slug}/views"): Rule(everyone(204), path={"slug": "a_live_listing"}),
+    ("GET", "/v1/owner/properties/{property_id}/inventory"): Rule(
+        signed_in(403, owner=404), path={"property_id": "a_listing"}
+    ),
+    ("POST", "/v1/owner/beds/{bed_id}/blocks"): Rule(
+        signed_in(403, owner=404),
+        lambda: {"json": {"kind": "maintenance", "start": "2027-08-01", "end": "2027-08-05"}},
+        path={"bed_id": "a_bed"},
+    ),
+    ("POST", "/v1/owner/blocks/{block_id}/end"): Rule(
+        signed_in(403, owner=404),
+        lambda: {"json": {"on": "2027-08-03"}},
+        path={"block_id": "a_missing_block"},
+    ),
+    ("GET", "/v1/owner/properties/{property_id}/rule-sets"): Rule(
+        signed_in(403, owner=404), path={"property_id": "a_listing"}
+    ),
+    ("POST", "/v1/owner/properties/{property_id}/rule-sets/draft"): Rule(
+        signed_in(403, owner=404), path={"property_id": "a_listing"}
+    ),
+    ("GET", "/v1/owner/rule-sets/{rule_set_id}"): Rule(
+        signed_in(403, owner=404), path={"rule_set_id": "a_draft_rule_set"}
+    ),
+    ("POST", "/v1/owner/rule-sets/{rule_set_id}/rules"): Rule(
+        signed_in(403, owner=404), _a_rule, path={"rule_set_id": "a_draft_rule_set"}
+    ),
+    ("PUT", "/v1/owner/rules/{rule_id}"): Rule(
+        signed_in(403, owner=404), _a_rule, path={"rule_id": "a_draft_rule"}
+    ),
+    ("DELETE", "/v1/owner/rules/{rule_id}"): Rule(
+        signed_in(403, owner=404), path={"rule_id": "a_draft_rule"}
+    ),
+    ("POST", "/v1/owner/rule-sets/{rule_set_id}/activate"): Rule(
+        signed_in(403, owner=404), lambda: {"json": {}}, path={"rule_set_id": "a_draft_rule_set"}
+    ),
+    ("DELETE", "/v1/owner/rule-sets/{rule_set_id}"): Rule(
+        signed_in(403, owner=404), path={"rule_set_id": "a_draft_rule_set"}
+    ),
+    ("GET", "/v1/owner/rule-sets/{rule_set_id}/preview"): Rule(
+        signed_in(403, owner=404),
+        lambda: {"params": {"room": str(uuid.uuid7()), "moveIn": "2027-01-10", "stay": 11}},
+        path={"rule_set_id": "a_draft_rule_set"},
+    ),
+    ("GET", "/v1/owner/properties/{property_id}/market"): Rule(
+        signed_in(403, owner=404), path={"property_id": "a_listing"}
+    ),
+    ("GET", "/v1/owner/bookings"): Rule(signed_in(403, owner=200)),
+    ("GET", "/v1/owner/visits"): Rule(signed_in(403, owner=200)),
+    ("GET", "/v1/owner/properties/{property_id}/insights"): Rule(
+        signed_in(403, owner=404), path={"property_id": "a_listing"}
     ),
     # A gateway's word (ADR 0057): anyone may call it, and only a good signature gets anywhere.
     ("POST", "/v1/webhooks/razorpay"): Rule(everyone(400), lambda: {"json": {"event": "x"}}),
