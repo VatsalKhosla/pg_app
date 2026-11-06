@@ -66,5 +66,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0060](0060-ledger.md) | The ledger: a module that knows no other, posting in the money event's own transaction, once per event, with the database refusing anything that doesn't balance | Accepted |
 | [0061](0061-owner-invoices.md) | Owners' invoices: issued as a booking settles, numbered without gaps, kept as issued, and paid through a payment link only the gateway's word marks paid | Accepted |
 | [0062](0062-reconciliation.md) | Reconciliation: the gateway asked about what hasn't come back, its settlement reports matched line by line, and what doesn't match kept for ops | Accepted |
+| [0063](0063-owner-dashboard.md) | The owner dashboard: ops' own tools, scoped to an owner's PGs by one check, with a 404 for anyone else's | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

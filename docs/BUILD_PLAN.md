@@ -520,12 +520,18 @@ Start the slow ones in week 1.
 
 ## Phase 7 — Owner dashboard
 
-- [ ] **7.1 Owner onboarding.** OTP login as owner, profile, agreement acceptance, licence and society-permission uploads.
-- [ ] **7.2 Occupancy calendar.** Per-bed calendar; block beds for offline tenants or maintenance (the exclusion constraint applies); upcoming move-ins and visits.
-- [ ] **7.3 Bookings inbox.** Confirm or reject within the deadline; reminders; history.
-- [ ] **7.4 Owner pricing editor.** The Phase 4 editor for owners, with caps, bands and the median visible, and preview before activation.
-- [ ] **7.5 Invoices.** List, download, pay the balance.
-- [ ] **7.6 Insights.** Views, visit requests, conversion, occupancy, own price vs locality median.
+- [x] **7.1 Owner onboarding.** OTP login as owner, profile, agreement acceptance, licence and society-permission uploads.
+  *Note (2026-11-06):* sign-in, profile and agreement were 2.6; owners now upload a licence or society permission per PG as a private document, which ops accept or refuse once, with a note the owner sees (ADR 0063).
+- [x] **7.2 Occupancy calendar.** Per-bed calendar; block beds for offline tenants or maintenance (the exclusion constraint applies); upcoming move-ins and visits.
+  *Note (2026-11-06):* ops' bed calendar for an owner's own PGs, with blocks under the same exclusion constraint, and the visits booked to their PGs in the next two weeks (ADR 0063).
+- [x] **7.3 Bookings inbox.** Confirm or reject within the deadline; reminders; history.
+  *Note (2026-11-06):* the owner's bookings newest first, by status, each with its deadline; confirm or turn down; one text three hours before a deadline (ADR 0063).
+- [x] **7.4 Owner pricing editor.** The Phase 4 editor for owners, with caps, bands and the median visible, and preview before activation.
+  *Note (2026-11-06):* ops' editor under the owner's routes, one ownership check each, with the same caps, bands and median, preview and price calendar (ADR 0063).
+- [x] **7.5 Invoices.** List, download, pay the balance.
+  *Note (2026-11-06):* built with step 6.5: list, download, pay the balance (ADR 0061).
+- [x] **7.6 Insights.** Views, visit requests, conversion, occupancy, own price vs locality median.
+  *Note (2026-11-06):* page views (counted once a session), visits asked for, bookings made and how full the PG is today, with each room's rent beside the locality's middle; ratios in whole basis points (ADR 0063).
   *Done when* (for the whole phase) an owner can run their PG's bookings and pricing from a phone without calling ops.
 
 ## Phase 8 — Launch hardening (finish before June 2027)
