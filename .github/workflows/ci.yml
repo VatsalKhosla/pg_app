@@ -133,6 +133,45 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
+  lighthouse:
+    name: Lighthouse budgets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # The median of five runs: a shared runner's timing varies more than a laptop's.
+      LIGHTHOUSE_RUNS: "5"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # A PG's page and search need the API, which runs as in the browser tests (scripts/e2e-api.sh).
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - run: uv sync --directory apps/api --locked
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          cache: true
+      - run: pnpm install --frozen-lockfile
+      - name: Install Chromium and its system libraries
+        run: pnpm --filter @pg-platform/web exec playwright install --with-deps chromium
+      - name: The home page scores at least 90 in every category (ARCHITECTURE §16)
+        run: make lighthouse
+      - name: A PG's page scores at least 85
+        run: make lighthouse-pg
+      - name: Search scores at least 85
+        run: make lighthouse-search
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lighthouse-reports
+          path: apps/web/test-results/lighthouse/
+          retention-days: 14
+          if-no-files-found: ignore
+
   client:
     name: API client
     runs-on: ubuntu-24.04
@@ -219,7 +258,7 @@ jobs:
   staging:
     name: Deploy staging
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [api, web, e2e, client, contract, workflows, hooks]
+    needs: [api, web, e2e, lighthouse, client, contract, workflows, hooks]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: staging
