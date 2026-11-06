@@ -27,6 +27,9 @@ interface RazorpayOptions {
   timeout: number;
   prefill: { name?: string; contact: string };
   theme: { color: string };
+  /** A UPI one-time mandate's authorisation (step 6.7): the block, for this customer. */
+  recurring?: 1;
+  customer_id?: string;
   handler: (answer: RazorpayAnswer) => void;
   modal: { ondismiss: () => void };
 }
@@ -96,6 +99,9 @@ export async function openRazorpayCheckout(
         contact: start.prefill.contact,
       },
       theme: { color: brand.colors.primary },
+      ...(start.mode === "upi_mandate" && start.customerId !== null
+        ? { recurring: 1 as const, customer_id: start.customerId }
+        : {}),
       handler: (answer) => {
         resolve({
           kind: "paid",

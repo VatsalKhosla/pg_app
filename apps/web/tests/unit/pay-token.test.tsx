@@ -13,6 +13,7 @@ import { WCAG_22_AA } from "../wcag";
 vi.mock("@/lib/payments/client", () => ({
   startTokenPayment: vi.fn(),
   finishCheckout: vi.fn(),
+  checkMandate: vi.fn(),
   payAtTestBank: vi.fn(),
 }));
 vi.mock("@/lib/payments/razorpay", () => ({ openRazorpayCheckout: vi.fn() }));
@@ -25,6 +26,7 @@ const TEXT: PayTokenText = {
   opening: "Opening the payment…",
   checking: "Checking your payment…",
   waiting: "Your bank hasn't finished yet.",
+  blocking: "Your bank is still confirming the block.",
   checkAgain: "Check again",
   notPaid: "That payment didn't go through.",
   late: "Your payment came in after this booking had ended.",
@@ -52,6 +54,8 @@ function startWith(provider: PaymentStart["provider"]): PaymentStart {
     currency: "INR",
     expiresInSeconds: 900,
     prefill: { name: "A Student", contact: "+919000000000" },
+    mode: "payment",
+    customerId: null,
   };
 }
 
@@ -108,6 +112,44 @@ describe("PayToken", () => {
     expect(openRazorpayCheckout).toHaveBeenCalledWith(startWith("razorpay"), TEXT.description);
     expect(payments.finishCheckout).toHaveBeenCalledWith(startWith("razorpay").id, CALLBACK);
     expect(payments.payAtTestBank).not.toHaveBeenCalled();
+  });
+
+  it("has the API ask the gateway about a block, whatever checkout handed over", async () => {
+    vi.mocked(payments.startTokenPayment).mockResolvedValue({
+      ...startWith("razorpay"),
+      mode: "upi_mandate",
+      customerId: "cust_1",
+    });
+    vi.mocked(openRazorpayCheckout).mockResolvedValue({ kind: "closed" });
+    vi.mocked(payments.checkMandate).mockResolvedValue({ outcome: "paid", booking: CODE });
+    show();
+
+    tapPay();
+
+    await waitFor(() => {
+      expect(assign).toHaveBeenCalledWith(PATH);
+    });
+    expect(payments.checkMandate).toHaveBeenCalledWith(startWith("razorpay").id);
+    expect(payments.finishCheckout).not.toHaveBeenCalled();
+  });
+
+  it("says the bank is still confirming a block, and asks again on request", async () => {
+    vi.mocked(payments.startTokenPayment).mockResolvedValue({
+      ...startWith("razorpay"),
+      mode: "upi_mandate",
+      customerId: "cust_1",
+    });
+    vi.mocked(openRazorpayCheckout).mockResolvedValue({ kind: "closed" });
+    vi.mocked(payments.checkMandate).mockResolvedValue({ outcome: "waiting", booking: CODE });
+    show();
+
+    tapPay();
+
+    expect(await screen.findByText(TEXT.blocking)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: TEXT.checkAgain }));
+    await waitFor(() => {
+      expect(vi.mocked(payments.checkMandate).mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
   });
 
   it("goes back to the button when the student closes checkout", async () => {

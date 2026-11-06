@@ -1394,7 +1394,9 @@
         "paymentStatus": {
           "created": "not paid yet",
           "authorized": "the bank said yes, not captured yet",
-          "captured": "came in"
+          "captured": "came in",
+          "blocked": "blocked in the student's account by mandate, not taken yet",
+          "released": "blocked by mandate, then given back"
         },
         "open": "Give money back",
         "formTitle": "Give money back",
@@ -1995,7 +1997,9 @@
         "not_settled": "Captured, never settled",
         "stuck_authorized": "The bank said yes, but it wasn't captured",
         "refund_stuck": "A refund that's stuck",
-        "link_mismatch": "A payment link paid, but not as asked"
+        "link_mismatch": "A payment link paid, but not as asked",
+        "mandate_debit_failed": "A blocked token couldn't be debited",
+        "mandate_cancelled": "A mandate was cancelled before its debit"
       },
       "resolve": {
         "open": "Close it",
@@ -2485,6 +2489,7 @@
       "opening": "Opening the payment…",
       "checking": "Checking your payment…",
       "waiting": "Your bank hasn't finished yet. We'll keep checking, and move on once it has.",
+      "blocking": "If you approved the {amount} block in your UPI app, your bank is still confirming it. It stays in your account, not taken, until you've moved in. We'll move on once it's confirmed.",
       "checkAgain": "Check again",
       "notPaid": "That payment didn't go through. You can try again.",
       "late": "Your payment came in after booking {code} had ended, so it's going back to you. You can follow it on your booking.",
@@ -2502,6 +2507,8 @@
     "paid": {
       "title": "Your payments",
       "token": "{amount} token paid on {date}",
+      "blocked": "{amount} is blocked in your bank account, not taken. It's taken only once you've moved in and your 24 hours to check the room are over.",
+      "released": "The {amount} block on your bank account was released: none of it was taken.",
       "refund": {
         "requested": "{amount} is being sent back to you.",
         "pending": "{amount} is on its way back to you. It can take up to 7 working days to show in your account.",

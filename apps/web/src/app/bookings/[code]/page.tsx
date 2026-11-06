@@ -303,14 +303,24 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
         </section>
       )}
 
-      {paid.items.some((payment) => payment.capturedAt !== null) ? (
+      {paid.items.some(
+        (payment) =>
+          payment.capturedAt !== null ||
+          payment.status === "blocked" ||
+          payment.status === "released",
+      ) ? (
         <section aria-labelledby="paid-title" className="space-y-2">
           <h2 id="paid-title" className="text-lg font-semibold">
             {t("paid.title")}
           </h2>
           <ul className="space-y-2">
-            {paid.items.map((payment) =>
-              payment.capturedAt === null ? null : (
+            {paid.items.map((payment, index) =>
+              payment.status === "blocked" || payment.status === "released" ? (
+                // A token blocked by a UPI one-time mandate (step 6.7): not taken, or given back.
+                <li key={`${payment.status}-${String(index)}`}>
+                  <p>{t(`paid.${payment.status}`, { amount: formatINR(payment.amountPaise) })}</p>
+                </li>
+              ) : payment.capturedAt === null ? null : (
                 <li key={payment.capturedAt} className="space-y-1">
                   <p>
                     {t("paid.token", {

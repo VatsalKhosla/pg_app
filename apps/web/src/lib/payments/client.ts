@@ -38,6 +38,21 @@ export function finishCheckout(id: string, callback: CheckoutCallback): Promise<
   );
 }
 
+/**
+ * After the student authorised a block on their token (step 6.7, ADR 0064): the API asks the
+ * gateway whether it's in. Safe to repeat.
+ */
+export function checkMandate(id: string): Promise<CheckoutResult> {
+  return withCsrf((headers) =>
+    unwrap(
+      browserApi.POST("/v1/payments/{payment_id}/mandate-check", {
+        params: { path: { payment_id: id } },
+        headers,
+      }),
+    ),
+  );
+}
+
 /** The fake gateway's bank says yes: what its checkout would hand over. No money moves. */
 export function payAtTestBank(id: string): Promise<CheckoutCallback> {
   return withCsrf((headers) =>

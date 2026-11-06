@@ -74,6 +74,7 @@ export default async function PayPage({ params }: PageProps<"/bookings/[code]/pa
           opening: t("opening"),
           checking: t("checking"),
           waiting: t("waiting"),
+          blocking: t("blocking", { amount: token }),
           checkAgain: t("checkAgain"),
           notPaid: t("notPaid"),
           late: t("late", { code: booking.code }),

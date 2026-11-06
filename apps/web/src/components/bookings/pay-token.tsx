@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/errors";
 import {
   type CheckoutCallback,
+  checkMandate,
   finishCheckout,
   payAtTestBank,
   type PaymentStart,
@@ -22,6 +23,8 @@ export interface PayTokenText {
   checking: string;
   /** The bank hasn't finished, or the gateway can't say yet. */
   waiting: string;
+  /** A block authorised in a UPI app that the bank hasn't confirmed yet (step 6.7). */
+  blocking: string;
   checkAgain: string;
   notPaid: string;
   /** The money came in, but the booking had moved on. */
@@ -42,6 +45,8 @@ type State =
   | { step: "testBank"; start: PaymentStart }
   | { step: "checking"; start: PaymentStart; callback: CheckoutCallback }
   | { step: "waiting"; start: PaymentStart; callback: CheckoutCallback }
+  | { step: "checkingBlock" }
+  | { step: "blocking"; start: PaymentStart }
   | { step: "late" }
   | { step: "unverified" };
 
@@ -111,6 +116,37 @@ export function PayToken({
       });
   }
 
+  /** A token blocked by mandate: the API asks the gateway, whatever checkout handed over. */
+  function checkBlock(start: PaymentStart, tries = 0) {
+    setState({ step: "checkingBlock" });
+    checkMandate(start.id)
+      .then((result) => {
+        switch (result.outcome) {
+          case "paid":
+            window.location.assign(bookingPath);
+            return;
+          case "late":
+            setState({ step: "late" });
+            return;
+          case "not_paid":
+            setState({ step: "idle", notice: "notPaid" });
+            return;
+          case "waiting": {
+            setState({ step: "blocking", start });
+            const wait = WAITS_MS[tries];
+            if (wait !== undefined) {
+              timer.current = setTimeout(() => {
+                checkBlock(start, tries + 1);
+              }, wait);
+            }
+          }
+        }
+      })
+      .catch(() => {
+        setState({ step: "blocking", start });
+      });
+  }
+
   function pay() {
     setState({ step: "opening" });
     startTokenPayment(code)
@@ -120,7 +156,8 @@ export function PayToken({
           return;
         }
         const end = await openRazorpayCheckout(start, text.description);
-        if (end.kind === "paid") check(start, end.callback);
+        if (start.mode === "upi_mandate") checkBlock(start);
+        else if (end.kind === "paid") check(start, end.callback);
         else setState({ step: "idle" });
       })
       .catch((error: unknown) => {
@@ -186,6 +223,7 @@ export function PayToken({
         </section>
       );
     case "checking":
+    case "checkingBlock":
       return <p role="status">{text.checking}</p>;
     case "waiting":
       return (
@@ -196,6 +234,21 @@ export function PayToken({
             onClick={() => {
               clearTimeout(timer.current);
               check(state.start, state.callback);
+            }}
+          >
+            {text.checkAgain}
+          </Button>
+        </div>
+      );
+    case "blocking":
+      return (
+        <div className="space-y-3">
+          <p role="status">{text.blocking}</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              clearTimeout(timer.current);
+              checkBlock(state.start);
             }}
           >
             {text.checkAgain}

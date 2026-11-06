@@ -13,6 +13,8 @@ const START: PaymentStart = {
   currency: "INR",
   expiresInSeconds: 600,
   prefill: { name: "A Student", contact: "+919000000000" },
+  mode: "payment",
+  customerId: null,
 };
 const DESCRIPTION = "Token for booking BK-7F3K2Q9M";
 
@@ -88,6 +90,33 @@ describe("openRazorpayCheckout", () => {
       kind: "paid",
       callback: { providerPaymentId: "pay_1", signature: "abc" },
     });
+  });
+
+  it("opens a mandate's authorisation as a recurring payment for its customer", async () => {
+    const { openRazorpayCheckout } = await loadModule();
+    const { Razorpay, opened } = fakeRazorpay();
+    window.Razorpay = Razorpay as never;
+
+    void openRazorpayCheckout({ ...START, mode: "upi_mandate", customerId: "cust_1" }, DESCRIPTION);
+    await vi.waitFor(() => {
+      expect(opened).toHaveLength(1);
+    });
+
+    expect(opened[0]).toMatchObject({ recurring: 1, customer_id: "cust_1", order_id: "order_1" });
+  });
+
+  it("asks for no mandate when the token is a payment", async () => {
+    const { openRazorpayCheckout } = await loadModule();
+    const { Razorpay, opened } = fakeRazorpay();
+    window.Razorpay = Razorpay as never;
+
+    void openRazorpayCheckout(START, DESCRIPTION);
+    await vi.waitFor(() => {
+      expect(opened).toHaveLength(1);
+    });
+
+    expect(opened[0]).not.toHaveProperty("recurring");
+    expect(opened[0]).not.toHaveProperty("customer_id");
   });
 
   it("uses the script it has, leaves out a name nobody gave, and says when checkout closes", async () => {
