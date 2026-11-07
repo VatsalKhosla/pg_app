@@ -51,6 +51,28 @@ def test_the_parent_domain_is_set_when_configured_and_scripts_may_read_csrf_cook
     assert "secure" in attributes
 
 
+def test_a_parent_domain_cookie_expires_any_host_only_copy_left_from_before() -> None:
+    domain, host_only = CookiePolicy(domain=".example.test"), CookiePolicy()
+
+    for policy, expected in ((domain, 2), (host_only, 1)):
+        response = Response()
+        policy.set(response, "__Secure-csrf", "token", max_age=60, http_only=False)
+        sent = [_attributes(value) for value in response.headers.getlist("set-cookie")]
+        assert len(sent) == expected
+        assert sent[0]["cookie"] == "__Secure-csrf=token"
+        if expected == 2:
+            # The cookie for the parent domain, then the old host-only copy expired.
+            assert sent[0]["domain"] == ".example.test"
+            assert sent[1]["cookie"] == '__Secure-csrf=""'
+            assert sent[1]["max-age"] == "0"
+            assert "domain" not in sent[1]
+
+    cleared = Response()
+    domain.clear(cleared, SESSION_COOKIE, http_only=True)
+    expired = [_attributes(value) for value in cleared.headers.getlist("set-cookie")]
+    assert [("domain" in each, each["max-age"]) for each in expired] == [(True, "0"), (False, "0")]
+
+
 def test_clearing_a_cookie_expires_it_with_the_same_attributes() -> None:
     response = Response()
 

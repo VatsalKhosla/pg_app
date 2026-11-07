@@ -51,6 +51,7 @@ class CookiePolicy:
             httponly=http_only,
             samesite="lax",
         )
+        self._expire_host_only_copy(response, name, http_only=http_only, host_only=host_only)
 
     def clear(
         self, response: Response, name: str, *, http_only: bool, host_only: bool = False
@@ -63,3 +64,15 @@ class CookiePolicy:
             httponly=http_only,
             samesite="lax",
         )
+        self._expire_host_only_copy(response, name, http_only=http_only, host_only=host_only)
+
+    def _expire_host_only_copy(
+        self, response: Response, name: str, *, http_only: bool, host_only: bool
+    ) -> None:
+        """A host-only copy of a cookie that is now set for the parent domain, left from before the
+        domain was set, goes to the API beside it, and the one sent last wins. For the CSRF cookie
+        that's a token that never matches: sign-in fails with "your session changed" however often
+        it's tried. So the copy is expired whenever the cookie is set or cleared."""
+        if host_only or self.domain is None:
+            return
+        response.delete_cookie(name, path="/", secure=True, httponly=http_only, samesite="lax")

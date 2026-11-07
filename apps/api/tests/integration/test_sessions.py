@@ -106,8 +106,12 @@ def _as(session_token: str | None, *, csrf: bool = False) -> dict[str, str]:
 
 
 def _set_cookies(response: httpx.Response) -> dict[str, str]:
-    """Each cookie the response sets, by name, with its attributes."""
-    return {header.split("=", 1)[0]: header for header in response.headers.get_list("set-cookie")}
+    """Each cookie the response sets, by name, with its attributes: the first header for each, as
+    one for the parent domain is followed by expiring any host-only copy of it."""
+    found: dict[str, str] = {}
+    for header in response.headers.get_list("set-cookie"):
+        found.setdefault(header.split("=", 1)[0], header)
+    return found
 
 
 def test_a_session_cookie_identifies_the_user(run: Callable[..., Any]) -> None:
@@ -224,6 +228,14 @@ def test_the_session_cookie_names_the_parent_domain_when_configured(
         response = await client.get("/v1/me", headers=_as(token))
 
         assert "Domain=.example.test" in _set_cookies(response)[SESSION_COOKIE]
+        # And a host-only copy left from before is expired, so it can't shadow this one.
+        copies = [
+            header
+            for header in response.headers.get_list("set-cookie")
+            if header.startswith(f"{SESSION_COOKIE}=") and "Domain=" not in header
+        ]
+        assert len(copies) == 1
+        assert "Max-Age=0" in copies[0]
 
     run(scenario, session_cookie_domain=".example.test")
 
