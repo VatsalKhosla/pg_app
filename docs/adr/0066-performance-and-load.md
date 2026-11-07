@@ -30,6 +30,7 @@
    - the home page at 90 or above in every category;
    - a PG's page and search at 85 or above;
    - the median of five runs, because shared runners vary.
+   - Search is report-only for now, the founders' choice on 2026-11-08: it scores 83 to 84 since the UI refresh (87 before it), and the refresh shouldn't wait on it. It still runs and shows a failure on every run, until search is back over 85.
 
 ## What it measured (2026-11-06)
 

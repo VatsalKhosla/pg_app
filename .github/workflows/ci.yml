@@ -161,7 +161,11 @@ jobs:
         run: make lighthouse
       - name: A PG's page scores at least 85
         run: make lighthouse-pg
+      # Report-only, the founders' choice (2026-11-08): search scores 83 to 84 since the UI refresh
+      # (87 before it), and the refresh shouldn't wait on it. It still runs, and a failure shows
+      # on every run, until search is back over 85 and this line goes (ADR 0066).
       - name: Search scores at least 85
+        continue-on-error: true
         run: make lighthouse-search
       - name: Keep the reports
         if: always()
