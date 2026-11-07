@@ -552,7 +552,8 @@ Start the slow ones in week 1.
   *Note (2026-11-06):* measured, and left unticked until holds stop queueing in the race (ADR 0066).
   - **Tools:** `make load-test` (k6: reads, quote writes and the hold race, on a private API with 3,000 fictional listings), `python -m tests.load.explain` (the top requests' query plans), and Lighthouse budgets in CI on every push.
   - **Reads:** about 120 to 150 a second per 4-worker API on a 4-vCPU VM within the SLO, so about three containers for the planning load's 300. Database time per request stays under 15 ms; the API's own work is the cost.
-  - **The hold race:** correct (3 holds for 3 beds, 47 refused, no errors), but p95 is 1.65 s, because holds on a room type queue for its beds' locks. Next: lock only the beds a hold can take (`SKIP LOCKED`).
+  - **The hold race:** correct (3 holds for 3 beds, 47 refused, no errors). Holds now lock only the bed they take (`SKIP LOCKED`), so none queue for another's lock. The race's p95 on the VM (1.5 s) is 50 requests at once on 4 shared CPUs; a warm hold takes 40 to 90 ms. Confirm it within 400 ms on the 8.5 environment.
+  - **Lighthouse in CI** found a PG's page at 80 against 85 (83 before the UI refresh). A lazy price check and an unpreloaded headings font bring it to 86 to 91 locally. Search sits at 84 to 89 (87 before the refresh).
 - [ ] **8.3 Observability and runbooks.** Dashboards and alerts from ARCHITECTURE §19; a runbook per alert.
 - [ ] **8.4 Compliance pass.** DPDP (notice, consent, retention, export/delete, breach plan), grievance SLAs, a dark-pattern audit of every screen, lawyer-reviewed legal pages and owner agreement.
 - [ ] **8.5 Production infrastructure.** Terraform for AWS Mumbai (network, RDS with PITR, Redis, ECS services for API and worker, S3 + CloudFront, Secrets Manager, alarms), Vercel project, Cloudflare WAF and Turnstile; staging mirrors production at a smaller size.
