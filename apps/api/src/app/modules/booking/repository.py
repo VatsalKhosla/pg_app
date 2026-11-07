@@ -249,7 +249,8 @@ class BookingRepository:
         return count or 0
 
     async def stale_holds(self, bed_ids: Collection[int], *, now: datetime) -> list[Booking]:
-        """The holds on these beds past their expiry, locked, oldest first."""
+        """The holds on these beds past their expiry, locked, oldest first. One another
+        transaction is already expiring is skipped rather than waited for."""
         if not bed_ids:
             return []
         rows = await self._db.scalars(
@@ -260,7 +261,7 @@ class BookingRepository:
                 Booking.hold_expires_at <= now,
             )
             .order_by(Booking.id)
-            .with_for_update()
+            .with_for_update(skip_locked=True)
         )
         return list(rows)
 

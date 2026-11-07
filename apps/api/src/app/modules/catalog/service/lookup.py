@@ -20,7 +20,7 @@ from app.modules.geo.service import GeoLookup
 
 if TYPE_CHECKING:
     import uuid
-    from collections.abc import Collection
+    from collections.abc import Collection, Sequence
     from datetime import datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -586,16 +586,21 @@ class CatalogLookup:
         """Each owner's account, by owner id: who an owner's texts go to."""
         return await self._catalog.owner_user_ids(owner_ids)
 
-    async def locked_sellable_rooms(self, category_id: int) -> tuple[SellableRoom, ...]:
-        """A room type's rooms with their active beds, the beds locked until the transaction
-        ends, so holds on the room type go one at a time (ARCHITECTURE §7.3)."""
+    async def sellable_rooms(self, category_id: int) -> tuple[SellableRoom, ...]:
+        """A room type's rooms with their active beds. Nothing is locked: a hold locks only the
+        bed it takes (``lock_first_bed``, ARCHITECTURE §7.3)."""
         rooms: dict[int, tuple[str, list[int]]] = {}
-        for bed, room, label in await self._catalog.lock_active_beds(category_id):
+        for bed, room, label in await self._catalog.active_beds(category_id):
             rooms.setdefault(room, (label, []))[1].append(bed)
         return tuple(
             SellableRoom(id=room, label=label, bed_ids=tuple(beds))
             for room, (label, beds) in rooms.items()
         )
+
+    async def lock_first_bed(self, bed_ids: Sequence[int]) -> int | None:
+        """The first of these beds, in the order given, that no other hold is taking, locked
+        until the transaction ends; None when every one is being taken (§7.3)."""
+        return await self._catalog.lock_first_bed(bed_ids)
 
     async def property_ids_in(self, locality_id: int) -> list[int]:
         """Every listing of a locality, by internal id."""

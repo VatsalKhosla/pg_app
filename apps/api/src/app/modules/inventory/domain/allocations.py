@@ -95,23 +95,32 @@ class RoomBeds:
     bed_ids: tuple[int, ...]
 
 
-def choose_bed(
+def rank_free_beds(
     rooms: Iterable[RoomBeds], allocations: Iterable[tuple[int, Period]], period: Period
-) -> int | None:
-    """The bed a new booking takes for ``period`` (§7.3): a free one in a room partly held then,
-    so whole rooms stay free for groups. Rooms with the fewest free beds come first, and the
-    lowest bed id settles a tie. None when every bed is held on some day of the period."""
+) -> list[int]:
+    """Every bed free for ``period``, best first (§7.3): beds in rooms partly held then come
+    first, so whole rooms stay free for groups; then rooms with the fewest free beds, the room
+    whose lowest free bed id is lowest, and the lowest bed id. A hold takes the first of these
+    that no other hold is taking at that moment."""
     taken = {bed for bed, held in allocations if held.overlaps(period)}
-    best: tuple[bool, int, int] | None = None
+    ranked: list[tuple[bool, int, int, int]] = []
     for room in rooms:
-        free = [bed for bed in room.bed_ids if bed not in taken]
+        free = sorted(bed for bed in room.bed_ids if bed not in taken)
         if not free:
             continue
         # A room nobody holds sorts after every partly held one.
-        rank = (len(free) == len(room.bed_ids), len(free), min(free))
-        if best is None or rank < best:
-            best = rank
-    return None if best is None else best[2]
+        whole = len(free) == len(room.bed_ids)
+        ranked.extend((whole, len(free), free[0], bed) for bed in free)
+    return [bed for *_, bed in sorted(ranked)]
+
+
+def choose_bed(
+    rooms: Iterable[RoomBeds], allocations: Iterable[tuple[int, Period]], period: Period
+) -> int | None:
+    """The bed a new booking takes for ``period`` when nobody else is taking one: the first of
+    ``rank_free_beds``. None when every bed is held on some day of the period."""
+    ranked = rank_free_beds(rooms, allocations, period)
+    return ranked[0] if ranked else None
 
 
 def occupancy_bps(active_beds: int, taken: int) -> int:

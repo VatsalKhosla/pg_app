@@ -13,7 +13,12 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.outbox import enqueue
 from app.modules.catalog.service import CatalogLookup
-from app.modules.inventory.domain.allocations import AllocationKind, Period, RoomBeds, choose_bed
+from app.modules.inventory.domain.allocations import (
+    AllocationKind,
+    Period,
+    RoomBeds,
+    rank_free_beds,
+)
 from app.modules.inventory.errors import BedUnavailableError
 from app.modules.inventory.models import InventoryAllocation
 from app.modules.inventory.repository import AllocationRepository, to_period, to_range
@@ -35,18 +40,31 @@ class BedHolds:
         self._catalog = CatalogLookup(db)
         self._allocations = AllocationRepository(db)
 
-    async def lock_room_type(self, category_id: int) -> tuple[RoomBeds, ...]:
-        """The room type's beds that can be sold, room by room, locked until the transaction
-        ends."""
-        rooms = await self._catalog.locked_sellable_rooms(category_id)
+    async def room_type(self, category_id: int) -> tuple[RoomBeds, ...]:
+        """The room type's beds that can be sold, room by room. Nothing is locked: a hold locks
+        only the bed it takes (``take_free_bed``)."""
+        rooms = await self._catalog.sellable_rooms(category_id)
         return tuple(RoomBeds(room.id, room.bed_ids) for room in rooms)
 
-    async def free_bed(self, rooms: Sequence[RoomBeds], period: Period) -> int | None:
-        """The bed a booking takes for ``period``, or None when every one is held on some day
-        of it."""
+    async def take_free_bed(self, rooms: Sequence[RoomBeds], period: Period) -> int | None:
+        """The best bed free for ``period`` that no other hold is taking, locked until the
+        transaction ends; None when every bed is held, or being taken, on some day of it (§7.3).
+        Holds on one room type run side by side: another's bed is skipped, never waited for.
+        The exclusion constraint is still what guarantees no bed goes twice."""
         beds = [bed for room in rooms for bed in room.bed_ids]
         held = await self._allocations.active_overlapping(beds, period)
-        return choose_bed(rooms, [(row.bed_id, to_period(row.period)) for row in held], period)
+        ranked = rank_free_beds(
+            rooms, [(row.bed_id, to_period(row.period)) for row in held], period
+        )
+        while ranked:
+            bed = await self._catalog.lock_first_bed(ranked)
+            if bed is None:
+                return None
+            if await self.is_free(bed, period):
+                return bed
+            # Held by a hold that finished after the ranking was read: the next one.
+            ranked = ranked[ranked.index(bed) + 1 :]
+        return None
 
     async def is_free(self, bed_id: int, period: Period) -> bool:
         """Whether nothing holds this bed on any day of ``period``."""

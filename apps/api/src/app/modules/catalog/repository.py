@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 from geoalchemy2 import Geography
-from sqlalchemy import and_, cast, delete, func, insert, or_, select, update
+from sqlalchemy import and_, case, cast, delete, func, insert, or_, select, update
 from sqlalchemy.dialects.postgresql import insert as upsert
 
 from app.core import postgis
@@ -493,9 +493,9 @@ class CatalogRepository:
         query = select(Bed).where(Bed.public_id == public_id)
         return await self._db.scalar(query.with_for_update() if lock else query)
 
-    async def lock_active_beds(self, category_id: int) -> list[tuple[int, int, str]]:
-        """An active room type's active beds as (bed id, room id, room label), locked in id
-        order, so holds on the room type wait for one another and never deadlock (§7.3)."""
+    async def active_beds(self, category_id: int) -> list[tuple[int, int, str]]:
+        """An active room type's active beds as (bed id, room id, room label), in id order.
+        Nothing is locked: a hold locks only the bed it takes (``lock_first_bed``, §7.3)."""
         rows = await self._db.execute(
             select(Bed.id, Room.id, Room.label)
             .join(Room, Room.id == Bed.room_id)
@@ -506,9 +506,23 @@ class CatalogRepository:
                 Bed.status == BedStatus.ACTIVE,
             )
             .order_by(Bed.id)
-            .with_for_update(of=Bed)
         )
         return [(bed, room, label) for bed, room, label in rows]
+
+    async def lock_first_bed(self, bed_ids: Sequence[int]) -> int | None:
+        """The first of these active beds, in the order given, that no other transaction has
+        locked, locked until this one ends; None when every one is locked or gone. Another
+        hold's bed is skipped, never waited for (§7.3)."""
+        if not bed_ids:
+            return None
+        order = case({bed: index for index, bed in enumerate(bed_ids)}, value=Bed.id)
+        return await self._db.scalar(
+            select(Bed.id)
+            .where(Bed.id.in_(bed_ids), Bed.status == BedStatus.ACTIVE)
+            .order_by(order)
+            .limit(1)
+            .with_for_update(skip_locked=True)
+        )
 
     async def active_bed_ids(self, category_id: int) -> list[int]:
         rows = await self._db.scalars(

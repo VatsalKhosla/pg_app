@@ -49,10 +49,11 @@ This was a 4-vCPU development VM, shared by k6, the API and the database, so the
 
 ## Consequences
 
-- **Next: holds lock only the beds they can take** (`FOR UPDATE SKIP LOCKED`).
-  - `choose_bed`'s preference still holds among beds nobody is taking, and the exclusion constraint stays the guarantee.
-  - Holds then run side by side, and once every bed is spoken for the rest are refused at once.
-  - It changes how stale holds get expired, and allows a rare "try again" when a racing hold rolls back. The 50-concurrent-holds test and this race must pass again after it.
+- **Done: holds lock only the bed they take** (`FOR UPDATE SKIP LOCKED`; ARCHITECTURE §7.3).
+  - `rank_free_beds` keeps `choose_bed`'s preference among beds nobody is taking, and the exclusion constraint stays the guarantee.
+  - Holds run side by side, and once every bed is spoken for, the rest are refused at once. A racing hold that rolls back can cause a rare "try again".
+  - The 50-concurrent-holds test passes. The race on this VM went from 1.65 s to 1.5 s at p95: it's now limited by CPU, not the lock.
+  - A single uncontended hold took about 330 ms on the server, against 18 ms for a quote. Profiling the hold path is next.
 - **Caching:** the scenarios pick random map areas and searches, so the figures above are close to a cache that never helps. Real traffic clusters around campuses and is cheaper. The cache's behaviour is proven by its own tests (ETags, invalidation on listing changes).
 - **Production sizing (8.5)** takes about three 4-worker API containers for the planning load, with the database on its own instance.
 - The load tests aren't run in CI: they need minutes of dedicated CPU. Run them before every peak season and major release (ARCHITECTURE §18).

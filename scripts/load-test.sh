@@ -82,6 +82,7 @@ for scenario in ${SCENARIOS:-reads writes hold-race}; do
     --volume "$(pwd)/load:/load:ro" --volume "$out:/out" \
     --env API="http://127.0.0.1:$port" --env DURATION="${DURATION:-2m}" \
     --env READS_PER_SECOND="${READS_PER_SECOND:-300}" --env WRITES_PER_SECOND="${WRITES_PER_SECOND:-20}" \
+    --env STUDENTS="${STUDENTS:-50}" \
     "${K6_IMAGE:?set by the Makefile}" run --quiet \
     --summary-export "/out/$scenario.json" "/load/$scenario.js" || failed=1
 done

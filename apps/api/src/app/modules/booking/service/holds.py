@@ -140,7 +140,7 @@ class BookingService:
                 raise HoldLimitReachedError(msg)
             if await self._bookings.by_quote(quote.id) is not None:
                 raise QuoteUsedError("Ask for a new price to book again.")
-            rooms = await self._beds.lock_room_type(quote.room_category_id)
+            rooms = await self._beds.room_type(quote.room_category_id)
             beds = [bed for room in rooms for bed in room.bed_ids]
             for stale in await self._bookings.stale_holds(beds, now=now):
                 await self._transitions.apply(
@@ -148,7 +148,8 @@ class BookingService:
                 )
             stay = stay_period(quote.move_in, quote.stay_months)
             assert stay.end is not None  # noqa: S101 - a stay always ends
-            bed = await self._beds.free_bed(rooms, stay)
+            # Only the bed taken is locked, so holds on the room type don't queue (ADR 0066).
+            bed = await self._beds.take_free_bed(rooms, stay)
             if bed is None:
                 msg = "No bed of this room type is free for your stay. Try another date or room."
                 raise BedUnavailableError(msg)

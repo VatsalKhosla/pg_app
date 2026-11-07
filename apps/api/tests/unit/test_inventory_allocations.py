@@ -15,6 +15,7 @@ from app.modules.inventory.domain.allocations import (
     choose_bed,
     free_beds,
     occupancy_bps,
+    rank_free_beds,
     stay_period,
 )
 
@@ -105,6 +106,21 @@ def test_a_booking_takes_a_bed_in_a_partly_held_room_first() -> None:
     assert choose_bed([RoomBeds(4, (41, 42)), RoomBeds(5, (51, 52))], [(51, before)], stay) == 41
     assert choose_bed(rooms[:1], [(11, stay), (12, Period(TODAY))], stay) is None
     assert choose_bed([], [], stay) is None
+
+
+def test_holds_taking_beds_at_once_go_down_the_same_ranking() -> None:
+    # As above: rooms 2 and 3 have a free bed each, room 1 is whole; 31 and 32 are held then.
+    rooms = [RoomBeds(1, (11, 12)), RoomBeds(2, (21, 22)), RoomBeds(3, (31, 32, 33))]
+    stay = Period(date(2027, 7, 20), date(2028, 6, 20))
+    held = [(21, JULY), (31, Period(date(2027, 1, 1))), (32, Period(date(2028, 5, 1)))]
+
+    # The first hold takes 22, the next (finding 22 being taken) 33, then the whole room's beds.
+    assert rank_free_beds(rooms, held, stay) == [22, 33, 11, 12]
+    assert rank_free_beds(rooms, held, stay)[0] == choose_bed(rooms, held, stay)
+    # Two partly held rooms with equal free beds: the room with the lower free bed first, whole.
+    two = [RoomBeds(7, (71, 72, 73)), RoomBeds(6, (61, 62, 63))]
+    assert rank_free_beds(two, [(73, stay), (61, stay)], stay) == [62, 63, 71, 72]
+    assert rank_free_beds(rooms[:1], [(11, stay), (12, Period(TODAY))], stay) == []
 
 
 def test_occupancy_is_taken_over_active_beds_rounded_down() -> None:

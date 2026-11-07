@@ -290,10 +290,11 @@ The machine (ADR 0045) takes the booking's facts, the event, who sent it, the mo
 
 ### 7.3 Holding a bed without race conditions
 Inside one transaction:
-1. `SELECT b.id FROM beds b JOIN rooms r ON r.id = b.room_id WHERE r.room_category_id = :c AND b.status = 'active' FOR UPDATE OF b` (serialises attempts per category).
-2. Expire stale holds for these beds: set HELD bookings past `hold_expires_at` to EXPIRED and deactivate their allocations.
-3. Choose a bed with no active allocation overlapping `[move_in, planned_move_out)`. Prefer beds in partly occupied rooms, so whole rooms stay free for groups.
-4. Insert the booking (HELD) and the allocation. If the exclusion constraint fires anyway, return `409 BED_UNAVAILABLE`.
+1. Read the room type's active beds, without locking them.
+2. Expire stale holds for these beds (`FOR UPDATE SKIP LOCKED`, so two holds never fight over one): set HELD bookings past `hold_expires_at` to EXPIRED and deactivate their allocations.
+3. Rank the beds with no active allocation overlapping `[move_in, planned_move_out)`. Prefer beds in partly occupied rooms, so whole rooms stay free for groups.
+4. Lock the first ranked bed no other hold is taking (`SELECT … ORDER BY rank LIMIT 1 FOR UPDATE SKIP LOCKED`), and check again that it's free. When none can be had, return `409 BED_UNAVAILABLE` at once. Holds on one room type run side by side and never queue (ADR 0066).
+5. Insert the booking (HELD) and the allocation. If the exclusion constraint fires anyway, return `409 BED_UNAVAILABLE`.
 
 Required test: 50 concurrent hold requests for the last free bed → exactly one HELD booking, 49 × 409, no overlapping active allocations.
 

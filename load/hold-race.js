@@ -7,7 +7,7 @@ import http from "k6/http";
 
 import { API, json, places, signIn, visitor } from "./common.js";
 
-const STUDENTS = 50;
+const STUDENTS = Number(__ENV.STUDENTS || 50);
 const won = new Counter("holds_won");
 const refused = new Counter("holds_refused");
 
