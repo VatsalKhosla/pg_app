@@ -1,18 +1,21 @@
 # UI refresh: the brief
 
-Status: open. The founders own this brief. Antigravity builds the refresh on branch `ui-refresh` (worktree `/home/vatkho32/work/pg-ui`); Claude Code reviews and merges it.
+Status: the founders own this brief, and its hard rules still bind every change.
+- Antigravity built the refresh's steps 1 to 7 on branch `ui-refresh`, and they are live.
+- On 2026-11-08 the founders paused Antigravity.
+- Claude Code now leads frontend v2 on branch `frontend-v2` (worktree `/home/vatkho32/work/pg-frontend`). Each phase merges to `main` after its checks pass.
+- The organised inspiration, the palette options and the type are in `docs/design/inspiration.md`.
 
 ## Goal
 Make the site look and feel like a top-tier consumer product: confident typography, generous space, considered motion, polished detail on every screen, on phones first. The features, data, flows and URLs stay the same. What changes is the look, layout, type, imagery, motion and finish.
 
-## References (founders: fill this in)
-List 3 to 5 sites. For each one, say exactly what to take from it and what to leave.
+## References
+The founders listed these sites. `docs/design/inspiration.md` records what we take from each and what we leave, along with the founders' three attached designs.
 
-| Site (link) | Take: type, colour, layout, motion, density, imagery, or a particular component | Leave |
+| Site (link) | Take | Leave |
 |---|---|---|
-| | | |
-| | | |
-| | | |
+| https://www.airbnb.co.in/ | Category rail, swipeable card photos, map and list with price pills, sticky reservation card, 1+4 mosaic | Scarcity badges not backed by inventory; fee lines |
+| https://www.expedia.co.in/ | Refund status labelled on every result, with a filter; a now-and-later price summary | Member-only prices; "only a few left" banners; review scores we don't have |
 
 ## Order of work
 Work page by page, so each step can be reviewed and merged on its own:
