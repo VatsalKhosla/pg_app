@@ -8,7 +8,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { ArchWatermark, ListingPlaceholderArt } from "@/components/brand/editorial-art";
 import { LocationMap } from "@/components/map/location-map";
 import { Photo } from "@/components/pg/photo";
-import { QuoteChecker } from "@/components/pg/quote-checker";
+import { QuoteCheckerNear } from "@/components/pg/quote-checker-near";
 import { ViewCounter } from "@/components/pg/view-counter";
 import { JsonLd } from "@/components/seo/json-ld";
 import { TrackView } from "@/components/system/track-view";
@@ -572,7 +572,7 @@ async function CheckPrice({
           {visit === null ? t("intro") : t("atYourVisit")}
         </p>
       </div>
-      <QuoteChecker
+      <QuoteCheckerNear
         rooms={categories.map((category) => ({ id: category.id, label: category.label }))}
         stays={STAYS.map((months) => ({ value: months, label: t("months", { count: months }) }))}
         defaultStay={stay}

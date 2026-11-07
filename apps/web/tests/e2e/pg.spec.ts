@@ -160,6 +160,8 @@ test.describe("a PG page's prices", () => {
     const checker = page.getByRole("region", { name: "Check your price" });
     const first = calendar.rooms[0];
     if (first?.weeks[0] === undefined) throw new Error("no room to check");
+    // Its form loads as it scrolls near the screen (ADR 0066).
+    await checker.scrollIntoViewIfNeeded();
     await checker.getByLabel("Room").selectOption({ label: first.label });
     await checker.getByRole("button", { name: "Show my price" }).click();
     await expect(

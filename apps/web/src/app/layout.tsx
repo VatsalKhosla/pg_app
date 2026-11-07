@@ -20,9 +20,13 @@ import { serverEnv } from "@/config/server-env";
 // globals.css). Only the Latin files are preloaded; the browser fetches Latin Extended, which
 // holds the rupee sign, the first time a page uses it.
 const sans = Inter({ subsets: ["latin"], display: "swap", variable: "--font-sans-face" });
+// The headings' face isn't preloaded: on a slow phone its bytes would come before the page's
+// first photo, which is what people wait for (ADR 0066). Headings show in the fallback for a
+// moment, then swap.
 const display = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
+  preload: false,
   variable: "--font-display-face",
 });
 

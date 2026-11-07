@@ -160,6 +160,8 @@ test.describe("a visit", () => {
     await mine.getByRole("link", { name: "Reserve a bed here" }).click();
     await expect(page).toHaveURL(new RegExp(`/pg/${ASTER}\\?visit=`));
     const price = page.getByRole("region", { name: "Check your price" });
+    // Its form loads as it scrolls near the screen (ADR 0066).
+    await price.scrollIntoViewIfNeeded();
     await price.getByLabel("Room").selectOption({ index: 1 });
     await price.getByRole("button", { name: "Show my price" }).click();
     await price.getByRole("button", { name: "Reserve this bed" }).click();
