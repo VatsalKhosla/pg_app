@@ -391,7 +391,7 @@ export default async function HomePage() {
       </section>
 
       <div className="pt-14 sm:pt-20">
-        <Suspense fallback={<div className="min-h-32" />}>
+        <Suspense fallback={null}>
           <PolicyFacts />
         </Suspense>
       </div>
@@ -429,7 +429,7 @@ export default async function HomePage() {
           </h2>
           <p className="mt-3 max-w-prose text-lg text-muted-foreground">{tBudget("lead")}</p>
           <div className="mt-10">
-            <Suspense fallback={<div className={BUDGET_SPACE} />}>
+            <Suspense fallback={null}>
               <BudgetBand />
             </Suspense>
           </div>

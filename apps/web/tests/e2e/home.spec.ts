@@ -49,3 +49,27 @@ test("the home page streams in the API's status, asked through the typed client"
   // Browser tests run without the API unless one happens to be up locally.
   await expect(page.getByText(/^Service status: (Online|Unavailable)$/)).toBeVisible();
 });
+
+test("the search over the hero goes to search with what was chosen, and nothing else", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  await page.getByLabel("Budget").selectOption({ label: "Up to ₹10,000" });
+  await page.getByRole("button", { name: "Find PGs" }).click();
+
+  await expect(page).toHaveURL(/\/search\?budget_max_paise=1000000$/);
+});
+
+test.describe("for someone who has asked for less motion", () => {
+  test.use({ contextOptions: { reducedMotion: "reduce" } });
+
+  test("the evening scene holds still", async ({ page }) => {
+    await page.goto("/");
+
+    const moving = await page
+      .locator(".dusk-scene")
+      .evaluate((scene) => scene.getAnimations({ subtree: true }).length);
+    expect(moving).toBe(0);
+  });
+});

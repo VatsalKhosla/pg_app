@@ -4,8 +4,7 @@ import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ReactNode, SubmitEvent } from "react";
 
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button-variants";
 
 export interface Choice {
   value: string;
@@ -37,10 +36,7 @@ function Field({
 }) {
   return (
     <label
-      className={cn(
-        "flex min-h-14 min-w-0 cursor-pointer flex-col justify-center rounded-3xl px-5 py-2 transition-colors duration-(--duration-fast) focus-within:ring-2 focus-within:ring-ring hover:bg-foreground/5 motion-reduce:transition-none",
-        className,
-      )}
+      className={`flex min-h-14 min-w-0 cursor-pointer flex-col justify-center rounded-3xl px-5 py-2 transition-colors duration-(--duration-fast) focus-within:ring-2 focus-within:ring-ring hover:bg-foreground/5 motion-reduce:transition-none ${className ?? ""}`}
     >
       <span className="text-xs font-semibold text-foreground">{label}</span>
       {children}
@@ -113,16 +109,13 @@ export function HeroSearch({
           ))}
         </select>
       </Field>
-      <Button
+      <button
         type="submit"
-        variant="sun"
-        size="lg"
-        shape="pill"
-        className="col-span-2 h-14 sm:col-span-1 pointer-fine:h-14"
+        className={`${buttonVariants({ variant: "sun", size: "xl", shape: "pill" })} col-span-2 sm:col-span-1`}
       >
         <Search aria-hidden="true" />
         {text.submit}
-      </Button>
+      </button>
     </form>
   );
 }

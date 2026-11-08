@@ -1,10 +1,10 @@
 "use client";
 
+import { cx } from "class-variance-authority";
 import { Pause, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button-variants";
 
 /** Where the token is: 0 with the student, 1 protected, 2 counted toward the rent. */
 type Place = 0 | 1 | 2;
@@ -109,17 +109,14 @@ export function StaySimulator({ token, stages, branches, text }: StaySimulatorPr
         </div>
 
         <div className="mt-6 flex items-center gap-4">
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="icon"
-            shape="pill"
             onClick={togglePlay}
             aria-label={playing ? text.pause : text.play}
-            className="motion-reduce:hidden"
+            className={`${buttonVariants({ variant: "outline", size: "icon", shape: "pill" })} motion-reduce:hidden`}
           >
             {playing ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
-          </Button>
+          </button>
           <input
             type="range"
             min={0}
@@ -144,7 +141,7 @@ export function StaySimulator({ token, stages, branches, text }: StaySimulatorPr
                   scrub(position);
                 }}
                 aria-current={position === index ? "step" : undefined}
-                className={cn(
+                className={cx(
                   "min-h-6 rounded-md text-xs font-medium outline-none transition-colors duration-(--duration-fast) hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
                   position === index ? "text-foreground" : "text-muted-foreground",
                 )}
@@ -160,12 +157,14 @@ export function StaySimulator({ token, stages, branches, text }: StaySimulatorPr
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium text-muted-foreground">{text.happens}</span>
               {open.map((candidate) => (
-                <Button
+                <button
                   key={candidate.key}
                   type="button"
-                  variant={candidate.key === branchKey ? "default" : "outline"}
-                  size="sm"
-                  shape="pill"
+                  className={buttonVariants({
+                    variant: candidate.key === branchKey ? "default" : "outline",
+                    size: "sm",
+                    shape: "pill",
+                  })}
                   aria-pressed={candidate.key === branchKey}
                   onClick={() => {
                     setPlaying(false);
@@ -173,7 +172,7 @@ export function StaySimulator({ token, stages, branches, text }: StaySimulatorPr
                   }}
                 >
                   {candidate.label}
-                </Button>
+                </button>
               ))}
             </div>
           )}
@@ -192,7 +191,7 @@ export function StaySimulator({ token, stages, branches, text }: StaySimulatorPr
             >
               <span aria-hidden="true" className="sim-node rounded-full bg-input" />
               <span
-                className={cn(
+                className={cx(
                   "sim-label px-1 text-sm leading-snug font-medium transition-colors duration-(--duration-slow) motion-reduce:transition-none",
                   position === place ? "text-foreground" : "text-muted-foreground",
                 )}
