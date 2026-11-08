@@ -55,7 +55,10 @@ test("the search over the hero goes to search with what was chosen, and nothing 
 }) => {
   await page.goto("/");
 
-  await page.getByLabel("Budget", { exact: true }).selectOption({ label: "Up to ₹10,000" });
+  await page
+    .getByRole("form", { name: "Search for a PG" })
+    .getByLabel("Budget")
+    .selectOption({ label: "Up to ₹10,000" });
   await page.getByRole("button", { name: "Find PGs" }).click();
 
   await expect(page).toHaveURL(/\/search\?budget_max_paise=1000000$/);
