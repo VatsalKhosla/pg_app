@@ -21,6 +21,8 @@ const buttonVariants = cva(
       variant: {
         /** The page's main action. One per view, where possible. */
         default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover",
+        /** The marigold fill: the one action that matters most on a screen, such as search. */
+        sun: "bg-sun text-sun-foreground shadow-sm hover:bg-sun-hover",
         /** A quieter brand action beside the main one, or a selected filter. */
         soft: "bg-primary-soft text-primary-soft-foreground hover:bg-primary-soft-hover",
         destructive:

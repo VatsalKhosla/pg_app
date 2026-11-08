@@ -138,7 +138,7 @@ export function QuoteChecker({
       <form
         method="get"
         noValidate
-        className="grid gap-4 rounded-2xl border border-indigo-border bg-card p-5 shadow-2xs sm:grid-cols-3 sm:items-end"
+        className="grid gap-4 rounded-2xl border border-dusk-border bg-card p-5 shadow-2xs sm:grid-cols-3 sm:items-end"
         onSubmit={(event) => {
           void form.handleSubmit(check)(event);
         }}
@@ -186,34 +186,34 @@ export function QuoteChecker({
       )}
       <div aria-live="polite">
         {quote === null ? null : (
-          <div className="relative space-y-4 overflow-hidden rounded-2xl border border-saffron-border bg-card p-5 text-card-foreground shadow-sm sm:p-6">
+          <div className="relative space-y-4 overflow-hidden rounded-2xl border border-marigold-border bg-card p-5 text-card-foreground shadow-sm sm:p-6">
             <span
               aria-hidden="true"
               className="absolute inset-x-0 top-0 h-1.5"
               style={{
                 backgroundImage:
-                  "linear-gradient(90deg, var(--primary) 0%, var(--sage) 35%, var(--saffron) 70%, var(--coral) 100%)",
+                  "linear-gradient(90deg, var(--primary) 0%, var(--neem) 35%, var(--marigold) 70%, var(--ember) 100%)",
               }}
             />
             <div className="space-y-2 pt-1">
               <p className="inline-block rounded-xl border border-primary-border bg-primary-soft px-3.5 py-1.5 font-display text-2xl font-bold tracking-tight text-primary-soft-foreground tabular-nums">
                 {fillBlanks(text.monthly, { amount: formatINR(quote.monthlyRentPaise) })}
               </p>
-              <p className="rounded-xl border border-saffron-border bg-saffron-soft px-3.5 py-2 text-sm font-medium text-saffron-soft-foreground tabular-nums">
+              <p className="rounded-xl border border-marigold-border bg-marigold-soft px-3.5 py-2 text-sm font-medium text-marigold-soft-foreground tabular-nums">
                 {quote.explanation}
               </p>
             </div>
             <ul className="grid gap-2.5 border-y py-3.5 text-sm font-medium text-foreground tabular-nums sm:grid-cols-2">
-              <li className="rounded-xl border border-saffron-border/70 bg-surface-warm px-3.5 py-2">
+              <li className="rounded-xl border border-marigold-border/70 bg-surface-warm px-3.5 py-2">
                 {fillBlanks(text.token, { amount: formatINR(quote.tokenPaise) })}
               </li>
-              <li className="rounded-xl border border-saffron-border/70 bg-surface-warm px-3.5 py-2">
+              <li className="rounded-xl border border-marigold-border/70 bg-surface-warm px-3.5 py-2">
                 {fillBlanks(text.dueAtMoveIn, { amount: formatINR(quote.dueAtMoveInPaise) })}
               </li>
-              <li className="rounded-xl border border-saffron-border/70 bg-surface-warm px-3.5 py-2">
+              <li className="rounded-xl border border-marigold-border/70 bg-surface-warm px-3.5 py-2">
                 {fillBlanks(text.deposit, { amount: formatINR(quote.depositPaise) })}
               </li>
-              <li className="rounded-xl border border-saffron-border/70 bg-surface-warm px-3.5 py-2">
+              <li className="rounded-xl border border-marigold-border/70 bg-surface-warm px-3.5 py-2">
                 {quote.charges.length === 0
                   ? text.noCharges
                   : fillBlanks(text.charges, {
@@ -227,7 +227,7 @@ export function QuoteChecker({
               {canReserve ? null : text.bookingSoon}
             </p>
             {!canReserve || reservation === null ? null : (
-              <div className="space-y-3 rounded-xl border border-sage-border bg-sage-soft p-4">
+              <div className="space-y-3 rounded-xl border border-neem-border bg-neem-soft p-4">
                 <p className="text-sm font-medium text-foreground">{text.reserve.note}</p>
                 <Button
                   size="lg"

@@ -1,7 +1,7 @@
 import "./globals.css";
 
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Eczar, Inter } from "next/font/google";
 import { connection } from "next/server";
 import { getLocale, getTranslations } from "next-intl/server";
 
@@ -16,14 +16,15 @@ import { serverEnv } from "@/config/server-env";
 
 // Self-hosted at build time by next/font: no request to Google from the browser, no layout shift.
 // Both are variable fonts under the SIL Open Font License. Inter sets text, forms and figures
-// (rents read best in it); Plus Jakarta Sans, rounder and warmer, sets the headings (h1 to h3, see
-// globals.css). Only the Latin files are preloaded; the browser fetches Latin Extended, which
-// holds the rupee sign, the first time a page uses it.
+// (rents read best in it). Eczar, a serif by Vaibhav Singh drawn for Latin and Devanagari together,
+// sets the headings (h1 to h3, see globals.css): it has the rupee sign, and it's ready for Hindi.
+// Only the Latin files are preloaded; the browser fetches Latin Extended, which holds the rupee
+// sign, the first time a page uses it.
 const sans = Inter({ subsets: ["latin"], display: "swap", variable: "--font-sans-face" });
 // The headings' face isn't preloaded: on a slow phone its bytes would come before the page's
 // first photo, which is what people wait for (ADR 0066). Headings show in the fallback for a
 // moment, then swap.
-const display = Plus_Jakarta_Sans({
+const display = Eczar({
   subsets: ["latin"],
   display: "swap",
   preload: false,

@@ -65,15 +65,15 @@ export function PinPreview({
         }
       }}
       className={cn(
-        "relative flex gap-3.5 overflow-hidden rounded-2xl border border-saffron-border bg-card p-3.5 pt-4 pe-12 text-card-foreground shadow-xl outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "relative flex gap-3.5 overflow-hidden rounded-2xl border border-marigold-border bg-card p-3.5 pt-4 pe-12 text-card-foreground shadow-xl outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
     >
       <span
         aria-hidden="true"
-        className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),var(--saffron),var(--coral))]"
+        className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),var(--marigold),var(--ember))]"
       />
-      <div className="relative size-22 shrink-0 overflow-hidden rounded-xl border border-saffron-border/60 bg-saffron-soft">
+      <div className="relative size-22 shrink-0 overflow-hidden rounded-xl border border-marigold-border/60 bg-marigold-soft">
         {cover == null ? (
           <ListingPlaceholderArt />
         ) : (
@@ -96,12 +96,12 @@ export function PinPreview({
         </p>
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           {pin.verified ? (
-            <Badge variant="sage" className="px-2 py-0 text-[11px]">
+            <Badge variant="neem" className="px-2 py-0 text-[11px]">
               <ShieldCheck aria-hidden="true" className="size-3" />
               {t("card.verified")}
             </Badge>
           ) : null}
-          <Badge variant="saffron" className="px-2 py-0 text-[11px] font-semibold">
+          <Badge variant="marigold" className="px-2 py-0 text-[11px] font-semibold">
             {t(`card.beds.${pin.bedsFree}`)}
           </Badge>
         </div>

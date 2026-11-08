@@ -29,16 +29,12 @@ export async function SiteHeader() {
   }));
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-md supports-backdrop-filter:bg-background/85">
-      <div
-        aria-hidden="true"
-        className="h-1 w-full bg-[linear-gradient(90deg,var(--primary)_0%,var(--sage)_32%,var(--saffron)_68%,var(--coral)_100%)]"
-      />
-      <div className="mx-auto flex h-16 max-w-page items-center justify-between gap-4 px-gutter sm:h-18">
+    <header className="glass sticky top-3 z-40 mx-3 mt-3 rounded-full shadow-md sm:mx-auto sm:w-[calc(100%-2rem)] sm:max-w-page">
+      <div className="flex h-16 items-center justify-between gap-4 pr-2.5 pl-4 sm:pl-5">
         {/* Named by its visible text: the mark beside it is decorative. */}
         <Link
           href="/"
-          className="-mx-1.5 flex items-center gap-2.5 rounded-xl px-1.5 py-1 font-display text-lg font-bold tracking-tight text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="-mx-1.5 flex items-center gap-2.5 rounded-xl px-1.5 py-1 font-display text-lg font-semibold tracking-tight text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <BrandMark />
           <span>{brand.name}</span>
@@ -49,7 +45,7 @@ export async function SiteHeader() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="inline-flex min-h-10 items-center rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-primary-soft hover:text-primary-soft-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+                  className="inline-flex min-h-10 items-center rounded-full px-3.5 text-sm font-medium text-foreground/80 transition-colors outline-none hover:bg-foreground/8 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
                 >
                   {link.label}
                 </Link>

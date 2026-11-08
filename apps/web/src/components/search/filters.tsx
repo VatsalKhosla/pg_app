@@ -110,7 +110,7 @@ export function SearchBar({
   const sorts = SORTS.filter((sort) => sort !== "distance" || query.campus !== undefined);
 
   return (
-    <div className="space-y-3 rounded-2xl border border-saffron-border/80 bg-surface-warm p-3.5 shadow-xs">
+    <div className="space-y-3 rounded-2xl border border-marigold-border/80 bg-surface-warm p-3.5 shadow-xs">
       <form
         method="get"
         role="search"
@@ -184,14 +184,14 @@ export function SearchBar({
           </select>
         </div>
         {query.bbox === undefined ? null : (
-          <p className="flex items-center gap-2 rounded-full border border-indigo-border bg-indigo-soft px-3.5 py-1 text-xs font-medium text-indigo-soft-foreground">
+          <p className="flex items-center gap-2 rounded-full border border-dusk-border bg-dusk-soft px-3.5 py-1 text-xs font-medium text-dusk-soft-foreground">
             {t("filters.mapArea")}
             <button
               type="button"
               onClick={() => {
                 onChange({ bbox: null });
               }}
-              className="inline-flex min-h-6 items-center rounded px-1 font-semibold text-indigo-soft-foreground underline underline-offset-4 outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex min-h-6 items-center rounded px-1 font-semibold text-dusk-soft-foreground underline underline-offset-4 outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
             >
               {t("filters.clearArea")}
             </button>

@@ -52,9 +52,9 @@ export function PgCard({
     >
       <span
         aria-hidden="true"
-        className=" inset-y-0 left-0 w-1 bg-[linear-gradient(180deg,var(--primary),var(--saffron),var(--coral))] opacity-75 transition-opacity group-hover:opacity-100 absolute"
+        className=" inset-y-0 left-0 w-1 bg-[linear-gradient(180deg,var(--primary),var(--marigold),var(--ember))] opacity-75 transition-opacity group-hover:opacity-100 absolute"
       />
-      <div className="relative size-26 shrink-0 overflow-hidden rounded-xl border border-saffron-border/60 bg-saffron-soft sm:size-30">
+      <div className="relative size-26 shrink-0 overflow-hidden rounded-xl border border-marigold-border/60 bg-marigold-soft sm:size-30">
         {card.cover === null ? (
           <ListingPlaceholderArt />
         ) : (
@@ -100,17 +100,17 @@ export function PgCard({
         )}
         <p className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
           {card.verified ? (
-            <Badge variant="sage" className="px-2 py-0 text-[11px]">
+            <Badge variant="neem" className="px-2 py-0 text-[11px]">
               <ShieldCheck aria-hidden="true" className="size-3" />
               {t("verified")}
             </Badge>
           ) : null}
           {card.licensed ? (
-            <Badge variant="indigo" className="px-2 py-0 text-[11px]">
+            <Badge variant="dusk" className="px-2 py-0 text-[11px]">
               {t("licensed")}
             </Badge>
           ) : null}
-          <Badge variant="saffron" className="px-2 py-0 text-[11px] font-semibold">
+          <Badge variant="marigold" className="px-2 py-0 text-[11px] font-semibold">
             {t(`beds.${card.bedsFree}`)}
           </Badge>
         </p>

@@ -157,16 +157,16 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
-      <div className="relative space-y-3 overflow-hidden rounded-3xl border border-saffron-border bg-surface-warm p-6 shadow-xs sm:p-8">
+      <div className="relative space-y-3 overflow-hidden rounded-3xl border border-marigold-border bg-surface-warm p-6 shadow-xs sm:p-8">
         <span
           aria-hidden="true"
           className="absolute inset-x-0 top-0 h-1.5"
           style={{
             backgroundImage:
-              "linear-gradient(90deg, var(--primary) 0%, var(--sage) 35%, var(--saffron) 70%, var(--coral) 100%)",
+              "linear-gradient(90deg, var(--primary) 0%, var(--neem) 35%, var(--marigold) 70%, var(--ember) 100%)",
           }}
         />
-        <ArchWatermark tone="coral" className="absolute -right-6 -bottom-6 size-40 opacity-15" />
+        <ArchWatermark tone="ember" className="absolute -right-6 -bottom-6 size-40 opacity-15" />
         <Link
           href={BOOKINGS_PATH}
           className="relative inline-flex min-h-8 items-center gap-1.5 text-sm font-semibold text-primary underline underline-offset-4"
@@ -174,7 +174,7 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
           <ArrowLeft aria-hidden="true" className="size-4" />
           {t("back")}
         </Link>
-        <p className="relative inline-block rounded-full border border-indigo-border bg-indigo-soft px-3 py-1 font-mono text-xs font-semibold tracking-wider text-indigo-soft-foreground uppercase">
+        <p className="relative inline-block rounded-full border border-dusk-border bg-dusk-soft px-3 py-1 font-mono text-xs font-semibold tracking-wider text-dusk-soft-foreground uppercase">
           {t("code", { code: booking.code })}
         </p>
         <h1 className="relative text-title-1 font-bold text-foreground">
@@ -195,7 +195,7 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
 
       <Card
         asChild
-        variant="teal"
+        variant="ink"
         className="relative space-y-3 overflow-hidden rounded-3xl p-6 shadow-sm"
       >
         <section aria-labelledby="status-title">
@@ -205,7 +205,7 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
           </h2>
           <p className="text-sm leading-relaxed text-foreground sm:text-base">{next}</p>
           {dispute === null ? null : (
-            <p className="rounded-xl border border-saffron-border bg-saffron-soft px-4 py-3 text-sm font-medium text-saffron-soft-foreground">
+            <p className="rounded-xl border border-marigold-border bg-marigold-soft px-4 py-3 text-sm font-medium text-marigold-soft-foreground">
               {t("disputeStatus", {
                 date: dayText(dispute.openedAt.slice(0, 10)),
                 reason: t(`dispute.reasons.${dispute.reason}`),
@@ -306,13 +306,13 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
       />
 
       {contact === null ? null : (
-        <Card asChild variant="sage" className="relative space-y-4 overflow-hidden rounded-3xl p-6">
+        <Card asChild variant="neem" className="relative space-y-4 overflow-hidden rounded-3xl p-6">
           <section aria-labelledby="where-title">
-            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-sage" />
+            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-neem" />
             <h2 id="where-title" className="text-title-3 font-semibold text-foreground">
               {t("where.title")}
             </h2>
-            <dl className="grid gap-4 rounded-2xl border border-sage-border bg-card p-4 sm:grid-cols-2">
+            <dl className="grid gap-4 rounded-2xl border border-neem-border bg-card p-4 sm:grid-cols-2">
               <div className="space-y-1">
                 <dt className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                   {t("where.address")}
@@ -347,11 +347,11 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
       ) ? (
         <Card
           asChild
-          variant="saffron"
+          variant="marigold"
           className="relative space-y-4 overflow-hidden rounded-3xl p-6"
         >
           <section aria-labelledby="paid-title">
-            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-saffron" />
+            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-marigold" />
             <h2 id="paid-title" className="text-title-3 font-semibold text-foreground">
               {t("paid.title")}
             </h2>
@@ -361,14 +361,14 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
                   // A token blocked by a UPI one-time mandate (step 6.7): not taken, or given back.
                   <li
                     key={`${payment.status}-${String(index)}`}
-                    className="rounded-xl border border-saffron-border bg-card p-4 text-sm text-foreground tabular-nums"
+                    className="rounded-xl border border-marigold-border bg-card p-4 text-sm text-foreground tabular-nums"
                   >
                     <p>{t(`paid.${payment.status}`, { amount: formatINR(payment.amountPaise) })}</p>
                   </li>
                 ) : payment.capturedAt === null ? null : (
                   <li
                     key={payment.capturedAt}
-                    className="space-y-2 rounded-xl border border-saffron-border bg-card p-4 text-sm text-foreground tabular-nums"
+                    className="space-y-2 rounded-xl border border-marigold-border bg-card p-4 text-sm text-foreground tabular-nums"
                   >
                     <p className="font-medium">
                       {t("paid.token", {
@@ -404,11 +404,11 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
 
       <Card asChild variant="warm" className="relative space-y-4 overflow-hidden rounded-3xl p-6">
         <section aria-labelledby="money-title">
-          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-coral" />
+          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-ember" />
           <h2 id="money-title" className="text-title-3 font-semibold text-foreground">
             {t("money.title")}
           </h2>
-          <dl className="divide-y rounded-2xl border border-saffron-border/70 bg-card">
+          <dl className="divide-y rounded-2xl border border-marigold-border/70 bg-card">
             {money.map(([label, value, note]) => (
               <div
                 key={label}
@@ -428,13 +428,13 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
         </section>
       </Card>
 
-      <Card asChild variant="indigo" className="relative space-y-4 overflow-hidden rounded-3xl p-6">
+      <Card asChild variant="dusk" className="relative space-y-4 overflow-hidden rounded-3xl p-6">
         <section aria-labelledby="history-title">
-          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-indigo" />
+          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-dusk" />
           <h2 id="history-title" className="text-title-3 font-semibold text-foreground">
             {t("history")}
           </h2>
-          <ol className="divide-y rounded-2xl border border-indigo-border bg-card p-4 text-sm">
+          <ol className="divide-y rounded-2xl border border-dusk-border bg-card p-4 text-sm">
             {booking.timeline.map((step) => (
               <li
                 key={`${step.event}-${step.at}`}
@@ -452,7 +452,7 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
         </section>
       </Card>
 
-      <p className="rounded-2xl border border-saffron-border/70 bg-surface-warm px-5 py-4 text-sm text-muted-foreground">
+      <p className="rounded-2xl border border-marigold-border/70 bg-surface-warm px-5 py-4 text-sm text-muted-foreground">
         {t("help", { code: booking.code })}{" "}
         <Link
           href={trustPages.contact}

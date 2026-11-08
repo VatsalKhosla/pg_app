@@ -32,7 +32,8 @@
       "title": "Find a PG near you",
       "campuses": "Near a campus",
       "localities": "In a locality",
-      "place": "{name}: {count, plural, one {# PG} other {# PGs}}"
+      "place": "{name}: {count, plural, one {# PG} other {# PGs}}",
+      "stop": "{count, plural, one {# PG} other {# PGs}} from {rent}"
     },
     "steps": {
       "title": "How it works",
@@ -51,7 +52,8 @@
       "moveIn": {
         "title": "Move in",
         "body": "Your token stays protected until you have moved in and checked the room."
-      }
+      },
+      "lead": "Follow your token from search to move-in, and see what happens if plans change."
     },
     "students": {
       "title": "For students and parents",
@@ -60,6 +62,60 @@
     "owners": {
       "title": "For PG owners",
       "body": "Fill your beds with verified tenants. You pay a one-time placement fee for each tenant we place."
+    },
+    "headline": "Verified PG beds in <accent>Delhi NCR</accent>",
+    "search": {
+      "label": "Search for a PG",
+      "near": "Near",
+      "anywhere": "Any campus",
+      "moveIn": "Moving in",
+      "anyMonth": "Any month",
+      "budget": "Budget",
+      "anyBudget": "Any budget",
+      "upTo": "Up to {amount}",
+      "submit": "Find PGs"
+    },
+    "facts": {
+      "title": "What we promise, in numbers",
+      "token": "Refundable token, which counts toward your first month's rent",
+      "days": "{days, plural, one {# day} other {# days}}",
+      "cancel": "Free cancellation before you move in",
+      "hours": "{hours, plural, one {# hour} other {# hours}}",
+      "check": "To check the room once you have moved in",
+      "fee": "Platform fee for students"
+    },
+    "sim": {
+      "scrub": "Move through the steps",
+      "step": "Step {current} of {total}",
+      "you": "With you",
+      "held": "Protected",
+      "rent": "Counts toward your rent",
+      "back": "Your token is back with you.",
+      "onTrack": "Where your token is at this step.",
+      "play": "Play through the steps",
+      "pause": "Pause",
+      "happens": "What if",
+      "confirm": "Owner confirms",
+      "check": "Check the room",
+      "settled": "Rent begins",
+      "cancelLabel": "I cancel",
+      "ownerNoLabel": "The owner says no",
+      "notAsShownLabel": "The room isn't as shown"
+    },
+    "budget": {
+      "title": "See what your budget finds",
+      "lead": "Every dot is a listed PG. Drag your monthly budget and watch which ones light up.",
+      "label": "Your monthly budget",
+      "monthly": "a month",
+      "one": "{count} PG starts at or under {budget} a month.",
+      "other": "{count} PGs start at or under {budget} a month.",
+      "none": "No PG starts at or under {budget} a month yet.",
+      "more": "There may be more on the map.",
+      "cta": "See them on the map",
+      "caption": "Dots show each PG's rough location. Exact addresses stay private until a visit is booked.",
+      "mapLabel": "A map of PGs in Delhi NCR, lit up by budget",
+      "fallback": "Set your budget on the map and see every verified PG within it.",
+      "fallbackCta": "Open the map"
     }
   },
   "NotFound": {

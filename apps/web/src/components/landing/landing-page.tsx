@@ -29,9 +29,9 @@ export interface LandingText {
 }
 
 const nearbyChipClasses =
-  "inline-flex min-h-11 items-center rounded-full border border-saffron-border bg-saffron-soft px-4 py-2 text-sm font-medium text-saffron-soft-foreground shadow-2xs transition-[background-color,border-color,color,transform] duration-(--duration-fast) ease-standard outline-none hover:-translate-y-0.5 hover:border-coral hover:bg-coral-soft hover:text-coral-soft-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0";
+  "inline-flex min-h-11 items-center rounded-full border border-marigold-border bg-marigold-soft px-4 py-2 text-sm font-medium text-marigold-soft-foreground shadow-2xs transition-[background-color,border-color,color,transform] duration-(--duration-fast) ease-standard outline-none hover:-translate-y-0.5 hover:border-ember hover:bg-ember-soft hover:text-ember-soft-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0";
 
-const faqVariants = ["teal", "saffron", "indigo", "sage"] as const;
+const faqVariants = ["ink", "marigold", "dusk", "neem"] as const;
 
 /**
  * A landing page for a campus or a locality (step 3.6, ADR 0032): the PGs there as search finds
@@ -71,8 +71,8 @@ export function LandingPage({
           ...(faqs.length === 0 ? [] : [faqJsonLd(faqs)]),
         ]}
       />
-      <header className="relative overflow-hidden border-b border-saffron-border/70 bg-surface-warm">
-        <ArchWatermark tone="coral" className="absolute -right-6 -bottom-6 size-48 opacity-15" />
+      <header className="relative overflow-hidden border-b border-marigold-border/70 bg-surface-warm">
+        <ArchWatermark tone="ember" className="absolute -right-6 -bottom-6 size-48 opacity-15" />
         <div className="relative mx-auto max-w-page space-y-4 px-gutter py-10 sm:py-14">
           <nav aria-label={text.breadcrumb}>
             <ol className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
@@ -93,8 +93,8 @@ export function LandingPage({
             </ol>
           </nav>
           <div aria-hidden="true" className="flex items-center gap-1.5">
-            <span className="h-1.5 w-8 rounded-full bg-coral" />
-            <span className="h-1.5 w-5 rounded-full bg-saffron" />
+            <span className="h-1.5 w-8 rounded-full bg-ember" />
+            <span className="h-1.5 w-5 rounded-full bg-marigold" />
             <span className="h-1.5 w-4 rounded-full bg-primary" />
           </div>
           <h1 className="max-w-3xl text-title-1 font-bold tracking-tight text-foreground">
@@ -150,7 +150,7 @@ export function LandingPage({
         {nearby.length === 0 ? null : (
           <section aria-labelledby="landing-nearby" className="space-y-4">
             <div className="flex items-center gap-3">
-              <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-saffron" />
+              <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-marigold" />
               <h2 id="landing-nearby" className="text-title-2 font-bold tracking-tight">
                 {text.nearby}
               </h2>
@@ -170,7 +170,7 @@ export function LandingPage({
         {faqs.length === 0 ? null : (
           <section aria-labelledby="landing-faq" className="space-y-6">
             <div className="flex items-center gap-3">
-              <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-indigo" />
+              <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-dusk" />
               <h2 id="landing-faq" className="text-title-2 font-bold tracking-tight">
                 {text.faq}
               </h2>

@@ -62,16 +62,16 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
-      <div className="relative space-y-2 overflow-hidden rounded-3xl border border-saffron-border bg-surface-warm p-6 shadow-xs sm:p-8">
+      <div className="relative space-y-2 overflow-hidden rounded-3xl border border-marigold-border bg-surface-warm p-6 shadow-xs sm:p-8">
         <span
           aria-hidden="true"
           className="absolute inset-x-0 top-0 h-1.5"
           style={{
             backgroundImage:
-              "linear-gradient(90deg, var(--primary) 0%, var(--sage) 35%, var(--saffron) 70%, var(--coral) 100%)",
+              "linear-gradient(90deg, var(--primary) 0%, var(--neem) 35%, var(--marigold) 70%, var(--ember) 100%)",
           }}
         />
-        <ArchWatermark tone="teal" className="absolute -right-6 -bottom-6 size-36 opacity-15" />
+        <ArchWatermark tone="ink" className="absolute -right-6 -bottom-6 size-36 opacity-15" />
         <h1 className="relative text-title-1 font-bold tracking-tight text-foreground">
           {t("title")}
         </h1>
@@ -108,7 +108,7 @@ export default async function AccountPage() {
 
       <Card asChild className="relative space-y-5 overflow-hidden rounded-3xl bg-card p-6">
         <section aria-labelledby="data-title">
-          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-indigo" />
+          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-dusk" />
           <div className="space-y-1">
             <h2 id="data-title" className="text-title-3 font-semibold tracking-tight">
               {t("dataTitle")}
@@ -141,7 +141,7 @@ export default async function AccountPage() {
 
       <Card asChild className="relative space-y-4 overflow-hidden rounded-3xl bg-card p-6">
         <section aria-labelledby="messages-title">
-          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-saffron" />
+          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-marigold" />
           <h2 id="messages-title" className="text-title-3 font-semibold tracking-tight">
             {t("messagesTitle")}
           </h2>

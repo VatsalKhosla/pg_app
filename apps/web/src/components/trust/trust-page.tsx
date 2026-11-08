@@ -19,16 +19,16 @@ export function TrustPage({
 }) {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
-      <header className="relative space-y-3 overflow-hidden rounded-3xl border border-saffron-border bg-surface-warm p-6 shadow-xs sm:p-8">
+      <header className="relative space-y-3 overflow-hidden rounded-3xl border border-marigold-border bg-surface-warm p-6 shadow-xs sm:p-8">
         <span
           aria-hidden="true"
           className="absolute inset-x-0 top-0 h-1.5"
           style={{
             backgroundImage:
-              "linear-gradient(90deg, var(--primary) 0%, var(--sage) 35%, var(--saffron) 70%, var(--coral) 100%)",
+              "linear-gradient(90deg, var(--primary) 0%, var(--neem) 35%, var(--marigold) 70%, var(--ember) 100%)",
           }}
         />
-        <ArchWatermark tone="saffron" className="absolute -right-6 -bottom-6 size-40 opacity-15" />
+        <ArchWatermark tone="marigold" className="absolute -right-6 -bottom-6 size-40 opacity-15" />
         <h1 className="relative text-display font-bold tracking-tight text-balance text-foreground">
           {title}
         </h1>
@@ -45,7 +45,7 @@ export function TrustPage({
 export async function Placeholder({ fact }: { fact: string }) {
   const t = await getTranslations("Trust");
   return (
-    <span className="inline-flex items-center rounded-md border border-saffron-border bg-saffron-soft px-2 py-0.5 text-sm font-medium text-saffron-soft-foreground">
+    <span className="inline-flex items-center rounded-md border border-marigold-border bg-marigold-soft px-2 py-0.5 text-sm font-medium text-marigold-soft-foreground">
       {t("placeholder", { fact })}
     </span>
   );
@@ -72,7 +72,7 @@ export function TrustSection({
           className="absolute inset-x-0 top-0 h-1"
           style={{
             backgroundImage:
-              "linear-gradient(90deg, var(--primary) 0%, var(--saffron) 50%, var(--coral) 100%)",
+              "linear-gradient(90deg, var(--primary) 0%, var(--marigold) 50%, var(--ember) 100%)",
           }}
         />
         <h2 id={id} className="text-title-2 font-bold tracking-tight text-foreground">

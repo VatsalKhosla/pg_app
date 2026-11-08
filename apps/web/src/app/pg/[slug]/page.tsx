@@ -123,22 +123,22 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
           ]),
         ]}
       />
-      <header className="relative flex flex-col gap-5 overflow-hidden rounded-3xl border border-saffron-border bg-surface-warm p-6 shadow-xs sm:flex-row sm:items-end sm:justify-between sm:p-8">
+      <header className="relative flex flex-col gap-5 overflow-hidden rounded-3xl border border-marigold-border bg-surface-warm p-6 shadow-xs sm:flex-row sm:items-end sm:justify-between sm:p-8">
         <span
           aria-hidden="true"
           className="absolute inset-x-0 top-0 h-1.5"
           style={{
             backgroundImage:
-              "linear-gradient(90deg, var(--primary) 0%, var(--sage) 35%, var(--saffron) 70%, var(--coral) 100%)",
+              "linear-gradient(90deg, var(--primary) 0%, var(--neem) 35%, var(--marigold) 70%, var(--ember) 100%)",
           }}
         />
-        <ArchWatermark tone="coral" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
+        <ArchWatermark tone="ember" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
         <div className="relative space-y-3">
           <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-muted-foreground">
-            <MapPin aria-hidden="true" className="size-4 text-coral" />
+            <MapPin aria-hidden="true" className="size-4 text-ember" />
             <Link
               href={localityPath as Route}
-              className="inline-flex min-h-6 items-center rounded font-semibold text-foreground underline decoration-coral/60 underline-offset-4 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex min-h-6 items-center rounded font-semibold text-foreground underline decoration-ember/60 underline-offset-4 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
             >
               {listing.locality.name}
             </Link>
@@ -147,7 +147,7 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
           <h1 className="text-title-1 font-bold text-balance text-foreground">{listing.name}</h1>
           <div className="flex flex-wrap items-center gap-3 text-sm">
             {listing.verified ? (
-              <Badge variant="sage" className="px-3 py-1 text-xs font-semibold">
+              <Badge variant="neem" className="px-3 py-1 text-xs font-semibold">
                 <ShieldCheck aria-hidden="true" className="size-3.5" />
                 {t("verified")}
               </Badge>
@@ -156,7 +156,7 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
                 {t("notVerified")}
               </Badge>
             )}
-            <span className="rounded-full border border-saffron-border bg-saffron-soft px-3 py-1 text-xs font-medium text-saffron-soft-foreground">
+            <span className="rounded-full border border-marigold-border bg-marigold-soft px-3 py-1 text-xs font-medium text-marigold-soft-foreground">
               {t("runBy", { business: listing.ownerBusinessName })}
             </span>
           </div>
@@ -188,11 +188,11 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
           {listing.amenities.length === 0 ? null : (
             <Card
               asChild
-              variant="saffron"
+              variant="marigold"
               className="relative space-y-4 overflow-hidden rounded-3xl p-6"
             >
               <section aria-labelledby="amenities-title">
-                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-saffron" />
+                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-marigold" />
                 <h2 id="amenities-title" className="text-title-3 font-semibold text-foreground">
                   {t("amenities")}
                 </h2>
@@ -200,7 +200,7 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
                   {listing.amenities.map((amenity) => (
                     <li
                       key={amenity.slug}
-                      className="rounded-full border border-saffron-border bg-card px-3.5 py-1.5 text-sm font-medium text-foreground shadow-2xs"
+                      className="rounded-full border border-marigold-border bg-card px-3.5 py-1.5 text-sm font-medium text-foreground shadow-2xs"
                     >
                       {amenity.name}
                     </li>
@@ -212,11 +212,11 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
           {listing.houseRules.length === 0 ? null : (
             <Card
               asChild
-              variant="coral"
+              variant="ember"
               className="relative space-y-4 overflow-hidden rounded-3xl p-6"
             >
               <section aria-labelledby="rules-title">
-                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-coral" />
+                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-ember" />
                 <h2 id="rules-title" className="text-title-3 font-semibold text-foreground">
                   {t("rules")}
                 </h2>
@@ -239,7 +239,7 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
         >
           <section aria-labelledby="about-title">
             <ArchWatermark
-              tone="saffron"
+              tone="marigold"
               className="absolute -right-4 -bottom-4 size-36 opacity-15"
             />
             <h2 id="about-title" className="relative text-title-3 font-semibold text-foreground">
@@ -255,11 +255,11 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
       <Location listing={listing} />
 
       <Card
-        variant="coral"
+        variant="ember"
         className="relative flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-3xl p-6 sm:p-8"
       >
-        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-coral" />
-        <ArchWatermark tone="coral" className="absolute -right-4 -bottom-4 size-32 opacity-15" />
+        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-ember" />
+        <ArchWatermark tone="ember" className="absolute -right-4 -bottom-4 size-32 opacity-15" />
         <p className="relative text-sm font-semibold text-foreground">
           {t("runBy", { business: listing.ownerBusinessName })}
         </p>
@@ -288,7 +288,7 @@ async function Gallery({ listing }: { listing: PublicListing }) {
           variant="warm"
           className="relative overflow-hidden rounded-3xl border-dashed p-8 text-center text-muted-foreground"
         >
-          <ListingPlaceholderArt className="mx-auto mb-4 h-36 max-w-md rounded-2xl border border-saffron-border/60" />
+          <ListingPlaceholderArt className="mx-auto mb-4 h-36 max-w-md rounded-2xl border border-marigold-border/60" />
           <p className="font-medium text-foreground">{t("none")}</p>
         </Card>
       ) : (
@@ -353,7 +353,7 @@ function currentRent(calendar: PriceCalendar | null): (category: Category) => nu
   return (category) => soonest.get(category.id) ?? category.baseRentPaise;
 }
 
-const roomAccentBars = ["bg-primary", "bg-saffron", "bg-indigo", "bg-coral"] as const;
+const roomAccentBars = ["bg-primary", "bg-marigold", "bg-dusk", "bg-ember"] as const;
 
 async function Rooms({
   categories,
@@ -420,13 +420,13 @@ async function Rooms({
                   day={day}
                 />
               </div>
-              <div className="space-y-3 rounded-2xl border border-saffron-border/70 bg-surface-warm p-4 text-sm">
+              <div className="space-y-3 rounded-2xl border border-marigold-border/70 bg-surface-warm p-4 text-sm">
                 <p className="font-semibold text-foreground tabular-nums">
                   {t("deposit", { amount: formatINR(category.securityDepositPaise) })}
                 </p>
                 <Separator />
                 <div className="space-y-1.5">
-                  <p className="text-xs font-semibold tracking-wider text-saffron-soft-foreground uppercase">
+                  <p className="text-xs font-semibold tracking-wider text-marigold-soft-foreground uppercase">
                     {t("charges")}
                   </p>
                   {category.mandatoryCharges.length === 0 ? (
@@ -501,18 +501,18 @@ async function RoomPrice({
         <p className="text-xs text-muted-foreground">{t("headlineNote", { months: stay })}</p>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="sage" className="px-3 py-1 text-xs font-semibold">
+        <Badge variant="neem" className="px-3 py-1 text-xs font-semibold">
           <Check aria-hidden="true" className="size-3.5" />
           {t("fixedForStay")}
         </Badge>
         {scarce === null ? null : (
-          <Badge variant="saffron" className="px-3 py-1 text-xs font-semibold">
+          <Badge variant="marigold" className="px-3 py-1 text-xs font-semibold">
             {t("bedsLeft", { count: scarce })}
           </Badge>
         )}
       </div>
       {changes === null ? null : (
-        <p className="rounded-lg border border-indigo-border bg-indigo-soft px-3 py-1.5 text-xs font-medium text-indigo-soft-foreground tabular-nums">
+        <p className="rounded-lg border border-dusk-border bg-dusk-soft px-3 py-1.5 text-xs font-medium text-dusk-soft-foreground tabular-nums">
           {changes}
         </p>
       )}
@@ -545,22 +545,22 @@ async function CheckPrice({
   return (
     <section
       aria-labelledby="quote-title"
-      className="relative space-y-5 overflow-hidden rounded-3xl border border-indigo-border bg-indigo-soft p-6 shadow-sm sm:p-8"
+      className="relative space-y-5 overflow-hidden rounded-3xl border border-dusk-border bg-dusk-soft p-6 shadow-sm sm:p-8"
     >
       <span
         aria-hidden="true"
         className="absolute inset-x-0 top-0 h-1.5"
         style={{
           backgroundImage:
-            "linear-gradient(90deg, var(--indigo) 0%, var(--primary) 40%, var(--saffron) 75%, var(--coral) 100%)",
+            "linear-gradient(90deg, var(--dusk) 0%, var(--primary) 40%, var(--marigold) 75%, var(--ember) 100%)",
         }}
       />
-      <ArchWatermark tone="indigo" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
+      <ArchWatermark tone="dusk" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
       <div className="relative space-y-1.5">
         <div className="flex items-center gap-2.5">
           <span
             aria-hidden="true"
-            className="grid size-10 place-items-center rounded-xl bg-card text-indigo-soft-foreground shadow-2xs ring-1 ring-indigo-border"
+            className="grid size-10 place-items-center rounded-xl bg-card text-dusk-soft-foreground shadow-2xs ring-1 ring-dusk-border"
           >
             <Sparkles className="size-5" />
           </span>
@@ -644,14 +644,14 @@ async function Safety({ listing }: { listing: PublicListing }) {
   return (
     <Card
       asChild
-      variant="sage"
+      variant="neem"
       className="relative space-y-5 overflow-hidden rounded-3xl p-6 sm:p-8"
     >
       <section aria-labelledby="safety-title">
-        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-sage" />
-        <ArchWatermark tone="sage" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
+        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-neem" />
+        <ArchWatermark tone="neem" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
         <div className="relative flex items-center gap-2.5">
-          <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-card text-sage-soft-foreground shadow-2xs ring-1 ring-sage-border">
+          <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-card text-neem-soft-foreground shadow-2xs ring-1 ring-neem-border">
             <ShieldCheck aria-hidden="true" className="size-5" />
           </div>
           <h2 id="safety-title" className="text-title-2 font-bold text-foreground">
@@ -662,7 +662,7 @@ async function Safety({ listing }: { listing: PublicListing }) {
           <p className="relative text-muted-foreground">{t("notChecked")}</p>
         ) : (
           <div className="relative space-y-5">
-            <p className="rounded-xl border border-sage-border bg-card px-4 py-3 text-sm font-semibold text-sage-soft-foreground shadow-2xs">
+            <p className="rounded-xl border border-neem-border bg-card px-4 py-3 text-sm font-semibold text-neem-soft-foreground shadow-2xs">
               {t("checked", {
                 date: format.dateTime(new Date(`${safety.verifiedOn}T00:00:00+05:30`), {
                   dateStyle: "long",
@@ -670,19 +670,19 @@ async function Safety({ listing }: { listing: PublicListing }) {
               })}
             </p>
             <ul className="grid gap-3 sm:grid-cols-2">
-              <li className="flex items-center gap-2.5 rounded-xl border border-sage-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-2xs">
-                <Check aria-hidden="true" className="size-4 shrink-0 text-sage-soft-foreground" />
+              <li className="flex items-center gap-2.5 rounded-xl border border-neem-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-2xs">
+                <Check aria-hidden="true" className="size-4 shrink-0 text-neem-soft-foreground" />
                 <span>{t("exits", { count: safety.exits })}</span>
               </li>
               {checks.map(([label, present]) => (
                 <li
                   key={label}
-                  className="flex items-center gap-2.5 rounded-xl border border-sage-border bg-card px-4 py-3 text-sm text-foreground shadow-2xs"
+                  className="flex items-center gap-2.5 rounded-xl border border-neem-border bg-card px-4 py-3 text-sm text-foreground shadow-2xs"
                 >
                   {present ? (
                     <Check
                       aria-hidden="true"
-                      className="size-4 shrink-0 text-sage-soft-foreground"
+                      className="size-4 shrink-0 text-neem-soft-foreground"
                     />
                   ) : (
                     <X aria-hidden="true" className="size-4 shrink-0 text-destructive" />
@@ -702,7 +702,7 @@ async function Safety({ listing }: { listing: PublicListing }) {
                   {safety.womenSafety.map((feature) => (
                     <li
                       key={feature}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-saffron-border bg-saffron-soft px-3.5 py-1.5 text-sm font-medium text-saffron-soft-foreground shadow-2xs"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-marigold-border bg-marigold-soft px-3.5 py-1.5 text-sm font-medium text-marigold-soft-foreground shadow-2xs"
                     >
                       <Check aria-hidden="true" className="size-3.5" />
                       {t(`feature.${feature}`)}
@@ -729,7 +729,7 @@ async function Location({ listing }: { listing: PublicListing }) {
     <section aria-labelledby="location-title" className="space-y-5">
       <div className="space-y-1.5">
         <div className="flex items-center gap-3">
-          <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-coral" />
+          <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-ember" />
           <h2 id="location-title" className="text-title-2 font-bold text-foreground">
             {t("location.title")}
           </h2>
@@ -756,13 +756,13 @@ async function Location({ listing }: { listing: PublicListing }) {
         {[
           {
             key: "campuses",
-            variant: "indigo" as const,
+            variant: "dusk" as const,
             title: t("location.campuses"),
             places: listing.campusesNearby,
           },
           {
             key: "stations",
-            variant: "teal" as const,
+            variant: "ink" as const,
             title: t("location.stations"),
             places: listing.stationsNearby,
           },

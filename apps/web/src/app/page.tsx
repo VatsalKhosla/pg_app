@@ -1,146 +1,311 @@
-import { CalendarCheck, KeyRound, MapPinned, ShieldCheck } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
-import { ArchWatermark, HeroCourtyardIllustration } from "@/components/brand/editorial-art";
+import { DuskScene } from "@/components/home/dusk-scene";
+import { HeroParallax } from "@/components/home/hero-parallax";
+import { type Choice, HeroSearch, type HeroSearchText } from "@/components/home/hero-search";
+import { BudgetExplorerNear, StaySimulatorNear } from "@/components/home/islands";
 import { homeSections } from "@/components/layout/navigation";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ApiStatus, ApiStatusPending } from "@/components/system/api-status";
-import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { brand } from "@/config/brand";
 import { publicEnv } from "@/config/env";
-import { getSearchPlaces, type SearchPlace } from "@/lib/api/public";
+import { getPolicies, getSearchPlaces, type SearchPlace } from "@/lib/api/public";
+import { formatINR } from "@/lib/money";
 import { organizationJsonLd } from "@/lib/seo/json-ld";
-
-const steps = [
-  {
-    key: "find",
-    Icon: MapPinned,
-    cardVariant: "teal",
-    tone: "teal",
-    iconClass: "bg-card text-primary-soft-foreground ring-1 ring-primary-border shadow-xs",
-    numeralClass: "text-primary-soft-foreground",
-    barClass: "bg-primary",
-  },
-  {
-    key: "visit",
-    Icon: CalendarCheck,
-    cardVariant: "saffron",
-    tone: "saffron",
-    iconClass: "bg-card text-saffron-soft-foreground ring-1 ring-saffron-border shadow-xs",
-    numeralClass: "text-saffron-soft-foreground",
-    barClass: "bg-saffron",
-  },
-  {
-    key: "reserve",
-    Icon: ShieldCheck,
-    cardVariant: "indigo",
-    tone: "indigo",
-    iconClass: "bg-card text-indigo-soft-foreground ring-1 ring-indigo-border shadow-xs",
-    numeralClass: "text-indigo-soft-foreground",
-    barClass: "bg-indigo",
-  },
-  {
-    key: "moveIn",
-    Icon: KeyRound,
-    cardVariant: "coral",
-    tone: "coral",
-    iconClass: "bg-card text-coral-soft-foreground ring-1 ring-coral-border shadow-xs",
-    numeralClass: "text-coral-soft-foreground",
-    barClass: "bg-coral",
-  },
-] as const;
+import { trustPages } from "@/lib/trust/pages";
 
 // Sections that the navigation links to: focusable, so a followed link can move focus here, and
-// offset so the sticky header doesn't cover their headings.
-const sectionClassName = "scroll-mt-24 outline-none focus-visible:ring-2 focus-visible:ring-ring";
+// offset so the floating header doesn't cover their headings.
+const sectionClassName = "scroll-mt-28 outline-none focus-visible:ring-2 focus-visible:ring-ring";
 // Places linked from the home page, of each kind: the ones with the most PGs.
 const PLACES_SHOWN = 8;
+const BUDGETS_PAISE = [800_000, 1_000_000, 1_200_000, 1_500_000, 2_000_000] as const;
+const MONTHS_SHOWN = 12;
 
-const placeChipClasses =
-  "inline-flex min-h-11 items-center rounded-full border border-input/80 bg-card px-4 py-2 text-sm font-medium text-foreground shadow-2xs transition-[background-color,border-color,color,transform,box-shadow] duration-(--duration-fast) ease-standard outline-none hover:-translate-y-0.5 hover:border-primary hover:bg-primary-soft hover:text-primary-soft-foreground hover:shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0";
-
-/**
- * Links to the landing pages of the campuses and localities with the most PGs (step 3.6), for
- * people and search engines alike. Without the API there's nothing to link to, and the home page
- * stands without it.
- */
-async function PopularPlaces() {
-  let places: SearchPlace[];
+async function placesOrNone(): Promise<SearchPlace[]> {
   try {
-    places = (await getSearchPlaces()).items;
+    return (await getSearchPlaces()).items;
+  } catch {
+    return [];
+  }
+}
+
+async function policiesOrNull() {
+  try {
+    return await getPolicies();
   } catch {
     return null;
   }
+}
+
+/** The next twelve months, in India's calendar, for the search's move-in choice. */
+function nextMonths(): Choice[] {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const label = new Intl.DateTimeFormat("en-IN", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  return Array.from({ length: MONTHS_SHOWN }, (_, offset) => {
+    const date = new Date(Date.UTC(year, month - 1 + offset, 1));
+    const value = [
+      String(date.getUTCFullYear()),
+      String(date.getUTCMonth() + 1).padStart(2, "0"),
+    ].join("-");
+    return { value, label: label.format(date) };
+  });
+}
+
+async function heroSearchText() {
+  const t = await getTranslations("Home.search");
+  const text: HeroSearchText = {
+    label: t("label"),
+    near: t("near"),
+    anywhere: t("anywhere"),
+    moveIn: t("moveIn"),
+    anyMonth: t("anyMonth"),
+    budget: t("budget"),
+    anyBudget: t("anyBudget"),
+    submit: t("submit"),
+  };
+  const budgets: Choice[] = BUDGETS_PAISE.map((paise) => ({
+    value: String(paise),
+    label: t("upTo", { amount: formatINR(paise) }),
+  }));
+  return { text, budgets, months: nextMonths() };
+}
+
+/** The search with the campuses filled in; it streams in, so a slow API never holds up the hero. */
+async function HeroSearchWithCampuses() {
+  const [common, places] = await Promise.all([heroSearchText(), placesOrNone()]);
+  const campuses = places
+    .filter((place) => place.kind === "campus")
+    .map((place) => ({ value: place.slug, label: place.name }));
+  return <HeroSearch {...common} campuses={campuses} />;
+}
+
+async function HeroSearchPending() {
+  const common = await heroSearchText();
+  return <HeroSearch {...common} campuses={[]} />;
+}
+
+/** The promises, as figures from the live policy. Without the API there's nothing to state. */
+async function PolicyFacts() {
+  const policies = await policiesOrNull();
+  if (policies === null) return null;
+  const t = await getTranslations("Home.facts");
+  const { tokenPaise, freeCancelDays, checkWindowHours } = policies.booking;
+  const facts = [
+    { value: formatINR(tokenPaise), label: t("token") },
+    { value: t("days", { days: freeCancelDays }), label: t("cancel") },
+    { value: t("hours", { hours: checkWindowHours }), label: t("check") },
+    { value: formatINR(0), label: t("fee") },
+  ];
+  return (
+    <section aria-labelledby="facts-title" className="mx-auto w-full max-w-page px-gutter">
+      <h2 id="facts-title" className="sr-only">
+        {t("title")}
+      </h2>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4 lg:gap-x-10">
+        {facts.map((fact) => (
+          <div key={fact.label} className="flex flex-col-reverse justify-end gap-1.5">
+            <dt className="max-w-[24ch] text-sm leading-snug text-muted-foreground">
+              {fact.label}
+            </dt>
+            <dd className="font-display text-title-1 font-medium tabular-nums">{fact.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+/** One line of stops: each is a campus or locality with PGs, like a station on the Metro. */
+function MetroLine({
+  title,
+  lineClass,
+  stops,
+}: {
+  title: string;
+  lineClass: string;
+  stops: readonly { key: string; href: Route; name: string; detail: string }[];
+}) {
+  return (
+    <div className="min-w-0">
+      <h3 className="px-gutter font-sans text-base font-semibold lg:px-0">{title}</h3>
+      <ul
+        className="mt-4 flex snap-x scroll-px-gutter gap-0 overflow-x-auto px-gutter pb-3 [scrollbar-width:none] lg:px-0"
+        style={{ "--line": lineClass }}
+      >
+        {stops.map((stop) => (
+          <li key={stop.key} className="relative w-44 shrink-0 snap-start pt-1 sm:w-52">
+            <span
+              aria-hidden="true"
+              className="absolute top-[0.8rem] left-0 h-1.5 w-full bg-(--line) group-last:w-0"
+            />
+            <Link
+              href={stop.href}
+              className="group relative block rounded-xl pr-4 pb-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <span
+                aria-hidden="true"
+                className="block size-5 rounded-full border-[5px] border-(--line) bg-background transition-colors duration-(--duration-fast) group-hover:bg-(--line) motion-reduce:transition-none"
+              />
+              <span className="mt-3 block font-medium leading-snug group-hover:underline group-hover:underline-offset-4">
+                {stop.name}
+              </span>
+              <span className="mt-0.5 block text-sm text-muted-foreground">{stop.detail}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Links to the landing pages of the campuses and localities with the most PGs (step 3.6), for
+ * people and search engines alike, drawn as two Metro lines. Without the API there's nothing to
+ * link to, and the home page stands without it.
+ */
+async function PopularPlaces() {
+  const places = await placesOrNone();
   if (places.length === 0) return null;
   const t = await getTranslations("Home.places");
-  const groups = [
-    {
-      title: t("campuses"),
-      variant: "indigo" as const,
-      tone: "indigo" as const,
-      dotClass: "bg-indigo",
-      items: places.filter((place) => place.kind === "campus").slice(0, PLACES_SHOWN),
-      path: (slug: string) => `/pg-near/${slug}`,
-    },
-    {
-      title: t("localities"),
-      variant: "saffron" as const,
-      tone: "saffron" as const,
-      dotClass: "bg-saffron",
-      items: places.filter((place) => place.kind === "locality").slice(0, PLACES_SHOWN),
-      path: (slug: string) => `/pg-in/${slug}`,
-    },
-  ].filter((group) => group.items.length > 0);
+  const stops = (kind: SearchPlace["kind"], base: string) =>
+    places
+      .filter((place) => place.kind === kind)
+      .slice(0, PLACES_SHOWN)
+      .map((place) => ({
+        key: place.slug,
+        href: `${base}/${place.slug}` as Route,
+        name: place.name,
+        detail: t("stop", { count: place.listings, rent: formatINR(place.minRentPaise) }),
+      }));
+  const lines = [
+    { title: t("campuses"), lineClass: "var(--sun)", stops: stops("campus", "/pg-near") },
+    { title: t("localities"), lineClass: "var(--dusk)", stops: stops("locality", "/pg-in") },
+  ].filter((line) => line.stops.length > 0);
   return (
     <section
       aria-labelledby="places-title"
-      className="mx-auto w-full max-w-page px-gutter pb-section"
+      className="mx-auto w-full max-w-page pt-section lg:px-gutter"
     >
-      <div className="flex items-center gap-3">
-        <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-coral" />
-        <h2 id="places-title" className="text-title-1 font-bold tracking-tight">
-          {t("title")}
-        </h2>
-      </div>
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
-        {groups.map((group) => (
-          <Card
-            key={group.title}
-            variant={group.variant}
-            className="relative overflow-hidden rounded-3xl p-6 sm:p-8"
-          >
-            <ArchWatermark
-              tone={group.tone}
-              className="absolute -right-4 -bottom-4 size-32 opacity-15"
-            />
-            <div className="relative flex items-center gap-2.5">
-              <span aria-hidden="true" className={`size-2.5 rounded-full ${group.dotClass}`} />
-              <h3 className="text-title-3 font-semibold text-foreground">{group.title}</h3>
-            </div>
-            <ul className="relative mt-5 flex flex-wrap gap-2.5">
-              {group.items.map((place) => (
-                <li key={place.slug}>
-                  <Link href={group.path(place.slug) as Route} className={placeChipClasses}>
-                    {t("place", { name: place.name, count: place.listings })}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Card>
+      <h2 id="places-title" className="px-gutter text-title-1 font-medium lg:px-0">
+        {t("title")}
+      </h2>
+      <div className="mt-8 grid gap-8">
+        {lines.map((line) => (
+          <MetroLine key={line.title} {...line} />
         ))}
       </div>
     </section>
   );
 }
 
+const STEP_KEYS = ["find", "visit", "reserve", "moveIn"] as const;
+
+/** The four steps in plain text: what the simulator starts from, and all there is without script. */
+async function StepsList() {
+  const t = await getTranslations("Home.steps");
+  return (
+    <ol className="grid max-w-3xl gap-6 sm:grid-cols-2">
+      {STEP_KEYS.map((key) => (
+        <li key={key}>
+          <h3 className="text-title-3 font-medium">{t(`${key}.title`)}</h3>
+          <p className="mt-1.5 leading-relaxed text-muted-foreground">{t(`${key}.body`)}</p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** The simulator, with every word and figure read from the live policy here on the server. */
+async function HomeSimulator() {
+  const policies = await policiesOrNull();
+  if (policies === null) return <StepsList />;
+  const [t, tSim, tToken, tBookings] = await Promise.all([
+    getTranslations("Home.steps"),
+    getTranslations("Home.sim"),
+    getTranslations("TokenProtection"),
+    getTranslations("Bookings.next"),
+  ]);
+  const { tokenPaise, freeCancelDays, checkWindowHours, confirmDeadlineHours } = policies.booking;
+  const stages = [
+    { key: "find", title: t("find.title"), body: t("find.body"), place: 0 },
+    { key: "visit", title: t("visit.title"), body: t("visit.body"), place: 0 },
+    { key: "reserve", title: t("reserve.title"), body: t("reserve.body"), place: 1 },
+    {
+      key: "confirm",
+      title: tSim("confirm"),
+      body: tToken("confirm", { confirmHours: confirmDeadlineHours }),
+      place: 1,
+    },
+    { key: "moveIn", title: t("moveIn.title"), body: t("moveIn.body"), place: 1 },
+    {
+      key: "check",
+      title: tSim("check"),
+      body: tToken("held", { checkHours: checkWindowHours }),
+      place: 1,
+    },
+    { key: "settled", title: tSim("settled"), body: tBookings("active"), place: 2 },
+  ] as const;
+  const branches = [
+    {
+      key: "cancel",
+      stages: ["reserve", "confirm"],
+      label: tSim("cancelLabel"),
+      body: tToken("cancel", { freeCancelDays }),
+    },
+    {
+      key: "ownerNo",
+      stages: ["confirm"],
+      label: tSim("ownerNoLabel"),
+      body: tBookings("rejected"),
+    },
+    {
+      key: "notAsShown",
+      stages: ["check"],
+      label: tSim("notAsShownLabel"),
+      body: tToken("notAsShown", { checkHours: checkWindowHours }),
+    },
+  ];
+  return (
+    <StaySimulatorNear
+      token={formatINR(tokenPaise)}
+      stages={stages}
+      branches={branches}
+      text={{
+        scrub: tSim("scrub"),
+        step: tSim.raw("step") as string,
+        places: [tSim("you"), tSim("held"), tSim("rent")],
+        back: tSim("back"),
+        play: tSim("play"),
+        pause: tSim("pause"),
+        happens: tSim("happens"),
+        onTrack: tSim("onTrack"),
+      }}
+    >
+      <StepsList />
+    </StaySimulatorNear>
+  );
+}
+
 export default async function HomePage() {
-  const t = await getTranslations("Home");
-  const tBrand = await getTranslations("Brand");
+  const [t, tBudget, tTrust] = await Promise.all([
+    getTranslations("Home"),
+    getTranslations("Home.budget"),
+    getTranslations("Trust.pages"),
+  ]);
   const absolute = (path: string) => new URL(path, publicEnv.siteUrl).toString();
 
   return (
@@ -153,54 +318,42 @@ export default async function HomePage() {
           logo: absolute("/icon/512"),
         })}
       />
-      <section className="relative overflow-hidden border-b border-saffron-border/70 bg-surface-warm">
-        <div className="relative mx-auto grid max-w-page items-center gap-10 px-gutter py-14 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:py-24">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="coral" className="gap-2 px-3.5 py-1 text-xs font-semibold shadow-2xs">
-                <span aria-hidden className="size-2 rounded-full bg-coral" />
-                {t("status")}
-              </Badge>
-              <span
-                aria-hidden="true"
-                className="inline-flex items-center gap-1.5 rounded-full border border-saffron-border bg-saffron-soft px-3 py-1 text-xs font-semibold text-saffron-soft-foreground"
-              >
-                <span className="size-1.5 rounded-full bg-saffron" />
-                <span className="size-1.5 rounded-full bg-sage" />
-                <span className="size-1.5 rounded-full bg-primary" />
-              </span>
-            </div>
-            <h1 className="mt-6 max-w-2xl text-display font-bold tracking-tight text-foreground">
-              {tBrand("tagline")}
+
+      <section className="relative -mt-[4.75rem]">
+        <div className="scope-night relative isolate min-h-[max(40rem,min(92svh,58rem))] overflow-hidden rounded-b-[2rem] pt-[4.75rem] sm:rounded-b-[3.5rem]">
+          <DuskScene />
+          <HeroParallax />
+          <div className="relative mx-auto max-w-page px-gutter pt-[clamp(2.5rem,9svh,6.5rem)] pb-64">
+            <h1 className="max-w-[13ch] text-hero font-medium">
+              {t.rich("headline", {
+                accent: (chunks) => <span className="text-night-accent">{chunks}</span>,
+              })}
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+            <p className="mt-6 max-w-[34rem] text-lg leading-relaxed text-night-foreground sm:text-xl">
               {t("intro")}
             </p>
-            <div className="mt-9 flex flex-wrap items-center gap-3.5">
-              <Link
-                href="/search"
-                className={buttonVariants({
-                  size: "lg",
-                  shape: "pill",
-                  className: "shadow-lg",
-                })}
-              >
-                <MapPinned aria-hidden="true" />
-                {t("findCta")}
-              </Link>
-            </div>
-            {/* Decorative hospitality color bar */}
-            <div aria-hidden="true" className="mt-10 flex items-center gap-2">
-              <span className="h-2 w-12 rounded-full bg-primary" />
-              <span className="h-2 w-8 rounded-full bg-coral" />
-              <span className="h-2 w-6 rounded-full bg-saffron" />
-              <span className="h-2 w-5 rounded-full bg-sage" />
-              <span className="h-2 w-4 rounded-full bg-indigo" />
-            </div>
+            <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-night/60 px-3.5 py-1.5 text-sm font-medium text-night-foreground">
+              <span aria-hidden="true" className="size-2 rounded-full bg-night-accent" />
+              {t("status")}
+            </p>
           </div>
-          <HeroCourtyardIllustration />
+        </div>
+        <div className="relative z-10 mx-auto -mt-16 max-w-4xl px-gutter sm:-mt-10">
+          <Suspense fallback={<HeroSearchPending />}>
+            <HeroSearchWithCampuses />
+          </Suspense>
         </div>
       </section>
+
+      <div className="pt-14 sm:pt-20">
+        <Suspense fallback={<div className="min-h-32" />}>
+          <PolicyFacts />
+        </Suspense>
+      </div>
+
+      <Suspense fallback={null}>
+        <PopularPlaces />
+      </Suspense>
 
       <section
         id={homeSections.howItWorks}
@@ -209,109 +362,95 @@ export default async function HomePage() {
         className={sectionClassName}
       >
         <div className="mx-auto max-w-page px-gutter py-section">
-          <div className="flex items-center gap-3">
-            <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-primary" />
-            <h2 id="how-it-works-title" className="text-title-1 font-bold tracking-tight">
-              {t("steps.title")}
-            </h2>
+          <h2 id="how-it-works-title" className="text-display font-medium">
+            {t("steps.title")}
+          </h2>
+          <p className="mt-3 max-w-prose text-lg text-muted-foreground">{t("steps.lead")}</p>
+          <div className="mt-10">
+            <Suspense fallback={<StepsList />}>
+              <HomeSimulator />
+            </Suspense>
           </div>
-          <ol className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {steps.map(
-              ({ key, Icon, cardVariant, tone, iconClass, numeralClass, barClass }, index) => (
-                <Card
-                  key={key}
-                  asChild
-                  variant={cardVariant}
-                  className="relative justify-between gap-6 overflow-hidden rounded-3xl p-6 shadow-sm"
-                >
-                  <li>
-                    <span
-                      aria-hidden="true"
-                      className={`absolute inset-x-0 top-0 h-1.5 ${barClass}`}
-                    />
-                    <ArchWatermark
-                      tone={tone}
-                      className="absolute -right-4 -bottom-4 size-28 opacity-15"
-                    />
-                    <div className="relative flex items-center justify-between gap-3 pt-1">
-                      <span
-                        aria-hidden
-                        className={`grid size-12 place-items-center rounded-2xl ${iconClass}`}
-                      >
-                        <Icon className="size-5" />
-                      </span>
-                      <span
-                        aria-hidden
-                        className={`font-display text-sm font-bold tracking-wider ${numeralClass}`}
-                      >
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <h3 className="text-title-3 font-semibold text-foreground">
-                        <span className="sr-only">{index + 1}. </span>
-                        {t(`steps.${key}.title`)}
-                      </h3>
-                      <p className="mt-2 text-sm leading-relaxed text-foreground">
-                        {t(`steps.${key}.body`)}
-                      </p>
-                    </div>
-                  </li>
-                </Card>
-              ),
-            )}
-          </ol>
         </div>
       </section>
 
-      <div className="mx-auto grid w-full max-w-page gap-6 px-gutter pb-section md:grid-cols-2">
+      <section
+        aria-labelledby="budget-title"
+        className="scope-night rounded-[2rem] sm:rounded-[3.5rem]"
+      >
+        <div className="mx-auto max-w-page px-gutter py-section">
+          <h2 id="budget-title" className="text-display font-medium">
+            {tBudget("title")}
+          </h2>
+          <p className="mt-3 max-w-prose text-lg text-muted-foreground">{tBudget("lead")}</p>
+          <div className="mt-10">
+            <BudgetExplorerNear
+              text={{
+                budget: tBudget("label"),
+                one: tBudget.raw("one") as string,
+                other: tBudget.raw("other") as string,
+                none: tBudget.raw("none") as string,
+                more: tBudget("more"),
+                cta: tBudget("cta"),
+                monthly: tBudget("monthly"),
+                caption: tBudget("caption"),
+                mapLabel: tBudget("mapLabel"),
+              }}
+            >
+              <div className="flex flex-wrap items-center gap-5">
+                <p className="max-w-prose text-lg text-night-foreground">{tBudget("fallback")}</p>
+                <Link
+                  href="/search"
+                  className="inline-flex min-h-12 items-center rounded-full bg-sun px-7 font-semibold text-sun-foreground outline-none hover:bg-sun-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  {tBudget("fallbackCta")}
+                </Link>
+              </div>
+            </BudgetExplorerNear>
+          </div>
+        </div>
+      </section>
+
+      <div className="mx-auto grid w-full max-w-page gap-12 px-gutter py-section md:grid-cols-2 md:gap-16">
         <section
           id={homeSections.students}
           tabIndex={-1}
           aria-labelledby="students-title"
-          className={`${sectionClassName} relative overflow-hidden rounded-3xl border border-sage-border bg-sage-soft p-7 shadow-sm sm:p-9`}
+          className={sectionClassName}
         >
-          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-sage" />
-          <ArchWatermark tone="sage" className="absolute -right-4 -bottom-4 size-36 opacity-15" />
-          <span
-            aria-hidden
-            className="relative grid size-12 place-items-center rounded-2xl bg-card text-sage-soft-foreground shadow-xs ring-1 ring-sage-border"
-          >
-            <ShieldCheck className="size-6" />
-          </span>
-          <h2 id="students-title" className="relative mt-5 text-title-2 font-bold tracking-tight">
+          <h2 id="students-title" className="text-title-1 font-medium">
             {t("students.title")}
           </h2>
-          <p className="relative mt-3 text-base leading-relaxed text-foreground">
+          <p className="mt-3 max-w-prose text-lg leading-relaxed text-muted-foreground">
             {t("students.body")}
           </p>
+          <Link
+            href={trustPages.tokenProtection}
+            className="mt-4 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {tTrust("tokenProtection")}
+          </Link>
         </section>
         <section
           id={homeSections.owners}
           tabIndex={-1}
           aria-labelledby="owners-title"
-          className={`${sectionClassName} relative overflow-hidden rounded-3xl border border-coral-border bg-coral-soft p-7 shadow-sm sm:p-9`}
+          className={sectionClassName}
         >
-          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-coral" />
-          <ArchWatermark tone="coral" className="absolute -right-4 -bottom-4 size-36 opacity-15" />
-          <span
-            aria-hidden
-            className="relative grid size-12 place-items-center rounded-2xl bg-card text-coral-soft-foreground shadow-xs ring-1 ring-coral-border"
-          >
-            <KeyRound className="size-6" />
-          </span>
-          <h2 id="owners-title" className="relative mt-5 text-title-2 font-bold tracking-tight">
+          <h2 id="owners-title" className="text-title-1 font-medium">
             {t("owners.title")}
           </h2>
-          <p className="relative mt-3 text-base leading-relaxed text-foreground">
+          <p className="mt-3 max-w-prose text-lg leading-relaxed text-muted-foreground">
             {t("owners.body")}
           </p>
+          <Link
+            href={trustPages.pricing}
+            className="mt-4 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {tTrust("pricing")}
+          </Link>
         </section>
       </div>
-
-      <Suspense fallback={null}>
-        <PopularPlaces />
-      </Suspense>
 
       {/* Streams in after the page, so a slow or absent API never holds it up. */}
       <div className="mx-auto w-full max-w-page px-gutter pb-12">
