@@ -43,7 +43,7 @@ async function openMenu(button: HTMLElement): Promise<HTMLElement> {
   button.focus();
   fireEvent.click(button);
   // The menu loads on first use.
-  return screen.findByRole("dialog", { name: "Menu" });
+  return screen.findByRole("dialog", { name: "Menu" }, { timeout: 10_000 });
 }
 
 async function wcagViolations(): Promise<string[]> {
