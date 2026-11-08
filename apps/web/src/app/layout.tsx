@@ -1,9 +1,11 @@
 import "./globals.css";
 
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Eczar, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { connection } from "next/server";
 import { getLocale, getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 
 import { ErrorTextProvider } from "@/components/layout/error-text";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -16,18 +18,30 @@ import { serverEnv } from "@/config/server-env";
 
 // Self-hosted at build time by next/font: no request to Google from the browser, no layout shift.
 // Both are variable fonts under the SIL Open Font License. Inter sets text, forms and figures
-// (rents read best in it); Plus Jakarta Sans, rounder and warmer, sets the headings (h1 to h3, see
-// globals.css). Only the Latin files are preloaded; the browser fetches Latin Extended, which
-// holds the rupee sign, the first time a page uses it.
+// (rents read best in it). Eczar, a serif by Vaibhav Singh drawn for Latin and Devanagari together,
+// sets the headings (h1 to h3, see globals.css), and it's ready for Hindi.
 const sans = Inter({ subsets: ["latin"], display: "swap", variable: "--font-sans-face" });
 // The headings' face isn't preloaded: on a slow phone its bytes would come before the page's
 // first photo, which is what people wait for (ADR 0066). Headings show in the fallback for a
 // moment, then swap.
-const display = Plus_Jakarta_Sans({
+const display = Eczar({
   subsets: ["latin"],
+  // One static weight: the variable file is three times the size, and headings only use this.
+  weight: "500",
   display: "swap",
   preload: false,
   variable: "--font-display-face",
+});
+
+// The rupee sign on its own: otherwise the first one on a page costs Inter's Latin Extended file,
+// 85 KB for one character. The file holds that glyph alone (src/app/fonts/README.md).
+const rupee = localFont({
+  src: "./fonts/inter-rupee.woff2",
+  weight: "100 900",
+  display: "swap",
+  variable: "--font-rupee-face",
+  adjustFontFallback: false,
+  declarations: [{ prop: "unicode-range", value: "U+20B9" }],
 });
 
 // No placeholder for a company fact, and no unreviewed legal text, in production (ADR 0034): a
@@ -74,7 +88,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Client components get their text translated on the server, as props or (for the error page,
   // which can't take props) through ErrorTextProvider, so the browser ships no message formatter.
   return (
-    <html lang={locale} className={`${sans.variable} ${display.variable}`} style={brandStyle}>
+    <html
+      lang={locale}
+      className={`${rupee.variable} ${sans.variable} ${display.variable}`}
+      style={brandStyle}
+    >
       <body className="flex min-h-dvh flex-col font-sans antialiased">
         <a
           href="#main"
@@ -91,7 +109,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             {t("stagingNotice", { brand: brand.name })}
           </p>
         ) : null}
-        <SiteHeader />
+        {/* A boundary of its own, like the footer's: a signed-in check never holds up the page. */}
+        <Suspense fallback={<div className="h-[4.75rem]" />}>
+          <SiteHeader />
+        </Suspense>
         <main id="main" tabIndex={-1} className="flex flex-1 flex-col outline-none">
           <ErrorTextProvider
             text={{
@@ -104,7 +125,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             {children}
           </ErrorTextProvider>
         </main>
-        <SiteFooter />
+        {/* Its own boundary, so hydrating it doesn't lengthen the page's first long task. */}
+        <Suspense fallback={null}>
+          <SiteFooter />
+        </Suspense>
         {/* Analytics only where the server collects them (ADR 0035). */}
         {serverEnv.posthog === undefined ? null : <Analytics />}
       </body>

@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
   return (
     <NextIntlClientProvider messages={{ Admin: messages.Admin }}>
-      <div className="mx-auto w-full max-w-5xl space-y-8 px-gutter py-8 sm:py-10">
+      <div className="working-type mx-auto w-full max-w-5xl space-y-8 px-gutter py-8 sm:py-10">
         <OpsNav
           label={t("label")}
           links={[

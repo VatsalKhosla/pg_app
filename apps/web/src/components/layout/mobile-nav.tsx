@@ -3,7 +3,7 @@
 import { MenuIcon } from "lucide-react";
 import { lazy, Suspense, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 
 import type { MobileNavLabels } from "./mobile-nav-menu";
 import type { NavigationLink } from "./navigation";
@@ -34,11 +34,10 @@ export function MobileNav({
 
   return (
     <>
-      <Button
+      <button
         ref={buttonRef}
-        variant="ghost"
-        size="icon-lg"
-        className="md:hidden"
+        type="button"
+        className={`${buttonVariants({ variant: "ghost", size: "icon-lg" })} md:hidden`}
         aria-label={labels.openMenu}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -51,7 +50,7 @@ export function MobileNav({
         }}
       >
         <MenuIcon className="size-6" aria-hidden />
-      </Button>
+      </button>
       {requested ? (
         <Suspense fallback={null}>
           <MobileNavMenu

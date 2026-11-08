@@ -5,7 +5,7 @@ import "./globals.css";
 import { useEffect } from "react";
 
 import { ErrorMessage } from "@/components/layout/error-message";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { brandStyle } from "@/config/brand";
 import { defaultLocale } from "@/i18n/config";
 import { captureError } from "@/lib/monitoring/capture-error";
@@ -38,7 +38,11 @@ export default function GlobalError({
             detail={
               error.digest === undefined ? undefined : `${text.referenceLabel}: ${error.digest}`
             }
-            action={<Button onClick={retry}>{text.retry}</Button>}
+            action={
+              <button type="button" className={buttonVariants()} onClick={retry}>
+                {text.retry}
+              </button>
+            }
           />
         </main>
       </body>

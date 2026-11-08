@@ -1,21 +1,21 @@
 import type { Schemas } from "@pg-platform/api-client";
-import { Check, MapPin, ShieldCheck, Sparkles, X } from "lucide-react";
+import { Check, MapPin, ShieldCheck, X } from "lucide-react";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
+import { ViewTransition } from "react";
 
-import { ArchWatermark, ListingPlaceholderArt } from "@/components/brand/editorial-art";
+import { ListingPlaceholderArt } from "@/components/brand/editorial-art";
 import { LocationMap } from "@/components/map/location-map";
 import { Photo } from "@/components/pg/photo";
 import { QuoteCheckerNear } from "@/components/pg/quote-checker-near";
+import { RoomIllustration } from "@/components/pg/room-illustration";
 import { ViewCounter } from "@/components/pg/view-counter";
 import { JsonLd } from "@/components/seo/json-ld";
 import { TrackView } from "@/components/system/track-view";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { publicEnv } from "@/config/env";
 import {
   getPriceCalendar,
@@ -98,6 +98,7 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
   // Without the calendar (the API briefly away), the listed rents show, with no price claims.
   const calendar = await getPriceCalendar(slug).catch(() => null);
   const rentOf = currentRent(calendar);
+  const from = listing.categories.length === 0 ? null : Math.min(...listing.categories.map(rentOf));
   const t = await getTranslations("Pg");
   const tLanding = await getTranslations("Landing");
   const visit = `/pg/${slug}/visit` as Route;
@@ -105,7 +106,7 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
   const localityPath = `/pg-in/${listing.locality.slug}`;
 
   return (
-    <div className="mx-auto w-full max-w-page space-y-10 px-gutter py-8 sm:space-y-12 sm:py-12">
+    <div className="mx-auto w-full max-w-page px-gutter pt-6 pb-32 sm:pt-10 lg:pb-20">
       <TrackView event="pg_viewed" properties={{ slug }} />
       {/* Its owner's count of views (step 7.6): once a session, from the browser. */}
       <ViewCounter slug={slug} />
@@ -123,155 +124,145 @@ export default async function PgPage({ params, searchParams }: PageProps<"/pg/[s
           ]),
         ]}
       />
-      <header className="relative flex flex-col gap-5 overflow-hidden rounded-3xl border border-saffron-border bg-surface-warm p-6 shadow-xs sm:flex-row sm:items-end sm:justify-between sm:p-8">
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-1.5"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, var(--primary) 0%, var(--sage) 35%, var(--saffron) 70%, var(--coral) 100%)",
-          }}
-        />
-        <ArchWatermark tone="coral" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
-        <div className="relative space-y-3">
-          <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-muted-foreground">
-            <MapPin aria-hidden="true" className="size-4 text-coral" />
-            <Link
-              href={localityPath as Route}
-              className="inline-flex min-h-6 items-center rounded font-semibold text-foreground underline decoration-coral/60 underline-offset-4 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {listing.locality.name}
-            </Link>
-            <span>{`· ${t(`genderShort.${listing.genderPolicy}`)} · ${t(`meals.${listing.meals}`)}`}</span>
-          </p>
-          <h1 className="text-title-1 font-bold text-balance text-foreground">{listing.name}</h1>
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            {listing.verified ? (
-              <Badge variant="sage" className="px-3 py-1 text-xs font-semibold">
-                <ShieldCheck aria-hidden="true" className="size-3.5" />
-                {t("verified")}
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="bg-card px-3 py-1 text-xs">
-                {t("notVerified")}
-              </Badge>
-            )}
-            <span className="rounded-full border border-saffron-border bg-saffron-soft px-3 py-1 text-xs font-medium text-saffron-soft-foreground">
-              {t("runBy", { business: listing.ownerBusinessName })}
-            </span>
-          </div>
-        </div>
-        <Link
-          href={visit}
-          className={cn(
-            buttonVariants({ size: "lg", shape: "pill" }),
-            "relative shrink-0 self-start shadow-md sm:self-auto",
+      <header className="space-y-3">
+        <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-muted-foreground">
+          <MapPin aria-hidden="true" className="size-4" />
+          <Link
+            href={localityPath as Route}
+            className="inline-flex min-h-6 items-center rounded font-semibold text-foreground underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {listing.locality.name}
+          </Link>
+          <span>{`· ${t(`genderShort.${listing.genderPolicy}`)} · ${t(`meals.${listing.meals}`)}`}</span>
+        </p>
+        <h1 className="max-w-[22ch] text-display font-medium text-foreground">{listing.name}</h1>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          {listing.verified ? (
+            <Badge variant="neem" className="px-3 py-1 text-xs font-semibold">
+              <ShieldCheck aria-hidden="true" className="size-3.5" />
+              {t("verified")}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="px-3 py-1 text-xs">
+              {t("notVerified")}
+            </Badge>
           )}
-        >
-          {t("bookVisit")}
-        </Link>
+          <span className="text-muted-foreground">
+            {t("runBy", { business: listing.ownerBusinessName })}
+          </span>
+        </div>
       </header>
 
       <Gallery listing={listing} />
-      <Rooms categories={listing.categories} calendar={calendar} />
-      {listing.categories.length === 0 ? null : (
-        <CheckPrice
-          categories={listing.categories}
-          stay={calendar?.stayMonths ?? DEFAULT_STAY}
-          visit={onSpotVisit}
-        />
-      )}
-      <Safety listing={listing} />
 
-      {listing.amenities.length === 0 && listing.houseRules.length === 0 ? null : (
-        <div className="grid gap-6 md:grid-cols-2">
+      <div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-x-14 xl:grid-cols-[minmax(0,1fr)_25rem] xl:gap-x-20">
+        <div className="min-w-0 lg:col-start-1">
+          <Rooms categories={listing.categories} calendar={calendar} />
+        </div>
+
+        <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <div className="space-y-5 rounded-[2rem] border bg-card p-6 shadow-lg sm:p-7 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
+            {from === null ? null : (
+              <div>
+                <p className="text-title-2 font-semibold tabular-nums">
+                  {t("fromPrice", { amount: formatINR(from) })}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{t("fromNote")}</p>
+              </div>
+            )}
+            <Link
+              href={visit}
+              className={buttonVariants({
+                variant: "sun",
+                size: "lg",
+                shape: "pill",
+                className: "w-full",
+              })}
+            >
+              {t("bookVisit")}
+            </Link>
+            {listing.categories.length === 0 ? null : (
+              <CheckPrice
+                categories={listing.categories}
+                stay={calendar?.stayMonths ?? DEFAULT_STAY}
+                visit={onSpotVisit}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="min-w-0 space-y-14 lg:col-start-1">
+          <Safety listing={listing} />
+
           {listing.amenities.length === 0 ? null : (
-            <Card
-              asChild
-              variant="saffron"
-              className="relative space-y-4 overflow-hidden rounded-3xl p-6"
-            >
-              <section aria-labelledby="amenities-title">
-                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-saffron" />
-                <h2 id="amenities-title" className="text-title-3 font-semibold text-foreground">
-                  {t("amenities")}
-                </h2>
-                <ul className="flex flex-wrap gap-2">
-                  {listing.amenities.map((amenity) => (
-                    <li
-                      key={amenity.slug}
-                      className="rounded-full border border-saffron-border bg-card px-3.5 py-1.5 text-sm font-medium text-foreground shadow-2xs"
-                    >
-                      {amenity.name}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </Card>
+            <section aria-labelledby="amenities-title">
+              <h2 id="amenities-title" className="text-title-2 font-medium">
+                {t("amenities")}
+              </h2>
+              <ul className="mt-4 flex flex-wrap gap-2">
+                {listing.amenities.map((amenity) => (
+                  <li key={amenity.slug} className="rounded-full border px-3.5 py-1.5 text-sm">
+                    {amenity.name}
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
+
           {listing.houseRules.length === 0 ? null : (
-            <Card
-              asChild
-              variant="coral"
-              className="relative space-y-4 overflow-hidden rounded-3xl p-6"
-            >
-              <section aria-labelledby="rules-title">
-                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-coral" />
-                <h2 id="rules-title" className="text-title-3 font-semibold text-foreground">
-                  {t("rules")}
-                </h2>
-                <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-foreground">
-                  {listing.houseRules.map((rule) => (
-                    <li key={rule}>{rule}</li>
-                  ))}
-                </ul>
-              </section>
-            </Card>
+            <section aria-labelledby="rules-title">
+              <h2 id="rules-title" className="text-title-2 font-medium">
+                {t("rules")}
+              </h2>
+              <ul className="mt-4 max-w-prose list-disc space-y-2 pl-5 leading-relaxed">
+                {listing.houseRules.map((rule) => (
+                  <li key={rule}>{rule}</li>
+                ))}
+              </ul>
+            </section>
           )}
+
+          {listing.description === "" ? null : (
+            <section aria-labelledby="about-title">
+              <h2 id="about-title" className="text-title-2 font-medium">
+                {t("about")}
+              </h2>
+              <p className="mt-3 max-w-prose leading-7 whitespace-pre-line">
+                {listing.description}
+              </p>
+            </section>
+          )}
+
+          <Location listing={listing} />
+        </div>
+      </div>
+
+      {from === null ? null : (
+        <div className="glass fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-x-0 border-b-0 px-gutter pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
+          <p className="text-lg leading-tight font-semibold tabular-nums">
+            {t("fromPrice", { amount: formatINR(from) })}
+          </p>
+          <Link
+            href={visit}
+            className={buttonVariants({ variant: "sun", shape: "pill", className: "shrink-0" })}
+          >
+            {t("bookVisit")}
+          </Link>
         </div>
       )}
-
-      {listing.description === "" ? null : (
-        <Card
-          asChild
-          variant="warm"
-          className="relative space-y-3 overflow-hidden rounded-3xl p-6 sm:p-8"
-        >
-          <section aria-labelledby="about-title">
-            <ArchWatermark
-              tone="saffron"
-              className="absolute -right-4 -bottom-4 size-36 opacity-15"
-            />
-            <h2 id="about-title" className="relative text-title-3 font-semibold text-foreground">
-              {t("about")}
-            </h2>
-            <p className="relative max-w-prose leading-7 whitespace-pre-line text-foreground">
-              {listing.description}
-            </p>
-          </section>
-        </Card>
-      )}
-
-      <Location listing={listing} />
-
-      <Card
-        variant="coral"
-        className="relative flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-3xl p-6 sm:p-8"
-      >
-        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-coral" />
-        <ArchWatermark tone="coral" className="absolute -right-4 -bottom-4 size-32 opacity-15" />
-        <p className="relative text-sm font-semibold text-foreground">
-          {t("runBy", { business: listing.ownerBusinessName })}
-        </p>
-        <Link
-          href={visit}
-          className={cn(buttonVariants({ size: "lg", shape: "pill" }), "relative shadow-md")}
-        >
-          {t("bookVisit")}
-        </Link>
-      </Card>
     </div>
   );
+}
+
+/** Where a photo sits in the desktop's mosaic, so any number of photos fills it without a hole. */
+function mosaicCell(index: number, count: number): string | undefined {
+  const lead = "lg:col-span-2 lg:row-span-2 lg:rounded-[2rem]";
+  if (count === 1) return "lg:col-span-4 lg:rounded-[2rem]";
+  if (count === 2) return lead;
+  if (index === 0) return lead;
+  if (count === 3) return "lg:row-span-2";
+  if (count === 4 && index === 3) return "lg:col-span-2";
+  return undefined;
 }
 
 async function Gallery({ listing }: { listing: PublicListing }) {
@@ -279,40 +270,51 @@ async function Gallery({ listing }: { listing: PublicListing }) {
   const photos = listing.media.filter((media) => media.contentType.startsWith("image/"));
   const videos = listing.media.filter((media) => media.contentType.startsWith("video/"));
   return (
-    <section aria-labelledby="gallery-title" className="space-y-4">
+    <section aria-labelledby="gallery-title" className="mt-6 space-y-4 sm:mt-8">
       <h2 id="gallery-title" className="sr-only">
         {t("title")}
       </h2>
       {photos.length === 0 ? (
-        <Card
-          variant="warm"
-          className="relative overflow-hidden rounded-3xl border-dashed p-8 text-center text-muted-foreground"
-        >
-          <ListingPlaceholderArt className="mx-auto mb-4 h-36 max-w-md rounded-2xl border border-saffron-border/60" />
+        <div className="overflow-hidden rounded-[2rem] bg-surface-warm p-8 text-center">
+          <ListingPlaceholderArt className="mx-auto mb-4 h-36 max-w-md rounded-2xl" />
           <p className="font-medium text-foreground">{t("none")}</p>
-        </Card>
+        </div>
       ) : (
-        <ul className="grid grid-cols-2 gap-2.5 overflow-hidden rounded-2xl sm:grid-cols-4 sm:gap-3 sm:rounded-3xl">
+        <ul
+          // It scrolls sideways on a phone, so the keyboard must be able to reach it.
+          tabIndex={0}
+          aria-labelledby="gallery-title"
+          className="-mx-gutter flex snap-x snap-mandatory scroll-px-gutter gap-2.5 overflow-x-auto px-gutter outline-none [scrollbar-width:none] focus-visible:ring-2 focus-visible:ring-ring sm:mx-0 sm:px-0 lg:grid lg:grid-cols-4 lg:overflow-visible"
+        >
           {photos.map((media, index) => (
             <li
               key={media.id}
               className={cn(
-                "group relative overflow-hidden rounded-xl bg-muted sm:rounded-none",
-                index === 0 && "col-span-2 row-span-2",
+                "group relative w-[86%] shrink-0 snap-start overflow-hidden rounded-3xl bg-muted sm:w-[60%] lg:w-auto lg:rounded-2xl",
+                mosaicCell(index, photos.length),
               )}
             >
-              <Photo
-                media={media}
-                alt={t("photo", { number: index + 1, name: listing.name })}
-                sizes={
-                  index === 0 ? "(min-width: 1024px) 620px, 100vw" : "(min-width: 640px) 25vw, 50vw"
-                }
-                first={index === 0}
-                className="aspect-[3/2] h-full w-full object-cover transition-transform duration-(--duration-slow) ease-standard group-hover:scale-[1.02] motion-reduce:transition-none"
-              />
+              {index === 0 ? (
+                <ViewTransition name={`pg-photo-${listing.id}`}>
+                  <Photo
+                    media={media}
+                    alt={t("photo", { number: index + 1, name: listing.name })}
+                    sizes="(min-width: 1024px) 640px, 86vw"
+                    first
+                    className="aspect-4/3 h-full w-full object-cover"
+                  />
+                </ViewTransition>
+              ) : (
+                <Photo
+                  media={media}
+                  alt={t("photo", { number: index + 1, name: listing.name })}
+                  sizes="(min-width: 1024px) 310px, 86vw"
+                  className="aspect-4/3 h-full w-full object-cover"
+                />
+              )}
               {media.verifiedCapture ? (
                 <Badge variant="overlay" className="absolute bottom-3 left-3 shadow-xs">
-                  <ShieldCheck aria-hidden="true" className="size-3 text-primary" />
+                  <ShieldCheck aria-hidden="true" className="size-3 text-neem" />
                   {t("verifiedPhoto")}
                 </Badge>
               ) : null}
@@ -353,8 +355,6 @@ function currentRent(calendar: PriceCalendar | null): (category: Category) => nu
   return (category) => soonest.get(category.id) ?? category.baseRentPaise;
 }
 
-const roomAccentBars = ["bg-primary", "bg-saffron", "bg-indigo", "bg-coral"] as const;
-
 async function Rooms({
   categories,
   calendar,
@@ -372,37 +372,31 @@ async function Rooms({
       timeZone: "Asia/Kolkata",
     });
   return (
-    <section aria-labelledby="rooms-title" className="space-y-5">
-      <div className="space-y-1.5">
-        <div className="flex items-center gap-3">
-          <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-primary" />
-          <h2 id="rooms-title" className="text-title-2 font-bold text-foreground">
-            {t("title")}
-          </h2>
-        </div>
-        <p className="max-w-prose text-sm text-muted-foreground sm:text-base">{t("intro")}</p>
-      </div>
+    <section aria-labelledby="rooms-title">
+      <h2 id="rooms-title" className="text-title-1 font-medium">
+        {t("title")}
+      </h2>
+      <p className="mt-2 max-w-prose text-muted-foreground">{t("intro")}</p>
       {categories.length === 0 ? (
-        <Card variant="warm" className="p-6 text-muted-foreground">
-          <p>{t("none")}</p>
-        </Card>
+        <p className="mt-6 text-muted-foreground">{t("none")}</p>
       ) : (
-        <ul className="grid gap-5 md:grid-cols-2">
-          {categories.map((category, index) => (
+        <ul className="mt-4 divide-y">
+          {categories.map((category) => (
             <li
               key={category.id}
-              className="relative flex flex-col justify-between gap-5 overflow-hidden rounded-3xl border bg-card p-6 text-card-foreground shadow-sm"
+              className="grid gap-5 py-7 sm:grid-cols-[10.5rem_minmax(0,1fr)] sm:gap-8"
             >
-              <span
-                aria-hidden="true"
-                className={`absolute inset-x-0 top-0 h-1.5 ${roomAccentBars[index % roomAccentBars.length] ?? "bg-primary"}`}
+              <RoomIllustration
+                occupancy={category.occupancy}
+                ac={category.ac}
+                attachedBath={category.attachedBath}
+                balcony={category.balcony}
+                caption={t("illustration")}
               />
-              <div className="space-y-4 pt-1">
+              <div className="min-w-0 space-y-4">
                 <div className="space-y-1">
-                  <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">
-                    {category.label}
-                  </h3>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <h3 className="text-title-3 font-medium text-foreground">{category.label}</h3>
+                  <p className="text-sm text-muted-foreground">
                     {[
                       t(`sharing.${category.occupancy}`),
                       category.ac ? t("ac") : null,
@@ -419,33 +413,30 @@ async function Rooms({
                   stay={calendar?.stayMonths}
                   day={day}
                 />
-              </div>
-              <div className="space-y-3 rounded-2xl border border-saffron-border/70 bg-surface-warm p-4 text-sm">
-                <p className="font-semibold text-foreground tabular-nums">
-                  {t("deposit", { amount: formatINR(category.securityDepositPaise) })}
-                </p>
-                <Separator />
-                <div className="space-y-1.5">
-                  <p className="text-xs font-semibold tracking-wider text-saffron-soft-foreground uppercase">
-                    {t("charges")}
+                <div className="space-y-2 text-sm">
+                  <p className="font-semibold text-foreground tabular-nums">
+                    {t("deposit", { amount: formatINR(category.securityDepositPaise) })}
                   </p>
-                  {category.mandatoryCharges.length === 0 ? (
-                    <p className="text-muted-foreground">{t("noCharges")}</p>
-                  ) : (
-                    <>
-                      <ul className="list-disc space-y-1 pl-5 text-foreground tabular-nums">
-                        {category.mandatoryCharges.map((charge) => (
-                          <li key={`${charge.type}-${charge.label}`}>{chargeText(charge, t)}</li>
-                        ))}
-                      </ul>
-                      <p className="pt-1 text-xs font-medium text-muted-foreground tabular-nums">
-                        {t("totals", {
-                          monthly: formatINR(category.monthlyChargesPaise),
-                          once: formatINR(category.oneTimeChargesPaise),
-                        })}
-                      </p>
-                    </>
-                  )}
+                  <div className="space-y-1">
+                    <p className="font-medium text-foreground">{t("charges")}</p>
+                    {category.mandatoryCharges.length === 0 ? (
+                      <p className="text-muted-foreground">{t("noCharges")}</p>
+                    ) : (
+                      <>
+                        <ul className="list-disc space-y-1 pl-5 text-foreground tabular-nums">
+                          {category.mandatoryCharges.map((charge) => (
+                            <li key={`${charge.type}-${charge.label}`}>{chargeText(charge, t)}</li>
+                          ))}
+                        </ul>
+                        <p className="pt-1 text-muted-foreground tabular-nums">
+                          {t("totals", {
+                            monthly: formatINR(category.monthlyChargesPaise),
+                            once: formatINR(category.oneTimeChargesPaise),
+                          })}
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </li>
@@ -494,27 +485,25 @@ async function RoomPrice({
   const scarce = room === undefined ? null : scarceBeds(room.bedsFree);
   return (
     <div className="space-y-2.5">
-      <p className="inline-block rounded-xl border border-primary-border bg-primary-soft px-3.5 py-1.5 font-display text-2xl font-bold tracking-tight text-primary-soft-foreground tabular-nums">
+      <p className="text-title-2 font-semibold text-foreground tabular-nums">
         {t("rent", { amount: formatINR(rent) })}
       </p>
       {room === undefined || stay === undefined ? null : (
         <p className="text-xs text-muted-foreground">{t("headlineNote", { months: stay })}</p>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="sage" className="px-3 py-1 text-xs font-semibold">
+        <Badge variant="neem" className="px-3 py-1 text-xs font-semibold">
           <Check aria-hidden="true" className="size-3.5" />
           {t("fixedForStay")}
         </Badge>
         {scarce === null ? null : (
-          <Badge variant="saffron" className="px-3 py-1 text-xs font-semibold">
+          <Badge variant="marigold" className="px-3 py-1 text-xs font-semibold">
             {t("bedsLeft", { count: scarce })}
           </Badge>
         )}
       </div>
       {changes === null ? null : (
-        <p className="rounded-lg border border-indigo-border bg-indigo-soft px-3 py-1.5 text-xs font-medium text-indigo-soft-foreground tabular-nums">
-          {changes}
-        </p>
+        <p className="text-sm text-muted-foreground tabular-nums">{changes}</p>
       )}
     </div>
   );
@@ -543,32 +532,12 @@ async function CheckPrice({
     "API_UNREACHABLE",
   ] as const;
   return (
-    <section
-      aria-labelledby="quote-title"
-      className="relative space-y-5 overflow-hidden rounded-3xl border border-indigo-border bg-indigo-soft p-6 shadow-sm sm:p-8"
-    >
-      <span
-        aria-hidden="true"
-        className="absolute inset-x-0 top-0 h-1.5"
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg, var(--indigo) 0%, var(--primary) 40%, var(--saffron) 75%, var(--coral) 100%)",
-        }}
-      />
-      <ArchWatermark tone="indigo" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
-      <div className="relative space-y-1.5">
-        <div className="flex items-center gap-2.5">
-          <span
-            aria-hidden="true"
-            className="grid size-10 place-items-center rounded-xl bg-card text-indigo-soft-foreground shadow-2xs ring-1 ring-indigo-border"
-          >
-            <Sparkles className="size-5" />
-          </span>
-          <h2 id="quote-title" className="text-title-2 font-bold text-foreground">
-            {t("title")}
-          </h2>
-        </div>
-        <p className="max-w-prose text-sm text-foreground sm:text-base">
+    <section aria-labelledby="quote-title" className="space-y-3 border-t pt-5">
+      <div className="space-y-1">
+        <h2 id="quote-title" className="text-title-3 font-medium text-foreground">
+          {t("title")}
+        </h2>
+        <p className="text-sm text-muted-foreground">
           {visit === null ? t("intro") : t("atYourVisit")}
         </p>
       </div>
@@ -642,99 +611,90 @@ async function Safety({ listing }: { listing: PublicListing }) {
           [t("warden"), safety.warden],
         ] as const);
   return (
-    <Card
-      asChild
-      variant="sage"
-      className="relative space-y-5 overflow-hidden rounded-3xl p-6 sm:p-8"
+    <section
+      aria-labelledby="safety-title"
+      className="space-y-5 rounded-[2rem] bg-neem-soft p-6 text-neem-soft-foreground sm:p-8"
     >
-      <section aria-labelledby="safety-title">
-        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-sage" />
-        <ArchWatermark tone="sage" className="absolute -right-6 -bottom-6 size-44 opacity-15" />
-        <div className="relative flex items-center gap-2.5">
-          <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-card text-sage-soft-foreground shadow-2xs ring-1 ring-sage-border">
-            <ShieldCheck aria-hidden="true" className="size-5" />
-          </div>
-          <h2 id="safety-title" className="text-title-2 font-bold text-foreground">
-            {t("title")}
-          </h2>
-        </div>
-        {safety === null ? (
-          <p className="relative text-muted-foreground">{t("notChecked")}</p>
-        ) : (
-          <div className="relative space-y-5">
-            <p className="rounded-xl border border-sage-border bg-card px-4 py-3 text-sm font-semibold text-sage-soft-foreground shadow-2xs">
-              {t("checked", {
-                date: format.dateTime(new Date(`${safety.verifiedOn}T00:00:00+05:30`), {
-                  dateStyle: "long",
-                }),
-              })}
-            </p>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              <li className="flex items-center gap-2.5 rounded-xl border border-sage-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-2xs">
-                <Check aria-hidden="true" className="size-4 shrink-0 text-sage-soft-foreground" />
-                <span>{t("exits", { count: safety.exits })}</span>
+      <h2 id="safety-title" className="text-title-2 font-medium">
+        {t("title")}
+      </h2>
+      {safety === null ? (
+        <p>{t("notChecked")}</p>
+      ) : (
+        <div className="space-y-5">
+          <p className="font-semibold">
+            {t("checked", {
+              date: format.dateTime(new Date(`${safety.verifiedOn}T00:00:00+05:30`), {
+                dateStyle: "long",
+              }),
+            })}
+          </p>
+          <ul className="grid gap-2.5 sm:grid-cols-2">
+            <li className="flex items-center gap-2.5">
+              <Check aria-hidden="true" className="size-4 shrink-0" />
+              <span>{t("exits", { count: safety.exits })}</span>
+            </li>
+            {checks.map(([label, present]) => (
+              <li key={label} className="flex items-center gap-2.5">
+                {present ? (
+                  <Check aria-hidden="true" className="size-4 shrink-0" />
+                ) : (
+                  <X aria-hidden="true" className="size-4 shrink-0" />
+                )}
+                <span>
+                  {label}: {present ? t("yes") : t("no")}
+                </span>
               </li>
-              {checks.map(([label, present]) => (
-                <li
-                  key={label}
-                  className="flex items-center gap-2.5 rounded-xl border border-sage-border bg-card px-4 py-3 text-sm text-foreground shadow-2xs"
-                >
-                  {present ? (
-                    <Check
-                      aria-hidden="true"
-                      className="size-4 shrink-0 text-sage-soft-foreground"
-                    />
-                  ) : (
-                    <X aria-hidden="true" className="size-4 shrink-0 text-destructive" />
-                  )}
-                  <span>
-                    {label}: {present ? t("yes") : t("no")}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-foreground">{t("womenSafety")}</p>
-              {safety.womenSafety.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("womenSafetyNone")}</p>
-              ) : (
-                <ul className="flex flex-wrap gap-2">
-                  {safety.womenSafety.map((feature) => (
-                    <li
-                      key={feature}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-saffron-border bg-saffron-soft px-3.5 py-1.5 text-sm font-medium text-saffron-soft-foreground shadow-2xs"
-                    >
-                      <Check aria-hidden="true" className="size-3.5" />
-                      {t(`feature.${feature}`)}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            ))}
+          </ul>
+          <div className="space-y-2">
+            <p className="font-semibold">{t("womenSafety")}</p>
+            {safety.womenSafety.length === 0 ? (
+              <p>{t("womenSafetyNone")}</p>
+            ) : (
+              <ul className="grid gap-2.5 sm:grid-cols-2">
+                {safety.womenSafety.map((feature) => (
+                  <li key={feature} className="flex items-center gap-2.5">
+                    <Check aria-hidden="true" className="size-4 shrink-0" />
+                    {t(`feature.${feature}`)}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        )}
-        <Separator />
-        <ul className="relative flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-foreground">
-          <li>{t(`licence.${listing.licenceStatus}`)}</li>
-          <li>{t(`society.${listing.societyPermission}`)}</li>
-        </ul>
-      </section>
-    </Card>
+        </div>
+      )}
+      <ul className="flex flex-wrap gap-x-6 gap-y-2 border-t border-neem-border pt-4 text-sm font-medium">
+        <li>{t(`licence.${listing.licenceStatus}`)}</li>
+        <li>{t(`society.${listing.societyPermission}`)}</li>
+      </ul>
+    </section>
   );
+}
+
+// A person walks about 80 metres a minute; distances here are straight lines, so it's an estimate.
+const WALK_M_PER_MINUTE = 80;
+// The commute lines share one scale, so distances compare at a glance.
+const COMMUTE_SCALE_M = 3_000;
+
+function walkMinutes(distanceM: number): number {
+  return Math.max(1, Math.ceil(distanceM / WALK_M_PER_MINUTE));
+}
+
+function commuteWidth(distanceM: number): string {
+  const share = Math.min(1, Math.max(0.06, distanceM / COMMUTE_SCALE_M));
+  return String(Math.round(share * 100)) + "%";
 }
 
 async function Location({ listing }: { listing: PublicListing }) {
   const t = await getTranslations("Pg");
   return (
     <section aria-labelledby="location-title" className="space-y-5">
-      <div className="space-y-1.5">
-        <div className="flex items-center gap-3">
-          <span aria-hidden="true" className="h-6 w-1.5 rounded-full bg-coral" />
-          <h2 id="location-title" className="text-title-2 font-bold text-foreground">
-            {t("location.title")}
-          </h2>
-        </div>
-        <p className="max-w-prose text-sm text-muted-foreground sm:text-base">
+      <div className="space-y-2">
+        <h2 id="location-title" className="text-title-2 font-medium text-foreground">
+          {t("location.title")}
+        </h2>
+        <p className="max-w-prose text-muted-foreground">
           {t("location.approximate", { locality: listing.locality.name })}
         </p>
       </div>
@@ -752,38 +712,48 @@ async function Location({ listing }: { listing: PublicListing }) {
           failed: t("map.failed"),
         }}
       />
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-8 sm:grid-cols-2 sm:gap-10">
         {[
-          {
-            key: "campuses",
-            variant: "indigo" as const,
-            title: t("location.campuses"),
-            places: listing.campusesNearby,
-          },
-          {
-            key: "stations",
-            variant: "teal" as const,
-            title: t("location.stations"),
-            places: listing.stationsNearby,
-          },
+          { key: "campuses", title: t("location.campuses"), places: listing.campusesNearby },
+          { key: "stations", title: t("location.stations"), places: listing.stationsNearby },
         ].map((group) =>
           group.places.length === 0 ? null : (
-            <Card key={group.key} variant={group.variant} className="space-y-2.5 rounded-3xl p-6">
-              <h3 className="font-display font-semibold text-foreground">{group.title}</h3>
-              <ul className="space-y-1.5 text-sm font-medium text-foreground tabular-nums">
+            <div key={group.key}>
+              <h3 className="font-sans text-base font-semibold text-foreground">{group.title}</h3>
+              <ul className="mt-3 space-y-4 text-sm">
                 {group.places.map((place) => (
                   <li key={place.slug}>
-                    {t("location.distance", {
-                      place: place.name,
-                      distance: formatDistance(place.distanceM),
-                    })}
+                    <p className="flex flex-wrap justify-between gap-x-3 tabular-nums">
+                      <span className="font-medium text-foreground">
+                        {t("location.distance", {
+                          place: place.name,
+                          distance: formatDistance(place.distanceM),
+                        })}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {t("location.walk", { minutes: walkMinutes(place.distanceM) })}
+                      </span>
+                    </p>
+                    <span aria-hidden="true" className="relative mt-2 block h-3">
+                      <span className="absolute inset-x-0 top-[5px] h-0.5 rounded-full bg-border" />
+                      <span
+                        className="absolute top-[4px] left-0 h-1 rounded-full bg-sun"
+                        style={{ width: commuteWidth(place.distanceM) }}
+                      />
+                      <span className="absolute top-0 left-0 size-3 rounded-full border-[3px] border-primary bg-background" />
+                      <span
+                        className="absolute top-0 size-3 -translate-x-full rounded-full bg-primary"
+                        style={{ left: commuteWidth(place.distanceM) }}
+                      />
+                    </span>
                   </li>
                 ))}
               </ul>
-            </Card>
+            </div>
           ),
         )}
       </div>
+      <p className="text-sm text-muted-foreground">{t("location.straightLine")}</p>
     </section>
   );
 }

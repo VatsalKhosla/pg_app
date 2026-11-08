@@ -111,6 +111,9 @@ export interface MapViewText {
   cluster: string;
   /** The chosen campus's label, with {name}. */
   campus: string;
+  /** The desktop's button that tips the map back for depth, and lays it flat again. */
+  tilt: string;
+  flatten: string;
 }
 
 export interface MapViewProps {

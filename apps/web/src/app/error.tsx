@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { ErrorMessage } from "@/components/layout/error-message";
 import { useErrorText } from "@/components/layout/error-text";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { captureError } from "@/lib/monitoring/capture-error";
 
 // Shown, inside the site's layout, when rendering a page fails. `retry` fetches and renders the
@@ -28,9 +28,13 @@ export default function ErrorPage({
       body={text.body}
       detail={error.digest === undefined ? undefined : `${text.referenceLabel}: ${error.digest}`}
       action={
-        <Button size="lg" shape="pill" onClick={retry}>
+        <button
+          type="button"
+          className={buttonVariants({ size: "lg", shape: "pill" })}
+          onClick={retry}
+        >
           {text.retry}
-        </Button>
+        </button>
       }
     />
   );

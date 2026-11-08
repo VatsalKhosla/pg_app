@@ -44,8 +44,8 @@ const FIELDS = [
 
 const SLOT_STYLES = [
   "border-primary-border bg-primary-soft",
-  "border-saffron-border bg-saffron-soft",
-  "border-indigo-border bg-indigo-soft",
+  "border-marigold-border bg-marigold-soft",
+  "border-dusk-border bg-dusk-soft",
 ] as const;
 
 /**

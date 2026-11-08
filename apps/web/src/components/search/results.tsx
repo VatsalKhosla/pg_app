@@ -66,11 +66,11 @@ export function Results({
         <p role="status" className="mb-3 text-sm font-medium text-muted-foreground">
           {t("results.loading")}
         </p>
-        <ul aria-hidden="true" className="space-y-3">
+        <ul aria-hidden="true" className="grid gap-x-4 gap-y-7 sm:grid-cols-2">
           {[0, 1, 2, 3].map((index) => (
-            <li key={index} className="flex gap-3.5 rounded-2xl border bg-card p-3.5">
-              <Skeleton className="size-26 shrink-0 rounded-xl sm:size-30" />
-              <div className="flex-1 space-y-2.5 py-1">
+            <li key={index}>
+              <Skeleton className="aspect-4/3 rounded-[1.75rem]" />
+              <div className="space-y-2.5 px-1.5 pt-3">
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-3.5 w-1/2" />
                 <Skeleton className="h-4 w-1/3" />
@@ -133,7 +133,7 @@ export function Results({
       <ul
         aria-busy={refreshing}
         className={cn(
-          "space-y-3 transition-opacity motion-reduce:transition-none",
+          "grid gap-x-4 gap-y-7 transition-opacity sm:grid-cols-2 motion-reduce:transition-none",
           refreshing && "opacity-60",
         )}
       >

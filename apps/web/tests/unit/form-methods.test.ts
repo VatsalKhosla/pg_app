@@ -55,6 +55,7 @@ describe("forms", () => {
       "app/ops/owners/page.tsx",
       "app/owner/pgs/[id]/calendar/page.tsx",
       "app/owner/pgs/[id]/pricing/page.tsx",
+      "components/home/hero-search.tsx",
       "components/pg/quote-checker.tsx",
       "components/search/filters.tsx",
     ]);

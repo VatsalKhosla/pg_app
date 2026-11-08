@@ -2,84 +2,101 @@
 @import "tw-animate-css";
 
 /*
- * Design tokens (shadcn/ui), documented in docs/design/design-system.md. Brand colours arrive
- * through the --brand-* custom properties that the root layout sets from src/config/brand.ts; the
- * brand tints below are mixed from them, so the brand still lives in one place. Neutrals carry a
- * faint cool tint that sits well beside the brand. Every text pair keeps 4.5:1 or more against the
- * background it sits on, and control borders and focus rings keep 3:1 (WCAG 2.2 AA), in both
- * themes; the ratios are listed in the design-system doc.
+ * Design tokens (shadcn/ui), documented in DESIGN.md and docs/design/design-system.md. Golden hour,
+ * the founders' palette (2026-11-08): deep ink, marigold and ivory. Brand colours arrive through
+ * the --brand-* custom properties that the root layout sets from src/config/brand.ts; the tints
+ * below are mixed from them or tuned beside them. Light neutrals lean warm and dark neutrals lean
+ * toward the ink. Every text pair keeps 4.5:1 or more against the background it sits on, and
+ * control borders and focus rings keep 3:1 (WCAG 2.2 AA), in both themes; tests/unit/brand-contrast
+ * holds them to it.
  */
 :root {
   /* Surfaces and text */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.2 0.008 210);
-  --surface: oklch(0.98 0.003 210);
-  --surface-warm: #faf6f0;
-  --card: oklch(1 0 0);
+  --background: #fbf8f2;
+  --foreground: #161a22;
+  --surface: #f5f1e8;
+  --surface-warm: #f1eadc;
+  --card: #ffffff;
   --card-foreground: var(--foreground);
-  --popover: oklch(1 0 0);
+  --popover: #ffffff;
   --popover-foreground: var(--foreground);
-  --muted: oklch(0.97 0.004 210);
-  --muted-foreground: oklch(0.48 0.012 210);
+  --muted: #f0ebe0;
+  --muted-foreground: #5a5f6c;
 
-  /* Brand */
+  /* Brand: ink carries the actions, and the sun fill is kept for the one action that matters most */
   --primary: var(--brand-primary);
   --primary-foreground: var(--brand-primary-foreground);
-  --primary-hover: color-mix(in oklch, var(--primary) 86%, black);
+  --primary-hover: color-mix(in oklch, var(--primary) 86%, white);
   --primary-soft: color-mix(in oklch, var(--background), var(--primary) 9%);
   --primary-soft-hover: color-mix(in oklch, var(--background), var(--primary) 15%);
-  --primary-soft-foreground: color-mix(in oklch, var(--primary) 80%, black);
+  --primary-soft-foreground: color-mix(in oklch, var(--primary) 88%, black);
+  --sun: var(--brand-sun);
+  --sun-foreground: var(--brand-sun-foreground);
+  --sun-hover: color-mix(in oklch, var(--sun) 90%, black);
 
-  /* Editorial hospitality accents (from src/config/brand.ts, >= 6:1 contrast on soft fills) */
-  --coral: var(--brand-coral);
-  --coral-soft: #fceee9;
-  --coral-soft-foreground: #7c2014;
-  --coral-border: #f2c6b8;
+  /* The evening band: an ink field that stays dark in both themes */
+  --night: var(--brand-night);
+  --night-foreground: #f3eee4;
+  --night-muted: #b9bfcc;
+  --night-accent: #f5b451;
+  --night-raised: #1b2336;
+  --night-border: rgb(255 255 255 / 14%);
 
-  --saffron: var(--brand-saffron);
-  --saffron-soft: #fef3de;
-  --saffron-soft-foreground: #663300;
-  --saffron-border: #f3d092;
+  /* Accents, each with a soft fill to sit on (from src/config/brand.ts) */
+  --ember: var(--brand-ember);
+  --ember-soft: #fbeee6;
+  --ember-soft-foreground: #7a2a12;
+  --ember-border: #efc8b4;
 
-  --indigo: var(--brand-indigo);
-  --indigo-soft: #eef0ff;
-  --indigo-soft-foreground: #282268;
-  --indigo-border: #c3c8f7;
+  --marigold: var(--brand-marigold);
+  --marigold-soft: #fdf0d9;
+  --marigold-soft-foreground: #673a00;
+  --marigold-border: #eed09a;
 
-  --sage: var(--brand-sage);
-  --sage-soft: #e7f6ee;
-  --sage-soft-foreground: #0c472a;
-  --sage-border: #addbc2;
+  --dusk: var(--brand-dusk);
+  --dusk-soft: #e9edf5;
+  --dusk-soft-foreground: #1e2b45;
+  --dusk-border: #c4cddd;
+
+  --neem: var(--brand-neem);
+  --neem-soft: #e6f3ea;
+  --neem-soft-foreground: #164a33;
+  --neem-border: #b3d8c2;
 
   /* Quiet fills: secondary buttons, chips, hover states */
-  --secondary: oklch(0.955 0.006 210);
-  --secondary-hover: oklch(0.925 0.008 210);
+  --secondary: #eee8dc;
+  --secondary-hover: #e4dccd;
   --secondary-foreground: var(--foreground);
   --accent: color-mix(in oklch, var(--background), var(--primary) 6%);
   --accent-foreground: var(--foreground);
 
   /* Status: each has a strong colour for text and icons, and a soft fill to sit behind it */
-  --destructive: oklch(0.53 0.2 27);
-  --destructive-foreground: oklch(1 0 0);
-  --destructive-soft: oklch(0.965 0.02 20);
-  --destructive-soft-foreground: oklch(0.5 0.19 27);
-  --success: oklch(0.5 0.12 155);
-  --success-soft: oklch(0.96 0.035 155);
-  --success-soft-foreground: oklch(0.45 0.11 155);
-  --warning-soft: oklch(0.965 0.05 85);
-  --warning-soft-foreground: oklch(0.47 0.11 60);
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+  --destructive-soft: #fbeae7;
+  --destructive-soft-foreground: #9b2019;
+  --success: #1f6b49;
+  --success-soft: #e3f2e8;
+  --success-soft-foreground: #1b5f41;
+  --warning-soft: #fdf0d3;
+  --warning-soft-foreground: #6f4300;
 
   /*
    * Lines. --border is decorative (cards, dividers); --input outlines a control, so it keeps 3:1.
-   * The focus ring is near-black, not the brand colour, so it stays 3:1 or more even where older
-   * components draw it at half strength (ring-ring/50).
+   * The focus ring is the ink, so it stays 3:1 or more even where older components draw it at half
+   * strength (ring-ring/50).
    */
-  --border: oklch(0.915 0.005 210);
-  --input: oklch(0.64 0.012 210);
+  --border: #e6dfd2;
+  --input: #868277;
   --ring: var(--foreground);
 
-  /* Elevation: shadows are tinted toward the foreground, and stronger in the dark theme */
-  --shadow-tint: 16 24 28;
+  /* Glass: only where something passes behind it (the floating search, the header on the hero) */
+  --glass: rgb(251 248 242 / 90%);
+  --glass-border: rgb(22 26 34 / 10%);
+  --glass-blur: 18px;
+
+  /* Elevation: shadows are tinted toward the ink, and stronger in the dark theme */
+  --shadow-tint: 22 26 34;
   --shadow-strength: 1;
 
   /*
@@ -95,58 +112,69 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: oklch(0.17 0.008 220);
-    --foreground: oklch(0.97 0.004 210);
-    --surface: oklch(0.195 0.009 220);
-    --surface-warm: #16191d;
-    --card: oklch(0.21 0.009 220);
-    --popover: oklch(0.23 0.01 220);
-    --muted: oklch(0.255 0.01 220);
-    --muted-foreground: oklch(0.75 0.012 210);
+    --background: #0d1119;
+    --foreground: #f2eee6;
+    --surface: #121825;
+    --surface-warm: #161d2b;
+    --card: #171e2c;
+    --popover: #1c2434;
+    --muted: #1d2433;
+    --muted-foreground: #aab0be;
 
     --primary: var(--brand-primary-dark);
     --primary-foreground: var(--brand-primary-foreground-dark);
     --primary-hover: color-mix(in oklch, var(--primary) 85%, white);
-    --primary-soft: color-mix(in oklch, var(--background), var(--primary) 16%);
-    --primary-soft-hover: color-mix(in oklch, var(--background), var(--primary) 24%);
+    --primary-soft: color-mix(in oklch, var(--background), var(--primary) 14%);
+    --primary-soft-hover: color-mix(in oklch, var(--background), var(--primary) 22%);
     --primary-soft-foreground: color-mix(in oklch, var(--primary) 70%, white);
+    --sun: var(--brand-sun-dark);
+    --sun-foreground: var(--brand-sun-foreground-dark);
+    --sun-hover: color-mix(in oklch, var(--sun) 88%, white);
 
-    --coral: var(--brand-coral-dark);
-    --coral-soft: #2d1714;
-    --coral-soft-foreground: #ffb4a8;
-    --coral-border: #5c2b24;
+    --night: var(--brand-night-dark);
+    --night-foreground: #f2eee6;
+    --night-muted: #a9afbd;
+    --night-raised: #131926;
 
-    --saffron: var(--brand-saffron-dark);
-    --saffron-soft: #2b1f0d;
-    --saffron-soft-foreground: #fad28c;
-    --saffron-border: #593e16;
+    --ember: var(--brand-ember-dark);
+    --ember-soft: #2c1711;
+    --ember-soft-foreground: #ffb49c;
+    --ember-border: #5b2c1f;
 
-    --indigo: var(--brand-indigo-dark);
-    --indigo-soft: #1b1d36;
-    --indigo-soft-foreground: #c7cdff;
-    --indigo-border: #363a6b;
+    --marigold: var(--brand-marigold-dark);
+    --marigold-soft: #2a2010;
+    --marigold-soft-foreground: #fad28c;
+    --marigold-border: #584017;
 
-    --sage: var(--brand-sage-dark);
-    --sage-soft: #11281d;
-    --sage-soft-foreground: #9ee7bf;
-    --sage-border: #214f39;
+    --dusk: var(--brand-dusk-dark);
+    --dusk-soft: #182136;
+    --dusk-soft-foreground: #c8d5f0;
+    --dusk-border: #303c58;
 
-    --secondary: oklch(0.26 0.01 220);
-    --secondary-hover: oklch(0.3 0.012 220);
-    --accent: color-mix(in oklch, var(--background), var(--primary) 12%);
+    --neem: var(--brand-neem-dark);
+    --neem-soft: #11281d;
+    --neem-soft-foreground: #9ee7bf;
+    --neem-border: #214f39;
 
-    --destructive: oklch(0.71 0.17 22);
-    --destructive-foreground: oklch(0.17 0.008 220);
-    --destructive-soft: oklch(0.27 0.06 22);
-    --destructive-soft-foreground: oklch(0.8 0.11 22);
-    --success: oklch(0.76 0.13 155);
-    --success-soft: oklch(0.27 0.045 155);
-    --success-soft-foreground: oklch(0.82 0.12 155);
-    --warning-soft: oklch(0.28 0.045 70);
-    --warning-soft-foreground: oklch(0.85 0.11 85);
+    --secondary: #1e2636;
+    --secondary-hover: #283145;
+    --accent: color-mix(in oklch, var(--background), var(--primary) 10%);
 
-    --border: oklch(1 0 0 / 11%);
-    --input: oklch(1 0 0 / 36%);
+    --destructive: #f38a80;
+    --destructive-foreground: #1a0d0b;
+    --destructive-soft: #3a1a17;
+    --destructive-soft-foreground: #f7b1a9;
+    --success: #7cd3a6;
+    --success-soft: #12291e;
+    --success-soft-foreground: #93dfb6;
+    --warning-soft: #2e2311;
+    --warning-soft-foreground: #f4cf86;
+
+    --border: rgb(255 255 255 / 11%);
+    --input: rgb(255 255 255 / 36%);
+
+    --glass: rgb(23 30 44 / 78%);
+    --glass-border: rgb(255 255 255 / 12%);
 
     --shadow-tint: 0 0 0;
     --shadow-strength: 3;
@@ -177,22 +205,33 @@
   --color-primary-soft: var(--primary-soft);
   --color-primary-soft-hover: var(--primary-soft-hover);
   --color-primary-soft-foreground: var(--primary-soft-foreground);
-  --color-coral: var(--coral);
-  --color-coral-soft: var(--coral-soft);
-  --color-coral-soft-foreground: var(--coral-soft-foreground);
-  --color-coral-border: var(--coral-border);
-  --color-saffron: var(--saffron);
-  --color-saffron-soft: var(--saffron-soft);
-  --color-saffron-soft-foreground: var(--saffron-soft-foreground);
-  --color-saffron-border: var(--saffron-border);
-  --color-indigo: var(--indigo);
-  --color-indigo-soft: var(--indigo-soft);
-  --color-indigo-soft-foreground: var(--indigo-soft-foreground);
-  --color-indigo-border: var(--indigo-border);
-  --color-sage: var(--sage);
-  --color-sage-soft: var(--sage-soft);
-  --color-sage-soft-foreground: var(--sage-soft-foreground);
-  --color-sage-border: var(--sage-border);
+  --color-sun: var(--sun);
+  --color-sun-foreground: var(--sun-foreground);
+  --color-sun-hover: var(--sun-hover);
+  --color-night: var(--night);
+  --color-night-foreground: var(--night-foreground);
+  --color-night-muted: var(--night-muted);
+  --color-night-accent: var(--night-accent);
+  --color-night-raised: var(--night-raised);
+  --color-night-border: var(--night-border);
+  --color-glass: var(--glass);
+  --color-glass-border: var(--glass-border);
+  --color-ember: var(--ember);
+  --color-ember-soft: var(--ember-soft);
+  --color-ember-soft-foreground: var(--ember-soft-foreground);
+  --color-ember-border: var(--ember-border);
+  --color-marigold: var(--marigold);
+  --color-marigold-soft: var(--marigold-soft);
+  --color-marigold-soft-foreground: var(--marigold-soft-foreground);
+  --color-marigold-border: var(--marigold-border);
+  --color-dusk: var(--dusk);
+  --color-dusk-soft: var(--dusk-soft);
+  --color-dusk-soft-foreground: var(--dusk-soft-foreground);
+  --color-dusk-border: var(--dusk-border);
+  --color-neem: var(--neem);
+  --color-neem-soft: var(--neem-soft);
+  --color-neem-soft-foreground: var(--neem-soft-foreground);
+  --color-neem-border: var(--neem-border);
   --color-secondary: var(--secondary);
   --color-secondary-hover: var(--secondary-hover);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -211,15 +250,18 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Type: Inter for text and figures, Plus Jakarta Sans for headings */
-  --font-sans: var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
+  /* Type: Inter for text and figures, Eczar for headings */
+  --font-sans: var(--font-rupee-face), var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
   --font-display:
-    var(--font-display-face), var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
+    var(--font-rupee-face), var(--font-display-face), "Iowan Old Style", "Times New Roman", serif;
 
   /*
    * Display sizes grow with the viewport between a phone and a wide desktop; body sizes stay
    * Tailwind's (text-xs to text-xl), which are already tuned for reading.
    */
+  --text-hero: clamp(3rem, 1.75rem + 6.2vw, 6rem);
+  --text-hero--line-height: 0.98;
+  --text-hero--letter-spacing: -0.025em;
   --text-display: clamp(2.25rem, 1.65rem + 3vw, 4rem);
   --text-display--line-height: 1.05;
   --text-display--letter-spacing: -0.03em;
@@ -298,6 +340,60 @@
   }
 }
 
+/*
+ * The evening band: put `scope-night` on a section and everything inside it, buttons and focus
+ * rings included, takes the ink field's colours, in both themes.
+ */
+@utility scope-night {
+  --background: var(--night);
+  --foreground: var(--night-foreground);
+  --card: var(--night-raised);
+  --card-foreground: var(--night-foreground);
+  --muted: rgb(255 255 255 / 8%);
+  --muted-foreground: var(--night-muted);
+  --primary: var(--brand-sun);
+  --primary-foreground: var(--brand-sun-foreground);
+  --primary-hover: color-mix(in oklch, var(--brand-sun) 90%, white);
+  --primary-soft: rgb(245 180 81 / 14%);
+  --primary-soft-hover: rgb(245 180 81 / 22%);
+  --primary-soft-foreground: var(--night-accent);
+  --secondary: rgb(255 255 255 / 10%);
+  --secondary-hover: rgb(255 255 255 / 16%);
+  --secondary-foreground: var(--night-foreground);
+  --accent: rgb(255 255 255 / 8%);
+  --accent-foreground: var(--night-foreground);
+  --marigold: var(--night-accent);
+  --neem: var(--brand-neem-dark);
+  --ember: var(--brand-ember-dark);
+  --dusk: var(--brand-dusk-dark);
+  --border: var(--night-border);
+  --input: rgb(255 255 255 / 40%);
+  --ring: var(--night-foreground);
+  background-color: var(--night);
+  color: var(--night-foreground);
+}
+
+/* Owner, ops, field and admin screens are working tools: their headings are set in Inter too. */
+@utility working-type {
+  --font-display: var(--font-sans);
+  --font-display-face: var(--font-sans-face);
+}
+
+/*
+ * Frosted glass, for a surface something really passes behind. Where blur isn't available the fill
+ * goes solid, so text never loses its contrast.
+ */
+@utility glass {
+  background-color: var(--card);
+  border: 1px solid var(--glass-border);
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background-color: var(--glass);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  }
+}
+
 :root {
   --duration-fast: 120ms;
   --duration-base: 200ms;
@@ -312,12 +408,16 @@
 
   html {
     scroll-behavior: smooth;
+    /* Focus and links land clear of the floating header and a phone's bottom bar (WCAG 2.4.11). */
+    scroll-padding-block: 6rem;
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-background text-foreground;
     font-optical-sizing: auto;
+    /* Eczar ships in one weight: a heading asking for more stays as drawn, never smeared bold. */
+    font-synthesis-weight: none;
   }
 
   /*
@@ -336,8 +436,15 @@
   }
 
   ::selection {
-    background-color: var(--primary-soft-hover);
-    color: var(--foreground);
+    background-color: var(--sun);
+    color: var(--sun-foreground);
+  }
+
+  /* The parts the browser draws carry the palette too. */
+  :root {
+    accent-color: var(--primary);
+    caret-color: var(--primary);
+    scrollbar-color: color-mix(in oklch, var(--foreground) 32%, transparent) transparent;
   }
 
   /*
@@ -363,6 +470,415 @@
     ::view-transition-old(*),
     ::view-transition-new(*) {
       animation: none !important;
+    }
+  }
+}
+
+/*
+ * The home page's evening (components/home/dusk-scene.tsx). Colours mix the brand's own, and stay
+ * the same in both themes: it is always evening here. Scrolling drives the sunset in CSS alone;
+ * motion lives only inside the no-preference block, so reduced motion gets a still picture.
+ */
+@layer components {
+  .dusk-scene {
+    --scene-night: var(--brand-night);
+    --scene-far: color-mix(in oklch, var(--brand-ember) 40%, var(--brand-dusk));
+    --scene-back: color-mix(in oklch, var(--brand-dusk) 62%, var(--brand-night));
+    --scene-front: color-mix(in oklch, var(--brand-dusk) 30%, var(--brand-night));
+    --scene-metro: color-mix(in oklch, var(--brand-night) 86%, black);
+    --scene-train: color-mix(in oklch, var(--brand-dusk) 50%, var(--brand-night));
+    --scene-near: color-mix(in oklch, var(--brand-night) 66%, black);
+    --scene-lit: color-mix(in oklch, var(--brand-sun) 88%, white);
+    --scene-kite-a: var(--brand-ember);
+    --scene-kite-b: var(--brand-sun);
+    --scene-kite-c: var(--night-foreground);
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .dusk-sky,
+  .dusk-dark,
+  .dusk-stars {
+    position: absolute;
+    inset: 0;
+  }
+
+  .dusk-sky {
+    background: linear-gradient(
+      180deg,
+      var(--brand-night) 0%,
+      var(--brand-primary) 36%,
+      color-mix(in oklch, var(--brand-dusk) 62%, var(--brand-ember)) 60%,
+      color-mix(in oklch, var(--brand-ember) 72%, var(--brand-sun)) 77%,
+      var(--brand-sun) 94%
+    );
+  }
+
+  .dusk-dark {
+    background: var(--brand-night);
+    opacity: 0;
+  }
+
+  .dusk-stars {
+    opacity: 0;
+    background-image:
+      radial-gradient(1.5px 1.5px at 12% 14%, var(--night-foreground), transparent),
+      radial-gradient(1px 1px at 24% 30%, var(--night-foreground), transparent),
+      radial-gradient(1.5px 1.5px at 39% 10%, var(--night-foreground), transparent),
+      radial-gradient(1px 1px at 52% 24%, var(--night-foreground), transparent),
+      radial-gradient(1.5px 1.5px at 63% 8%, var(--night-foreground), transparent),
+      radial-gradient(1px 1px at 72% 33%, var(--night-foreground), transparent),
+      radial-gradient(1.5px 1.5px at 84% 16%, var(--night-foreground), transparent),
+      radial-gradient(1px 1px at 93% 38%, var(--night-foreground), transparent);
+  }
+
+  .dusk-sun {
+    position: absolute;
+    right: clamp(1.5rem, 13vw, 14rem);
+    bottom: clamp(9rem, 30%, 19rem);
+    width: clamp(9rem, 21vw, 19rem);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 50% 42%,
+      color-mix(in oklch, var(--brand-sun) 72%, white),
+      var(--brand-sun) 58%,
+      color-mix(in oklch, var(--brand-sun) 62%, var(--brand-ember))
+    );
+    box-shadow: 0 0 9rem 3rem color-mix(in oklch, var(--brand-sun) 42%, transparent);
+    transform: translate3d(
+      calc(var(--px, 0) * var(--depth) * -1px),
+      calc(var(--py, 0) * var(--depth) * -0.6px),
+      0
+    );
+    transition: transform 700ms var(--ease-emphasized);
+  }
+
+  .dusk-layer {
+    position: absolute;
+    bottom: 0;
+    left: -2%;
+    width: 104%;
+    height: 62%;
+    min-height: 19rem;
+    transform: translate3d(
+      calc(var(--px, 0) * var(--depth) * -1px),
+      calc(var(--py, 0) * var(--depth) * -0.6px),
+      0
+    );
+    transition: transform 700ms var(--ease-emphasized);
+  }
+
+  @media (max-width: 47.99rem) {
+    .dusk-layer {
+      height: 21rem;
+      min-height: 0;
+    }
+
+    .dusk-sun {
+      right: -1.5rem;
+      bottom: 11.5rem;
+      width: 8rem;
+    }
+  }
+
+  .dusk-window {
+    fill: var(--scene-lit);
+    opacity: 0.92;
+  }
+
+  .dusk-lights-early {
+    opacity: 0.3;
+  }
+
+  .dusk-lights-late {
+    opacity: 0.1;
+  }
+
+  .dusk-train {
+    translate: 16% 0;
+  }
+
+  /* The slider of the stay simulator and the budget explorer. */
+  .range-sun {
+    --range-track: color-mix(in oklch, var(--foreground) 22%, transparent);
+    height: 2.75rem;
+    appearance: none;
+    cursor: pointer;
+    background: transparent;
+    border-radius: 999px;
+  }
+
+  .range-sun::-webkit-slider-runnable-track {
+    height: 0.4rem;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--sun) var(--fill, 0%),
+      var(--range-track) var(--fill, 0%)
+    );
+  }
+
+  .range-sun::-moz-range-track {
+    height: 0.4rem;
+    border-radius: 999px;
+    background: var(--range-track);
+  }
+
+  .range-sun::-moz-range-progress {
+    height: 0.4rem;
+    border-radius: 999px;
+    background: var(--sun);
+  }
+
+  .range-sun::-webkit-slider-thumb {
+    width: 1.75rem;
+    height: 1.75rem;
+    margin-top: -0.675rem;
+    appearance: none;
+    border: 2px solid var(--foreground);
+    border-radius: 50%;
+    background: var(--sun);
+    box-shadow: var(--shadow-md);
+  }
+
+  .range-sun::-moz-range-thumb {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid var(--foreground);
+    border-radius: 50%;
+    background: var(--sun);
+  }
+
+  .range-sun:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* The stay simulator's track: three stops, and the token moving between them. */
+  .sim-track {
+    --coin: 5rem;
+    --stop-width: 33.333cqw;
+    container-type: inline-size;
+    position: relative;
+    height: 11rem;
+  }
+
+  .sim-line,
+  .sim-fill {
+    position: absolute;
+    top: calc(var(--coin) / 2 - 2px);
+    left: calc(var(--stop-width) / 2);
+    height: 4px;
+  }
+
+  .sim-line {
+    width: calc(var(--stop-width) * 2);
+  }
+
+  .sim-fill {
+    width: calc(var(--stop-width) * var(--place));
+    transition: width 640ms var(--ease-emphasized);
+  }
+
+  .sim-stop {
+    position: absolute;
+    top: 0;
+    left: calc(var(--stop-width) * var(--stop));
+    width: var(--stop-width);
+  }
+
+  .sim-node {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    margin-top: calc(var(--coin) / 2 - 0.5rem);
+  }
+
+  .sim-label {
+    margin-top: calc(var(--coin) / 2 + 0.5rem);
+  }
+
+  .sim-coin {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--stop-width);
+    translate: calc(var(--stop-width) * var(--place)) 0;
+    transition: translate 640ms var(--ease-emphasized);
+  }
+
+  @media (min-width: 40rem) {
+    .sim-track {
+      --coin: 6.5rem;
+    }
+  }
+
+  /* A PG's card, until it has a photo. */
+  .listing-placeholder {
+    background: linear-gradient(
+      180deg,
+      var(--brand-primary) 0%,
+      color-mix(in oklch, var(--brand-dusk) 60%, var(--brand-ember)) 58%,
+      var(--brand-sun) 100%
+    );
+  }
+
+  /* A room type's illustration. */
+  .iso-room {
+    --iso-floor: var(--marigold-soft);
+    --iso-wall-a: var(--surface-warm);
+    --iso-wall-b: var(--secondary-hover);
+    --iso-frame-top: var(--dusk);
+    --iso-frame-left: color-mix(in oklch, var(--dusk) 80%, black);
+    --iso-frame-right: color-mix(in oklch, var(--dusk) 62%, black);
+    --iso-sheet-top: var(--card);
+    --iso-sheet-left: color-mix(in oklch, var(--card) 88%, var(--foreground));
+    --iso-sheet-right: color-mix(in oklch, var(--card) 76%, var(--foreground));
+    --iso-pillow: var(--sun);
+    --iso-door: color-mix(in oklch, var(--dusk) 45%, var(--surface-warm));
+    --iso-accent: var(--sun);
+    --iso-glass: color-mix(in oklch, var(--sun) 34%, var(--card));
+    --iso-ac-light: var(--card);
+    --iso-ac-mid: color-mix(in oklch, var(--card) 86%, var(--foreground));
+    --iso-ac-dark: color-mix(in oklch, var(--card) 72%, var(--foreground));
+    --iso-shadow: color-mix(in oklch, var(--foreground) 12%, transparent);
+    --iso-blanket-left: color-mix(in oklch, var(--sun) 82%, black);
+    --iso-blanket-right: color-mix(in oklch, var(--sun) 68%, black);
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .iso-room svg {
+      transition: transform 480ms var(--ease-emphasized);
+    }
+
+    .iso-room:hover svg {
+      transform: perspective(40rem) rotateX(8deg) rotateZ(-2deg) scale(1.03);
+    }
+  }
+
+  /* The budget explorer's dots. */
+  .budget-pin-dot {
+    fill: color-mix(in oklch, var(--night-foreground) 34%, transparent);
+    transition: fill 280ms var(--ease-standard);
+  }
+
+  .budget-pin-glow {
+    fill: var(--night-accent);
+    opacity: 0;
+    transition: opacity 280ms var(--ease-standard);
+  }
+
+  .budget-pin[data-on="true"] .budget-pin-dot {
+    fill: var(--night-accent);
+  }
+
+  .budget-pin[data-on="true"] .budget-pin-glow {
+    opacity: 0.24;
+  }
+
+  /*
+   * Everything that moves is a whole layer moved by transform or fading by opacity, so the
+   * compositor does it and the page's own thread stays free.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    .dusk-kites {
+      animation: kite-sway 6s ease-in-out infinite alternate;
+    }
+
+    .dusk-train {
+      animation: train-run 30s linear infinite;
+    }
+
+    @supports (animation-timeline: scroll()) {
+      .dusk-sun {
+        animation: dusk-sink linear both;
+        animation-timeline: scroll(root);
+        animation-range: 0 80vh;
+      }
+
+      .dusk-dark {
+        animation: dusk-darken linear both;
+        animation-timeline: scroll(root);
+        animation-range: 0 80vh;
+      }
+
+      .dusk-stars {
+        animation: dusk-stars linear both;
+        animation-timeline: scroll(root);
+        animation-range: 25vh 80vh;
+      }
+
+      .dusk-lights-early {
+        animation: dusk-lights linear both;
+        animation-timeline: scroll(root);
+        animation-range: 5vh 45vh;
+      }
+
+      .dusk-lights-late {
+        animation: dusk-lights linear both;
+        animation-timeline: scroll(root);
+        animation-range: 30vh 75vh;
+      }
+
+      /* Depth on scroll is for bigger screens; a phone keeps its memory for the page. */
+      @media (min-width: 48rem) {
+        .dusk-drift {
+          animation: dusk-drift linear both;
+          animation-timeline: scroll(root);
+          animation-range: 0 100vh;
+        }
+      }
+    }
+  }
+
+  @keyframes kite-sway {
+    from {
+      translate: -6px 5px;
+    }
+    to {
+      translate: 8px -7px;
+    }
+  }
+
+  @keyframes train-run {
+    from {
+      translate: -62% 0;
+    }
+    to {
+      translate: 104% 0;
+    }
+  }
+
+  @keyframes dusk-sink {
+    to {
+      translate: 0 70%;
+    }
+  }
+
+  @keyframes dusk-darken {
+    to {
+      opacity: 0.72;
+    }
+  }
+
+  @keyframes dusk-stars {
+    to {
+      opacity: 0.9;
+    }
+  }
+
+  @keyframes dusk-lights {
+    to {
+      opacity: 0.92;
+    }
+  }
+
+  @keyframes dusk-drift {
+    to {
+      translate: 0 calc(var(--depth) * 2.4px);
     }
   }
 }
