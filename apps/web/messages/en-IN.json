@@ -17,7 +17,7 @@
     "footerPolicies": "Policies",
     "footerExplore": "Explore",
     "copyright": "© {year} {brand}",
-    "apiWaking": "The test site is waking up. This takes about a minute, and the page will fill in by itself."
+    "apiWaking": "The test site is waking up. This takes two or three minutes, and the page will fill in by itself."
   },
   "Navigation": {
     "search": "Find a PG",

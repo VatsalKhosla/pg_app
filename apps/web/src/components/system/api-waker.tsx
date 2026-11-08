@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 
 import { browserApi } from "@/lib/api/browser";
 
-/** How often to look, and for how long, while the API starts: about a minute, usually. */
+/** How often to look, and for how long, while the API starts: two or three minutes, usually. */
 const POLL_MS = 4_000;
-const GIVE_UP_MS = 180_000;
+const GIVE_UP_MS = 300_000;
 
 async function isAwake(): Promise<boolean> {
   try {

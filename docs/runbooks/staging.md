@@ -19,7 +19,7 @@ Everything runs in the US East (Ohio) region, where the Neon project is, so the 
 The services are described in `render.yaml`; the deploy is the **Deploy staging** job in `.github/workflows/ci.yml`.
 
 
-**When the API is asleep:** the host answers the web app's own requests to a sleeping API with a `429` challenge and doesn't wake it, so the site shows no data. `components/system/api-waker.tsx` handles this on the test site only: it asks the API to wake from the visitor's browser, says so, and reloads the page when the API answers, usually after about a minute.
+**When the API is asleep:** the host answers the web app's own requests to a sleeping API with a `429` challenge and doesn't wake it, so the site shows no data. `components/system/api-waker.tsx` handles this on the test site only: it asks the API to wake from the visitor's browser, says so, and reloads the page when the API answers, usually after two or three minutes (2 min 42 s when measured).
 
 ## Payments
 
