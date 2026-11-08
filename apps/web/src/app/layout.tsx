@@ -10,6 +10,7 @@ import { Suspense } from "react";
 import { ErrorTextProvider } from "@/components/layout/error-text";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { Analytics } from "@/components/system/analytics";
+import { ApiWakerLazy } from "@/components/system/api-waker-lazy";
 import { SiteHeader } from "@/components/layout/site-header";
 import { brand, brandStyle } from "@/config/brand";
 import { publicEnv } from "@/config/env";
@@ -129,6 +130,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={null}>
           <SiteFooter />
         </Suspense>
+        {/* The test site's API sleeps when idle, and only a visitor's browser can wake it. */}
+        {publicEnv.appEnv === "staging" ? (
+          <ApiWakerLazy wakeUrl={publicEnv.apiUrl.origin} text={t("apiWaking")} />
+        ) : null}
         {/* Analytics only where the server collects them (ADR 0035). */}
         {serverEnv.posthog === undefined ? null : <Analytics />}
       </body>
