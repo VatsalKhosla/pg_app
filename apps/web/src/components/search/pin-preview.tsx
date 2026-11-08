@@ -69,10 +69,6 @@ export function PinPreview({
         className,
       )}
     >
-      <span
-        aria-hidden="true"
-        className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),var(--marigold),var(--ember))]"
-      />
       <div className="relative size-22 shrink-0 overflow-hidden rounded-xl border border-marigold-border/60 bg-marigold-soft">
         {cover == null ? (
           <ListingPlaceholderArt />

@@ -5,7 +5,6 @@ import { getTranslations } from "next-intl/server";
 
 import { SignInFlow } from "@/components/auth/sign-in-flow";
 import { signInText } from "@/components/auth/sign-in-text";
-import { ArchWatermark } from "@/components/brand/editorial-art";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { publicEnv } from "@/config/env";
@@ -31,22 +30,8 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
         variant="raised"
         className="relative space-y-6 overflow-hidden rounded-3xl border-marigold-border/80 bg-card p-6 sm:p-8"
       >
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-1.5"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, var(--primary) 0%, var(--neem) 35%, var(--marigold) 70%, var(--ember) 100%)",
-          }}
-        />
-        <ArchWatermark tone="ember" className="absolute -right-6 -bottom-6 size-36 opacity-15" />
-        <div className="relative space-y-2 pt-1">
-          <div aria-hidden="true" className="flex items-center gap-1.5">
-            <span className="h-1.5 w-8 rounded-full bg-primary" />
-            <span className="h-1.5 w-5 rounded-full bg-ember" />
-            <span className="h-1.5 w-4 rounded-full bg-marigold" />
-          </div>
-          <h1 className="text-title-1 font-bold tracking-tight text-foreground">{t("title")}</h1>
+        <div className="space-y-2">
+          <h1 className="text-title-1 font-medium text-foreground">{t("title")}</h1>
         </div>
         <Separator />
         <div className="relative">

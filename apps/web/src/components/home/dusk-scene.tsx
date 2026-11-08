@@ -4,12 +4,20 @@ import { SCENE_HEIGHT, SCENE_WIDTH, scene } from "./scene-geometry";
 
 const viewBox = String.raw`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`;
 
-function Layer({ depth, children }: { depth: number; children: ReactNode }) {
+function Layer({
+  depth,
+  className,
+  children,
+}: {
+  depth: number;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
     <svg
       viewBox={viewBox}
       preserveAspectRatio="xMidYMax slice"
-      className="dusk-layer"
+      className={className === undefined ? "dusk-layer" : `dusk-layer ${className}`}
       style={{ "--depth": depth }}
       aria-hidden="true"
       focusable="false"
@@ -22,7 +30,7 @@ function Layer({ depth, children }: { depth: number; children: ReactNode }) {
 function Kite({ x, y, size, tone }: { x: number; y: number; size: number; tone: string }) {
   const half = size / 2;
   return (
-    <g className="dusk-kite" style={{ transformOrigin: String.raw`${x}px ${y}px` }}>
+    <g>
       <path
         d={String.raw`M${x} ${y - size}L${x + half} ${y}L${x} ${y + size * 0.7}L${x - half} ${y}Z`}
         fill={tone}
@@ -57,38 +65,47 @@ export function DuskScene() {
       <div className="dusk-dark" />
       <div className="dusk-stars" />
 
-      <Layer depth={15}>
+      <Layer depth={15} className="dusk-kites">
         <Kite x={1215} y={78} size={34} tone="var(--scene-kite-a)" />
         <Kite x={1395} y={150} size={24} tone="var(--scene-kite-b)" />
         <Kite x={905} y={132} size={20} tone="var(--scene-kite-c)" />
       </Layer>
-      <Layer depth={5}>
+      <Layer depth={5} className="dusk-drift">
         <path d={scene.far} fill="var(--scene-far)" />
       </Layer>
-      <Layer depth={9}>
+      <Layer depth={9} className="dusk-drift">
         <path d={scene.back.body} fill="var(--scene-back)" />
         <path d={scene.back.lit[0]} className="dusk-window" />
-        <path d={scene.back.lit[1]} className="dusk-window dusk-window-late" />
       </Layer>
-      <Layer depth={13}>
+      <Layer depth={9} className="dusk-lights-early">
+        <path d={scene.back.lit[1]} className="dusk-window" />
+      </Layer>
+      <Layer depth={13} className="dusk-drift">
         <path d={scene.front.body} fill="var(--scene-front)" />
         <path d={scene.front.lit[0]} className="dusk-window" />
-        <path d={scene.front.lit[1]} className="dusk-window dusk-window-late" />
-        <path d={scene.front.lit[2]} className="dusk-window dusk-window-last" />
       </Layer>
-      <Layer depth={18}>
+      <Layer depth={13} className="dusk-lights-early">
+        <path d={scene.front.lit[1]} className="dusk-window" />
+      </Layer>
+      <Layer depth={13} className="dusk-lights-late">
+        <path d={scene.front.lit[2]} className="dusk-window" />
+      </Layer>
+      <Layer depth={18} className="dusk-drift">
         <path d={scene.viaduct.body} fill="var(--scene-metro)" />
         <path d={scene.viaduct.glass} className="dusk-window" />
-        <g className="dusk-train">
-          <path d={scene.train.body} fill="var(--scene-train)" />
-          <path d={scene.train.windows} fill="var(--scene-lit)" />
-        </g>
       </Layer>
-      <Layer depth={28}>
+      <Layer depth={18} className="dusk-train">
+        <path d={scene.train.body} fill="var(--scene-train)" />
+        <path d={scene.train.windows} fill="var(--scene-lit)" />
+      </Layer>
+      <Layer depth={28} className="dusk-drift">
         <path d={scene.near.cables} fill="none" stroke="var(--scene-near)" strokeWidth="1.5" />
         <path d={scene.near.body} fill="var(--scene-near)" />
         {scene.near.lamps.map(([x, y]) => (
-          <circle key={x} cx={x} cy={y} r="5" fill="var(--scene-lit)" className="dusk-lamp" />
+          <g key={x}>
+            <circle cx={x} cy={y} r="22" fill="var(--scene-lit)" opacity="0.18" />
+            <circle cx={x} cy={y} r="5" fill="var(--scene-lit)" />
+          </g>
         ))}
       </Layer>
     </div>

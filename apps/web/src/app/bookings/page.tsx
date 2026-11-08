@@ -3,7 +3,6 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import { ArchWatermark } from "@/components/brand/editorial-art";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -52,17 +51,8 @@ export default async function BookingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
-      <div className="relative space-y-3 overflow-hidden rounded-3xl border border-marigold-border bg-surface-warm p-6 shadow-xs sm:p-8">
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-1.5"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, var(--primary) 0%, var(--neem) 35%, var(--marigold) 70%, var(--ember) 100%)",
-          }}
-        />
-        <ArchWatermark tone="dusk" className="absolute -right-6 -bottom-6 size-40 opacity-15" />
-        <h1 className="relative text-title-1 font-bold text-foreground">{t("title")}</h1>
+      <div className="space-y-3">
+        <h1 className="text-title-1 font-medium text-foreground">{t("title")}</h1>
         <p className="relative max-w-prose text-muted-foreground">{t("intro")}</p>
       </div>
       {items.length === 0 ? (

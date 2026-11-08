@@ -94,6 +94,7 @@ export function SearchBar({
   onOpenFilters: () => void;
 }) {
   const t = useTranslations("Search");
+  const tPg = useTranslations("Pg");
   const textId = useId();
   const sortId = useId();
   // What's typed; it follows the URL when that changes some other way (Clear filters, say).
@@ -109,12 +110,51 @@ export function SearchBar({
   const count = activeFilters(query);
   const sorts = SORTS.filter((sort) => sort !== "distance" || query.campus !== undefined);
 
+  const quick: { key: string; label: string; on: boolean; patch: SearchPatch }[] = [
+    {
+      key: "girls",
+      label: tPg("gender.girls"),
+      on: state.gender === "girls",
+      patch: { gender: state.gender === "girls" ? null : "girls" },
+    },
+    {
+      key: "boys",
+      label: tPg("gender.boys"),
+      on: state.gender === "boys",
+      patch: { gender: state.gender === "boys" ? null : "boys" },
+    },
+    {
+      key: "single",
+      label: tPg("rooms.sharing.single"),
+      on: state.occupancy === "single",
+      patch: { occupancy: state.occupancy === "single" ? null : "single" },
+    },
+    {
+      key: "double",
+      label: tPg("rooms.sharing.double"),
+      on: state.occupancy === "double",
+      patch: { occupancy: state.occupancy === "double" ? null : "double" },
+    },
+    {
+      key: "ac",
+      label: t("filters.ac"),
+      on: state.ac === true,
+      patch: { ac: state.ac === true ? null : true },
+    },
+    {
+      key: "bath",
+      label: t("filters.attachedBath"),
+      on: state.attached_bath === true,
+      patch: { attached_bath: state.attached_bath === true ? null : true },
+    },
+  ];
+
   return (
-    <div className="space-y-3 rounded-2xl border border-marigold-border/80 bg-surface-warm p-3.5 shadow-xs">
+    <div className="space-y-3">
       <form
         method="get"
         role="search"
-        className="flex gap-2"
+        className="glass sticky top-[5.25rem] z-20 flex gap-1.5 rounded-full p-1.5 shadow-lg"
         onSubmit={(event) => {
           event.preventDefault();
           onChange({ q: text.trim() === "" ? null : text });
@@ -139,14 +179,13 @@ export function SearchBar({
               setText(event.target.value);
               sendText(event.target.value);
             }}
-            className="rounded-full bg-card ps-10"
+            className="rounded-full border-transparent bg-transparent ps-10"
           />
         </div>
         <Button
           type="button"
           variant={count > 0 ? "soft" : "outline"}
           shape="pill"
-          className="bg-card"
           onClick={onOpenFilters}
         >
           <SlidersHorizontal aria-hidden="true" />
@@ -159,6 +198,30 @@ export function SearchBar({
           ) : null}
         </Button>
       </form>
+      <div
+        role="group"
+        aria-label={t("filters.quick")}
+        className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6"
+      >
+        {quick.map((chip) => (
+          <button
+            key={chip.key}
+            type="button"
+            aria-pressed={chip.on}
+            onClick={() => {
+              onChange(chip.patch);
+            }}
+            className={cn(
+              "min-h-10 shrink-0 rounded-full border px-4 text-sm font-medium whitespace-nowrap outline-none transition-colors duration-(--duration-fast) focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none",
+              chip.on
+                ? "border-foreground bg-foreground text-background"
+                : "border-input bg-transparent text-foreground hover:border-foreground",
+            )}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex items-center gap-2">
           <label htmlFor={sortId} className="text-xs font-semibold text-muted-foreground">

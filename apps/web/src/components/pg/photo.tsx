@@ -6,13 +6,19 @@ type Rendition = Schemas["Rendition"];
 /** The sizes the media pipeline makes, smallest first (apps/api media/domain/assets.py). */
 const SIZES = ["card", "gallery", "full"] as const;
 
-function srcSet(renditions: readonly Rendition[], contentType: string): string {
-  return SIZES.flatMap((name) => {
-    const found = renditions.find(
-      (rendition) => rendition.name === name && rendition.contentType === contentType,
-    );
-    return found?.width == null ? [] : [`${found.url} ${String(found.width)}w`];
-  }).join(", ");
+function srcSet(
+  renditions: readonly Rendition[],
+  contentType: string,
+  sizes: readonly (typeof SIZES)[number][],
+): string {
+  return sizes
+    .flatMap((name) => {
+      const found = renditions.find(
+        (rendition) => rendition.name === name && rendition.contentType === contentType,
+      );
+      return found?.width == null ? [] : [`${found.url} ${String(found.width)}w`];
+    })
+    .join(", ");
 }
 
 /**
@@ -25,23 +31,37 @@ export function Photo({
   alt,
   sizes,
   first = false,
+  cardOnly = false,
   className,
 }: {
   media: Media;
   alt: string;
   sizes: string;
   first?: boolean;
+  /** Offer only the card-sized file, as a list of many photos should on a phone's connection. */
+  cardOnly?: boolean;
   className?: string;
 }) {
+  const offered = cardOnly ? (["card"] as const) : SIZES;
   const fallback =
     media.renditions.find(
-      (rendition) => rendition.name === "gallery" && rendition.contentType === "image/webp",
+      (rendition) =>
+        rendition.name === (cardOnly ? "card" : "gallery") &&
+        rendition.contentType === "image/webp",
     ) ?? media.renditions.find((rendition) => rendition.contentType.startsWith("image/"));
   if (fallback === undefined) return null;
   return (
     <picture>
-      <source type="image/avif" srcSet={srcSet(media.renditions, "image/avif")} sizes={sizes} />
-      <source type="image/webp" srcSet={srcSet(media.renditions, "image/webp")} sizes={sizes} />
+      <source
+        type="image/avif"
+        srcSet={srcSet(media.renditions, "image/avif", offered)}
+        sizes={sizes}
+      />
+      <source
+        type="image/webp"
+        srcSet={srcSet(media.renditions, "image/webp", offered)}
+        sizes={sizes}
+      />
       <img
         src={fallback.url}
         alt={alt}

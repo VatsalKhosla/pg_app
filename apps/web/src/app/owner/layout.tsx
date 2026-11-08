@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function OwnerLayout({ children }: LayoutProps<"/owner">) {
   const t = await getTranslations("Owner.nav");
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-8 px-gutter py-8 sm:py-12">
+    <div className="working-type mx-auto w-full max-w-4xl space-y-8 px-gutter py-8 sm:py-12">
       <OpsNav
         label={t("label")}
         links={[

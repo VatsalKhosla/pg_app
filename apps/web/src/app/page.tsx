@@ -121,7 +121,7 @@ async function PolicyFacts() {
             <dt className="max-w-[24ch] text-sm leading-snug text-muted-foreground">
               {fact.label}
             </dt>
-            <dd className="font-display text-title-1 font-medium tabular-nums">{fact.value}</dd>
+            <dd className="text-title-1 font-semibold tabular-nums">{fact.value}</dd>
           </div>
         ))}
       </dl>
@@ -321,7 +321,10 @@ export default async function HomePage() {
 
       <section className="relative -mt-[4.75rem]">
         <div className="scope-night relative isolate min-h-[max(40rem,min(92svh,58rem))] overflow-hidden rounded-b-[2rem] pt-[4.75rem] sm:rounded-b-[3.5rem]">
-          <DuskScene />
+          {/* Its own boundary: React hydrates it after the page's first task, not during it. */}
+          <Suspense fallback={null}>
+            <DuskScene />
+          </Suspense>
           <HeroParallax />
           <div className="relative mx-auto max-w-page px-gutter pt-[clamp(2.5rem,9svh,6.5rem)] pb-64">
             <h1 className="max-w-[13ch] text-hero font-medium">
@@ -384,29 +387,31 @@ export default async function HomePage() {
           </h2>
           <p className="mt-3 max-w-prose text-lg text-muted-foreground">{tBudget("lead")}</p>
           <div className="mt-10">
-            <BudgetExplorerNear
-              text={{
-                budget: tBudget("label"),
-                one: tBudget.raw("one") as string,
-                other: tBudget.raw("other") as string,
-                none: tBudget.raw("none") as string,
-                more: tBudget("more"),
-                cta: tBudget("cta"),
-                monthly: tBudget("monthly"),
-                caption: tBudget("caption"),
-                mapLabel: tBudget("mapLabel"),
-              }}
-            >
-              <div className="flex flex-wrap items-center gap-5">
-                <p className="max-w-prose text-lg text-night-foreground">{tBudget("fallback")}</p>
-                <Link
-                  href="/search"
-                  className="inline-flex min-h-12 items-center rounded-full bg-sun px-7 font-semibold text-sun-foreground outline-none hover:bg-sun-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  {tBudget("fallbackCta")}
-                </Link>
-              </div>
-            </BudgetExplorerNear>
+            <Suspense fallback={null}>
+              <BudgetExplorerNear
+                text={{
+                  budget: tBudget("label"),
+                  one: tBudget.raw("one") as string,
+                  other: tBudget.raw("other") as string,
+                  none: tBudget.raw("none") as string,
+                  more: tBudget("more"),
+                  cta: tBudget("cta"),
+                  monthly: tBudget("monthly"),
+                  caption: tBudget("caption"),
+                  mapLabel: tBudget("mapLabel"),
+                }}
+              >
+                <div className="flex flex-wrap items-center gap-5">
+                  <p className="max-w-prose text-lg text-night-foreground">{tBudget("fallback")}</p>
+                  <Link
+                    href="/search"
+                    className="inline-flex min-h-12 items-center rounded-full bg-sun px-7 font-semibold text-sun-foreground outline-none hover:bg-sun-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    {tBudget("fallbackCta")}
+                  </Link>
+                </div>
+              </BudgetExplorerNear>
+            </Suspense>
           </div>
         </div>
       </section>

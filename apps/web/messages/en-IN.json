@@ -528,7 +528,8 @@
       "sort": "Sort by",
       "mapArea": "Searching the map's area",
       "clearArea": "Search everywhere",
-      "searchAsMove": "Search as I move the map"
+      "searchAsMove": "Search as I move the map",
+      "quick": "Quick filters"
     },
     "sort": {
       "recommended": "Recommended",
@@ -561,7 +562,8 @@
         "few": "A few beds free",
         "some": "Beds free",
         "many": "Plenty of beds free"
-      }
+      },
+      "refundable": "Refundable token"
     },
     "map": {
       "show": "Show the map",
@@ -715,7 +717,8 @@
       "headlineNote": "Moving in this week, for an {months}-month stay.",
       "moveInBy": "Move in by {date}: {amount}",
       "fromDate": "from {date}: {amount}",
-      "bedsLeft": "{count, plural, one {Only # bed left} other {Only # beds left}}"
+      "bedsLeft": "{count, plural, one {Only # bed left} other {Only # beds left}}",
+      "illustration": "Illustration of the beds, not a photo of this room"
     },
     "safety": {
       "title": "Safety",
@@ -757,7 +760,9 @@
       "campuses": "Campuses nearby",
       "stations": "Metro stations nearby",
       "distance": "{place}: {distance}",
-      "map": "The PG's area: it's somewhere inside the circle"
+      "map": "The PG's area: it's somewhere inside the circle",
+      "walk": "about {minutes, plural, one {# min} other {# min}} walk",
+      "straightLine": "Distances are in a straight line, so walking times are estimates."
     },
     "map": {
       "zoomIn": "Zoom in",
@@ -835,7 +840,9 @@
           "BOOKING_NEEDS_VISIT": "Beds are reserved on a visit for now. Book a visit to see it."
         }
       }
-    }
+    },
+    "fromPrice": "From {amount} a month",
+    "fromNote": "The deposit and every charge are listed with each room."
   },
   "Staff": {
     "signInMetaTitle": "Staff sign-in",
@@ -2682,6 +2689,7 @@
       "more": "See more PGs like this one"
     },
     "help": "Questions about this booking? Quote {code} when you contact us.",
-    "contactUs": "Contact us"
+    "contactUs": "Contact us",
+    "tokenTrack": "Where your token is now"
   }
 }

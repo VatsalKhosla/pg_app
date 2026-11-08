@@ -8,7 +8,6 @@ import { MarketingConsent } from "@/components/account/marketing-consent";
 import { ProfileForm } from "@/components/account/profile-form";
 import { errorText, profileText } from "@/components/auth/sign-in-text";
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { ArchWatermark } from "@/components/brand/editorial-art";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -62,19 +61,8 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
-      <div className="relative space-y-2 overflow-hidden rounded-3xl border border-marigold-border bg-surface-warm p-6 shadow-xs sm:p-8">
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-1.5"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, var(--primary) 0%, var(--neem) 35%, var(--marigold) 70%, var(--ember) 100%)",
-          }}
-        />
-        <ArchWatermark tone="ink" className="absolute -right-6 -bottom-6 size-36 opacity-15" />
-        <h1 className="relative text-title-1 font-bold tracking-tight text-foreground">
-          {t("title")}
-        </h1>
+      <div className="space-y-2">
+        <h1 className="text-title-1 font-medium text-foreground">{t("title")}</h1>
         <p className="relative text-body text-muted-foreground">
           {t("phone")}:{" "}
           <span className="rounded-full border border-primary-border bg-primary-soft px-3 py-0.5 font-mono text-sm font-semibold text-primary-soft-foreground">
@@ -97,7 +85,6 @@ export default async function AccountPage() {
 
       <Card asChild className="relative space-y-5 overflow-hidden rounded-3xl bg-card p-6">
         <section aria-labelledby="details-title">
-          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-primary" />
           <h2 id="details-title" className="text-title-3 font-semibold tracking-tight">
             {t("details")}
           </h2>
@@ -108,7 +95,6 @@ export default async function AccountPage() {
 
       <Card asChild className="relative space-y-5 overflow-hidden rounded-3xl bg-card p-6">
         <section aria-labelledby="data-title">
-          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-dusk" />
           <div className="space-y-1">
             <h2 id="data-title" className="text-title-3 font-semibold tracking-tight">
               {t("dataTitle")}
@@ -141,7 +127,6 @@ export default async function AccountPage() {
 
       <Card asChild className="relative space-y-4 overflow-hidden rounded-3xl bg-card p-6">
         <section aria-labelledby="messages-title">
-          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-marigold" />
           <h2 id="messages-title" className="text-title-3 font-semibold tracking-tight">
             {t("messagesTitle")}
           </h2>

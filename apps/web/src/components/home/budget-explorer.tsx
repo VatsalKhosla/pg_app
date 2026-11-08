@@ -113,9 +113,9 @@ export function BudgetExplorer({
     <div className="grid gap-10 lg:grid-cols-[1fr_1.25fr] lg:items-center lg:gap-16">
       <div className="min-w-0">
         <p className="text-sm font-medium text-night-muted">{text.budget}</p>
-        <p className="mt-1 font-display text-display font-medium text-night-accent tabular-nums">
+        <p className="mt-1 text-display font-semibold text-night-accent tabular-nums">
           {formatINR(value)}
-          <span className="ml-2 font-sans text-base font-normal text-night-muted">
+          <span className="ml-2 text-base font-normal tracking-normal text-night-muted">
             {text.monthly}
           </span>
         </p>

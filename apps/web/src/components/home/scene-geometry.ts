@@ -155,7 +155,7 @@ function tree(seed: number, x: number, ground: number, size: number): string {
     String.raw`M${x} ${ground - size * 0.5}l${-size * 0.3} ${-size * 0.34}l${size * 0.05} -3l${size * 0.3} ${size * 0.3}z`,
     String.raw`M${x} ${ground - size * 0.56}l${size * 0.28} ${-size * 0.3}l${-size * 0.04} -4l${-size * 0.27} ${size * 0.27}z`,
   ];
-  for (let index = 0; index < 84; index += 1) {
+  for (let index = 0; index < 46; index += 1) {
     const angle = random() * Math.PI * 2;
     const distance = Math.sqrt(random());
     // Small clumps, more of them near the crown's edge, so the outline reads as leaves.
@@ -164,7 +164,7 @@ function tree(seed: number, x: number, ground: number, size: number): string {
       circle(
         x + Math.cos(angle) * distance * edge * size * 0.72,
         ground - size * 0.94 + Math.sin(angle) * distance * edge * size * 0.36,
-        size * (0.03 + random() * 0.05),
+        size * (0.05 + random() * 0.05),
       ),
     );
   }

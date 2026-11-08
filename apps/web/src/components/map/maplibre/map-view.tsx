@@ -380,7 +380,7 @@ export default function MapLibreMapView({
   return (
     <div
       ref={attach}
-      className="h-full min-h-72 w-full overflow-hidden [&_.maplibregl-ctrl-attrib_a]:underline!"
+      className="h-full min-h-72 w-full overflow-hidden [&_.maplibregl-ctrl-attrib_a]:underline! [&_.maplibregl-ctrl-top-right]:top-22"
     />
   );
 }

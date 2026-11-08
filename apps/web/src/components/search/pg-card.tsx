@@ -2,7 +2,7 @@ import { ShieldCheck } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import type * as React from "react";
+import { type ComponentProps, ViewTransition } from "react";
 
 import { ListingPlaceholderArt } from "@/components/brand/editorial-art";
 import { Photo } from "@/components/pg/photo";
@@ -13,7 +13,7 @@ import type { SearchCard } from "@/lib/search/client";
 import { cn } from "@/lib/utils";
 
 type Handlers = Pick<
-  React.ComponentProps<typeof Link>,
+  ComponentProps<typeof Link>,
   "onMouseEnter" | "onMouseLeave" | "onFocus" | "onBlur"
 >;
 
@@ -46,45 +46,46 @@ export function PgCard({
       href={`/pg/${card.slug}` as Route}
       {...handlers}
       className={cn(
-        "group relative flex gap-3.5 overflow-hidden rounded-2xl border border-border/90 bg-card p-3.5 text-card-foreground shadow-xs transition-[box-shadow,border-color,background-color,transform] duration-(--duration-base) ease-standard outline-none hover:-translate-y-0.5 hover:border-primary/50 hover:bg-surface-warm/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-        active && "border-primary bg-primary-soft shadow-md ring-1 ring-primary",
+        "group block rounded-[1.75rem] text-card-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background",
+        active && "ring-2 ring-primary ring-offset-4 ring-offset-background",
       )}
     >
-      <span
-        aria-hidden="true"
-        className=" inset-y-0 left-0 w-1 bg-[linear-gradient(180deg,var(--primary),var(--marigold),var(--ember))] opacity-75 transition-opacity group-hover:opacity-100 absolute"
-      />
-      <div className="relative size-26 shrink-0 overflow-hidden rounded-xl border border-marigold-border/60 bg-marigold-soft sm:size-30">
+      <div className="relative aspect-4/3 overflow-hidden rounded-[1.75rem] bg-marigold-soft">
         {card.cover === null ? (
           <ListingPlaceholderArt />
         ) : (
-          <Photo
-            media={card.cover}
-            alt=""
-            sizes="120px"
-            first={first}
-            className="h-full w-full object-cover transition-transform duration-(--duration-slow) ease-emphasized group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-          />
+          <ViewTransition name={`pg-photo-${card.id}`}>
+            <Photo
+              media={card.cover}
+              alt=""
+              sizes="(min-width: 1280px) 17rem, (min-width: 640px) 50vw, 100vw"
+              first={first}
+              cardOnly
+              className="h-full w-full object-cover transition-transform duration-(--duration-slower) ease-emphasized group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            />
+          </ViewTransition>
         )}
+        <p className="absolute top-3 left-3 flex flex-wrap gap-1.5 pr-3">
+          {card.verified ? (
+            <Badge variant="overlay">
+              <ShieldCheck aria-hidden="true" className="size-3.5 text-neem" />
+              {t("verified")}
+            </Badge>
+          ) : null}
+          {card.licensed ? <Badge variant="overlay">{t("licensed")}</Badge> : null}
+        </p>
       </div>
-      <div className="flex min-w-0 flex-1 flex-col justify-between gap-1 py-0.5">
-        <div className="space-y-0.5">
-          <p className="font-display text-base leading-snug font-semibold tracking-tight text-foreground">
-            {card.name}
-          </p>
-          <p className="text-xs font-medium text-muted-foreground sm:text-sm">
-            {[
-              card.locality.name,
-              tPg(`gender.${card.genderPolicy}`),
-              tPg(`meals.${card.meals}`),
-            ].join(" · ")}
-          </p>
-        </div>
-        <p className="w-fit rounded-lg bg-primary-soft px-2 py-0.5 text-base font-bold tracking-tight text-primary-soft-foreground">
-          {price}
+      <div className="space-y-1 px-1.5 pt-3 pb-1">
+        <p className="font-display text-lg leading-snug font-medium text-foreground">{card.name}</p>
+        <p className="text-sm text-muted-foreground">
+          {[
+            card.locality.name,
+            tPg(`gender.${card.genderPolicy}`),
+            tPg(`meals.${card.meals}`),
+          ].join(" · ")}
         </p>
         {card.distanceM === null && card.nearestStation === null ? null : (
-          <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+          <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
             {card.distanceM === null ? null : (
               <span>{t("fromCampus", { distance: formatDistance(card.distanceM) })}</span>
             )}
@@ -98,21 +99,10 @@ export function PgCard({
             )}
           </p>
         )}
-        <p className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
-          {card.verified ? (
-            <Badge variant="neem" className="px-2 py-0 text-[11px]">
-              <ShieldCheck aria-hidden="true" className="size-3" />
-              {t("verified")}
-            </Badge>
-          ) : null}
-          {card.licensed ? (
-            <Badge variant="dusk" className="px-2 py-0 text-[11px]">
-              {t("licensed")}
-            </Badge>
-          ) : null}
-          <Badge variant="marigold" className="px-2 py-0 text-[11px] font-semibold">
-            {t(`beds.${card.bedsFree}`)}
-          </Badge>
+        <p className="pt-1 text-base font-semibold text-foreground tabular-nums">{price}</p>
+        <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
+          <span className="font-medium text-neem">{t("refundable")}</span>
+          <span className="text-muted-foreground">{t(`beds.${card.bedsFree}`)}</span>
         </p>
       </div>
     </Link>

@@ -202,7 +202,7 @@ export function StaySimulator({ token, stages, branches, text }: StaySimulatorPr
             </div>
           ))}
           <div className="sim-coin flex justify-center">
-            <span className="grid size-(--coin) place-items-center rounded-full bg-sun text-center font-display text-base font-semibold text-sun-foreground shadow-lg ring-4 ring-surface-warm sm:text-xl">
+            <span className="grid size-(--coin) place-items-center rounded-full bg-sun text-center text-base font-bold text-sun-foreground shadow-lg ring-4 ring-surface-warm sm:text-xl">
               {token}
             </span>
           </div>

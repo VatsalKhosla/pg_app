@@ -372,6 +372,12 @@
   color: var(--night-foreground);
 }
 
+/* Owner, ops, field and admin screens are working tools: their headings are set in Inter too. */
+@utility working-type {
+  --font-display: var(--font-sans);
+  --font-display-face: var(--font-sans-face);
+}
+
 /*
  * Frosted glass, for a surface something really passes behind. Where blur isn't available the fill
  * goes solid, so text never loses its contrast.
@@ -401,12 +407,16 @@
 
   html {
     scroll-behavior: smooth;
+    /* Focus and links land clear of the floating header and a phone's bottom bar (WCAG 2.4.11). */
+    scroll-padding-block: 6rem;
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-background text-foreground;
     font-optical-sizing: auto;
+    /* Eczar ships in one weight: a heading asking for more stays as drawn, never smeared bold. */
+    font-synthesis-weight: none;
   }
 
   /*
@@ -578,20 +588,16 @@
     opacity: 0.92;
   }
 
-  .dusk-window-late {
+  .dusk-lights-early {
     opacity: 0.3;
   }
 
-  .dusk-window-last {
+  .dusk-lights-late {
     opacity: 0.1;
   }
 
   .dusk-train {
-    transform: translateX(240px);
-  }
-
-  .dusk-lamp {
-    filter: drop-shadow(0 0 10px var(--scene-lit));
+    translate: 16% 0;
   }
 
   /* The slider of the stay simulator and the budget explorer. */
@@ -709,6 +715,39 @@
     }
   }
 
+  /* A room type's illustration. */
+  .iso-room {
+    --iso-floor: var(--marigold-soft);
+    --iso-wall-a: var(--surface-warm);
+    --iso-wall-b: var(--secondary-hover);
+    --iso-frame-top: var(--dusk);
+    --iso-frame-left: color-mix(in oklch, var(--dusk) 80%, black);
+    --iso-frame-right: color-mix(in oklch, var(--dusk) 62%, black);
+    --iso-sheet-top: var(--card);
+    --iso-sheet-left: color-mix(in oklch, var(--card) 88%, var(--foreground));
+    --iso-sheet-right: color-mix(in oklch, var(--card) 76%, var(--foreground));
+    --iso-pillow: var(--sun);
+    --iso-door: color-mix(in oklch, var(--dusk) 45%, var(--surface-warm));
+    --iso-accent: var(--sun);
+    --iso-glass: color-mix(in oklch, var(--sun) 34%, var(--card));
+    --iso-ac-light: var(--card);
+    --iso-ac-mid: color-mix(in oklch, var(--card) 86%, var(--foreground));
+    --iso-ac-dark: color-mix(in oklch, var(--card) 72%, var(--foreground));
+    --iso-shadow: color-mix(in oklch, var(--foreground) 12%, transparent);
+    --iso-blanket-left: color-mix(in oklch, var(--sun) 82%, black);
+    --iso-blanket-right: color-mix(in oklch, var(--sun) 68%, black);
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .iso-room svg {
+      transition: transform 480ms var(--ease-emphasized);
+    }
+
+    .iso-room:hover svg {
+      transform: perspective(40rem) rotateX(8deg) rotateZ(-2deg) scale(1.03);
+    }
+  }
+
   /* The budget explorer's dots. */
   .budget-pin-dot {
     fill: color-mix(in oklch, var(--night-foreground) 34%, transparent);
@@ -729,8 +768,12 @@
     opacity: 0.24;
   }
 
+  /*
+   * Everything that moves is a whole layer moved by transform or fading by opacity, so the
+   * compositor does it and the page's own thread stays free.
+   */
   @media (prefers-reduced-motion: no-preference) {
-    .dusk-kite {
+    .dusk-kites {
       animation: kite-sway 6s ease-in-out infinite alternate;
     }
 
@@ -757,41 +800,44 @@
         animation-range: 25vh 80vh;
       }
 
-      .dusk-window-late {
+      .dusk-lights-early {
         animation: dusk-lights linear both;
         animation-timeline: scroll(root);
         animation-range: 5vh 45vh;
       }
 
-      .dusk-window-last {
+      .dusk-lights-late {
         animation: dusk-lights linear both;
         animation-timeline: scroll(root);
         animation-range: 30vh 75vh;
       }
 
-      .dusk-layer {
-        animation: dusk-drift linear both;
-        animation-timeline: scroll(root);
-        animation-range: 0 100vh;
+      /* Depth on scroll is for bigger screens; a phone keeps its memory for the page. */
+      @media (min-width: 48rem) {
+        .dusk-drift {
+          animation: dusk-drift linear both;
+          animation-timeline: scroll(root);
+          animation-range: 0 100vh;
+        }
       }
     }
   }
 
   @keyframes kite-sway {
     from {
-      transform: translate(-5px, 4px) rotate(-5deg);
+      translate: -6px 5px;
     }
     to {
-      transform: translate(7px, -6px) rotate(6deg);
+      translate: 8px -7px;
     }
   }
 
   @keyframes train-run {
     from {
-      transform: translateX(-950px);
+      translate: -62% 0;
     }
     to {
-      transform: translateX(1650px);
+      translate: 104% 0;
     }
   }
 

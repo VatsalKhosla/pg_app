@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next";
 import { Eczar, Inter } from "next/font/google";
 import { connection } from "next/server";
 import { getLocale, getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 
 import { ErrorTextProvider } from "@/components/layout/error-text";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -17,7 +18,8 @@ import { serverEnv } from "@/config/server-env";
 // Self-hosted at build time by next/font: no request to Google from the browser, no layout shift.
 // Both are variable fonts under the SIL Open Font License. Inter sets text, forms and figures
 // (rents read best in it). Eczar, a serif by Vaibhav Singh drawn for Latin and Devanagari together,
-// sets the headings (h1 to h3, see globals.css): it has the rupee sign, and it's ready for Hindi.
+// sets the headings (h1 to h3, see globals.css), and it's ready for Hindi. Figures with a rupee sign
+// stay in Inter: Eczar keeps that sign in its Devanagari file, 85 KB an English page doesn't need.
 // Only the Latin files are preloaded; the browser fetches Latin Extended, which holds the rupee
 // sign, the first time a page uses it.
 const sans = Inter({ subsets: ["latin"], display: "swap", variable: "--font-sans-face" });
@@ -26,6 +28,8 @@ const sans = Inter({ subsets: ["latin"], display: "swap", variable: "--font-sans
 // moment, then swap.
 const display = Eczar({
   subsets: ["latin"],
+  // One static weight: the variable file is three times the size, and headings only use this.
+  weight: "500",
   display: "swap",
   preload: false,
   variable: "--font-display-face",
@@ -105,7 +109,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             {children}
           </ErrorTextProvider>
         </main>
-        <SiteFooter />
+        {/* Its own boundary, so hydrating it doesn't lengthen the page's first long task. */}
+        <Suspense fallback={null}>
+          <SiteFooter />
+        </Suspense>
         {/* Analytics only where the server collects them (ADR 0035). */}
         {serverEnv.posthog === undefined ? null : <Analytics />}
       </body>
