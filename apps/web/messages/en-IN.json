@@ -583,7 +583,9 @@
       "searchHere": "Search this area",
       "sheet": "The list of PGs",
       "sheetMore": "Show more of the list",
-      "sheetLess": "Show less of the list"
+      "sheetLess": "Show less of the list",
+      "tilt": "Tilt the map",
+      "flatten": "Lay the map flat"
     },
     "preview": {
       "open": "See the PG",

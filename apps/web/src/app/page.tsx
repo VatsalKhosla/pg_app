@@ -6,10 +6,12 @@ import { Suspense } from "react";
 import { DuskScene } from "@/components/home/dusk-scene";
 import { HeroParallax } from "@/components/home/hero-parallax";
 import { type Choice, HeroSearch, type HeroSearchText } from "@/components/home/hero-search";
-import { BudgetExplorerNear, StaySimulatorNear } from "@/components/home/islands";
+import { BudgetExplorerNear } from "@/components/home/islands";
+import { StaySimulator } from "@/components/home/stay-simulator";
 import { homeSections } from "@/components/layout/navigation";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ApiStatus, ApiStatusPending } from "@/components/system/api-status";
+import { buttonVariants } from "@/components/ui/button";
 import { brand } from "@/config/brand";
 import { publicEnv } from "@/config/env";
 import { getPolicies, getSearchPlaces, type SearchPlace } from "@/lib/api/public";
@@ -212,6 +214,46 @@ async function PopularPlaces() {
   );
 }
 
+// Room held for the explorer, so the page doesn't move when it arrives (links to the sections
+// below it land where they should).
+const BUDGET_SPACE = "min-h-[39rem] lg:min-h-[27rem]";
+
+/** The budget explorer where there are PGs to show; otherwise a plain way to the map. */
+async function BudgetBand() {
+  const [t, places] = await Promise.all([getTranslations("Home.budget"), placesOrNone()]);
+  const fallback = (
+    <div className="flex flex-wrap items-center gap-5">
+      <p className="max-w-prose text-lg text-night-foreground">{t("fallback")}</p>
+      <Link
+        href="/search"
+        className={buttonVariants({ variant: "sun", size: "lg", shape: "pill" })}
+      >
+        {t("fallbackCta")}
+      </Link>
+    </div>
+  );
+  if (places.length === 0) return fallback;
+  return (
+    <div className={BUDGET_SPACE}>
+      <BudgetExplorerNear
+        text={{
+          budget: t("label"),
+          one: t.raw("one") as string,
+          other: t.raw("other") as string,
+          none: t.raw("none") as string,
+          more: t("more"),
+          cta: t("cta"),
+          monthly: t("monthly"),
+          caption: t("caption"),
+          mapLabel: t("mapLabel"),
+        }}
+      >
+        {fallback}
+      </BudgetExplorerNear>
+    </div>
+  );
+}
+
 const STEP_KEYS = ["find", "visit", "reserve", "moveIn"] as const;
 
 /** The four steps in plain text: what the simulator starts from, and all there is without script. */
@@ -280,7 +322,7 @@ async function HomeSimulator() {
     },
   ];
   return (
-    <StaySimulatorNear
+    <StaySimulator
       token={formatINR(tokenPaise)}
       stages={stages}
       branches={branches}
@@ -294,9 +336,7 @@ async function HomeSimulator() {
         happens: tSim("happens"),
         onTrack: tSim("onTrack"),
       }}
-    >
-      <StepsList />
-    </StaySimulatorNear>
+    />
   );
 }
 
@@ -326,20 +366,22 @@ export default async function HomePage() {
             <DuskScene />
           </Suspense>
           <HeroParallax />
-          <div className="relative mx-auto max-w-page px-gutter pt-[clamp(2.5rem,9svh,6.5rem)] pb-64">
-            <h1 className="max-w-[13ch] text-hero font-medium">
-              {t.rich("headline", {
-                accent: (chunks) => <span className="text-night-accent">{chunks}</span>,
-              })}
-            </h1>
-            <p className="mt-6 max-w-[34rem] text-lg leading-relaxed text-night-foreground sm:text-xl">
-              {t("intro")}
-            </p>
-            <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-night/60 px-3.5 py-1.5 text-sm font-medium text-night-foreground">
-              <span aria-hidden="true" className="size-2 rounded-full bg-night-accent" />
-              {t("status")}
-            </p>
-          </div>
+          <Suspense fallback={null}>
+            <div className="relative mx-auto max-w-page px-gutter pt-[clamp(2.5rem,9svh,6.5rem)] pb-64">
+              <h1 className="max-w-[13ch] text-hero font-medium">
+                {t.rich("headline", {
+                  accent: (chunks) => <span className="text-night-accent">{chunks}</span>,
+                })}
+              </h1>
+              <p className="mt-6 max-w-[34rem] text-lg leading-relaxed text-night-foreground sm:text-xl">
+                {t("intro")}
+              </p>
+              <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-night/60 px-3.5 py-1.5 text-sm font-medium text-night-foreground">
+                <span aria-hidden="true" className="size-2 rounded-full bg-night-accent" />
+                {t("status")}
+              </p>
+            </div>
+          </Suspense>
         </div>
         <div className="relative z-10 mx-auto -mt-16 max-w-4xl px-gutter sm:-mt-10">
           <Suspense fallback={<HeroSearchPending />}>
@@ -387,75 +429,55 @@ export default async function HomePage() {
           </h2>
           <p className="mt-3 max-w-prose text-lg text-muted-foreground">{tBudget("lead")}</p>
           <div className="mt-10">
-            <Suspense fallback={null}>
-              <BudgetExplorerNear
-                text={{
-                  budget: tBudget("label"),
-                  one: tBudget.raw("one") as string,
-                  other: tBudget.raw("other") as string,
-                  none: tBudget.raw("none") as string,
-                  more: tBudget("more"),
-                  cta: tBudget("cta"),
-                  monthly: tBudget("monthly"),
-                  caption: tBudget("caption"),
-                  mapLabel: tBudget("mapLabel"),
-                }}
-              >
-                <div className="flex flex-wrap items-center gap-5">
-                  <p className="max-w-prose text-lg text-night-foreground">{tBudget("fallback")}</p>
-                  <Link
-                    href="/search"
-                    className="inline-flex min-h-12 items-center rounded-full bg-sun px-7 font-semibold text-sun-foreground outline-none hover:bg-sun-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  >
-                    {tBudget("fallbackCta")}
-                  </Link>
-                </div>
-              </BudgetExplorerNear>
+            <Suspense fallback={<div className={BUDGET_SPACE} />}>
+              <BudgetBand />
             </Suspense>
           </div>
         </div>
       </section>
 
-      <div className="mx-auto grid w-full max-w-page gap-12 px-gutter py-section md:grid-cols-2 md:gap-16">
-        <section
-          id={homeSections.students}
-          tabIndex={-1}
-          aria-labelledby="students-title"
-          className={sectionClassName}
-        >
-          <h2 id="students-title" className="text-title-1 font-medium">
-            {t("students.title")}
-          </h2>
-          <p className="mt-3 max-w-prose text-lg leading-relaxed text-muted-foreground">
-            {t("students.body")}
-          </p>
-          <Link
-            href={trustPages.tokenProtection}
-            className="mt-4 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      <Suspense fallback={null}>
+        <div className="mx-auto grid w-full max-w-page gap-12 px-gutter py-section md:grid-cols-2 md:gap-16">
+          <section
+            id={homeSections.students}
+            tabIndex={-1}
+            aria-labelledby="students-title"
+            className={sectionClassName}
           >
-            {tTrust("tokenProtection")}
-          </Link>
-        </section>
-        <section
-          id={homeSections.owners}
-          tabIndex={-1}
-          aria-labelledby="owners-title"
-          className={sectionClassName}
-        >
-          <h2 id="owners-title" className="text-title-1 font-medium">
-            {t("owners.title")}
-          </h2>
-          <p className="mt-3 max-w-prose text-lg leading-relaxed text-muted-foreground">
-            {t("owners.body")}
-          </p>
-          <Link
-            href={trustPages.pricing}
-            className="mt-4 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            <h2 id="students-title" className="text-title-1 font-medium">
+              {t("students.title")}
+            </h2>
+            <p className="mt-3 max-w-prose text-lg leading-relaxed text-muted-foreground">
+              {t("students.body")}
+            </p>
+            <Link
+              href={trustPages.tokenProtection}
+              className="mt-4 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {tTrust("tokenProtection")}
+            </Link>
+          </section>
+          <section
+            id={homeSections.owners}
+            tabIndex={-1}
+            aria-labelledby="owners-title"
+            className={sectionClassName}
           >
-            {tTrust("pricing")}
-          </Link>
-        </section>
-      </div>
+            <h2 id="owners-title" className="text-title-1 font-medium">
+              {t("owners.title")}
+            </h2>
+            <p className="mt-3 max-w-prose text-lg leading-relaxed text-muted-foreground">
+              {t("owners.body")}
+            </p>
+            <Link
+              href={trustPages.pricing}
+              className="mt-4 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {tTrust("pricing")}
+            </Link>
+          </section>
+        </div>
+      </Suspense>
 
       {/* Streams in after the page, so a slow or absent API never holds it up. */}
       <div className="mx-auto w-full max-w-page px-gutter pb-12">

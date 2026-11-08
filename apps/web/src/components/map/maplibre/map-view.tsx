@@ -2,6 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { Rotate3d } from "lucide-react";
 import {
   type GeoJSONFeature,
   type GeoJSONSource,
@@ -38,8 +39,8 @@ const CLUSTER_MAX_ZOOM = 15;
 const RINGS_M = [1_000, 2_000] as const;
 // Room around a place the map is fitted to, in pixels.
 const FIT_PADDING = 24;
-// Metro stations in violet, apart from the brand's colour for campuses.
-const STATION_COLOUR = "#7c3aed";
+// Metro stations in marigold, apart from the ink used for campuses.
+const STATION_COLOUR = brand.colors.marigold;
 // Geo overlays come from OpenStreetMap (ADR 0020), credited beside the tiles' own credit.
 const OSM_CREDIT =
   '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -48,6 +49,11 @@ const pinClasses =
   "min-h-7 rounded-full border border-input bg-card px-2.5 py-1 text-xs font-bold text-card-foreground whitespace-nowrap shadow-md outline-none transition-[background-color,color,border-color,transform,box-shadow] duration-(--duration-fast) ease-standard hover:scale-105 hover:border-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:scale-100 data-[verified=true]:border-primary data-[state=active]:scale-105 data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg";
 const clusterClasses =
   "min-h-8 rounded-full border-2 border-primary bg-card px-3 py-1.5 text-xs font-bold text-card-foreground whitespace-nowrap shadow-lg outline-none transition-transform duration-(--duration-fast) ease-standard hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:scale-100";
+
+// Tipped back and turned a little: depth on the map's own tiles, with no new service behind it.
+const TILT_PITCH = 58;
+const TILT_BEARING = -14;
+const TILT_MS = 900;
 
 function features(pins: readonly MapPin[]) {
   return {
@@ -142,6 +148,7 @@ export default function MapLibreMapView({
   shortPrice,
 }: MapViewProps & { tiles: MapTiles; shortPrice: ShortPrice }) {
   const [failed, setFailed] = useState(false);
+  const [tilted, setTilted] = useState(false);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef(new Map<string, Marker>());
   const campusLabelRef = useRef<Marker | null>(null);
@@ -377,11 +384,35 @@ export default function MapLibreMapView({
       </p>
     );
   }
+  function toggleTilt() {
+    const next = !tilted;
+    setTilted(next);
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    mapRef.current?.easeTo({
+      pitch: next ? TILT_PITCH : 0,
+      bearing: next ? TILT_BEARING : 0,
+      duration: still ? 0 : TILT_MS,
+    });
+  }
+
   return (
-    <div
-      ref={attach}
-      className="h-full min-h-72 w-full overflow-hidden [&_.maplibregl-ctrl-attrib_a]:underline! [&_.maplibregl-ctrl-top-right]:top-22"
-    />
+    <div className="relative h-full min-h-72 w-full">
+      <div
+        ref={attach}
+        className="h-full w-full overflow-hidden [&_.maplibregl-ctrl-attrib_a]:underline! lg:[&_.maplibregl-ctrl-top-right]:top-22"
+      />
+      {/* A desktop's flourish: on a phone the map keeps every pixel flat and readable. */}
+      <button
+        type="button"
+        onClick={toggleTilt}
+        aria-pressed={tilted}
+        aria-label={tilted ? text.flatten : text.tilt}
+        title={tilted ? text.flatten : text.tilt}
+        className="absolute top-[10.5rem] right-2.5 z-10 hidden size-[29px] place-items-center rounded-[4px] bg-background text-foreground shadow-[0_0_0_2px_rgb(0_0_0/10%)] outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-primary aria-pressed:text-primary-foreground lg:grid"
+      >
+        <Rotate3d aria-hidden="true" className="size-4" />
+      </button>
+    </div>
   );
 }
 

@@ -280,7 +280,12 @@ async function Gallery({ listing }: { listing: PublicListing }) {
           <p className="font-medium text-foreground">{t("none")}</p>
         </div>
       ) : (
-        <ul className="-mx-gutter flex snap-x snap-mandatory scroll-px-gutter gap-2.5 overflow-x-auto px-gutter [scrollbar-width:none] sm:mx-0 sm:px-0 lg:grid lg:grid-cols-4 lg:overflow-visible">
+        <ul
+          // It scrolls sideways on a phone, so the keyboard must be able to reach it.
+          tabIndex={0}
+          aria-labelledby="gallery-title"
+          className="-mx-gutter flex snap-x snap-mandatory scroll-px-gutter gap-2.5 overflow-x-auto px-gutter outline-none [scrollbar-width:none] focus-visible:ring-2 focus-visible:ring-ring sm:mx-0 sm:px-0 lg:grid lg:grid-cols-4 lg:overflow-visible"
+        >
           {photos.map((media, index) => (
             <li
               key={media.id}

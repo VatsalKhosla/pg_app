@@ -251,8 +251,9 @@
   --color-ring: var(--ring);
 
   /* Type: Inter for text and figures, Eczar for headings */
-  --font-sans: var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-display-face), "Iowan Old Style", "Times New Roman", serif;
+  --font-sans: var(--font-rupee-face), var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-rupee-face), var(--font-display-face), "Iowan Old Style", "Times New Roman", serif;
 
   /*
    * Display sizes grow with the viewport between a phone and a wide desktop; body sizes stay
@@ -713,6 +714,16 @@
     .sim-track {
       --coin: 6.5rem;
     }
+  }
+
+  /* A PG's card, until it has a photo. */
+  .listing-placeholder {
+    background: linear-gradient(
+      180deg,
+      var(--brand-primary) 0%,
+      color-mix(in oklch, var(--brand-dusk) 60%, var(--brand-ember)) 58%,
+      var(--brand-sun) 100%
+    );
   }
 
   /* A room type's illustration. */

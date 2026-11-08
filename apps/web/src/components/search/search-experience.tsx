@@ -263,6 +263,8 @@ export function SearchExperience({
       // Filled in by the map, which knows each cluster's count and lowest price.
       cluster: t.raw("map.cluster") as string,
       campus: t.raw("map.campus") as string,
+      tilt: t("map.tilt"),
+      flatten: t("map.flatten"),
     }),
     [t],
   );
@@ -317,7 +319,7 @@ export function SearchExperience({
           className={cn(
             "lg:sticky lg:top-0 lg:-mt-[4.75rem] lg:h-dvh lg:border-l",
             state.view === "map"
-              ? "max-lg:fixed max-lg:inset-x-0 max-lg:top-0 max-lg:bottom-0 max-lg:z-30 max-lg:bg-background"
+              ? "max-lg:fixed max-lg:inset-x-0 max-lg:top-[5.25rem] max-lg:bottom-0 max-lg:z-30 max-lg:bg-background"
               : "max-lg:hidden",
           )}
         >
@@ -342,7 +344,7 @@ export function SearchExperience({
               <div className="h-full w-full bg-muted" />
             )}
             {/* The strip lets the map have its empty space: only its controls take presses. */}
-            <div className="pointer-events-none absolute top-[5.5rem] right-14 left-3 z-10 flex flex-wrap items-start gap-2 *:pointer-events-auto">
+            <div className="pointer-events-none absolute top-3 right-14 left-3 z-10 flex flex-wrap lg:top-[5.5rem] items-start gap-2 *:pointer-events-auto">
               <Button
                 variant="outline"
                 size="sm"
