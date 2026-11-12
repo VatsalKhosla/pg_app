@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type { ReactNode, SubmitEvent } from "react";
+import { type ReactNode, type SubmitEvent, useSyncExternalStore } from "react";
 
 import { buttonVariants } from "@/components/ui/button-variants";
 
@@ -48,6 +48,10 @@ function Field({
  * The search over the hero's bottom edge. Without its script it is still a plain form that goes to
  * /search; with it, the choices left at "any" stay out of the address, and the move is a soft one.
  */
+const noChanges = () => () => undefined;
+const isClient = () => true;
+const isServer = () => false;
+
 export function HeroSearch({
   text,
   campuses,
@@ -60,6 +64,8 @@ export function HeroSearch({
   budgets: readonly Choice[];
 }) {
   const router = useRouter();
+  // True once the form's script runs: until then a submit is the plain form's (tests wait for it).
+  const ready = useSyncExternalStore(noChanges, isClient, isServer);
 
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -77,6 +83,7 @@ export function HeroSearch({
       action="/search"
       onSubmit={submit}
       aria-label={text.label}
+      data-ready={ready ? "true" : undefined}
       className="glass grid grid-cols-2 gap-1 rounded-[2rem] p-2 shadow-xl sm:grid-cols-[1.5fr_1fr_1fr_auto] sm:items-center sm:rounded-full"
     >
       <Field label={text.near} className="col-span-2 sm:col-span-1">

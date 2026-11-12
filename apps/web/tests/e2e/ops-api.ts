@@ -18,7 +18,7 @@ export async function opsWithListing(
   { beds = 0 }: { beds?: number } = {},
 ) {
   const ops = await newStaff(["ops"]);
-  await page.goto("/ops");
+  await page.goto("/ops/listings");
   await signInAsStaff(page, ops);
   await expect(page).toHaveURL(/\/ops\/listings$/u);
   const csrf = (await page.context().cookies(API)).find(

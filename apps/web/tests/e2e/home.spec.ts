@@ -54,11 +54,11 @@ test("the search over the hero goes to search with what was chosen, and nothing 
   page,
 }) => {
   await page.goto("/");
+  const form = page.getByRole("form", { name: "Search for a PG" });
+  // Its script has run, so the choice left at "any" stays out of the address.
+  await expect(form).toHaveAttribute("data-ready", "true");
 
-  await page
-    .getByRole("form", { name: "Search for a PG" })
-    .getByLabel("Budget")
-    .selectOption({ label: "Up to ₹10,000" });
+  await form.getByLabel("Budget").selectOption({ label: "Up to ₹10,000" });
   await page.getByRole("button", { name: "Find PGs" }).click();
 
   await expect(page).toHaveURL(/\/search\?budget_max_paise=1000000$/);
