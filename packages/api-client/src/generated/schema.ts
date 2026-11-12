@@ -2195,6 +2195,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ops/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The business at a glance
+         * @description Each of the last ``weeks`` weeks: tokens secured, visits asked for and placement fees
+         *     invoiced; listings by status; and the bookings board's counts.
+         */
+        get: operations["insightsOpsInsights"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bookings": {
         parameters: {
             query?: never;
@@ -4910,6 +4931,12 @@ export interface components {
             /** Nextcursor */
             nextCursor: string | null;
         };
+        /** ListingStatusCount */
+        ListingStatusCount: {
+            status: components["schemas"]["PropertyStatus"];
+            /** Count */
+            count: number;
+        };
         /** ListingSummary */
         ListingSummary: {
             /**
@@ -5533,6 +5560,24 @@ export interface components {
             items: components["schemas"]["OpsDisputeItem"][];
             /** Nextcursor */
             nextCursor: string | null;
+        };
+        /**
+         * OpsInsights
+         * @description The business at a glance, for staff: each series has one number for each week, oldest first,
+         *     and its week starts on the Monday given in ``weeks`` (India time).
+         */
+        OpsInsights: {
+            /** Weeks */
+            weeks: string[];
+            /** Tokenssecured */
+            tokensSecured: number[];
+            /** Visitsrequested */
+            visitsRequested: number[];
+            /** Feesinvoicedpaise */
+            feesInvoicedPaise: number[];
+            /** Listings */
+            listings: components["schemas"]["ListingStatusCount"][];
+            board: components["schemas"]["OpsBookingSummary"];
         };
         /** OpsInvoicePage */
         OpsInvoicePage: {
@@ -12782,6 +12827,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PropertyInsights"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    insightsOpsInsights: {
+        parameters: {
+            query?: {
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsInsights"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

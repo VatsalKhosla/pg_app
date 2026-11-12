@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Final
 
 from sqlalchemy import ColumnElement, and_, func, or_, select, update
 
+from app.core.calendar import INDIA_ZONE
 from app.modules.booking.domain.board import QUEUES, UNCONFIRMED_SLA
 from app.modules.booking.domain.state_machine import BookingEvent, BookingStatus
 from app.modules.booking.models import Booking, BookingEventRecord, Dispute, DisputePhoto
@@ -349,6 +350,19 @@ class BookingRepository:
             return False
         await self._db.refresh(booking)
         return True
+
+    async def secured_by_week(self, start: datetime, end: datetime) -> dict[date, int]:
+        """Bookings whose token came in during ``[start, end)``, everywhere, by the Monday (India
+        time) of their week: the staff dashboard's chart."""
+        week = func.date(
+            func.date_trunc("week", func.timezone(INDIA_ZONE, Booking.token_secured_at))
+        )
+        rows = await self._db.execute(
+            select(week, func.count())
+            .where(Booking.token_secured_at >= start, Booking.token_secured_at < end)
+            .group_by(week)
+        )
+        return {row[0]: int(row[1]) for row in rows}
 
 
 class DisputeRepository:

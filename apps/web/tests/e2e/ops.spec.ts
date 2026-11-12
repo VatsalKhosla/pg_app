@@ -49,8 +49,8 @@ test.describe("ops console", () => {
     );
     const staff = await newStaff(["ops"]);
 
-    await page.goto("/ops");
-    await expect(page).toHaveURL(/\/staff\/sign-in\?next=%2Fops$/);
+    await page.goto("/ops/listings");
+    await expect(page).toHaveURL(/\/staff\/sign-in\?next=%2Fops%2Flistings$/);
     await signInAsStaff(page, staff);
     await expect(page).toHaveURL(/\/ops\/listings$/);
     await expect(page.getByRole("heading", { name: "Listings", level: 1 })).toBeVisible();

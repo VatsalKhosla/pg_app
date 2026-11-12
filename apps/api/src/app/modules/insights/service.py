@@ -8,12 +8,20 @@ from typing import TYPE_CHECKING
 
 from app.core.calendar import india_date, india_start
 from app.core.errors import NotFoundError
-from app.modules.booking.service import bookings_made
+from app.modules.booking.service import BookingBoard, bookings_made
+from app.modules.booking.service.stats import secured_by_week
+from app.modules.catalog.domain.listing import PropertyStatus
 from app.modules.catalog.service import CatalogLookup
 from app.modules.catalog.service.owner_area import ListingViews
-from app.modules.insights.domain.insights import conversion_bps, taken_bps
-from app.modules.insights.schemas import PropertyInsights, RoomInsight
+from app.modules.insights.domain.insights import conversion_bps, series, taken_bps, week_starts
+from app.modules.insights.schemas import (
+    ListingStatusCount,
+    OpsInsights,
+    PropertyInsights,
+    RoomInsight,
+)
 from app.modules.inventory.service import AllocationService
+from app.modules.invoices.service import fees_by_week
 from app.modules.visits.service import VisitLookup
 
 if TYPE_CHECKING:
@@ -94,3 +102,34 @@ class OwnerInsights:
                 visits=await VisitLookup(self._db).requested_at(owned.id, start, end),
                 bookings=await bookings_made(self._db, owned.id, start, end),
             )
+
+
+class OpsDashboard:
+    """The whole business, week by week, for staff (the staff dashboard): each module counts its own
+    rows, and this only lines the weeks up."""
+
+    def __init__(self, db: AsyncSession, clock: Clock) -> None:
+        self._db = db
+        self._clock = clock
+
+    async def of(self, *, weeks: int) -> OpsInsights:
+        now = self._clock.now()
+        mondays = week_starts(india_date(now), weeks)
+        start, end = india_start(mondays[0]), india_start(india_date(now) + timedelta(days=1))
+        async with self._db.begin():
+            tokens = await secured_by_week(self._db, start, end)
+            visits = await VisitLookup(self._db).requested_by_week(start, end)
+            fees = await fees_by_week(self._db, start, end)
+            listings = await CatalogLookup(self._db).status_counts()
+        board = await BookingBoard(self._db, self._clock).summary()
+        return OpsInsights(
+            weeks=mondays,
+            tokens_secured=series(mondays, tokens),
+            visits_requested=series(mondays, visits),
+            fees_invoiced_paise=series(mondays, fees),
+            listings=[
+                ListingStatusCount(status=PropertyStatus(status), count=count)
+                for status, count in sorted(listings.items())
+            ],
+            board=board,
+        )

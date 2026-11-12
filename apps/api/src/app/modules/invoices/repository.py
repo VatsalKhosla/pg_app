@@ -6,10 +6,12 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
+from app.core.calendar import INDIA_ZONE
 from app.modules.invoices.models import InvoiceSequence, OwnerInvoice
 
 if TYPE_CHECKING:
     import uuid
+    from datetime import date, datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -85,3 +87,14 @@ class InvoiceRepository:
             select(OwnerInvoice).where(OwnerInvoice.owner_id == owner_id).order_by(OwnerInvoice.id)
         )
         return list(rows)
+
+    async def fees_by_week(self, start: datetime, end: datetime) -> dict[date, int]:
+        """Placement fees invoiced in ``[start, end)``, before GST, by the Monday (India time) of
+        their week."""
+        week = func.date(func.date_trunc("week", func.timezone(INDIA_ZONE, OwnerInvoice.issued_at)))
+        rows = await self._db.execute(
+            select(week, func.sum(OwnerInvoice.fee_paise))
+            .where(OwnerInvoice.issued_at >= start, OwnerInvoice.issued_at < end)
+            .group_by(week)
+        )
+        return {row[0]: int(row[1] or 0) for row in rows}

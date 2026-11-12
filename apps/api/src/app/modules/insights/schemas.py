@@ -4,6 +4,8 @@ import uuid
 from datetime import date
 
 from app.core.schemas import ApiModel
+from app.modules.booking.schemas import OpsBookingSummary
+from app.modules.catalog.domain.listing import PropertyStatus
 
 
 class RoomInsight(ApiModel):
@@ -33,3 +35,21 @@ class PropertyInsights(ApiModel):
     beds_taken: int
     taken_bps: int | None
     rooms: list[RoomInsight]
+
+
+class ListingStatusCount(ApiModel):
+    status: PropertyStatus
+    count: int
+
+
+class OpsInsights(ApiModel):
+    """The business at a glance, for staff: each series has one number for each week, oldest first,
+    and its week starts on the Monday given in ``weeks`` (India time)."""
+
+    weeks: list[date]
+    tokens_secured: list[int]
+    visits_requested: list[int]
+    # Placement fees invoiced to owners, before GST.
+    fees_invoiced_paise: list[int]
+    listings: list[ListingStatusCount]
+    board: OpsBookingSummary

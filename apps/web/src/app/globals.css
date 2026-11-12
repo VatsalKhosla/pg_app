@@ -905,6 +905,35 @@
     }
   }
 
+  /* The staff dashboard's charts (components/ops/weekly-bars.tsx): recessive chrome, thin bars. */
+  .ops-chart-grid {
+    stroke: var(--chart-grid);
+    stroke-width: 1;
+  }
+
+  .ops-chart-axis {
+    stroke: var(--chart-axis);
+    stroke-width: 1;
+  }
+
+  .ops-chart-label {
+    fill: var(--muted-foreground);
+    font-size: 0.75rem;
+  }
+
+  .ops-chart-bar {
+    fill: var(--chart-series);
+    transition: opacity 160ms var(--ease-standard);
+  }
+
+  .ops-chart:has(.ops-chart-mark:hover) .ops-chart-bar {
+    opacity: 0.45;
+  }
+
+  .ops-chart .ops-chart-mark:hover .ops-chart-bar {
+    opacity: 1;
+  }
+
   /* A PG's card, until it has a photo. */
   .listing-placeholder {
     background: linear-gradient(

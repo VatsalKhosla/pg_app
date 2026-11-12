@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from datetime import date
 
 INDIA: Final = ZoneInfo("Asia/Kolkata")
+# The same zone by name, for the database to bucket times by India's weeks and days.
+INDIA_ZONE: Final = "Asia/Kolkata"
 
 
 def india_date(moment: datetime) -> date:

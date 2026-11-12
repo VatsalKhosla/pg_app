@@ -7,7 +7,7 @@ visit log, then records how it went. Students cancel their own visits; ops cance
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Final
 
 from app.config import BRAND_NAME
@@ -118,6 +118,10 @@ class VisitLookup:
     async def requested_at(self, property_id: int, start: datetime, end: datetime) -> int:
         """Visits asked for at a PG in ``[start, end)``, in the caller's transaction (step 7.6)."""
         return await self._visits.requested_between(property_id, start, end)
+
+    async def requested_by_week(self, start: datetime, end: datetime) -> dict[date, int]:
+        """Visits asked for everywhere in ``[start, end)``, by week (the staff dashboard)."""
+        return await self._visits.requested_by_week(start, end)
 
     async def public_id(self, visit_id: int) -> uuid.UUID | None:
         """A visit's id as the API gives it."""

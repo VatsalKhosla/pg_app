@@ -11,7 +11,7 @@ This module knows neither bookings nor payments: bookings and payments call it.
 
 import asyncio
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Final
 
 import structlog
@@ -468,3 +468,8 @@ async def invoices_part(db: AsyncSession, user_id: int) -> dict[str, object]:
             for row in rows
         ]
     }
+
+
+async def fees_by_week(db: AsyncSession, start: datetime, end: datetime) -> dict[date, int]:
+    """Placement fees invoiced in ``[start, end)``, before GST, by week (the staff dashboard)."""
+    return await InvoiceRepository(db).fees_by_week(start, end)

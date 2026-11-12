@@ -609,3 +609,7 @@ class CatalogLookup:
     async def property_ids(self, *, after: int | None, limit: int) -> list[int]:
         """Every property's internal id, a page at a time (``after`` the last one seen)."""
         return await self._catalog.property_ids_after(after, limit=limit)
+
+    async def status_counts(self) -> dict[str, int]:
+        """How many listings are in each status (the staff dashboard)."""
+        return await self._catalog.status_counts()

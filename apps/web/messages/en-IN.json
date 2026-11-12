@@ -919,7 +919,8 @@
       "grievances": "Grievances",
       "pricingAlerts": "Pricing alerts",
       "invoices": "Invoices",
-      "reconciliation": "Reconciliation"
+      "reconciliation": "Reconciliation",
+      "dashboard": "Dashboard"
     },
     "listings": {
       "title": "Listings",
@@ -2770,5 +2771,23 @@
     "supportBody": "Write to us from the contact page, and follow any complaint through to its answer.",
     "ctaTitle": "Ready to fill your beds?",
     "ctaBody": "Tell us about your PG, and our field agent will arrange a visit."
+  },
+  "OpsDashboard": {
+    "metaTitle": "Dashboard",
+    "title": "The business at a glance",
+    "period": "Each of the last {weeks} weeks, this week included.",
+    "tiles": {
+      "attention": "Need a person now",
+      "unconfirmedLate": "Owners past their two hours",
+      "disputesOpen": "Disputes open",
+      "moveInsDue": "Move-ins due"
+    },
+    "visits": "Visits asked for",
+    "tokens": "Tokens secured",
+    "fees": "Placement fees invoiced, before GST",
+    "listings": "Listings by status",
+    "bookings": "Bookings by status",
+    "table": "See the numbers",
+    "week": "Week of"
   }
 }

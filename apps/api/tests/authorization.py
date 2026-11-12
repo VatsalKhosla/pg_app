@@ -702,6 +702,7 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     # The board (ADR 0054): ops run every booking from it.
     ("GET", "/v1/ops/bookings"): Rule(ops_only(200)),
     ("GET", "/v1/ops/bookings/summary"): Rule(ops_only(200)),
+    ("GET", "/v1/ops/insights"): Rule(ops_only(200)),
     ("POST", "/v1/ops/bookings/{code}/owner-cancel"): Rule(
         ops_only(404),
         lambda: {"json": {"reason": "The room is under repair"}},

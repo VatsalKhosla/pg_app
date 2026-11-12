@@ -7587,6 +7587,62 @@
         }
       }
     },
+    "/v1/ops/insights": {
+      "get": {
+        "tags": [
+          "insights"
+        ],
+        "summary": "The business at a glance",
+        "description": "Each of the last ``weeks`` weeks: tokens secured, visits asked for and placement fees\ninvoiced; listings by status; and the bookings board's counts.",
+        "operationId": "insightsOpsInsights",
+        "parameters": [
+          {
+            "name": "weeks",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 26,
+              "minimum": 4,
+              "default": 12,
+              "title": "Weeks"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsInsights"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/bookings": {
       "post": {
         "tags": [
@@ -15366,6 +15422,24 @@
         ],
         "title": "ListingPage"
       },
+      "ListingStatusCount": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/PropertyStatus"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "count"
+        ],
+        "title": "ListingStatusCount"
+      },
       "ListingSummary": {
         "properties": {
           "id": {
@@ -17097,6 +17171,61 @@
           "nextCursor"
         ],
         "title": "OpsDisputePage"
+      },
+      "OpsInsights": {
+        "properties": {
+          "weeks": {
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": "array",
+            "title": "Weeks"
+          },
+          "tokensSecured": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Tokenssecured"
+          },
+          "visitsRequested": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Visitsrequested"
+          },
+          "feesInvoicedPaise": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Feesinvoicedpaise"
+          },
+          "listings": {
+            "items": {
+              "$ref": "#/components/schemas/ListingStatusCount"
+            },
+            "type": "array",
+            "title": "Listings"
+          },
+          "board": {
+            "$ref": "#/components/schemas/OpsBookingSummary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "weeks",
+          "tokensSecured",
+          "visitsRequested",
+          "feesInvoicedPaise",
+          "listings",
+          "board"
+        ],
+        "title": "OpsInsights",
+        "description": "The business at a glance, for staff: each series has one number for each week, oldest first,\nand its week starts on the Monday given in ``weeks`` (India time)."
       },
       "OpsInvoicePage": {
         "properties": {

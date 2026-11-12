@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select, update
 
 from app.core import postgis
+from app.core.calendar import INDIA_ZONE
 from app.core.geometry import Point
 from app.modules.visits.domain.visits import ENTITLING, OPEN, StudentVisitStatus
 from app.modules.visits.models import Visit
@@ -12,7 +13,7 @@ from app.modules.visits.models import Visit
 if TYPE_CHECKING:
     import uuid
     from collections.abc import Collection
-    from datetime import datetime
+    from datetime import date, datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -184,3 +185,14 @@ class VisitRepository:
             ).where(Visit.id.in_(ids), Visit.check_in_position.is_not(None))
         )
         return {visit_id: Point(lat=lat, lng=lng) for visit_id, lat, lng in rows}
+
+    async def requested_by_week(self, start: datetime, end: datetime) -> dict[date, int]:
+        """Visits asked for everywhere in ``[start, end)``, by the Monday (India time) of their
+        week."""
+        week = func.date(func.date_trunc("week", func.timezone(INDIA_ZONE, Visit.requested_at)))
+        rows = await self._db.execute(
+            select(week, func.count())
+            .where(Visit.requested_at >= start, Visit.requested_at < end)
+            .group_by(week)
+        )
+        return {row[0]: int(row[1]) for row in rows}

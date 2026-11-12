@@ -234,7 +234,7 @@ test.describe("a change to a listing", () => {
     test.skip(testInfo.project.name !== "desktop", "one run is enough");
     test.slow();
     const staff = await newStaff(["ops"]);
-    await page.goto("/ops");
+    await page.goto("/ops/listings");
     await signInAsStaff(page, staff);
     await expect(page).toHaveURL(/\/ops\/listings$/);
     const csrf = (await page.context().cookies(API)).find(

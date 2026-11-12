@@ -795,6 +795,13 @@ class CatalogRepository:
         )
         return int(total or 0)
 
+    async def status_counts(self) -> dict[str, int]:
+        """How many listings are in each status (the staff dashboard)."""
+        rows = await self._db.execute(
+            select(Property.status, func.count()).group_by(Property.status)
+        )
+        return {str(row[0]): int(row[1]) for row in rows}
+
 
 class VisitRepository:
     """Verification visits and their photos (ADR 0024)."""

@@ -10,10 +10,10 @@ from app.core.clock import ClockDep
 from app.core.current_actor import CurrentActor
 from app.core.db import DbSession
 from app.core.errors import ForbiddenError
-from app.modules.insights.domain.insights import MAX_DAYS
-from app.modules.insights.policies import can_see_own_insights
-from app.modules.insights.schemas import PropertyInsights
-from app.modules.insights.service import OwnerInsights
+from app.modules.insights.domain.insights import MAX_DAYS, MAX_WEEKS
+from app.modules.insights.policies import can_see_ops_insights, can_see_own_insights
+from app.modules.insights.schemas import OpsInsights, PropertyInsights
+from app.modules.insights.service import OpsDashboard, OwnerInsights
 from app.modules.pricing.service import QuoteService
 
 router = APIRouter(prefix="/v1", tags=["insights"])
@@ -37,3 +37,17 @@ async def my_insights(
         db, clock, flags=request.app.state.flags, beds=request.app.state.beds_taken
     )
     return await OwnerInsights(db, clock, quotes).of(actor, property_id, days=days)
+
+
+@router.get("/ops/insights", summary="The business at a glance")
+async def ops_insights(
+    actor: CurrentActor,
+    db: DbSession,
+    clock: ClockDep,
+    weeks: Annotated[int, Query(ge=4, le=MAX_WEEKS)] = 12,
+) -> OpsInsights:
+    """Each of the last ``weeks`` weeks: tokens secured, visits asked for and placement fees
+    invoiced; listings by status; and the bookings board's counts."""
+    if not can_see_ops_insights(actor):
+        raise ForbiddenError
+    return await OpsDashboard(db, clock).of(weeks=weeks)

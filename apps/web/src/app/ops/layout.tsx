@@ -6,6 +6,7 @@ import { OpsNav } from "@/components/ops/ops-nav";
 import {
   OPS_INVOICES_PATH,
   OPS_LEDGER_PATH,
+  OPS_HOME_PATH,
   OPS_LISTINGS_PATH,
   OPS_NEW_LISTING_PATH,
   OPS_OWNERS_PATH,
@@ -41,6 +42,7 @@ export default async function OpsLayout({ children }: LayoutProps<"/ops">) {
         <OpsNav
           label={t("label")}
           links={[
+            { href: OPS_HOME_PATH, label: t("dashboard"), exact: true },
             { href: OPS_LISTINGS_PATH, label: t("listings"), exact: true },
             { href: OPS_NEW_LISTING_PATH, label: t("newListing"), exact: true },
             { href: OPS_OWNERS_PATH, label: t("owners") },
