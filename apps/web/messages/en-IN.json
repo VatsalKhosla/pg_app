@@ -34,7 +34,12 @@
       "campuses": "Near a campus",
       "localities": "In a locality",
       "place": "{name}: {count, plural, one {# PG} other {# PGs}}",
-      "stop": "{count, plural, one {# PG} other {# PGs}} from {rent}"
+      "stop": "{count, plural, one {# PG} other {# PGs}} from {rent}",
+      "lead": "Ride the line to your campus or neighbourhood: each stop opens its verified PGs.",
+      "campusLine": "Campus Line",
+      "localityLine": "Locality Line",
+      "campusHint": "Every stop is a campus with verified PGs near it.",
+      "localityHint": "Every stop is a neighbourhood with verified PGs."
     },
     "steps": {
       "title": "How it works",
@@ -117,6 +122,22 @@
       "mapLabel": "A map of PGs in Delhi NCR, lit up by budget",
       "fallback": "Set your budget on the map and see every verified PG within it.",
       "fallbackCta": "Open the map"
+    },
+    "doors": {
+      "title": "Find your way around",
+      "open": "Open",
+      "howItWorks": {
+        "title": "How it works",
+        "body": "From your first search to moving in, and how your token stays protected all the way."
+      },
+      "students": {
+        "title": "For students and parents",
+        "body": "Verified PGs, no platform fee, every charge shown before you book, and a refundable token."
+      },
+      "owners": {
+        "title": "For PG owners",
+        "body": "Fill your beds with verified tenants. One fee per tenant placed, and any rise in price is all yours."
+      }
     }
   },
   "NotFound": {
@@ -139,7 +160,8 @@
   "Header": {
     "signIn": "Sign in",
     "account": "Your account",
-    "staffTools": "Staff tools"
+    "staffTools": "Staff tools",
+    "theme": "Switch between light and dark"
   },
   "SignIn": {
     "metaTitle": "Sign in",
@@ -2694,5 +2716,53 @@
     "help": "Questions about this booking? Quote {code} when you contact us.",
     "contactUs": "Contact us",
     "tokenTrack": "Where your token is now"
+  },
+  "HowItWorks": {
+    "metaTitle": "How it works",
+    "metaDescription": "From your first search to moving in: visit, reserve with a small refundable token, and move in, with your token protected throughout.",
+    "findCta": "Find a PG",
+    "stepsTitle": "Four steps to your room",
+    "stepNumber": "Step {number}",
+    "simTitle": "Follow your token",
+    "simLead": "Move through a stay and see where your token is at each step, and what happens if plans change.",
+    "confirmTitle": "The owner answers in time",
+    "heldTitle": "Held until you have checked the room",
+    "notAsShownTitle": "If the room isn't as shown",
+    "policyTitle": "Every rule in one place",
+    "ctaTitle": "Ready to find your room?",
+    "ctaBody": "Search verified PGs near your campus, on the map or as a list."
+  },
+  "Students": {
+    "metaTitle": "For students and parents",
+    "metaDescription": "Verified PGs in Delhi NCR with no platform fee, every charge shown upfront and a refundable token.",
+    "findCta": "Find a PG",
+    "promisesTitle": "What you can count on",
+    "verifiedTitle": "Every PG visited and checked",
+    "verifiedBody": "Someone from our team visits every building, checks its safety and takes the photos before it is listed.",
+    "feeTitle": "No platform fee, ever",
+    "upfrontTitle": "Every charge before you book",
+    "visitTitle": "Visit before you decide",
+    "ctaTitle": "Start with a visit",
+    "ctaBody": "Find a PG you like, book a visit, and see the room before you decide."
+  },
+  "Owners": {
+    "metaTitle": "For PG owners",
+    "metaDescription": "Fill your beds with verified tenants. One placement fee per tenant, worked out on your listed rent.",
+    "contactCta": "List your PG",
+    "pricingCta": "See pricing",
+    "feeTitle": "One fee, only when we place a tenant",
+    "whyTitle": "Why owners list with us",
+    "tenantsTitle": "Students who have seen the room",
+    "tenantsBody": "Students visit with our field agent before they reserve, and pay a token through us to hold the bed.",
+    "peakTitle": "Peak season is yours",
+    "verifiedTitle": "Verified listings stand out",
+    "verifiedBody": "Our field agent checks your building and takes the photos, so students can trust what they see.",
+    "toolsTitle": "Your own dashboard",
+    "toolsBody": "See your bookings, set prices for each season and get every invoice in your owner dashboard.",
+    "noFeeTitle": "Nothing to list",
+    "supportTitle": "Help when you need it",
+    "supportBody": "Write to us from the contact page, and follow any complaint through to its answer.",
+    "ctaTitle": "Ready to fill your beds?",
+    "ctaBody": "Tell us about your PG, and our field agent will arrange a visit."
   }
 }

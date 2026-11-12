@@ -1,3 +1,4 @@
+import { ArrowRight, Building2, Route as RouteIcon, Users } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
@@ -7,39 +8,27 @@ import { DuskScene } from "@/components/home/dusk-scene";
 import { HeroParallax } from "@/components/home/hero-parallax";
 import { type Choice, HeroSearch, type HeroSearchText } from "@/components/home/hero-search";
 import { BudgetExplorerNear } from "@/components/home/islands";
-import { StaySimulator } from "@/components/home/stay-simulator";
-import { homeSections } from "@/components/layout/navigation";
 import { JsonLd } from "@/components/seo/json-ld";
+import { MetroLines } from "@/components/story/metro-lines";
+import { PolicyFacts } from "@/components/story/policy-facts";
 import { ApiStatus, ApiStatusPending } from "@/components/system/api-status";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { brand } from "@/config/brand";
 import { publicEnv } from "@/config/env";
-import { getPolicies, getSearchPlaces, type SearchPlace } from "@/lib/api/public";
+import { getSearchPlaces, type SearchPlace } from "@/lib/api/public";
 import { formatINR } from "@/lib/money";
 import { organizationJsonLd } from "@/lib/seo/json-ld";
-import { trustPages } from "@/lib/trust/pages";
 
-// Sections that the navigation links to: focusable, so a followed link can move focus here, and
-// offset so the floating header doesn't cover their headings.
-const sectionClassName = "scroll-mt-28 outline-none focus-visible:ring-2 focus-visible:ring-ring";
-// Places linked from the home page, of each kind: the ones with the most PGs.
-const PLACES_SHOWN = 8;
 const BUDGETS_PAISE = [800_000, 1_000_000, 1_200_000, 1_500_000, 2_000_000] as const;
 const MONTHS_SHOWN = 12;
+// Room held for the explorer, so the page doesn't move when it arrives.
+const BUDGET_SPACE = "min-h-[39rem] lg:min-h-[27rem]";
 
 async function placesOrNone(): Promise<SearchPlace[]> {
   try {
     return (await getSearchPlaces()).items;
   } catch {
     return [];
-  }
-}
-
-async function policiesOrNull() {
-  try {
-    return await getPolicies();
-  } catch {
-    return null;
   }
 }
 
@@ -100,124 +89,6 @@ async function HeroSearchPending() {
   return <HeroSearch {...common} campuses={[]} />;
 }
 
-/** The promises, as figures from the live policy. Without the API there's nothing to state. */
-async function PolicyFacts() {
-  const policies = await policiesOrNull();
-  if (policies === null) return null;
-  const t = await getTranslations("Home.facts");
-  const { tokenPaise, freeCancelDays, checkWindowHours } = policies.booking;
-  const facts = [
-    { value: formatINR(tokenPaise), label: t("token") },
-    { value: t("days", { days: freeCancelDays }), label: t("cancel") },
-    { value: t("hours", { hours: checkWindowHours }), label: t("check") },
-    { value: formatINR(0), label: t("fee") },
-  ];
-  return (
-    <section aria-labelledby="facts-title" className="mx-auto w-full max-w-page px-gutter">
-      <h2 id="facts-title" className="sr-only">
-        {t("title")}
-      </h2>
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4 lg:gap-x-10">
-        {facts.map((fact) => (
-          <div key={fact.label} className="flex flex-col-reverse justify-end gap-1.5">
-            <dt className="max-w-[24ch] text-sm leading-snug text-muted-foreground">
-              {fact.label}
-            </dt>
-            <dd className="text-title-1 font-semibold tabular-nums">{fact.value}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  );
-}
-
-/** One line of stops: each is a campus or locality with PGs, like a station on the Metro. */
-function MetroLine({
-  title,
-  lineClass,
-  stops,
-}: {
-  title: string;
-  lineClass: string;
-  stops: readonly { key: string; href: Route; name: string; detail: string }[];
-}) {
-  return (
-    <div className="min-w-0">
-      <h3 className="px-gutter font-sans text-base font-semibold lg:px-0">{title}</h3>
-      <ul
-        className="mt-4 flex snap-x scroll-px-gutter gap-0 overflow-x-auto px-gutter pb-3 [scrollbar-width:none] lg:px-0"
-        style={{ "--line": lineClass }}
-      >
-        {stops.map((stop) => (
-          <li key={stop.key} className="relative w-44 shrink-0 snap-start pt-1 sm:w-52">
-            <span
-              aria-hidden="true"
-              className="absolute top-[0.8rem] left-0 h-1.5 w-full bg-(--line) group-last:w-0"
-            />
-            <Link
-              href={stop.href}
-              className="group relative block rounded-xl pr-4 pb-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              <span
-                aria-hidden="true"
-                className="block size-5 rounded-full border-[5px] border-(--line) bg-background transition-colors duration-(--duration-fast) group-hover:bg-(--line) motion-reduce:transition-none"
-              />
-              <span className="mt-3 block font-medium leading-snug group-hover:underline group-hover:underline-offset-4">
-                {stop.name}
-              </span>
-              <span className="mt-0.5 block text-sm text-muted-foreground">{stop.detail}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/**
- * Links to the landing pages of the campuses and localities with the most PGs (step 3.6), for
- * people and search engines alike, drawn as two Metro lines. Without the API there's nothing to
- * link to, and the home page stands without it.
- */
-async function PopularPlaces() {
-  const places = await placesOrNone();
-  if (places.length === 0) return null;
-  const t = await getTranslations("Home.places");
-  const stops = (kind: SearchPlace["kind"], base: string) =>
-    places
-      .filter((place) => place.kind === kind)
-      .slice(0, PLACES_SHOWN)
-      .map((place) => ({
-        key: place.slug,
-        href: `${base}/${place.slug}` as Route,
-        name: place.name,
-        detail: t("stop", { count: place.listings, rent: formatINR(place.minRentPaise) }),
-      }));
-  const lines = [
-    { title: t("campuses"), lineClass: "var(--sun)", stops: stops("campus", "/pg-near") },
-    { title: t("localities"), lineClass: "var(--dusk)", stops: stops("locality", "/pg-in") },
-  ].filter((line) => line.stops.length > 0);
-  return (
-    <section
-      aria-labelledby="places-title"
-      className="mx-auto w-full max-w-page pt-section lg:px-gutter"
-    >
-      <h2 id="places-title" className="px-gutter text-title-1 font-medium lg:px-0">
-        {t("title")}
-      </h2>
-      <div className="mt-8 grid gap-8">
-        {lines.map((line) => (
-          <MetroLine key={line.title} {...line} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// Room held for the explorer, so the page doesn't move when it arrives (links to the sections
-// below it land where they should).
-const BUDGET_SPACE = "min-h-[39rem] lg:min-h-[27rem]";
-
 /** The budget explorer where there are PGs to show; otherwise a plain way to the map. */
 async function BudgetBand() {
   const [t, places] = await Promise.all([getTranslations("Home.budget"), placesOrNone()]);
@@ -254,98 +125,55 @@ async function BudgetBand() {
   );
 }
 
-const STEP_KEYS = ["find", "visit", "reserve", "moveIn"] as const;
+const DOORS = [
+  { key: "howItWorks", href: "/how-it-works", Icon: RouteIcon, tone: "from-primary" },
+  { key: "students", href: "/students", Icon: Users, tone: "from-dusk" },
+  { key: "owners", href: "/owners", Icon: Building2, tone: "from-ember" },
+] as const;
 
-/** The four steps in plain text: what the simulator starts from, and all there is without script. */
-async function StepsList() {
-  const t = await getTranslations("Home.steps");
+/** Three ways in: how it works, and the pages for students and for owners. */
+async function Doors() {
+  const t = await getTranslations("Home.doors");
   return (
-    <ol className="grid max-w-3xl gap-6 sm:grid-cols-2">
-      {STEP_KEYS.map((key) => (
-        <li key={key}>
-          <h3 className="text-title-3 font-medium">{t(`${key}.title`)}</h3>
-          <p className="mt-1.5 leading-relaxed text-muted-foreground">{t(`${key}.body`)}</p>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/** The simulator, with every word and figure read from the live policy here on the server. */
-async function HomeSimulator() {
-  const policies = await policiesOrNull();
-  if (policies === null) return <StepsList />;
-  const [t, tSim, tToken, tBookings] = await Promise.all([
-    getTranslations("Home.steps"),
-    getTranslations("Home.sim"),
-    getTranslations("TokenProtection"),
-    getTranslations("Bookings.next"),
-  ]);
-  const { tokenPaise, freeCancelDays, checkWindowHours, confirmDeadlineHours } = policies.booking;
-  const stages = [
-    { key: "find", title: t("find.title"), body: t("find.body"), place: 0 },
-    { key: "visit", title: t("visit.title"), body: t("visit.body"), place: 0 },
-    { key: "reserve", title: t("reserve.title"), body: t("reserve.body"), place: 1 },
-    {
-      key: "confirm",
-      title: tSim("confirm"),
-      body: tToken("confirm", { confirmHours: confirmDeadlineHours }),
-      place: 1,
-    },
-    { key: "moveIn", title: t("moveIn.title"), body: t("moveIn.body"), place: 1 },
-    {
-      key: "check",
-      title: tSim("check"),
-      body: tToken("held", { checkHours: checkWindowHours }),
-      place: 1,
-    },
-    { key: "settled", title: tSim("settled"), body: tBookings("active"), place: 2 },
-  ] as const;
-  const branches = [
-    {
-      key: "cancel",
-      stages: ["reserve", "confirm"],
-      label: tSim("cancelLabel"),
-      body: tToken("cancel", { freeCancelDays }),
-    },
-    {
-      key: "ownerNo",
-      stages: ["confirm"],
-      label: tSim("ownerNoLabel"),
-      body: tBookings("rejected"),
-    },
-    {
-      key: "notAsShown",
-      stages: ["check"],
-      label: tSim("notAsShownLabel"),
-      body: tToken("notAsShown", { checkHours: checkWindowHours }),
-    },
-  ];
-  return (
-    <StaySimulator
-      token={formatINR(tokenPaise)}
-      stages={stages}
-      branches={branches}
-      text={{
-        scrub: tSim("scrub"),
-        step: tSim.raw("step") as string,
-        places: [tSim("you"), tSim("held"), tSim("rent")],
-        back: tSim("back"),
-        play: tSim("play"),
-        pause: tSim("pause"),
-        happens: tSim("happens"),
-        onTrack: tSim("onTrack"),
-      }}
-    />
+    <section
+      aria-labelledby="doors-title"
+      className="mx-auto w-full max-w-page px-gutter py-section"
+    >
+      <h2 id="doors-title" className="text-display font-medium">
+        {t("title")}
+      </h2>
+      <ul className="mt-10 grid gap-5 md:grid-cols-3">
+        {DOORS.map(({ key, href, Icon, tone }) => (
+          <li key={key}>
+            <Link
+              href={href as Route}
+              className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-[1.75rem] border border-border/70 bg-card p-7 shadow-md outline-none transition-[transform,box-shadow] duration-(--duration-base) ease-standard hover:-translate-y-1 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            >
+              <span
+                aria-hidden="true"
+                className={`grid size-13 place-items-center rounded-2xl bg-linear-to-br ${tone} to-[color-mix(in_oklch,var(--sun)_70%,var(--ember))] text-white shadow-md`}
+              >
+                <Icon className="size-6" />
+              </span>
+              <h3 className="text-title-2 font-medium">{t(`${key}.title`)}</h3>
+              <p className="flex-1 leading-relaxed text-muted-foreground">{t(`${key}.body`)}</p>
+              <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
+                {t("open")}
+                <ArrowRight
+                  aria-hidden="true"
+                  className="size-4 transition-transform duration-(--duration-base) group-hover:translate-x-1 motion-reduce:transition-none"
+                />
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
 export default async function HomePage() {
-  const [t, tBudget, tTrust] = await Promise.all([
-    getTranslations("Home"),
-    getTranslations("Home.budget"),
-    getTranslations("Trust.pages"),
-  ]);
+  const [t, tBudget] = await Promise.all([getTranslations("Home"), getTranslations("Home.budget")]);
   const absolute = (path: string) => new URL(path, publicEnv.siteUrl).toString();
 
   return (
@@ -397,27 +225,12 @@ export default async function HomePage() {
       </div>
 
       <Suspense fallback={null}>
-        <PopularPlaces />
+        <MetroLines />
       </Suspense>
 
-      <section
-        id={homeSections.howItWorks}
-        tabIndex={-1}
-        aria-labelledby="how-it-works-title"
-        className={sectionClassName}
-      >
-        <div className="mx-auto max-w-page px-gutter py-section">
-          <h2 id="how-it-works-title" className="text-display font-medium">
-            {t("steps.title")}
-          </h2>
-          <p className="mt-3 max-w-prose text-lg text-muted-foreground">{t("steps.lead")}</p>
-          <div className="mt-10">
-            <Suspense fallback={<StepsList />}>
-              <HomeSimulator />
-            </Suspense>
-          </div>
-        </div>
-      </section>
+      <Suspense fallback={null}>
+        <Doors />
+      </Suspense>
 
       <section
         aria-labelledby="budget-title"
@@ -436,51 +249,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <Suspense fallback={null}>
-        <div className="mx-auto grid w-full max-w-page gap-12 px-gutter py-section md:grid-cols-2 md:gap-16">
-          <section
-            id={homeSections.students}
-            tabIndex={-1}
-            aria-labelledby="students-title"
-            className={sectionClassName}
-          >
-            <h2 id="students-title" className="text-title-1 font-medium">
-              {t("students.title")}
-            </h2>
-            <p className="mt-3 max-w-prose text-lg leading-relaxed text-muted-foreground">
-              {t("students.body")}
-            </p>
-            <Link
-              href={trustPages.tokenProtection}
-              className="mt-4 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {tTrust("tokenProtection")}
-            </Link>
-          </section>
-          <section
-            id={homeSections.owners}
-            tabIndex={-1}
-            aria-labelledby="owners-title"
-            className={sectionClassName}
-          >
-            <h2 id="owners-title" className="text-title-1 font-medium">
-              {t("owners.title")}
-            </h2>
-            <p className="mt-3 max-w-prose text-lg leading-relaxed text-muted-foreground">
-              {t("owners.body")}
-            </p>
-            <Link
-              href={trustPages.pricing}
-              className="mt-4 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {tTrust("pricing")}
-            </Link>
-          </section>
-        </div>
-      </Suspense>
-
       {/* Streams in after the page, so a slow or absent API never holds it up. */}
-      <div className="mx-auto w-full max-w-page px-gutter pb-12">
+      <div className="mx-auto w-full max-w-page px-gutter py-12">
         <Suspense fallback={<ApiStatusPending />}>
           <ApiStatus />
         </Suspense>

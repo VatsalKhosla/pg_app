@@ -1,6 +1,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+  &:where([data-theme="dark"] *) {
+    @slot;
+  }
+}
+
 /*
  * Design tokens (shadcn/ui), documented in DESIGN.md and docs/design/design-system.md. Golden hour,
  * the founders' palette (2026-11-08): deep ink, marigold and ivory. Brand colours arrive through
@@ -10,180 +21,139 @@
  * control borders and focus rings keep 3:1 (WCAG 2.2 AA), in both themes; tests/unit/brand-contrast
  * holds them to it.
  */
+/*
+ * Light and dark come from one list: each colour is light-dark(light, dark), and the page's
+ * color-scheme picks. That follows the system, unless the visitor chose with the header's switch,
+ * which sets data-theme on <html> (a cookie remembers it, so the server draws the right one).
+ */
 :root {
+  color-scheme: light dark;
+
   /* Surfaces and text */
-  --background: #fbf8f2;
-  --foreground: #161a22;
-  --surface: #f5f1e8;
-  --surface-warm: #f1eadc;
-  --card: #ffffff;
+  --background: light-dark(#faf8ff, #0f0b1c);
+  --foreground: light-dark(#1b1530, #f3f0fb);
+  --surface: light-dark(#f3effc, #151027);
+  --surface-warm: light-dark(#fff4e6, #1d1530);
+  --card: light-dark(#ffffff, #191430);
   --card-foreground: var(--foreground);
-  --popover: #ffffff;
+  --popover: light-dark(#ffffff, #1e1838);
   --popover-foreground: var(--foreground);
-  --muted: #f0ebe0;
-  --muted-foreground: #5a5f6c;
+  --muted: light-dark(#f1edf9, #211a38);
+  --muted-foreground: light-dark(#5d5679, #b7afcf);
 
-  /* Brand: ink carries the actions, and the sun fill is kept for the one action that matters most */
-  --primary: var(--brand-primary);
-  --primary-foreground: var(--brand-primary-foreground);
-  --primary-hover: color-mix(in oklch, var(--primary) 86%, white);
-  --primary-soft: color-mix(in oklch, var(--background), var(--primary) 9%);
-  --primary-soft-hover: color-mix(in oklch, var(--background), var(--primary) 15%);
-  --primary-soft-foreground: color-mix(in oklch, var(--primary) 88%, black);
-  --sun: var(--brand-sun);
-  --sun-foreground: var(--brand-sun-foreground);
-  --sun-hover: color-mix(in oklch, var(--sun) 90%, black);
+  /* Brand: violet carries the actions, and the sun fill is kept for the one that matters most */
+  --primary: light-dark(var(--brand-primary), var(--brand-primary-dark));
+  --primary-foreground: light-dark(
+    var(--brand-primary-foreground),
+    var(--brand-primary-foreground-dark)
+  );
+  --primary-hover: light-dark(
+    color-mix(in oklch, var(--primary) 86%, black),
+    color-mix(in oklch, var(--primary) 85%, white)
+  );
+  --primary-soft: color-mix(in oklch, var(--background), var(--primary) 10%);
+  --primary-soft-hover: color-mix(in oklch, var(--background), var(--primary) 17%);
+  --primary-soft-foreground: light-dark(
+    color-mix(in oklch, var(--primary) 85%, black),
+    color-mix(in oklch, var(--primary) 70%, white)
+  );
+  --sun: light-dark(var(--brand-sun), var(--brand-sun-dark));
+  --sun-foreground: light-dark(var(--brand-sun-foreground), var(--brand-sun-foreground-dark));
+  --sun-hover: light-dark(
+    color-mix(in oklch, var(--sun) 90%, black),
+    color-mix(in oklch, var(--sun) 88%, white)
+  );
 
-  /* The evening band: an ink field that stays dark in both themes */
-  --night: var(--brand-night);
-  --night-foreground: #f3eee4;
-  --night-muted: #b9bfcc;
-  --night-accent: #f5b451;
-  --night-raised: #1b2336;
+  /* The evening band: a dusk field that stays dark in both themes */
+  --night: light-dark(var(--brand-night), var(--brand-night-dark));
+  --night-foreground: #f4f0ff;
+  --night-muted: #bdb4d8;
+  --night-accent: #f7b23e;
+  --night-raised: light-dark(#231a40, #160f29);
   --night-border: rgb(255 255 255 / 14%);
 
   /* Accents, each with a soft fill to sit on (from src/config/brand.ts) */
-  --ember: var(--brand-ember);
-  --ember-soft: #fbeee6;
-  --ember-soft-foreground: #7a2a12;
-  --ember-border: #efc8b4;
+  --ember: light-dark(var(--brand-ember), var(--brand-ember-dark));
+  --ember-soft: light-dark(#fdeaf0, #331522);
+  --ember-soft-foreground: light-dark(#9f1239, #ffb3c4);
+  --ember-border: light-dark(#f7c0cf, #5c2236);
 
-  --marigold: var(--brand-marigold);
-  --marigold-soft: #fdf0d9;
-  --marigold-soft-foreground: #673a00;
-  --marigold-border: #eed09a;
+  --marigold: light-dark(var(--brand-marigold), var(--brand-marigold-dark));
+  --marigold-soft: light-dark(#fff3e0, #2e2010);
+  --marigold-soft-foreground: light-dark(#9a3412, #fdc58a);
+  --marigold-border: light-dark(#fbd3a0, #5a3a17);
 
-  --dusk: var(--brand-dusk);
-  --dusk-soft: #e9edf5;
-  --dusk-soft-foreground: #1e2b45;
-  --dusk-border: #c4cddd;
+  --dusk: light-dark(var(--brand-dusk), var(--brand-dusk-dark));
+  --dusk-soft: light-dark(#e3f5f9, #0f2830);
+  --dusk-soft-foreground: light-dark(#155e75, #99e3f2);
+  --dusk-border: light-dark(#a5dceb, #1d4a57);
 
-  --neem: var(--brand-neem);
-  --neem-soft: #e6f3ea;
-  --neem-soft-foreground: #164a33;
-  --neem-border: #b3d8c2;
+  --neem: light-dark(var(--brand-neem), var(--brand-neem-dark));
+  --neem-soft: light-dark(#e6f6ec, #102a1d);
+  --neem-soft-foreground: light-dark(#166534, #86efb3);
+  --neem-border: light-dark(#b3e2c4, #1f4d33);
 
   /* Quiet fills: secondary buttons, chips, hover states */
-  --secondary: #eee8dc;
-  --secondary-hover: #e4dccd;
+  --secondary: light-dark(#efeafb, #231c3b);
+  --secondary-hover: light-dark(#e4ddf7, #2c2449);
   --secondary-foreground: var(--foreground);
-  --accent: color-mix(in oklch, var(--background), var(--primary) 6%);
+  --accent: color-mix(in oklch, var(--background), var(--primary) 7%);
   --accent-foreground: var(--foreground);
 
   /* Status: each has a strong colour for text and icons, and a soft fill to sit behind it */
-  --destructive: #b3261e;
-  --destructive-foreground: #ffffff;
-  --destructive-soft: #fbeae7;
-  --destructive-soft-foreground: #9b2019;
-  --success: #1f6b49;
-  --success-soft: #e3f2e8;
-  --success-soft-foreground: #1b5f41;
-  --warning-soft: #fdf0d3;
-  --warning-soft-foreground: #6f4300;
+  --destructive: light-dark(#c42b2b, #ff8a80);
+  --destructive-foreground: light-dark(#ffffff, #1a0b0a);
+  --destructive-soft: light-dark(#fdecec, #3a1818);
+  --destructive-soft-foreground: light-dark(#a51f1f, #ffb4ab);
+  --success: light-dark(#15803d, #6ee7a8);
+  --success-soft: light-dark(#e6f6ec, #102a1d);
+  --success-soft-foreground: light-dark(#166534, #86efb3);
+  --warning-soft: light-dark(#fff1d6, #2f2210);
+  --warning-soft-foreground: light-dark(#8a4b00, #fcd38d);
 
   /*
    * Lines. --border is decorative (cards, dividers); --input outlines a control, so it keeps 3:1.
-   * The focus ring is the ink, so it stays 3:1 or more even where older components draw it at half
-   * strength (ring-ring/50).
+   * The focus ring is the text colour, 3:1 or more even at half strength (ring-ring/50).
    */
-  --border: #e6dfd2;
-  --input: #868277;
+  --border: light-dark(#e6e0f3, rgb(255 255 255 / 11%));
+  --input: light-dark(#8e86aa, rgb(255 255 255 / 36%));
   --ring: var(--foreground);
 
-  /* Glass: only where something passes behind it (the floating search, the header on the hero) */
-  --glass: rgb(251 248 242 / 90%);
-  --glass-border: rgb(22 26 34 / 10%);
+  /* Glass: only where something passes behind it (the header, the hero's search, the map's list) */
+  --glass: light-dark(rgb(255 255 255 / 82%), rgb(25 20 48 / 78%));
+  --glass-border: light-dark(rgb(27 21 48 / 10%), rgb(255 255 255 / 12%));
   --glass-blur: 18px;
 
-  /* Elevation: shadows are tinted toward the ink, and stronger in the dark theme */
-  --shadow-tint: 22 26 34;
+  /* Elevation: shadows tinted toward the violet, and stronger in the dark theme */
+  --shadow-tint: 40 20 90;
   --shadow-strength: 1;
 
-  /*
-   * Charts (the pricing editor): the reference palette's first categorical slot, checked with
-   * the dataviz validator against these backgrounds in both themes, with hairline grey chrome.
-   */
-  --chart-series: #2a78d6;
-  --chart-grid: #e1e0d9;
-  --chart-axis: #c3c2b7;
-  --chart-reference: #898781;
-  --chart-band: rgb(137 135 129 / 14%);
+  /* Charts: the reference palette's first categorical slot, with hairline chrome */
+  --chart-series: light-dark(#6d4ad8, #a78bfa);
+  --chart-series-2: light-dark(#e08a0b, #f7b23e);
+  --chart-series-3: light-dark(#0e7490, #67d4e8);
+  --chart-series-4: light-dark(#c8264f, #ff8fa3);
+  --chart-grid: light-dark(#ebe7f4, #2a2440);
+  --chart-axis: light-dark(#cfc8e0, #3b3456);
+  --chart-reference: #8b84a3;
+  --chart-band: light-dark(rgb(109 74 216 / 10%), rgb(167 139 250 / 12%));
+}
+
+/* The visitor's own choice, from the header's switch, wins over the system's. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --shadow-tint: 0 0 0;
+  --shadow-strength: 3;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0d1119;
-    --foreground: #f2eee6;
-    --surface: #121825;
-    --surface-warm: #161d2b;
-    --card: #171e2c;
-    --popover: #1c2434;
-    --muted: #1d2433;
-    --muted-foreground: #aab0be;
-
-    --primary: var(--brand-primary-dark);
-    --primary-foreground: var(--brand-primary-foreground-dark);
-    --primary-hover: color-mix(in oklch, var(--primary) 85%, white);
-    --primary-soft: color-mix(in oklch, var(--background), var(--primary) 14%);
-    --primary-soft-hover: color-mix(in oklch, var(--background), var(--primary) 22%);
-    --primary-soft-foreground: color-mix(in oklch, var(--primary) 70%, white);
-    --sun: var(--brand-sun-dark);
-    --sun-foreground: var(--brand-sun-foreground-dark);
-    --sun-hover: color-mix(in oklch, var(--sun) 88%, white);
-
-    --night: var(--brand-night-dark);
-    --night-foreground: #f2eee6;
-    --night-muted: #a9afbd;
-    --night-raised: #131926;
-
-    --ember: var(--brand-ember-dark);
-    --ember-soft: #2c1711;
-    --ember-soft-foreground: #ffb49c;
-    --ember-border: #5b2c1f;
-
-    --marigold: var(--brand-marigold-dark);
-    --marigold-soft: #2a2010;
-    --marigold-soft-foreground: #fad28c;
-    --marigold-border: #584017;
-
-    --dusk: var(--brand-dusk-dark);
-    --dusk-soft: #182136;
-    --dusk-soft-foreground: #c8d5f0;
-    --dusk-border: #303c58;
-
-    --neem: var(--brand-neem-dark);
-    --neem-soft: #11281d;
-    --neem-soft-foreground: #9ee7bf;
-    --neem-border: #214f39;
-
-    --secondary: #1e2636;
-    --secondary-hover: #283145;
-    --accent: color-mix(in oklch, var(--background), var(--primary) 10%);
-
-    --destructive: #f38a80;
-    --destructive-foreground: #1a0d0b;
-    --destructive-soft: #3a1a17;
-    --destructive-soft-foreground: #f7b1a9;
-    --success: #7cd3a6;
-    --success-soft: #12291e;
-    --success-soft-foreground: #93dfb6;
-    --warning-soft: #2e2311;
-    --warning-soft-foreground: #f4cf86;
-
-    --border: rgb(255 255 255 / 11%);
-    --input: rgb(255 255 255 / 36%);
-
-    --glass: rgb(23 30 44 / 78%);
-    --glass-border: rgb(255 255 255 / 12%);
-
+  :root:not([data-theme="light"]) {
     --shadow-tint: 0 0 0;
     --shadow-strength: 3;
-
-    --chart-series: #3987e5;
-    --chart-grid: #2c2c2a;
-    --chart-axis: #383835;
-    --chart-reference: #898781;
-    --chart-band: rgb(195 194 183 / 12%);
   }
 }
 
@@ -249,6 +219,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-chart-series: var(--chart-series);
+  --color-chart-series-2: var(--chart-series-2);
+  --color-chart-series-3: var(--chart-series-3);
+  --color-chart-series-4: var(--chart-series-4);
 
   /* Type: Inter for text and figures, Eczar for headings */
   --font-sans: var(--font-rupee-face), var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
@@ -411,6 +385,105 @@
     /* Focus and links land clear of the floating header and a phone's bottom bar (WCAG 2.4.11). */
     scroll-padding-block: 6rem;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /*
+   * Every page's atmosphere: two soft glows of the brand's dusk at the top of the window, so no
+   * page is plain boxes on a flat sheet. Fixed, so it costs nothing as the page scrolls.
+   */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        56rem 34rem at -6% -12%,
+        color-mix(in oklch, var(--primary) 13%, transparent),
+        transparent 64%
+      ),
+      radial-gradient(
+        48rem 30rem at 106% -6%,
+        color-mix(in oklch, var(--sun) 15%, transparent),
+        transparent 62%
+      ),
+      radial-gradient(
+        40rem 28rem at 70% 108%,
+        color-mix(in oklch, var(--dusk) 9%, transparent),
+        transparent 64%
+      );
+  }
+
+  /*
+   * Dropdowns: the site's own chevron and colours on every native select. Where the browser can
+   * draw a customisable select (Chromium's base-select), its list is styled too; elsewhere the
+   * system's list opens, which phones do best anyway.
+   */
+  select:not([multiple]) {
+    appearance: none;
+    background-image:
+      linear-gradient(45deg, transparent 50%, currentColor 50%),
+      linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position:
+      calc(100% - 1.1rem) 52%,
+      calc(100% - 0.8rem) 52%;
+    background-size:
+      0.3rem 0.3rem,
+      0.3rem 0.3rem;
+    background-repeat: no-repeat;
+    padding-inline-end: 2.25rem;
+    accent-color: var(--primary);
+  }
+
+  @supports (appearance: base-select) {
+    select:not([multiple]) {
+      appearance: base-select;
+      background-image: none;
+      padding-inline-end: 0.75rem;
+    }
+
+    select:not([multiple])::picker-icon {
+      color: var(--primary);
+      transition: rotate 200ms var(--ease-emphasized);
+    }
+
+    select:not([multiple]):open::picker-icon {
+      rotate: 180deg;
+    }
+
+    ::picker(select) {
+      appearance: base-select;
+      margin-block: 0.4rem;
+      padding: 0.35rem;
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      background: var(--popover);
+      color: var(--popover-foreground);
+      box-shadow: var(--shadow-xl);
+    }
+
+    select:not([multiple]) option {
+      padding: 0.55rem 0.8rem;
+      border-radius: 0.65rem;
+      font-size: 0.9375rem;
+    }
+
+    select:not([multiple]) option:hover,
+    select:not([multiple]) option:focus-visible {
+      background: var(--primary-soft);
+      color: var(--primary-soft-foreground);
+      outline: none;
+    }
+
+    select:not([multiple]) option:checked {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    select:not([multiple]) option::checkmark {
+      color: var(--primary);
+    }
   }
 
   body {
@@ -713,6 +786,93 @@
   @media (min-width: 40rem) {
     .sim-track {
       --coin: 6.5rem;
+    }
+  }
+
+  /* A page's opening band (components/story/sky-band.tsx): the home page's dusk, in brief. */
+  .sky-band {
+    background: linear-gradient(
+      180deg,
+      var(--brand-night) 0%,
+      color-mix(in oklch, var(--brand-primary) 62%, var(--brand-night)) 52%,
+      color-mix(in oklch, var(--brand-ember) 58%, var(--brand-primary)) 88%,
+      color-mix(in oklch, var(--brand-sun) 80%, var(--brand-ember)) 120%
+    );
+  }
+
+  .sky-sun {
+    right: 8%;
+    bottom: -3.5rem;
+    width: clamp(9rem, 22vw, 18rem);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 50% 40%,
+      color-mix(in oklch, var(--brand-sun) 70%, white),
+      var(--brand-sun) 58%,
+      transparent 71%
+    );
+    opacity: 0.9;
+  }
+
+  .sky-skyline {
+    fill: color-mix(in oklch, var(--brand-night) 82%, black);
+    opacity: 0.75;
+  }
+
+  /* A Metro line of places (components/story/metro-lines.tsx): the line runs under its stations. */
+  .metro-stop::before {
+    content: "";
+    position: absolute;
+    top: 0.6rem;
+    left: 0;
+    right: 0;
+    height: 0.5rem;
+    background: var(--line);
+  }
+
+  .metro-stop:first-child::before {
+    left: 0.6rem;
+    border-radius: 999px 0 0 999px;
+  }
+
+  .metro-stop:last-child::before {
+    right: -2rem;
+    background: linear-gradient(90deg, var(--line), transparent);
+  }
+
+  .metro-station {
+    position: relative;
+    display: block;
+    width: 1.6rem;
+    height: 1.6rem;
+    border: 0.35rem solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+    box-shadow: 0 0 0 0.2rem var(--background);
+    transition:
+      transform 200ms var(--ease-emphasized),
+      background-color 200ms var(--ease-standard);
+  }
+
+  .group:hover .metro-station,
+  .group:focus-visible .metro-station {
+    background: var(--line);
+    transform: scale(1.18);
+  }
+
+  /* How it works: the four steps joined by a line on wide screens. */
+  @media (min-width: 64rem) {
+    .steps-rail > li:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 1.6rem;
+      left: 4.25rem;
+      right: -1.25rem;
+      height: 0.25rem;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--primary), var(--sun));
+      opacity: 0.45;
     }
   }
 

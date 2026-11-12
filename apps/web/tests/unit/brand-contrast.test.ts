@@ -21,20 +21,31 @@ function contrast(a: string, b: string): number {
 }
 
 const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
-const darkStart = css.indexOf("@media (prefers-color-scheme: dark)");
-const themeStart = css.indexOf("@theme inline");
+const rootBlock = css.slice(css.indexOf(":root {"), css.indexOf(":root[data-theme"));
 
-function tokens(block: string): Record<string, string> {
+/** Each token written as light-dark(#light, #dark), or one colour for both. */
+function tokens(which: 0 | 1): Record<string, string> {
   const found: Record<string, string> = {};
-  for (const match of block.matchAll(/--([a-z-]+):\s*(#[0-9a-f]{6});/g)) {
+  for (const match of rootBlock.matchAll(
+    /--([a-z-]+):\s*light-dark\((#[0-9a-f]{6}),\s*(#[0-9a-f]{6})\);/g,
+  )) {
+    found[match[1] ?? ""] = (which === 0 ? match[2] : match[3]) ?? "";
+  }
+  for (const match of rootBlock.matchAll(/--([a-z-]+):\s*(#[0-9a-f]{6});/g)) {
     found[match[1] ?? ""] = match[2] ?? "";
   }
   return found;
 }
 
+function colour(theme: Record<string, string>, name: string): string {
+  const value = theme[name];
+  if (value === undefined) throw new Error(`No token called ${name}`);
+  return value;
+}
+
 const c = brand.colors;
 const light: Record<string, string> = {
-  ...tokens(css.slice(0, darkStart)),
+  ...tokens(0),
   primary: c.primary,
   "primary-foreground": c.primaryForeground,
   sun: c.sun,
@@ -44,10 +55,10 @@ const light: Record<string, string> = {
   dusk: c.dusk,
   neem: c.neem,
   night: c.night,
+  "night-raised": "#231a40",
 };
 const dark: Record<string, string> = {
-  ...light,
-  ...tokens(css.slice(darkStart, themeStart)),
+  ...tokens(1),
   primary: c.primaryDark,
   "primary-foreground": c.primaryForegroundDark,
   sun: c.sunDark,
@@ -57,13 +68,8 @@ const dark: Record<string, string> = {
   dusk: c.duskDark,
   neem: c.neemDark,
   night: c.nightDark,
+  "night-raised": "#160f29",
 };
-
-function colour(theme: Record<string, string>, name: string): string {
-  const value = theme[name];
-  if (value === undefined) throw new Error(`No token called ${name}`);
-  return value;
-}
 
 const text: readonly (readonly [string, string])[] = [
   ["foreground", "background"],
@@ -110,8 +116,10 @@ describe.each([
   });
 });
 
+const lightInput = /--input:\s*light-dark\((#[0-9a-f]{6})/u.exec(rootBlock)?.[1] ?? "";
+
 describe("controls in the light theme", () => {
   it.each(["background", "surface", "card"])("the control border keeps 3:1 on %s", (bg) => {
-    expect(contrast(colour(light, "input"), colour(light, bg))).toBeGreaterThanOrEqual(3);
+    expect(contrast(lightInput, colour(light, bg))).toBeGreaterThanOrEqual(3);
   });
 });

@@ -1,6 +1,6 @@
 /**
  * The only place the brand lives (CLAUDE.md): its name, which the founders chose on 2026-10-28,
- * and its colours, Golden hour, which they chose on 2026-11-08. Copy, including the tagline, lives
+ * and its colours: Golden hour (2026-11-08), brightened to dusk violet on 2026-11-12 at the founders' word that pages felt dull. Copy, including the tagline, lives
  * in the message files so it can be translated; facts about the company behind it live in
  * company.ts.
  *
@@ -11,36 +11,36 @@
 export const brand = {
   name: "Fix Your Stay",
   colors: {
-    /** Deep ink: the actions, and the page's weight. In the dark theme, marigold takes this role. */
-    primary: "#1e2b45",
+    /** Dusk violet: the actions, and the page's character. In the dark theme, a soft lavender. */
+    primary: "#5b2bb5",
     primaryForeground: "#ffffff",
-    primaryDark: "#f2b24c",
-    primaryForegroundDark: "#1a1204",
+    primaryDark: "#c9b3ff",
+    primaryForegroundDark: "#1b0a3a",
     /** The marigold fill, for the one action that matters most on a screen. */
-    sun: "#f0a93b",
-    sunForeground: "#1e1405",
-    sunDark: "#f2b24c",
-    sunForegroundDark: "#1a1204",
-    /** Marigold deep enough to read as text on ivory. */
-    marigold: "#a55f00",
-    marigoldDark: "#f5c46e",
-    /** The last of the sunset: warmth, and things that need a second look. */
-    ember: "#b2431f",
-    emberDark: "#ff9d7d",
-    /** Blue-grey dusk: structure, policies and protection. */
-    dusk: "#34466f",
-    duskDark: "#a9bbe3",
+    sun: "#f6a623",
+    sunForeground: "#231403",
+    sunDark: "#f7b23e",
+    sunForegroundDark: "#1c1203",
+    /** A deep orange that reads as text on the light ground. */
+    marigold: "#c2410c",
+    marigoldDark: "#fdba74",
+    /** Coral rose: warmth, and things that need a second look. */
+    ember: "#be2550",
+    emberDark: "#ff8fa3",
+    /** Teal: the second Metro line, structure and calm. */
+    dusk: "#0e7490",
+    duskDark: "#67d4e8",
     /** Neem green: verified, safe, done. */
-    neem: "#256b4c",
-    neemDark: "#7cd3a6",
+    neem: "#15803d",
+    neemDark: "#6ee7a8",
     /** The evening band, which stays dark in both themes. */
-    night: "#121827",
-    nightDark: "#080b11",
+    night: "#160f2b",
+    nightDark: "#0b0716",
   },
   /** Page backgrounds, for the browser's theme colour; they match --background in globals.css. */
   surfaces: {
-    light: "#fbf8f2",
-    dark: "#0d1119",
+    light: "#faf8ff",
+    dark: "#0f0b1c",
   },
 } as const;
 

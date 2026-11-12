@@ -29,10 +29,8 @@ test.describe("on a phone", () => {
     await menu.getByRole("link", { name: "PG owners" }).click();
 
     await expect(menu).toBeHidden();
-    await expect(page).toHaveURL(/\/#owners$/);
-    const owners = page.locator("#owners");
-    await expect(owners).toBeFocused();
-    await expect(owners).toBeInViewport();
+    await expect(page).toHaveURL(/\/owners$/);
+    await expect(page.getByRole("heading", { level: 1, name: "For PG owners" })).toBeVisible();
   });
 
   test("Escape closes the menu and returns focus to its button", async ({ page }) => {
@@ -53,7 +51,7 @@ test.describe("on a desktop", () => {
     test.skip(isMobile, "the header shows its links on wide screens");
   });
 
-  test("the header links go to their sections", async ({ page }) => {
+  test("the header links open their pages", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("button", { name: "Open menu" })).toBeHidden();
 
@@ -63,7 +61,9 @@ test.describe("on a desktop", () => {
       .getByRole("link", { name: "Students and parents" })
       .click();
 
-    await expect(page).toHaveURL(/\/#students$/);
-    await expect(page.locator("#students")).toBeInViewport();
+    await expect(page).toHaveURL(/\/students$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "For students and parents" }),
+    ).toBeVisible();
   });
 });

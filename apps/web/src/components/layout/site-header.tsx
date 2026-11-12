@@ -9,6 +9,7 @@ import { ACCOUNT_PATH, SIGN_IN_PATH, STAFF_HOME_PATH } from "@/lib/auth/routes";
 import { getSessionForHeader, isStaff } from "@/lib/auth/session";
 
 import { MobileNav } from "./mobile-nav";
+import { ThemeToggle } from "./theme-toggle";
 import { type NavigationLink, navigationItems } from "./navigation";
 
 export async function SiteHeader() {
@@ -54,6 +55,7 @@ export async function SiteHeader() {
           </ul>
         </nav>
         <div className="flex items-center gap-1.5">
+          <ThemeToggle label={tHeader("theme")} />
           <Link
             href={accountLink.href}
             className={buttonVariants({

@@ -3,11 +3,13 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Eczar, Inter } from "next/font/google";
 import localFont from "next/font/local";
+import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { ErrorTextProvider } from "@/components/layout/error-text";
+import { THEME_COOKIE } from "@/components/layout/theme-toggle";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { Analytics } from "@/components/system/analytics";
 import { ApiWakerLazy } from "@/components/system/api-waker-lazy";
@@ -85,12 +87,16 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
   const t = await getTranslations("Layout");
   const tError = await getTranslations("Error");
+  // The light or dark the visitor chose with the header's switch; none means the system's.
+  const chosen = (await cookies()).get(THEME_COOKIE)?.value;
+  const theme = chosen === "light" || chosen === "dark" ? chosen : undefined;
 
   // Client components get their text translated on the server, as props or (for the error page,
   // which can't take props) through ErrorTextProvider, so the browser ships no message formatter.
   return (
     <html
       lang={locale}
+      data-theme={theme}
       className={`${rupee.variable} ${sans.variable} ${display.variable}`}
       style={brandStyle}
     >
