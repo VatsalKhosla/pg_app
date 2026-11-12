@@ -46,6 +46,11 @@ const PinPreview = dynamic(() => import("./pin-preview").then((module) => module
 
 // The desktop's split view starts here (Tailwind's lg); below it, the list comes first.
 const DESKTOP = "(min-width: 1024px)";
+const WIDE = "(min-width: 1280px)";
+// How much of the map the floating list covers, in pixels (its width and margin), so the map
+// centres what it shows in the part people can see.
+const DESKTOP_INSET_PX = 496;
+const WIDE_INSET_PX = 560;
 // How long the map rests before its area counts (ARCHITECTURE §10.3).
 const SETTLE_MS = 300;
 // A locality has no outline yet, so the map shows this far around its centre.
@@ -155,6 +160,7 @@ export function SearchExperience({
   );
 
   const isDesktop = useMediaQuery(DESKTOP);
+  const isWide = useMediaQuery(WIDE);
   const onPhoneMap = !isDesktop && state.view === "map";
   const mapShown = hasSearchMap && (isDesktop || state.view === "map");
 
@@ -295,14 +301,16 @@ export function SearchExperience({
   return (
     <div
       className={cn(
-        hasSearchMap &&
-          "lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,36rem)_minmax(0,1fr)]",
+        // On a desktop the map fills the window, under the header, and the list floats over it.
+        hasSearchMap && "lg:relative lg:-mt-[4.75rem] lg:h-dvh",
       )}
     >
       <div
         className={cn(
           "space-y-4 px-4 pt-4 pb-24 sm:px-6 lg:pb-10",
           !hasSearchMap && "mx-auto w-full max-w-3xl",
+          hasSearchMap &&
+            "map-glass lg:absolute lg:top-[5.75rem] lg:bottom-4 lg:left-4 lg:z-10 lg:w-[30rem] lg:overflow-y-auto lg:rounded-[2rem] lg:px-5 xl:w-[34rem]",
           state.view === "map" && "max-lg:hidden",
         )}
       >
@@ -317,7 +325,7 @@ export function SearchExperience({
             if (event.key === "Escape" && selectedId !== null) closePreview();
           }}
           className={cn(
-            "lg:sticky lg:top-0 lg:-mt-[4.75rem] lg:h-dvh lg:border-l",
+            "lg:absolute lg:inset-0",
             state.view === "map"
               ? "max-lg:fixed max-lg:inset-x-0 max-lg:top-[5.25rem] max-lg:bottom-0 max-lg:z-30 max-lg:bg-background"
               : "max-lg:hidden",
@@ -339,12 +347,13 @@ export function SearchExperience({
                 target={target}
                 text={mapText}
                 shortPrice={shortRupees}
+                insetLeft={isDesktop ? (isWide ? WIDE_INSET_PX : DESKTOP_INSET_PX) : 0}
               />
             ) : (
               <div className="h-full w-full bg-muted" />
             )}
             {/* The strip lets the map have its empty space: only its controls take presses. */}
-            <div className="pointer-events-none absolute top-3 right-14 left-3 z-10 flex flex-wrap lg:top-[5.5rem] items-start gap-2 *:pointer-events-auto">
+            <div className="pointer-events-none absolute top-3 right-14 left-3 z-10 flex flex-wrap items-start gap-2 *:pointer-events-auto lg:top-[5.75rem] lg:left-[32.5rem] xl:left-[36.5rem]">
               <Button
                 variant="outline"
                 size="sm"
@@ -396,7 +405,7 @@ export function SearchExperience({
                 pin={selectedPin}
                 card={cards.find((card) => card.id === selectedPin.id)}
                 onClose={closePreview}
-                className="absolute inset-x-3 bottom-31 z-20 lg:right-auto lg:bottom-4 lg:left-4 lg:w-96"
+                className="absolute inset-x-3 bottom-31 z-20 lg:right-16 lg:bottom-6 lg:left-auto lg:w-96"
               />
             )}
             {onPhoneMap ? (

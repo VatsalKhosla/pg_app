@@ -45,7 +45,7 @@ Our database is in India (Mumbai). Some companies that work for us, such as for 
 
 ## 6. Your rights
 
-- **See and get a copy** of your data: download it from your [account page](/account).
+- **See and get a copy** of your data: ask us from the [contact page](/contact), and we'll send it to you.
 - **Correct it**: change your details on your account page, or ask us.
 - **Delete it**: ask for your account's deletion from your account page. We'll keep only what the law requires us to.
 - **Withdraw consent** to optional messages at any time.

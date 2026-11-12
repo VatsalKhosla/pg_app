@@ -80,7 +80,7 @@ export function BottomSheet({
       }}
       style={dragHeight === null ? undefined : { height: `${String(dragHeight)}px` }}
       className={cn(
-        "absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-3xl border-t bg-background shadow-xl",
+        "absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-3xl border-t bg-background/90 shadow-xl backdrop-blur-xl",
         dragHeight === null &&
           "motion-safe:transition-[height] motion-safe:duration-(--duration-slow) motion-safe:ease-emphasized",
         heights[snap],

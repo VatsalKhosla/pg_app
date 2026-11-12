@@ -354,6 +354,35 @@
 }
 
 /*
+ * The list over the search map: enough of the map shows through to keep its place in view, and
+ * enough of the page's ground stays to keep every word readable. Solid where blur isn't available.
+ */
+@utility map-glass {
+  @media (min-width: 64rem) {
+    background-color: var(--background);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-xl);
+
+    @supports (backdrop-filter: blur(1px)) {
+      background-color: light-dark(rgb(250 248 255 / 70%), rgb(15 11 28 / 78%));
+      -webkit-backdrop-filter: blur(12px) saturate(1.5);
+      backdrop-filter: blur(12px) saturate(1.5);
+    }
+
+    & form[role="search"] {
+      top: 0.5rem;
+    }
+  }
+}
+
+/* The search map's own buttons sit below the floating header on a desktop. */
+@media (min-width: 64rem) {
+  .search-map .maplibregl-ctrl-top-right {
+    top: 5.5rem;
+  }
+}
+
+/*
  * Frosted glass, for a surface something really passes behind. Where blur isn't available the fill
  * goes solid, so text never loses its contrast.
  */

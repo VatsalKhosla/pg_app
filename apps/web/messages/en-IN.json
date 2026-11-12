@@ -257,7 +257,7 @@
     "staffTools": "Go to staff tools",
     "ownerArea": "Go to the owner area",
     "dataTitle": "Your data",
-    "dataIntro": "Get a copy of everything we keep about you, or ask for your account's deletion.",
+    "dataIntro": "Ask for your account's deletion. We'll keep only what the law requires us to.",
     "exportButton": "Get a copy of my data",
     "deletionButton": "Ask for my account's deletion",
     "deletionConfirm": "Ask our team to delete your account? They'll call you to confirm, and tell you what the law makes us keep.",
@@ -279,7 +279,13 @@
     "marketingSaved": "Saved.",
     "marketingFailed": "That didn't save. Please try again.",
     "visits": "Your visits",
-    "bookings": "Your bookings"
+    "bookings": "Your bookings",
+    "copyHint": "Need a copy of your data? Ask us from the contact page.",
+    "jumpTo": "Jump to a section",
+    "staysTitle": "Your stays",
+    "staysIntro": "Your visits and bookings, and the places you manage.",
+    "sessionTitle": "Signing out",
+    "greeting": "Signed in as {who}"
   },
   "Owner": {
     "metaTitle": "Owner area",

@@ -146,6 +146,7 @@ export default function MapLibreMapView({
   target,
   text,
   shortPrice,
+  insetLeft = 0,
 }: MapViewProps & { tiles: MapTiles; shortPrice: ShortPrice }) {
   const [failed, setFailed] = useState(false);
   const [tilted, setTilted] = useState(false);
@@ -176,7 +177,8 @@ export default function MapLibreMapView({
    */
   const drawMarkers = useCallback(() => {
     const map = mapRef.current;
-    if (!map?.isSourceLoaded("pins")) return;
+    // A move can come before the style has added the source (setting the padding, say).
+    if (map?.getSource("pins") === undefined || !map.isSourceLoaded("pins")) return;
     const source = map.getSource<GeoJSONSource>("pins");
     if (source === undefined) return;
     const shown = new Set<string>();
@@ -377,6 +379,11 @@ export default function MapLibreMapView({
     highlight(markersRef.current, highlightRef.current);
   }, [selectedId, hoveredId]);
 
+  // What the floating list covers stays out of the map's centre and its fitted views.
+  useEffect(() => {
+    mapRef.current?.setPadding({ top: 0, bottom: 0, right: 0, left: insetLeft });
+  }, [insetLeft]);
+
   if (failed) {
     return (
       <p className="m-4 rounded-md border border-dashed bg-background p-4 text-sm text-muted-foreground">
@@ -396,10 +403,10 @@ export default function MapLibreMapView({
   }
 
   return (
-    <div className="relative h-full min-h-72 w-full">
+    <div className="search-map relative h-full min-h-72 w-full">
       <div
         ref={attach}
-        className="h-full w-full overflow-hidden [&_.maplibregl-ctrl-attrib_a]:underline! lg:[&_.maplibregl-ctrl-top-right]:top-22"
+        className="h-full w-full overflow-hidden [&_.maplibregl-ctrl-attrib_a]:underline!"
       />
       {/* A desktop's flourish: on a phone the map keeps every pixel flat and readable. */}
       <button

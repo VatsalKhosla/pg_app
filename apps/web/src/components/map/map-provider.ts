@@ -137,6 +137,8 @@ export interface MapViewProps {
   /** A place to show, such as a campus just chosen: the map goes there whenever its key changes. */
   target: { key: string; bounds: Bounds } | null;
   text: MapViewText;
+  /** Pixels of the map hidden on the left (a list floating over it), kept out of what it centres. */
+  insetLeft?: number;
 }
 
 /** Turns a cluster's price into its label; the adapter doesn't format money itself. */

@@ -27,11 +27,14 @@ export interface DataRequestsText {
  * kept for a week, and their account's deletion, which the team handles.
  */
 export function DataRequests({
+  allowExport = true,
   text,
   initial,
   apiOrigin,
   formatDate,
 }: {
+  /** Offer the copy of the data here; the account page sends people to contact instead. */
+  allowExport?: boolean;
   text: DataRequestsText;
   initial: readonly DataRequest[];
   apiOrigin: string;
@@ -75,17 +78,19 @@ export function DataRequests({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          shape="pill"
-          disabled={busy}
-          onClick={() => {
-            ask("export");
-          }}
-        >
-          {text.exportButton}
-        </Button>
+        {allowExport ? (
+          <Button
+            type="button"
+            variant="outline"
+            shape="pill"
+            disabled={busy}
+            onClick={() => {
+              ask("export");
+            }}
+          >
+            {text.exportButton}
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="outline"
