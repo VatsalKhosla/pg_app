@@ -8,6 +8,10 @@ async function loadProxy() {
   return import("@/proxy");
 }
 
+function escape(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+}
+
 function nonceOf(policy: string | null): string | undefined {
   return /'nonce-([^']+)'/.exec(policy ?? "")?.[1];
 }
@@ -60,6 +64,41 @@ describe("proxy", () => {
       "";
 
     expect(policy).not.toContain("tile");
+  });
+
+  it("opens the policy to Google's map only once its key and map ID are set", async () => {
+    const policyOf = async () => {
+      const { proxy } = await loadProxy();
+      return (
+        proxy(new NextRequest("https://www.example.test/")).headers.get(
+          "content-security-policy",
+        ) ?? ""
+      );
+    };
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", "fake-browser-key-for-unit-tests-0001");
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID", "");
+    const keyOnly = await policyOf();
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID", "8e0a97af9386fef");
+    const policy = await policyOf();
+    const { GOOGLE_MAPS_CSP } = await loadProxy();
+
+    for (const origin of ["googleapis.com", "gstatic.com", "wasm-unsafe-eval"]) {
+      expect(keyOnly).not.toContain(origin);
+    }
+    expect(policy).toContain(`connect-src 'self' `);
+    for (const origin of GOOGLE_MAPS_CSP.connect) {
+      expect(policy).toMatch(new RegExp(`connect-src [^;]*${escape(origin)}`, "u"));
+    }
+    for (const origin of GOOGLE_MAPS_CSP.image) {
+      expect(policy).toMatch(new RegExp(`img-src [^;]*${escape(origin)}`, "u"));
+    }
+    expect(policy).toContain("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;");
+    expect(policy).toContain("font-src 'self' https://fonts.gstatic.com;");
+    expect(policy).toContain("frame-src https://*.google.com;");
+    // Google's scripts need no origin: its loader carries the nonce, and 'strict-dynamic' trusts
+    // what that loads. Eval stays blocked.
+    expect(policy).toMatch(/script-src 'self' 'nonce-[^']+' 'strict-dynamic' 'wasm-unsafe-eval';/u);
+    expect(policy).not.toContain("'unsafe-eval'");
   });
 
   it("opens the policy for Razorpay's checkout on the payment page and nowhere else", async () => {

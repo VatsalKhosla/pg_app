@@ -12,20 +12,55 @@ const sentry =
 
 const tilesOrigin =
   publicEnv.mapTiles === undefined ? [] : [new URL(publicEnv.mapTiles.url).origin];
+/**
+ * Google's map, once its key is set (ADR 0069), as Google's CSP guide lists its origins. Its
+ * scripts need nothing here: the loader adds the first with the page's nonce, and
+ * 'strict-dynamic' trusts what that one loads. Its tiles, data and worker come from its API
+ * origins (the vector map also reads data: and blob: URLs it makes), its font from Google Fonts,
+ * and its usage reports go to google.com.
+ */
+export const GOOGLE_MAPS_CSP = {
+  connect: [
+    "https://*.googleapis.com",
+    "https://*.gstatic.com",
+    "https://*.google.com",
+    "data:",
+    "blob:",
+  ],
+  image: [
+    "https://*.googleapis.com",
+    "https://*.gstatic.com",
+    "https://*.google.com",
+    "https://*.googleusercontent.com",
+  ],
+  style: ["https://fonts.googleapis.com"],
+  font: ["https://fonts.gstatic.com"],
+  frame: ["https://*.google.com"],
+} as const;
+const google = publicEnv.googleMaps !== undefined;
 const connectOrigins = [
   publicEnv.apiUrl.origin,
   publicEnv.uploadOrigin.origin,
   ...tilesOrigin,
+  ...(google ? GOOGLE_MAPS_CSP.connect : []),
   ...(sentry === undefined ? [] : [sentry.origin]),
 ];
 // Listing media from the CDN; private files (verification photos) through links signed on the
-// private bucket's storage, the upload origin; and the map tiles.
+// private bucket's storage, the upload origin; and the map's tiles.
 const imageOrigins = [
-  ...new Set([publicEnv.mediaUrl.origin, publicEnv.uploadOrigin.origin, ...tilesOrigin]),
+  ...new Set([
+    publicEnv.mediaUrl.origin,
+    publicEnv.uploadOrigin.origin,
+    ...tilesOrigin,
+    ...(google ? GOOGLE_MAPS_CSP.image : []),
+  ]),
 ];
 /** Cloudflare Turnstile's challenge runs in a frame from here (src/components/auth/turnstile.tsx). */
 export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
-const frameOrigins = publicEnv.turnstileSiteKey === undefined ? [] : [TURNSTILE_ORIGIN];
+const frameOrigins = [
+  ...(publicEnv.turnstileSiteKey === undefined ? [] : [TURNSTILE_ORIGIN]),
+  ...(google ? GOOGLE_MAPS_CSP.frame : []),
+];
 /**
  * Razorpay's checkout, only on the page where a student pays (ADR 0056). Its script comes through
  * 'strict-dynamic'; it runs in a frame from one origin, and reports from the page to another.
@@ -66,6 +101,9 @@ export function proxy(request: NextRequest): NextResponse {
     connectOrigins: paying ? [...connectOrigins, CHECKOUT_CONNECT_ORIGIN] : connectOrigins,
     imageOrigins,
     frameOrigins: paying ? [...frameOrigins, CHECKOUT_FRAME_ORIGIN] : frameOrigins,
+    styleOrigins: google ? GOOGLE_MAPS_CSP.style : [],
+    fontOrigins: google ? GOOGLE_MAPS_CSP.font : [],
+    webAssembly: google,
     reportUrl: sentry?.securityReportUrl,
   });
 
