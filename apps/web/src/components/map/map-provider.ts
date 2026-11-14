@@ -1,12 +1,17 @@
 /**
- * The map provider interface (ADR 0006, 0023). Pages and forms use these components and types
- * only; a vendor's SDK is imported inside its adapter alone, and each adapter is loaded on demand.
+ * The map provider interface (ADR 0006, 0023, 0069). Pages and forms use these components and
+ * types only; a vendor's SDK is imported inside its adapter alone, and each adapter is loaded on
+ * demand. Two adapters implement it: Google Maps once its key and map ID are set, and MapLibre
+ * with raster tiles otherwise (choice.ts).
  *
  * `PinPicker` puts one pin on a building. Ops drag it, click or tap where it goes (so nobody has
  * to drag, WCAG 2.2 2.5.7), or move it with the arrow keys once it has focus. `LocationMap` shows
  * a PG's approximate area on its page (step 3.4): a circle around the display point, never a pin.
  * `MapView` is the search map (step 3.5): price pins that cluster, campuses (with rings around the
  * one searched near) and metro stations, locked to NCR.
+ *
+ * Gestures and motion are the same on both (gestures.ts). Zoom levels here are MapLibre's, counted
+ * in 512 px tiles; Google's adapter converts its own, which run one higher.
  */
 
 export interface LatLng {
@@ -114,6 +119,8 @@ export interface MapViewText {
   /** The desktop's button that tips the map back for depth, and lays it flat again. */
   tilt: string;
   flatten: string;
+  /** The credit for the campuses and stations, which come from OpenStreetMap (ADR 0020). */
+  osmCredit: string;
 }
 
 export interface MapViewProps {
@@ -122,8 +129,9 @@ export interface MapViewProps {
   selectedId: string | null;
   hoveredId: string | null;
   /**
-   * The map came to rest: its area and zoom, and whether the person moved it (dragging, zooming,
-   * the keys, a cluster) rather than the page (loading, or showing a place it was given).
+   * The map came to rest: its area and zoom (MapLibre's numbering, which the search API takes),
+   * and whether the person moved it (dragging, zooming, the keys, a cluster) rather than the page
+   * (loading, or showing a place it was given).
    */
   onBoundsChange: (bounds: Bounds, zoom: number, byPerson: boolean) => void;
   onPinSelect: (id: string) => void;
