@@ -2,7 +2,6 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import { Rotate3d } from "lucide-react";
 import {
   type GeoJSONFeature,
   type GeoJSONSource,
@@ -19,6 +18,7 @@ import { brand } from "@/config/brand";
 import type { MapTiles } from "@/config/env";
 
 import { circle } from "../circle";
+import { cooperative, prefersStillness } from "../gestures";
 import {
   type Bounds,
   type MapPin,
@@ -27,6 +27,8 @@ import {
   NCR_BOUNDS,
   type ShortPrice,
 } from "../map-provider";
+import { itemWords, mapItem, pinFeatures } from "../pin-words";
+import { TiltButton } from "../tilt-button";
 
 // As in the pin picker: the bundler emits MapLibre's worker as a file of its own.
 setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).toString());
@@ -56,20 +58,7 @@ const TILT_BEARING = -14;
 const TILT_MS = 900;
 
 function features(pins: readonly MapPin[]) {
-  return {
-    type: "FeatureCollection" as const,
-    features: pins.map((pin) => ({
-      type: "Feature" as const,
-      geometry: { type: "Point" as const, coordinates: [pin.position.lng, pin.position.lat] },
-      properties: {
-        id: pin.id,
-        label: pin.label,
-        description: pin.description,
-        verified: pin.verified,
-        minRent: pin.minRentPaise,
-      },
-    })),
-  };
+  return { type: "FeatureCollection" as const, features: pinFeatures(pins) };
 }
 
 /** The rings around the campus searched near, if any. */
@@ -286,7 +275,8 @@ export default function MapLibreMapView({
           minZoom: MIN_ZOOM,
           maxZoom: MAX_ZOOM,
           maxBounds: lngLatBounds(NCR_BOUNDS),
-          cooperativeGestures: true,
+          // The map fills its screen: the wheel and one finger move it (ADR 0069).
+          cooperativeGestures: cooperative("fills-screen"),
           dragRotate: false,
           pitchWithRotate: false,
           touchPitch: false,
@@ -394,11 +384,10 @@ export default function MapLibreMapView({
   function toggleTilt() {
     const next = !tilted;
     setTilted(next);
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     mapRef.current?.easeTo({
       pitch: next ? TILT_PITCH : 0,
       bearing: next ? TILT_BEARING : 0,
-      duration: still ? 0 : TILT_MS,
+      duration: prefersStillness() ? 0 : TILT_MS,
     });
   }
 
@@ -408,17 +397,7 @@ export default function MapLibreMapView({
         ref={attach}
         className="h-full w-full overflow-hidden [&_.maplibregl-ctrl-attrib_a]:underline!"
       />
-      {/* A desktop's flourish: on a phone the map keeps every pixel flat and readable. */}
-      <button
-        type="button"
-        onClick={toggleTilt}
-        aria-pressed={tilted}
-        aria-label={tilted ? text.flatten : text.tilt}
-        title={tilted ? text.flatten : text.tilt}
-        className="absolute top-[10.5rem] right-2.5 z-10 hidden size-[29px] place-items-center rounded-[4px] bg-background text-foreground shadow-[0_0_0_2px_rgb(0_0_0/10%)] outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-primary aria-pressed:text-primary-foreground lg:grid"
-      >
-        <Rotate3d aria-hidden="true" className="size-4" />
-      </button>
+      <TiltButton tilted={tilted} onToggle={toggleTilt} text={text} />
     </div>
   );
 }
@@ -428,46 +407,31 @@ function pointOf(feature: GeoJSONFeature): [number, number] {
 }
 
 function markerKey(feature: GeoJSONFeature): string | null {
-  const properties = feature.properties as Record<string, unknown>;
-  if (properties.cluster === true) return `cluster:${String(properties.cluster_id)}`;
-  return typeof properties.id === "string" ? `pin:${properties.id}` : null;
+  return mapItem(feature.properties, pointOf(feature))?.key ?? null;
 }
 
-/**
- * A button's words: what it shows, then the rest for screen readers. Its name starts with what
- * it shows, so voice control finds it by that (WCAG 2.2 2.5.3).
- */
-function say(button: HTMLElement, shown: string, more: string): void {
-  button.textContent = shown;
-  button.setAttribute("aria-label", `${shown}, ${more}`);
-}
-
-/** What a pin's or cluster's button says, which pin or cluster it is, and where. */
+/** What a pin's or cluster's button says (pin-words.ts), which pin or cluster it is, and where. */
 function describe(
   button: HTMLElement,
   feature: GeoJSONFeature,
   { shortPrice, text }: Pick<Callbacks, "shortPrice" | "text">,
 ): void {
-  const properties = feature.properties as Record<string, unknown>;
   const [lng, lat] = pointOf(feature);
   button.dataset.lng = String(lng);
   button.dataset.lat = String(lat);
-  if (properties.cluster === true) {
-    const count = String(properties.point_count);
-    const price = shortPrice(Number(properties.minRent));
+  const item = mapItem(feature.properties, [lng, lat]);
+  if (item === null) return;
+  const { shown, name } = itemWords(item, text, shortPrice);
+  button.textContent = shown;
+  button.setAttribute("aria-label", name);
+  if (item.kind === "cluster") {
     button.className = clusterClasses;
-    say(
-      button,
-      `${count} · ${price}`,
-      text.cluster.replace("{count}", count).replace("{price}", price),
-    );
-    button.dataset.clusterId = String(properties.cluster_id);
+    button.dataset.clusterId = String(item.clusterId);
     return;
   }
   button.className = pinClasses;
-  button.dataset.pinId = String(properties.id);
-  button.dataset.verified = String(properties.verified === true);
-  say(button, String(properties.label), String(properties.description));
+  button.dataset.pinId = item.id;
+  button.dataset.verified = String(item.verified);
 }
 
 /**

@@ -85,6 +85,32 @@ export function parseMapTiles(
   return { url, attribution: escapeHtml(attribution) };
 }
 
+/** Google Maps (ADR 0069): a browser key and the map ID its vector style and pins need. */
+export interface GoogleMapsConfig {
+  /** Restricted by HTTP referrer and to the Maps JavaScript API: public by design. */
+  apiKey: string;
+  /** A JavaScript vector map ID from Google Cloud: pins drawn as HTML need one. */
+  mapId: string;
+}
+
+/**
+ * Google's map, when both values are set; MapLibre with the tiles otherwise. A value that can't be
+ * a key or an ID (a pasted quote or space, say) stops the build rather than breaking the map.
+ */
+export function parseGoogleMaps(
+  apiKey: string | undefined,
+  mapId: string | undefined,
+): GoogleMapsConfig | undefined {
+  if (apiKey === undefined || mapId === undefined) return undefined;
+  if (!/^[\w-]{30,100}$/u.test(apiKey)) {
+    throw new Error("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY must be a Google API key, as Cloud shows it");
+  }
+  if (!/^[\w-]{1,64}$/u.test(mapId)) {
+    throw new Error("NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID must be a map ID, as Cloud shows it");
+  }
+  return { apiKey, mapId };
+}
+
 const appEnv = parseEnvironment(process.env.NEXT_PUBLIC_APP_ENV);
 
 // Each variable is written out in full: Next.js inlines only literal process.env.NEXT_PUBLIC_*.
@@ -134,10 +160,18 @@ export const publicEnv = {
     process.env.NEXT_PUBLIC_UPLOAD_ORIGIN,
     "http://127.0.0.1:8333",
   ),
-  /** The ops pin picker's map tiles, if it gets a map (see parseMapTiles). */
+  /**
+   * MapLibre's raster tiles for every map, if there are any (see parseMapTiles): the maps' only
+   * tiles without Google, and what they fall back to if Google's map fails to load.
+   */
   mapTiles: parseMapTiles(
     optional(process.env.NEXT_PUBLIC_MAP_TILES_URL),
     optional(process.env.NEXT_PUBLIC_MAP_TILES_ATTRIBUTION),
     appEnv,
+  ),
+  /** Google's map for every map, once both are set (see parseGoogleMaps). */
+  googleMaps: parseGoogleMaps(
+    optional(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
+    optional(process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID),
   ),
 } as const;

@@ -54,6 +54,34 @@ describe("buildContentSecurityPolicy", () => {
     expect(policy.get("connect-src")).toEqual(["'self'", "https://api.example.test"]);
   });
 
+  it("adds stylesheet and font origins, and WebAssembly, only when asked", () => {
+    const plain = directives(buildContentSecurityPolicy(production));
+    const withMap = directives(
+      buildContentSecurityPolicy({
+        ...production,
+        styleOrigins: ["https://fonts.googleapis.com"],
+        fontOrigins: ["https://fonts.gstatic.com"],
+        webAssembly: true,
+      }),
+    );
+
+    expect(plain.get("style-src")).toEqual(["'self'", "'unsafe-inline'"]);
+    expect(withMap.get("style-src")).toEqual([
+      "'self'",
+      "'unsafe-inline'",
+      "https://fonts.googleapis.com",
+    ]);
+    expect(withMap.get("font-src")).toEqual(["'self'", "https://fonts.gstatic.com"]);
+    // WebAssembly only: JavaScript's eval stays blocked, and scripts still need the nonce.
+    expect(withMap.get("script-src")).toEqual([
+      "'self'",
+      "'nonce-abc123=='",
+      "'strict-dynamic'",
+      "'wasm-unsafe-eval'",
+    ]);
+    expect(plain.get("script-src")).not.toContain("'wasm-unsafe-eval'");
+  });
+
   it("upgrades insecure requests only when asked", () => {
     expect(buildContentSecurityPolicy(production)).toContain("upgrade-insecure-requests");
     expect(

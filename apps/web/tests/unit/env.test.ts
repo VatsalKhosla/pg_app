@@ -89,3 +89,36 @@ describe("parseMapTiles", () => {
     );
   });
 });
+
+describe("parseGoogleMaps", () => {
+  const key = "fake-browser-key-for-unit-tests-0001";
+
+  it("turns Google's map on only when both the key and the map ID are set", async () => {
+    const { parseGoogleMaps } = await loadParser();
+
+    expect(parseGoogleMaps(key, "8e0a97af9386fef")).toEqual({
+      apiKey: key,
+      mapId: "8e0a97af9386fef",
+    });
+    expect(parseGoogleMaps(key, undefined)).toBeUndefined();
+    expect(parseGoogleMaps(undefined, "8e0a97af9386fef")).toBeUndefined();
+    expect(parseGoogleMaps(undefined, undefined)).toBeUndefined();
+  });
+
+  it("stops the build on a value that can't be a key or a map ID", async () => {
+    const { parseGoogleMaps } = await loadParser();
+
+    expect(() => parseGoogleMaps(`"${key}"`, "8e0a97af9386fef")).toThrow(/API_KEY/);
+    expect(() => parseGoogleMaps("short", "8e0a97af9386fef")).toThrow(/API_KEY/);
+    expect(() => parseGoogleMaps(key, "8e0a97af 9386fef")).toThrow(/MAP_ID/);
+  });
+
+  it("reads both from the environment, empty meaning unset", async () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", key);
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID", "");
+    expect((await loadEnv()).googleMaps).toBeUndefined();
+
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID", "8e0a97af9386fef");
+    expect((await loadEnv()).googleMaps).toEqual({ apiKey: key, mapId: "8e0a97af9386fef" });
+  });
+});

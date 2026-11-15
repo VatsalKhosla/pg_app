@@ -9,6 +9,7 @@ import { brand } from "@/config/brand";
 import type { MapTiles } from "@/config/env";
 
 import { circle } from "../circle";
+import { cooperative } from "../gestures";
 import { type LocationMapProps, NCR_BOUNDS } from "../map-provider";
 
 // As in the pin picker: the bundler emits MapLibre's worker as a file of its own.
@@ -76,7 +77,9 @@ export default function MapLibreLocationMap({
             [NCR_BOUNDS.west, NCR_BOUNDS.south],
             [NCR_BOUNDS.east, NCR_BOUNDS.north],
           ],
-          cooperativeGestures: true,
+          // On a touch screen one finger scrolls the page past the map and two move it; a mouse's
+          // wheel zooms it straight away (ADR 0069).
+          cooperativeGestures: cooperative("in-page"),
           dragRotate: false,
           pitchWithRotate: false,
           touchPitch: false,

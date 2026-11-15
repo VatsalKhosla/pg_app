@@ -271,6 +271,7 @@ export function SearchExperience({
       campus: t.raw("map.campus") as string,
       tilt: t("map.tilt"),
       flatten: t("map.flatten"),
+      osmCredit: t("map.osmCredit"),
     }),
     [t],
   );

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { MapTiles } from "@/config/env";
 
+import { cooperative } from "../gestures";
 import { type LatLng, NCR_BOUNDS, type PinPickerProps, roundCoordinate } from "../map-provider";
 
 // The bundler emits MapLibre's worker as a hashed file of its own, under both Turbopack and
@@ -85,8 +86,9 @@ export default function MapLibrePinPicker({
             [NCR_BOUNDS.west, NCR_BOUNDS.south],
             [NCR_BOUNDS.east, NCR_BOUNDS.north],
           ],
-          // One finger scrolls the page past the map on a phone; two move the map.
-          cooperativeGestures: true,
+          // On a touch screen one finger scrolls the page past the map and two move it; a mouse's
+          // wheel zooms it straight away (ADR 0069).
+          cooperativeGestures: cooperative("in-page"),
           dragRotate: false,
           pitchWithRotate: false,
           touchPitch: false,

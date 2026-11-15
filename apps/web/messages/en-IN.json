@@ -646,7 +646,8 @@
       "sheetMore": "Show more of the list",
       "sheetLess": "Show less of the list",
       "tilt": "Tilt the map",
-      "flatten": "Lay the map flat"
+      "flatten": "Lay the map flat",
+      "osmCredit": "Campuses and stations © OpenStreetMap contributors"
     },
     "preview": {
       "open": "See the PG",

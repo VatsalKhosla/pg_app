@@ -287,9 +287,14 @@ jobs:
       NEXT_PUBLIC_UPLOAD_ORIGIN: https://br-tiny-surf-b4c7xiwd.storage.c-6.us-east-2.aws.neon.tech
       # Cloudflare's published test site key, which always passes; for staging only.
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
-      # OpenStreetMap's own tiles: a staging site's light use is within their tile policy.
+      # OpenStreetMap's own tiles: a staging site's light use is within their tile policy. With
+      # Google's map set up below, they're what the maps fall back to if Google's fails.
       NEXT_PUBLIC_MAP_TILES_URL: https://tile.openstreetmap.org/{z}/{x}/{y}.png
       NEXT_PUBLIC_MAP_TILES_ATTRIBUTION: © OpenStreetMap contributors
+      # Google's map (ADR 0069), once the founders add both as repository variables
+      # (docs/runbooks/staging.md). Empty until then: MapLibre with the tiles above.
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+      NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

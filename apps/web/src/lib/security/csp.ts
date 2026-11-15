@@ -3,10 +3,10 @@
  *
  * Scripts are strict: only those carrying the request's nonce run, plus whatever they load
  * ('strict-dynamic'); no 'unsafe-inline'. Next.js puts the nonce on its own scripts. Styles allow
- * inline because Radix (scroll locking), Google Maps (step 3.5) and server-rendered style
- * attributes add styles that can't carry a nonce. Injected CSS can't reach other sites either:
- * images, fonts and connections are limited to this site, the API, the media and upload storage
- * and the map tiles (docs/adr/0011, 0023).
+ * inline because Radix (scroll locking), Google Maps and server-rendered style attributes add
+ * styles that can't carry a nonce. Injected CSS can't reach other sites either: images, fonts and
+ * connections are limited to this site, the API, the media and upload storage and the map's
+ * origins (docs/adr/0011, 0023, 0069).
  */
 
 /** The reporting group that `report-to` names; the proxy maps it to a URL. */
@@ -24,6 +24,14 @@ export interface CspOptions {
   imageOrigins?: readonly string[];
   /** Origins pages may frame (Cloudflare Turnstile's challenge); none unless given. */
   frameOrigins?: readonly string[];
+  /** Stylesheet and font origins besides this site's: Google's map loads its font. */
+  styleOrigins?: readonly string[];
+  fontOrigins?: readonly string[];
+  /**
+   * Lets scripts compile WebAssembly ('wasm-unsafe-eval'), which Google's map tries behind a
+   * feature check. It is no help to an injected script, and JavaScript's eval stays blocked.
+   */
+  webAssembly?: boolean;
   /** Where browsers report violations (Sentry's security endpoint), if anywhere. */
   reportUrl?: string | undefined;
 }
@@ -37,10 +45,11 @@ export function buildContentSecurityPolicy(options: CspOptions): string {
       `'nonce-${options.nonce}'`,
       "'strict-dynamic'",
       ...(options.isDevelopment ? ["'unsafe-eval'"] : []),
+      ...(options.webAssembly === true ? ["'wasm-unsafe-eval'"] : []),
     ],
-    ["style-src", "'self'", "'unsafe-inline'"],
+    ["style-src", "'self'", "'unsafe-inline'", ...(options.styleOrigins ?? [])],
     ["img-src", "'self'", "data:", "blob:", ...(options.imageOrigins ?? [])],
-    ["font-src", "'self'"],
+    ["font-src", "'self'", ...(options.fontOrigins ?? [])],
     ["connect-src", "'self'", ...options.connectOrigins],
     ["frame-src", ...(options.frameOrigins?.length ? options.frameOrigins : ["'none'"])],
     ["worker-src", "'self'", "blob:"],
