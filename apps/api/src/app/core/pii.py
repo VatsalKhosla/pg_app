@@ -21,6 +21,12 @@ def mask_text(text: str) -> str:
     return _PHONE.sub(_last_four, text)
 
 
+def mask_email(address: str) -> str:
+    """An email address with its name hidden but for the first letter: s***@example.com."""
+    name, at, domain = address.partition("@")
+    return f"{name[:1]}***{at}{domain}" if at else "***"
+
+
 def contains_phone(text: str) -> bool:
     """Whether ``text`` holds a phone number in any form ``mask_text`` masks."""
     return _PHONE.search(text) is not None

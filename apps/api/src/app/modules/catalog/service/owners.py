@@ -18,6 +18,7 @@ from app.modules.catalog.models import Owner
 from app.modules.catalog.repository import CatalogRepository
 from app.modules.catalog.service.checks import check, text_problems
 from app.modules.catalog.service.trail import staff_did
+from app.modules.identity.domain.emails import normalize_email
 from app.modules.identity.domain.phones import normalize_indian_mobile
 from app.modules.identity.service import Account, Accounts
 
@@ -43,6 +44,8 @@ class OwnerChanges(TypedDict, total=False):
     legal_name: str
     business_name: str
     gstin: NotRequired[str | None]
+    # Added to the owner's account if it has none (ADR 0068).
+    email: str
 
 
 class OwnerService:
@@ -61,9 +64,13 @@ class OwnerService:
         business_name: str,
         gstin: str | None = None,
         name: str | None = None,
+        email: str | None = None,
     ) -> OwnerRecord:
         phone_e164 = normalize_indian_mobile(phone)
         problems = [] if phone_e164 is not None else ["that isn't an Indian mobile number"]
+        address = None if email is None else normalize_email(email)
+        if email is not None and address is None:
+            problems.append("that isn't an email address")
         problems += text_problems(
             "the legal name", legal_name, required=True, max_length=NAME_MAX_LENGTH
         )
@@ -83,7 +90,9 @@ class OwnerService:
         check(problems)
         assert phone_e164 is not None  # noqa: S101 - checked above
         async with self._db.begin():
-            account = await self._accounts.ensure(phone_e164, role=Role.OWNER, name=name)
+            account = await self._accounts.ensure(
+                phone_e164, role=Role.OWNER, name=name, email=address
+            )
             if await self._catalog.owner_of_user(account.id) is not None:
                 raise OwnerExistsError
             owner = await self._catalog.add(
@@ -165,6 +174,9 @@ class OwnerService:
         normalized = None if gstin is None else normalize_gstin(gstin)
         if gstin is not None and normalized is None:
             problems.append("that isn't a GSTIN")
+        address = normalize_email(changes["email"]) if "email" in changes else None
+        if "email" in changes and address is None:
+            problems.append("that isn't an email address")
         check(problems)
         async with self._db.begin():
             owner = await self._catalog.owner(owner_id, lock=True)
@@ -183,6 +195,8 @@ class OwnerService:
             if "gstin" in changes and normalized != owner.gstin:
                 owner.gstin = normalized
                 changed.append("gstin")
+            if address is not None and await self._accounts.add_email(owner.user_id, address):
+                changed.append("email")
             if changed:
                 await self._db.flush()
                 await staff_did(

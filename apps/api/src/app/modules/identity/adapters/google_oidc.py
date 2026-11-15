@@ -1,4 +1,5 @@
-"""Staff sign-in with Google: OpenID Connect's authorization code flow with PKCE (step 1.3).
+"""Signing in with Google: OpenID Connect's authorization code flow with PKCE (step 1.3 for staff,
+ADR 0068 for everyone).
 
 The endpoints are the ones Google's discovery document names
 (https://accounts.google.com/.well-known/openid-configuration). The ID token comes straight from
@@ -40,7 +41,7 @@ AUTHORIZATION_ENDPOINT: Final = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_ENDPOINT: Final = "https://oauth2.googleapis.com/token"  # noqa: S105 - a URL
 KEYS_ENDPOINT: Final = "https://www.googleapis.com/oauth2/v3/certs"
 ISSUERS: Final = frozenset({"https://accounts.google.com", "accounts.google.com"})
-# The account's id and address are all staff sign-in needs: no name or photo (DPDP).
+# The account's id and address are all signing in needs: no name or photo (DPDP).
 SCOPE: Final = "openid email"
 _MIN_KEY_BITS: Final = 2048
 # How long Google's keys are kept when its answer doesn't say, the longest they are kept whatever
@@ -128,8 +129,9 @@ def _unavailable() -> ServiceUnavailableError:
 
 
 class GoogleOidc:
-    """The real Google. ``hosted_domain`` narrows Google's account chooser to one Workspace domain;
-    a convenience only, since anyone can change the request: the hd claim is what's checked."""
+    """The real Google. ``hosted_domain`` narrows Google's account chooser to one Workspace domain
+    for staff; a convenience only, since anyone can change the request: the hd claim is what
+    staff sign-in checks."""
 
     def __init__(
         self,
@@ -152,7 +154,9 @@ class GoogleOidc:
         self._keys_fetched_at: datetime | None = None
         self._keys_lock = asyncio.Lock()
 
-    def authorization_url(self, *, state: str, nonce: str, code_challenge: str) -> str:
+    def authorization_url(
+        self, *, state: str, nonce: str, code_challenge: str, any_account: bool = False
+    ) -> str:
         params = {
             "client_id": self._client_id,
             "response_type": "code",
@@ -164,7 +168,7 @@ class GoogleOidc:
             "code_challenge_method": "S256",
             "prompt": "select_account",
         }
-        if self._hosted_domain is not None:
+        if self._hosted_domain is not None and not any_account:
             params["hd"] = self._hosted_domain
         return f"{AUTHORIZATION_ENDPOINT}?{urlencode(params)}"
 

@@ -10,7 +10,13 @@ from fastapi.responses import RedirectResponse
 
 from app.core.actor import STAFF_ROLES, Role
 from app.core.clock import Clock, ClockDep
-from app.core.cookies import CSRF_COOKIE, SESSION_COOKIE, STAFF_LOGIN_COOKIE, CookiePolicy
+from app.core.cookies import (
+    CSRF_COOKIE,
+    GOOGLE_LOGIN_COOKIE,
+    SESSION_COOKIE,
+    STAFF_LOGIN_COOKIE,
+    CookiePolicy,
+)
 from app.core.csrf import CSRF_COOKIE_MAX_AGE, issue_csrf_token
 from app.core.current_actor import CurrentActor
 from app.core.db import DbSession
@@ -20,12 +26,14 @@ from app.core.ratelimit import RateLimit, client_ip, rate_limited
 from app.modules.identity.auth import (
     ConsentServiceDep,
     CookiesDep,
+    GoogleSignInDep,
     NoticeVersion,
     OtpServiceDep,
     StaffSignInDep,
 )
 from app.modules.identity.domain.consent import ConsentPurpose
 from app.modules.identity.domain.profile import Gender
+from app.modules.identity.domain.return_paths import safe_return_path
 from app.modules.identity.domain.sessions import SessionKind
 from app.modules.identity.models import Consent
 from app.modules.identity.policies import can_list_staff
@@ -34,6 +42,7 @@ from app.modules.identity.schemas import (
     ConsentList,
     ConsentRecord,
     CsrfToken,
+    EmailCodeRequest,
     Me,
     MeUpdate,
     NoticePurpose,
@@ -43,6 +52,7 @@ from app.modules.identity.schemas import (
     PrivacyNoticeInfo,
     SessionInfo,
     SessionList,
+    SignInMethods,
     SignInResult,
     StaffMember,
     StaffPage,
@@ -51,18 +61,24 @@ from app.modules.identity.schemas import (
 )
 from app.modules.identity.service import (
     ConsentGiven,
+    GoogleSignInService,
     Profile,
     SessionService,
     StaffDirectory,
     UserService,
     privacy_notice,
 )
-from app.modules.identity.service.staff import LOGIN_TTL
+from app.modules.identity.service.google_login import LOGIN_TTL
 
 router = APIRouter(prefix="/v1", tags=["identity"])
 
-# Google sends staff back here; register API_URL + this path as the OAuth client's redirect URI.
+# Google sends everyone back here, staff and (ADR 0068) everyone else, whose login cookies tell the
+# two apart; register API_URL + this path as the OAuth client's redirect URI.
 GOOGLE_CALLBACK_PATH: Final = "/v1/auth/staff/google/callback"
+# The web app's sign-in page, which a failed Google sign-in comes back to with the error's code
+# (?error=CONSENT_REQUIRED), and the page a sign-in goes to when it started from none.
+SIGN_IN_PATH: Final = "/sign-in"
+SIGNED_IN_PATH: Final = "/account"
 # The web app's staff tools, and its staff sign-in page, which a failed sign-in comes back to with
 # the error's code (?error=STAFF_ACCOUNT_NOT_ALLOWED).
 STAFF_HOME_PATH: Final = "/staff"
@@ -83,6 +99,10 @@ STAFF_SIGN_INS_PER_IP: Final = RateLimit(
 )
 STAFF_TOTP_CHECKS_PER_IP: Final = RateLimit(
     "staff-totp-checks-per-ip", limit=60, window=timedelta(minutes=15), fail_open=False
+)
+# Signing in with Google, for anyone: leaving for Google (coming back counts with staff's).
+GOOGLE_SIGN_INS_PER_IP: Final = RateLimit(
+    "google-sign-ins-per-ip", limit=60, window=timedelta(hours=1), fail_open=False
 )
 
 
@@ -189,6 +209,39 @@ async def request_otp(body: OtpRequest, request: Request, otp: OtpServiceDep) ->
 
 
 @router.post(
+    "/auth/email/request",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Send a sign-in code by email",
+    dependencies=[Depends(rate_limited(OTP_REQUESTS_PER_IP))],
+)
+async def request_email_code(
+    body: EmailCodeRequest, request: Request, otp: OtpServiceDep
+) -> OtpChallengeIssued:
+    """Sends a six-digit code to the address, replacing any earlier code; sign in with it at
+    /v1/auth/otp/verify. The answer is the same whether or not the address has an account."""
+    issued = await otp.request_email(
+        body.email,
+        human_check_token=body.human_check_token,
+        ip_address=client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    return OtpChallengeIssued(
+        challenge_id=issued.public_id,
+        expires_at=issued.expires_at,
+        resend_after=issued.resend_after,
+        development_code=issued.development_code,
+    )
+
+
+@router.get("/auth/methods", summary="The ways to sign in here")
+async def sign_in_methods(otp: OtpServiceDep, google: GoogleSignInDep) -> SignInMethods:
+    """Which sign-in methods work now, so the sign-in page offers only those."""
+    return SignInMethods(
+        phone=otp.phone_available, email=otp.email_available, google=google.available
+    )
+
+
+@router.post(
     "/auth/otp/verify",
     summary="Sign in with the code",
     dependencies=[Depends(rate_limited(OTP_CHECKS_PER_IP))],
@@ -204,9 +257,9 @@ async def verify_otp(
     otp: OtpServiceDep,
     notice_version: NoticeVersion,
 ) -> SignInResult:
-    """Checks the code and signs the phone's owner in, creating the account on first sign-in,
-    which needs consent to the privacy notice. Sets the session and CSRF cookies; any earlier
-    session in this browser ends."""
+    """Checks the code, sent by text or by email, and signs in the owner of the phone or address,
+    creating the account on first sign-in, which needs consent to the privacy notice. Sets the
+    session and CSRF cookies; any earlier session in this browser ends."""
     signed_in = await otp.verify(
         body.challenge_id,
         body.code,
@@ -271,11 +324,102 @@ async def start_google_sign_in(
     return response
 
 
+def _sign_in_failed(
+    request: Request, cookies: CookiePolicy, failure: AppError, back: str | None
+) -> RedirectResponse:
+    """Back to the web app's sign-in page, with the reason's code and the page to return to."""
+    query = {"error": failure.code} | ({} if back is None else {"next": back})
+    response = RedirectResponse(
+        f"{request.app.state.site_url}{SIGN_IN_PATH}?{urlencode(query)}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+    cookies.clear(response, GOOGLE_LOGIN_COOKIE, http_only=True, host_only=True)
+    return response
+
+
+@router.get(
+    "/auth/google",
+    status_code=status.HTTP_303_SEE_OTHER,
+    response_class=RedirectResponse,
+    summary="Sign in with Google",
+    dependencies=[Depends(rate_limited(GOOGLE_SIGN_INS_PER_IP))],
+)
+async def start_people_google_sign_in(
+    request: Request,
+    *,
+    back: Annotated[str | None, Query(alias="next", max_length=512)] = None,
+    notice: Annotated[str | None, Query(max_length=64)] = None,
+    purpose: Annotated[list[ConsentPurpose] | None, Query(max_length=len(ConsentPurpose))] = None,
+    cookies: CookiesDep,
+    google: GoogleSignInDep,
+) -> RedirectResponse:
+    """Open this in the browser (not with fetch): it goes on to Google, which sends the browser
+    back to the callback, and then to ``next`` (a page of the site; the account page otherwise).
+    A first sign-in makes the account and needs consent: send ``notice`` (the privacy notice's
+    version shown) and each ``purpose`` the person chose, or it comes back to the web app's
+    sign-in page with ?error=CONSENT_REQUIRED, as it does with any other failure's code."""
+    # Consent is what was ticked: a notice with nothing ticked is no consent at all.
+    consent = (
+        None
+        if notice is None or not purpose
+        else ConsentGiven(notice_version=notice, purposes=frozenset(purpose))
+    )
+    try:
+        login = google.start(consent=consent, back=back)
+    except AppError as failure:
+        return _sign_in_failed(request, cookies, failure, safe_return_path(back))
+    response = RedirectResponse(login.authorization_url, status_code=status.HTTP_303_SEE_OTHER)
+    cookies.set(
+        response,
+        GOOGLE_LOGIN_COOKIE,
+        login.cookie,
+        max_age=int(LOGIN_TTL.total_seconds()),
+        http_only=True,
+        host_only=True,
+    )
+    return response
+
+
+async def _finish_people_google_sign_in(
+    request: Request,
+    *,
+    code: str | None,
+    state: str | None,
+    error: str | None,
+    db: DbSession,
+    clock: Clock,
+    cookies: CookiePolicy,
+    google: GoogleSignInService,
+) -> RedirectResponse:
+    login_cookie = request.cookies.get(GOOGLE_LOGIN_COOKIE)
+    try:
+        signed_in = await google.finish(
+            login_cookie=login_cookie, state=state, code=code, error=error
+        )
+    except AppError as failure:
+        return _sign_in_failed(request, cookies, failure, google.back(login_cookie))
+    response = RedirectResponse(
+        f"{request.app.state.site_url}{signed_in.back or SIGNED_IN_PATH}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+    await _start_session(
+        request,
+        response,
+        user_id=signed_in.user_id,
+        kind=SessionKind.USER,
+        db=db,
+        clock=clock,
+        cookies=cookies,
+    )
+    cookies.clear(response, GOOGLE_LOGIN_COOKIE, http_only=True, host_only=True)
+    return response
+
+
 @router.get(
     GOOGLE_CALLBACK_PATH.removeprefix("/v1"),
     status_code=status.HTTP_303_SEE_OTHER,
     response_class=RedirectResponse,
-    summary="Where Google sends staff back to",
+    summary="Where Google sends people back to",
     dependencies=[Depends(rate_limited(STAFF_SIGN_INS_PER_IP))],
 )
 async def finish_google_sign_in(
@@ -288,11 +432,32 @@ async def finish_google_sign_in(
     clock: ClockDep,
     cookies: CookiesDep,
     staff: StaffSignInDep,
+    google: GoogleSignInDep,
 ) -> RedirectResponse:
-    """Signs the staff member in (a 12-hour staff session; any earlier session in this browser
-    ends) and sends them to the web app's staff tools, or back to its staff sign-in page with an
-    error code: STAFF_ACCOUNT_NOT_ALLOWED, STAFF_SIGN_IN_EXPIRED, STAFF_SIGN_IN_CANCELLED or
+    """For a staff sign-in: signs the staff member in (a 12-hour staff session; any earlier
+    session in this browser ends) and sends them to the web app's staff tools, or back to its
+    staff sign-in page with an error code: STAFF_ACCOUNT_NOT_ALLOWED, STAFF_SIGN_IN_EXPIRED,
+    STAFF_SIGN_IN_CANCELLED or SERVICE_UNAVAILABLE.
+
+    For anyone else's (started at /v1/auth/google): signs them in and sends them on to the page
+    they came from, or back to the web app's sign-in page with an error code:
+    CONSENT_REQUIRED, GOOGLE_ACCOUNT_NOT_USABLE, GOOGLE_SIGN_IN_EXPIRED,
+    GOOGLE_SIGN_IN_CANCELLED, ACCOUNT_SUSPENDED, PRIVACY_NOTICE_CHANGED or
     SERVICE_UNAVAILABLE."""
+    people_login = request.cookies.get(GOOGLE_LOGIN_COOKIE)
+    if people_login is not None and (
+        request.cookies.get(STAFF_LOGIN_COOKIE) is None or google.started_here(people_login, state)
+    ):
+        return await _finish_people_google_sign_in(
+            request,
+            code=code,
+            state=state,
+            error=error,
+            db=db,
+            clock=clock,
+            cookies=cookies,
+            google=google,
+        )
     try:
         user_id = await staff.finish_google(
             login_cookie=request.cookies.get(STAFF_LOGIN_COOKIE),

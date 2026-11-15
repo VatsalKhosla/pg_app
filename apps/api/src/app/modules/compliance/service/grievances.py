@@ -23,6 +23,7 @@ from app.core.ids import new_ticket_number, normalize_ticket_number
 from app.core.outbox import enqueue
 from app.core.pagination import split_page
 from app.core.ratelimit import RateLimit, enforce
+from app.core.texts import Recipient
 from app.modules.compliance.domain.grievances import (
     GrievanceStatus,
     acknowledge_by,
@@ -256,7 +257,9 @@ class GrievanceTexts:
     def __init__(self, db: AsyncSession) -> None:
         self._grievances = GrievanceRepository(db)
 
-    async def message(self, ticket_number: str, template: str) -> tuple[str, dict[str, str]] | None:
+    async def message(
+        self, ticket_number: str, template: str
+    ) -> tuple[Recipient, dict[str, str]] | None:
         grievance = await self._grievances.by_ticket(ticket_number)
         if grievance is None or grievance.user_id is None or grievance.phone_e164 is None:
             return None
@@ -267,7 +270,7 @@ class GrievanceTexts:
             values["resolve_by"] = spoken_date(grievance.resolve_by)
         if template == RECEIVED:
             values["acknowledge_by"] = spoken_date(grievance.acknowledge_by)
-        return grievance.phone_e164, values
+        return Recipient(grievance.phone_e164, grievance.email), values
 
 
 def _moment(value: datetime | None) -> str | None:

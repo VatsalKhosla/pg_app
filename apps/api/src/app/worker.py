@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 import httpx
 import structlog
 
-from app.config import Settings
+from app.config import BRAND_NAME, Settings
 from app.core.analytics import Analytics, NoAnalytics, PostHogAnalytics
 from app.core.clock import Clock, SystemClock
 from app.core.db import create_engine, create_sessionmaker
@@ -28,9 +28,10 @@ from app.core.logging import configure_logging
 from app.core.outbox import JobRegistry, OutboxWorker
 from app.core.scheduler import ScheduledJob, Scheduler
 from app.core.telemetry import configure_metrics, configure_sentry
-from app.core.texts import ConsoleTexts, NoTexts
+from app.core.texts import ConsoleTexts, MailTexts, NoTexts, Texts
 from app.core.web_cache import NoWebCache, SignedWebCache, WebCache
 from app.jobs import SCHEDULES, build_registry
+from app.messages import build_mailer, message_templates
 from app.modules.inventory.service import AllocationsTaken
 from app.modules.invoices.pdf import InvoiceSeller
 from app.modules.media.adapters.s3 import S3Storage
@@ -145,7 +146,7 @@ async def _serve_until_signalled(
                 storage=S3Storage.from_settings(settings),
                 buckets=Buckets.from_settings(settings),
                 web_cache=web_cache(settings, http),
-                texts=ConsoleTexts() if settings.text_sender == "console" else NoTexts(),
+                texts=messages(settings),
                 gateway=build_gateway(settings, http),
                 seller=InvoiceSeller.from_settings(settings),
                 analytics=analytics(settings, http),
@@ -153,6 +154,17 @@ async def _serve_until_signalled(
             ),
             schedules=SCHEDULES,
         )
+
+
+def messages(settings: Settings) -> Texts:
+    """Messages by email to people with an address (ADR 0068), else texts."""
+    fallback: Texts = ConsoleTexts() if settings.text_sender == "console" else NoTexts()
+    return MailTexts(
+        build_mailer(settings),
+        message_templates(),
+        fallback=fallback,
+        signature=f"{BRAND_NAME}\n{settings.site_url}",
+    )
 
 
 def _positive_seconds(value: str) -> float:

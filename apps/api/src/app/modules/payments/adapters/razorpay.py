@@ -616,7 +616,7 @@ class RazorpayGateway:
             "/payments/create/recurring",
             json={
                 "email": _NO_EMAIL,
-                "contact": payer.contact,
+                **({} if payer.contact is None else {"contact": payer.contact}),
                 "amount": amount_paise,
                 "currency": INR,
                 "order_id": order_id,
@@ -653,7 +653,7 @@ class RazorpayGateway:
             "/customers",
             json={
                 "name": payer.name or "Student",
-                "contact": payer.contact,
+                **({} if payer.contact is None else {"contact": payer.contact}),
                 "fail_existing": "0",
             },
         )

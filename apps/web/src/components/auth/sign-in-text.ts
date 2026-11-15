@@ -62,6 +62,22 @@ export async function profileText(): Promise<ProfileText> {
 export async function signInText(): Promise<SignInText> {
   const t = await getTranslations("SignIn");
   return {
+    email: {
+      title: t("email.title"),
+      intro: t("email.intro"),
+      label: t("email.label"),
+      invalid: t("email.invalid"),
+      humanCheck: t("email.humanCheck"),
+      submit: t("email.submit"),
+      sending: t("email.sending"),
+      usePhone: t("email.usePhone"),
+    },
+    google: {
+      continue: t("google.continue"),
+      newHere: [t("google.newHere.before"), t("google.newHere.link"), t("google.newHere.after")],
+      consentNeeded: t("google.consentNeeded"),
+      or: t("google.or"),
+    },
     phone: {
       title: t("phone.title"),
       intro: t("phone.intro"),
@@ -71,12 +87,14 @@ export async function signInText(): Promise<SignInText> {
       humanCheck: t("phone.humanCheck"),
       submit: t("phone.submit"),
       sending: t("phone.sending"),
+      useEmail: t("phone.useEmail"),
     },
     code: {
       title: t("code.title"),
-      // The number is filled in by the browser, which knows it.
-      intro: t.raw("code.intro") as string,
-      // So is the code, when local development shows it (no text message is sent there).
+      // The address or number is filled in by the browser, which knows it.
+      introEmail: t.raw("code.introEmail") as string,
+      introPhone: t.raw("code.introPhone") as string,
+      // So is the code, when a test site shows it (nothing is sent there).
       developmentCode: t.raw("code.developmentCode") as string,
       label: t("code.label"),
       invalid: t("code.invalid"),
@@ -84,6 +102,7 @@ export async function signInText(): Promise<SignInText> {
       checking: t("code.checking"),
       resend: t("code.resend"),
       resendLater: t("code.resendLater"),
+      otherEmail: t("code.otherEmail"),
       otherNumber: t("code.otherNumber"),
     },
     consent: {

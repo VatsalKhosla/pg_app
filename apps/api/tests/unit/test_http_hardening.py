@@ -56,6 +56,7 @@ def test_deployed_environments_add_hsts_and_hide_the_interactive_docs(
             turnstile_secret_key="test-turnstile-secret",
             revalidate_secret="a-revalidation-secret-of-32-chars!!",
             text_sender="unavailable",
+            mail_sender="unavailable",
         ),
         agreements=FixedAgreements(Agreement("2027-01", "A fictional reviewed agreement.")),
     )

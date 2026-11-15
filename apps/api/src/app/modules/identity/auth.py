@@ -12,6 +12,7 @@ from app.core.cookies import SESSION_COOKIE, CookiePolicy
 from app.core.db import DbSession
 from app.modules.identity.service import (
     ConsentService,
+    GoogleSignInService,
     OtpService,
     SessionService,
     StaffSignInService,
@@ -69,13 +70,31 @@ def get_otp_service(
         clock,
         secret=state.secret_key,
         sender=state.otp_sender,
+        email_codes=state.email_codes,
         human_check=state.human_check,
         limiter=state.rate_limiter,
         notice_version=notice_version,
+        phone_sign_in=state.phone_sign_in,
     )
 
 
 OtpServiceDep = Annotated[OtpService, Depends(get_otp_service)]
+
+
+def get_google_sign_in_service(
+    request: Request, db: DbSession, clock: ClockDep, notice_version: NoticeVersion
+) -> GoogleSignInService:
+    state = request.app.state
+    return GoogleSignInService(
+        db,
+        clock,
+        secret=state.secret_key,
+        google=state.google_sign_in,
+        notice_version=notice_version,
+    )
+
+
+GoogleSignInDep = Annotated[GoogleSignInService, Depends(get_google_sign_in_service)]
 
 
 def get_consent_service(

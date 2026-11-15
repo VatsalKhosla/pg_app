@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Mail, Smartphone } from "lucide-react";
 import type { Route } from "next";
 import { useEffect, useId, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -17,6 +18,7 @@ import {
   type PrivacyNotice,
   privacyNotice,
   requestCode,
+  requestEmailCode,
   signInWithAuthenticator,
   verifyCode,
 } from "@/lib/auth/client";
@@ -25,6 +27,17 @@ import { problemMessage } from "./problem-message";
 import { Turnstile } from "./turnstile";
 
 export interface SignInText {
+  email: {
+    title: string;
+    intro: string;
+    label: string;
+    invalid: string;
+    humanCheck: string;
+    submit: string;
+    sending: string;
+    /** Switches to a phone number, where codes by text are on. */
+    usePhone: string;
+  };
   phone: {
     title: string;
     intro: string;
@@ -34,11 +47,21 @@ export interface SignInText {
     humanCheck: string;
     submit: string;
     sending: string;
+    useEmail: string;
+  };
+  google: {
+    continue: string;
+    /** The consent box's words around the link to the notice: before, link text, after. */
+    newHere: readonly [string, string, string];
+    consentNeeded: string;
+    or: string;
   };
   code: {
     title: string;
-    intro: string;
-    /** Shown when the API hands back the code: local development, where no SMS is sent. */
+    /** "{destination}" is filled in by the browser, which knows it. */
+    introEmail: string;
+    introPhone: string;
+    /** Shown when the API hands back the code: a test site, where nothing is sent. */
     developmentCode: string;
     label: string;
     invalid: string;
@@ -46,6 +69,7 @@ export interface SignInText {
     checking: string;
     resend: string;
     resendLater: string;
+    otherEmail: string;
     otherNumber: string;
   };
   consent: {
@@ -73,12 +97,22 @@ export interface SignInText {
 const NO_HUMAN_CHECK = "not-checked";
 const MAX_RESEND_WAIT_MS = 120_000;
 
+/** Where a code goes: an email address, or a phone by text (while texts are on). */
+export type Channel = "email" | "phone";
+
+/** How to start a Google sign-in: the API's start address, and the notice consent names. */
+export interface GoogleStart {
+  href: string;
+  noticeVersion: string;
+}
+
 type Step =
-  | { name: "phone"; phone: string; notice?: string }
-  | { name: "code"; phone: string; challenge: ChallengeIssued }
+  | { name: "start"; channel: Channel; address: string; notice?: string | undefined }
+  | { name: "code"; channel: Channel; address: string; challenge: ChallengeIssued }
   | {
       name: "consent";
-      phone: string;
+      channel: Channel;
+      address: string;
       challenge: ChallengeIssued;
       code: string;
       notice: PrivacyNotice;
@@ -87,23 +121,41 @@ type Step =
   | { name: "authenticator" };
 
 /**
- * Signing in by phone: the number, the code sent to it, consent if this makes a new account (the
- * API says so), then the profile for new people, or the authenticator code for staff. Finishing
- * loads `next` afresh, so every part of the page sees the new session.
+ * Signing in: with Google, or with a code sent to an email address (or, while texts are on, a
+ * phone). Then consent if this makes a new account (the API says so), the profile for new people,
+ * or the authenticator code for staff. Finishing loads `next` afresh, so every part of the page
+ * sees the new session.
  */
 export function SignInFlow({
   text,
   next,
   mode,
+  channels,
+  google,
+  notice,
+  consentNeeded = false,
   turnstile,
 }: {
   text: SignInText;
   next: Route;
-  /** "staff" asks for the authenticator code after the phone code. */
+  /** "staff" asks for the authenticator code after the code. */
   mode: "people" | "staff";
+  /** The ways a code can go, first the one offered first; never empty. */
+  channels: readonly Channel[];
+  /** Offered when Google sign-in is set up (people only: staff have their own button). */
+  google?: GoogleStart | undefined;
+  /** Why the person is back here, such as a Google sign-in that didn't work. */
+  notice?: string | undefined;
+  /** A first Google sign-in came back for consent: point at the box. */
+  consentNeeded?: boolean;
   turnstile?: { siteKey: string; nonce: string | undefined } | undefined;
 }) {
-  const [step, setStep] = useState<Step>({ name: "phone", phone: "" });
+  const [step, setStep] = useState<Step>({
+    name: "start",
+    channel: channels[0] ?? "email",
+    address: "",
+    notice,
+  });
   const heading = useRef<HTMLHeadingElement>(null);
   const first = useRef(true);
   useEffect(() => {
@@ -124,17 +176,32 @@ export function SignInFlow({
     else finish();
   }
 
-  const titles = {
-    phone: text.phone,
-    code: text.code,
-    consent: text.consent,
-    profile: text.profile,
-    authenticator: text.authenticator,
-  };
-  const current = titles[step.name];
+  const current =
+    step.name === "start"
+      ? text[step.channel]
+      : step.name === "code"
+        ? {
+            title: text.code.title,
+            intro: (step.channel === "email" ? text.code.introEmail : text.code.introPhone).replace(
+              "{destination}",
+              step.address,
+            ),
+          }
+        : text[step.name];
+  const other = channels.find((channel) => step.name === "start" && channel !== step.channel);
 
   return (
     <section aria-labelledby="sign-in-step" className="space-y-6">
+      {step.name === "start" && google !== undefined ? (
+        <>
+          <GoogleButton text={text} start={google} next={next} consentNeeded={consentNeeded} />
+          <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground uppercase">
+            <span aria-hidden="true" className="h-px flex-1 bg-border" />
+            {text.google.or}
+            <span aria-hidden="true" className="h-px flex-1 bg-border" />
+          </div>
+        </>
+      ) : null}
       <div className="space-y-1.5">
         <h2
           id="sign-in-step"
@@ -144,31 +211,49 @@ export function SignInFlow({
         >
           {current.title}
         </h2>
-        <p className="text-body-sm text-muted-foreground">
-          {step.name === "code" ? current.intro.replace("{phone}", step.phone) : current.intro}
-        </p>
+        <p className="text-body-sm text-muted-foreground">{current.intro}</p>
       </div>
-      {step.name === "phone" ? (
-        <PhoneStep
+      {step.name === "start" ? (
+        <StartStep
+          key={step.channel}
           text={text}
-          defaultPhone={step.phone}
+          channel={step.channel}
+          defaultAddress={step.address}
           notice={step.notice}
           turnstile={turnstile}
-          onSent={(phone, challenge) => {
-            setStep({ name: "code", phone, challenge });
+          onSent={(address, challenge) => {
+            setStep({ name: "code", channel: step.channel, address, challenge });
           }}
         />
       ) : null}
+      {other === undefined ? null : (
+        <Button
+          type="button"
+          variant="link"
+          className="h-auto gap-2 px-0"
+          onClick={() => {
+            setStep({ name: "start", channel: other, address: "" });
+          }}
+        >
+          {other === "phone" ? (
+            <Smartphone aria-hidden="true" className="size-4" />
+          ) : (
+            <Mail aria-hidden="true" className="size-4" />
+          )}
+          {other === "phone" ? text.email.usePhone : text.phone.useEmail}
+        </Button>
+      )}
       {step.name === "code" ? (
         <CodeStep
           text={text}
+          channel={step.channel}
           challenge={step.challenge}
           onSignedIn={signedIn}
           onConsentNeeded={(code, notice) => {
             setStep({ ...step, name: "consent", code, notice });
           }}
           onRestart={(notice) => {
-            setStep({ name: "phone", phone: step.phone, notice });
+            setStep({ name: "start", channel: step.channel, address: step.address, notice });
           }}
         />
       ) : null}
@@ -185,7 +270,12 @@ export function SignInFlow({
                 error instanceof ApiError &&
                 ["OTP_EXPIRED", "OTP_INVALID"].includes(error.code)
               ) {
-                setStep({ name: "phone", phone: step.phone, notice: text.errors.OTP_EXPIRED });
+                setStep({
+                  name: "start",
+                  channel: step.channel,
+                  address: step.address,
+                  notice: text.errors.OTP_EXPIRED,
+                });
                 return null;
               }
               if (error instanceof ApiError && error.code === "PRIVACY_NOTICE_CHANGED") {
@@ -223,51 +313,63 @@ function FormFailure({ message }: { message: string | null | undefined }) {
   ) : null;
 }
 
-function PhoneStep({
+/** Loose on purpose: the API says exactly which addresses it takes. */
+const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+const LOOKS_LIKE_PHONE = /^[0-9+()\-\s]{10,20}$/u;
+
+/** The address (an email address or a phone number) to send a code to. */
+function StartStep({
   text,
-  defaultPhone,
+  channel,
+  defaultAddress,
   notice,
   turnstile,
   onSent,
 }: {
   text: SignInText;
-  defaultPhone: string;
+  channel: Channel;
+  defaultAddress: string;
   notice: string | undefined;
   turnstile: { siteKey: string; nonce: string | undefined } | undefined;
-  onSent: (phone: string, challenge: ChallengeIssued) => void;
+  onSent: (address: string, challenge: ChallengeIssued) => void;
 }) {
   const id = useId();
   const [token, setToken] = useState<string | null>(null);
   // A Turnstile token works once: a new widget after each try gives the next one.
   const [widget, setWidget] = useState(0);
   const [failure, setFailure] = useState<string | null>(null);
+  const words = text[channel];
   const schema = z.object({
-    phone: z
+    address: z
       .string()
       .trim()
-      .regex(/^[0-9+()\-\s]{10,20}$/u, text.phone.invalid),
+      .regex(channel === "email" ? LOOKS_LIKE_EMAIL : LOOKS_LIKE_PHONE, words.invalid),
   });
   type Values = z.infer<typeof schema>;
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { phone: defaultPhone },
+    defaultValues: { address: defaultAddress },
   });
   const { errors, isSubmitting } = form.formState;
   const needsToken = turnstile !== undefined && token === null;
 
-  async function send({ phone }: Values) {
+  async function send({ address }: Values) {
     setFailure(null);
+    const humanCheck = turnstile === undefined ? NO_HUMAN_CHECK : (token ?? "");
     try {
       onSent(
-        phone,
-        await requestCode(phone, turnstile === undefined ? NO_HUMAN_CHECK : (token ?? "")),
+        address,
+        channel === "email"
+          ? await requestEmailCode(address, humanCheck)
+          : await requestCode(address, humanCheck),
       );
     } catch (error) {
       setToken(null);
       setWidget((count) => count + 1);
-      const onPhone =
-        error instanceof ApiError && error.fieldErrors.some((field) => field.pointer === "/phone");
-      if (onPhone) form.setError("phone", { message: text.phone.invalid });
+      const onField =
+        error instanceof ApiError &&
+        error.fieldErrors.some((field) => field.pointer === `/${channel}`);
+      if (onField) form.setError("address", { message: words.invalid });
       else setFailure(problemMessage(error, text.errors));
     }
   }
@@ -283,26 +385,41 @@ function PhoneStep({
     >
       <FormFailure message={notice} />
       <div className="space-y-2">
-        <label htmlFor={`${id}-phone`} className="block text-sm font-medium text-foreground">
-          {text.phone.label}
+        <label htmlFor={`${id}-address`} className="block text-sm font-medium text-foreground">
+          {words.label}
         </label>
-        <Input
-          id={`${id}-phone`}
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel-national"
-          aria-invalid={errors.phone !== undefined}
-          aria-describedby={`${id}-phone-hint${errors.phone ? ` ${id}-phone-error` : ""}`}
-          {...form.register("phone")}
-        />
-        <p id={`${id}-phone-hint`} className="text-sm text-muted-foreground">
-          {text.phone.hint}
-        </p>
-        <FieldError id={`${id}-phone-error`} message={errors.phone?.message} />
+        {channel === "email" ? (
+          <Input
+            id={`${id}-address`}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            spellCheck={false}
+            aria-invalid={errors.address !== undefined}
+            aria-describedby={errors.address ? `${id}-address-error` : undefined}
+            {...form.register("address")}
+          />
+        ) : (
+          <>
+            <Input
+              id={`${id}-address`}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel-national"
+              aria-invalid={errors.address !== undefined}
+              aria-describedby={`${id}-address-hint${errors.address ? ` ${id}-address-error` : ""}`}
+              {...form.register("address")}
+            />
+            <p id={`${id}-address-hint`} className="text-sm text-muted-foreground">
+              {text.phone.hint}
+            </p>
+          </>
+        )}
+        <FieldError id={`${id}-address-error`} message={errors.address?.message} />
       </div>
       {turnstile === undefined ? null : (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">{text.phone.humanCheck}</p>
+          <p className="text-sm text-muted-foreground">{words.humanCheck}</p>
           <Turnstile
             key={widget}
             siteKey={turnstile.siteKey}
@@ -320,20 +437,116 @@ function PhoneStep({
         className="w-full"
         disabled={isSubmitting || needsToken}
       >
-        {isSubmitting ? text.phone.sending : text.phone.submit}
+        {isSubmitting ? words.sending : words.submit}
       </Button>
     </form>
   );
 }
 
+/**
+ * Off to Google, by a link (a form's redirect to Google would break the site's form-action
+ * rule). A first sign-in makes the account, which needs consent: the box, never ticked for anyone,
+ * adds it to the link (CLAUDE.md rule 7). Someone with an account needn't tick it.
+ */
+function GoogleButton({
+  text,
+  start,
+  next,
+  consentNeeded,
+}: {
+  text: SignInText;
+  start: GoogleStart;
+  next: Route;
+  consentNeeded: boolean;
+}) {
+  const id = useId();
+  const [agreed, setAgreed] = useState(false);
+  const query = new URLSearchParams({ next });
+  if (agreed) {
+    query.set("notice", start.noticeVersion);
+    query.set("purpose", "account");
+  }
+  const [before, link, after] = text.google.newHere;
+
+  return (
+    <div className="space-y-3">
+      <a
+        href={`${start.href}?${query.toString()}`}
+        className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-border bg-card px-5 text-base font-semibold text-foreground shadow-xs transition-[background-color,box-shadow] duration-(--duration-fast) outline-none hover:bg-accent hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+      >
+        <GoogleMark />
+        {text.google.continue}
+      </a>
+      <label
+        htmlFor={`${id}-agree`}
+        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary-soft/50 ${consentNeeded && !agreed ? "border-marigold-border bg-marigold-soft" : "border-border/70 bg-surface/40"}`}
+      >
+        <input
+          id={`${id}-agree`}
+          type="checkbox"
+          checked={agreed}
+          onChange={(event) => {
+            setAgreed(event.target.checked);
+          }}
+          aria-describedby={consentNeeded ? `${id}-agree-needed` : undefined}
+          className="mt-0.5 size-5 shrink-0 accent-primary"
+        />
+        <span className="leading-snug text-foreground">
+          {before}
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener"
+            className="font-semibold text-primary underline underline-offset-4"
+          >
+            {link}
+          </a>
+          {after}
+        </span>
+      </label>
+      {consentNeeded ? (
+        <p id={`${id}-agree-needed`} className="text-sm font-medium text-marigold-soft-foreground">
+          {text.google.consentNeeded}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Google's "G", in its own colours, as Google's sign-in branding asks. */
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 48 48" className="size-5 shrink-0">
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
+    </svg>
+  );
+}
+
 function CodeStep({
   text,
+  channel,
   challenge,
   onSignedIn,
   onConsentNeeded,
   onRestart,
 }: {
   text: SignInText;
+  channel: Channel;
   challenge: ChallengeIssued;
   onSignedIn: (me: Me) => void;
   onConsentNeeded: (code: string, notice: PrivacyNotice) => void;
@@ -439,7 +652,7 @@ function CodeStep({
             onRestart();
           }}
         >
-          {text.code.otherNumber}
+          {channel === "email" ? text.code.otherEmail : text.code.otherNumber}
         </Button>
       </div>
     </form>

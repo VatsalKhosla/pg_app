@@ -191,13 +191,107 @@
         }
       }
     },
+    "/v1/auth/email/request": {
+      "post": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Send a sign-in code by email",
+        "description": "Sends a six-digit code to the address, replacing any earlier code; sign in with it at\n/v1/auth/otp/verify. The answer is the same whether or not the address has an account.",
+        "operationId": "identityRequestEmailCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpChallengeIssued"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/methods": {
+      "get": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "The ways to sign in here",
+        "description": "Which sign-in methods work now, so the sign-in page offers only those.",
+        "operationId": "identitySignInMethods",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInMethods"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/auth/otp/verify": {
       "post": {
         "tags": [
           "identity"
         ],
         "summary": "Sign in with the code",
-        "description": "Checks the code and signs the phone's owner in, creating the account on first sign-in,\nwhich needs consent to the privacy notice. Sets the session and CSRF cookies; any earlier\nsession in this browser ends.",
+        "description": "Checks the code, sent by text or by email, and signs in the owner of the phone or address,\ncreating the account on first sign-in, which needs consent to the privacy notice. Sets the\nsession and CSRF cookies; any earlier session in this browser ends.",
         "operationId": "identityVerifyOtp",
         "requestBody": {
           "content": {
@@ -278,13 +372,104 @@
         }
       }
     },
+    "/v1/auth/google": {
+      "get": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Sign in with Google",
+        "description": "Open this in the browser (not with fetch): it goes on to Google, which sends the browser\nback to the callback, and then to ``next`` (a page of the site; the account page otherwise).\nA first sign-in makes the account and needs consent: send ``notice`` (the privacy notice's\nversion shown) and each ``purpose`` the person chose, or it comes back to the web app's\nsign-in page with ?error=CONSENT_REQUIRED, as it does with any other failure's code.",
+        "operationId": "identityStartPeopleGoogleSignIn",
+        "parameters": [
+          {
+            "name": "next",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 512
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Next"
+            }
+          },
+          {
+            "name": "notice",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Notice"
+            }
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsentPurpose"
+                  },
+                  "maxItems": 2
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Purpose"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/auth/staff/google/callback": {
       "get": {
         "tags": [
           "identity"
         ],
-        "summary": "Where Google sends staff back to",
-        "description": "Signs the staff member in (a 12-hour staff session; any earlier session in this browser\nends) and sends them to the web app's staff tools, or back to its staff sign-in page with an\nerror code: STAFF_ACCOUNT_NOT_ALLOWED, STAFF_SIGN_IN_EXPIRED, STAFF_SIGN_IN_CANCELLED or\nSERVICE_UNAVAILABLE.",
+        "summary": "Where Google sends people back to",
+        "description": "For a staff sign-in: signs the staff member in (a 12-hour staff session; any earlier\nsession in this browser ends) and sends them to the web app's staff tools, or back to its\nstaff sign-in page with an error code: STAFF_ACCOUNT_NOT_ALLOWED, STAFF_SIGN_IN_EXPIRED,\nSTAFF_SIGN_IN_CANCELLED or SERVICE_UNAVAILABLE.\n\nFor anyone else's (started at /v1/auth/google): signs them in and sends them on to the page\nthey came from, or back to the web app's sign-in page with an error code:\nCONSENT_REQUIRED, GOOGLE_ACCOUNT_NOT_USABLE, GOOGLE_SIGN_IN_EXPIRED,\nGOOGLE_SIGN_IN_CANCELLED, ACCOUNT_SUSPENDED, PRIVACY_NOTICE_CHANGED or\nSERVICE_UNAVAILABLE.",
         "operationId": "identityFinishGoogleSignIn",
         "parameters": [
           {
@@ -3479,7 +3664,7 @@
           "catalog"
         ],
         "summary": "Change an owner's business details",
-        "description": "Only the fields sent change; `gstin: null` clears it.",
+        "description": "Only the fields sent change; `gstin: null` clears it. `email` adds the owner's address to\ntheir account if it has none.",
         "operationId": "catalogUpdateOwner",
         "parameters": [
           {
@@ -11991,8 +12176,26 @@
             "title": "Name"
           },
           "phone": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           }
         },
         "additionalProperties": false,
@@ -12002,7 +12205,7 @@
           "phone"
         ],
         "title": "BookingContact",
-        "description": "Whom ops call."
+        "description": "Whom ops call, or write to: an account has a phone, an email address or both."
       },
       "BookingDisputeRef": {
         "properties": {
@@ -13041,8 +13244,26 @@
             "title": "Name"
           },
           "contact": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Contact"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           }
         },
         "additionalProperties": false,
@@ -13051,7 +13272,8 @@
           "name",
           "contact"
         ],
-        "title": "CheckoutPrefill"
+        "title": "CheckoutPrefill",
+        "description": "What the gateway's checkout fills in for the student; it asks for anything missing."
       },
       "CheckoutResult": {
         "properties": {
@@ -13599,8 +13821,26 @@
             "title": "Name"
           },
           "phone": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           }
         },
         "additionalProperties": false,
@@ -13610,7 +13850,7 @@
           "phone"
         ],
         "title": "DisputeStudent",
-        "description": "The student, for ops to call."
+        "description": "The student, for ops to call or write to."
       },
       "DocumentCreate": {
         "properties": {
@@ -13794,6 +14034,30 @@
           "bps"
         ],
         "title": "EarlyBirdRuleParams"
+      },
+      "EmailCodeRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 262,
+            "title": "Email"
+          },
+          "humanCheckToken": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Humanchecktoken",
+            "description": "The token of the sign-in form's Cloudflare Turnstile widget, whose action is `otp_request`."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "humanCheckToken"
+        ],
+        "title": "EmailCodeRequest",
+        "description": "Ask for a sign-in code by email."
       },
       "FeeBasis": {
         "type": "string",
@@ -15941,7 +16205,14 @@
             "title": "Id"
           },
           "phone": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Phone"
           },
           "email": {
@@ -17960,6 +18231,18 @@
               }
             ],
             "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 262
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           }
         },
         "additionalProperties": false,
@@ -18013,6 +18296,17 @@
               }
             ],
             "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           },
           "name": {
             "anyOf": [
@@ -18132,12 +18426,24 @@
               }
             ],
             "title": "Gstin"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 262
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "OwnerUpdate",
-        "description": "Only the fields sent change; ``gstin: null`` clears it."
+        "description": "Only the fields sent change; ``gstin: null`` clears it. ``email`` adds the owner's address\nto their account if it has none (it can't be changed or removed here)."
       },
       "OwnerVisit": {
         "properties": {
@@ -20596,8 +20902,26 @@
             "title": "Id"
           },
           "phone": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           },
           "name": {
             "anyOf": [
@@ -21452,6 +21776,31 @@
         ],
         "title": "SessionList"
       },
+      "SignInMethods": {
+        "properties": {
+          "phone": {
+            "type": "boolean",
+            "title": "Phone"
+          },
+          "email": {
+            "type": "boolean",
+            "title": "Email"
+          },
+          "google": {
+            "type": "boolean",
+            "title": "Google"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "phone",
+          "email",
+          "google"
+        ],
+        "title": "SignInMethods",
+        "description": "The ways to sign in here now. Phone codes wait for the text sender's DLT registration."
+      },
       "SignInResult": {
         "properties": {
           "user": {
@@ -21697,7 +22046,14 @@
             "title": "Name"
           },
           "phone": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Phone"
           },
           "email": {
@@ -23298,8 +23654,26 @@
             "title": "Name"
           },
           "phone": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           }
         },
         "additionalProperties": false,

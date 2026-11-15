@@ -137,6 +137,19 @@ class Settings(DatabaseSettings):
     # Visit confirmations and reminders (ADR 0033). "console" writes them to the worker's log
     # (local only); "unavailable" sends nothing until the founders choose an SMS provider.
     text_sender: Literal["console", "unavailable"] = "console"
+    # Email (ADR 0068): sign-in codes and every message to a person with an address. "console"
+    # writes them to the log (local only); "smtp" sends through an SMTP server (Gmail's, with a
+    # Google Workspace account's app password); "unavailable" sends nothing.
+    mail_sender: Literal["console", "smtp", "unavailable"] = "console"
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    # The address messages come from (a Workspace account or one of its aliases).
+    mail_from: str | None = None
+    # Sign-in by a code sent to a phone (ADR 0068): off until the SMS sender's DLT registration is
+    # done, when email codes and Google carry sign-in.
+    phone_sign_in: bool = True
     # Product analytics (ADR 0035): the PostHog project's key and its ingestion host, such as
     # https://eu.i.posthog.com. The founders choose the account and its region; until both are
     # set, the funnel's server-side steps aren't sent.
@@ -164,7 +177,7 @@ class Settings(DatabaseSettings):
     # The version of the privacy notice the web app shows, which every consent records (DPDP).
     # Changing it asks everyone to agree again. A "draft" one (not yet reviewed by a lawyer)
     # can't go to production.
-    privacy_notice_version: str = Field(default="draft-1", pattern=r"^[a-z0-9][a-z0-9.-]{0,63}$")
+    privacy_notice_version: str = Field(default="draft-2", pattern=r"^[a-z0-9][a-z0-9.-]{0,63}$")
     # The owner agreement owners accept (ADR 0025): a file in catalog/data/agreements. Changing it
     # asks every owner to accept again. A "draft" one (not yet reviewed by a lawyer) can't go to
     # production.
@@ -229,6 +242,9 @@ class Settings(DatabaseSettings):
         "invoice_seller_address",
         "invoice_seller_gstin",
         "invoice_sac_code",
+        "smtp_username",
+        "smtp_password",
+        "mail_from",
         mode="before",
     )
     @classmethod
@@ -310,6 +326,15 @@ class Settings(DatabaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _smtp_complete(self) -> Self:
+        if self.mail_sender == "smtp" and (
+            self.smtp_username is None or self.smtp_password is None or self.mail_from is None
+        ):
+            msg = "MAIL_SENDER=smtp needs SMTP_USERNAME, SMTP_PASSWORD and MAIL_FROM"
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
     def _google_sign_in_complete(self) -> Self:
         if (self.google_client_id is None) != (self.google_client_secret is None):
             msg = "set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET together, or neither"
@@ -370,6 +395,9 @@ class Settings(DatabaseSettings):
             raise ValueError(msg)
         if self.text_sender == "console":
             msg = f"TEXT_SENDER=console writes messages to the log; not allowed in {self.app_env}"
+            raise ValueError(msg)
+        if self.mail_sender == "console":
+            msg = f"MAIL_SENDER=console writes email to the log; not allowed in {self.app_env}"
             raise ValueError(msg)
         if self.revalidate_secret is None:
             # Without it, a listing's change would wait for the web app's caches to expire.

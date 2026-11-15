@@ -80,6 +80,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/email/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a sign-in code by email
+         * @description Sends a six-digit code to the address, replacing any earlier code; sign in with it at
+         *     /v1/auth/otp/verify. The answer is the same whether or not the address has an account.
+         */
+        post: operations["identityRequestEmailCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The ways to sign in here
+         * @description Which sign-in methods work now, so the sign-in page offers only those.
+         */
+        get: operations["identitySignInMethods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/otp/verify": {
         parameters: {
             query?: never;
@@ -91,9 +132,9 @@ export interface paths {
         put?: never;
         /**
          * Sign in with the code
-         * @description Checks the code and signs the phone's owner in, creating the account on first sign-in,
-         *     which needs consent to the privacy notice. Sets the session and CSRF cookies; any earlier
-         *     session in this browser ends.
+         * @description Checks the code, sent by text or by email, and signs in the owner of the phone or address,
+         *     creating the account on first sign-in, which needs consent to the privacy notice. Sets the
+         *     session and CSRF cookies; any earlier session in this browser ends.
          */
         post: operations["identityVerifyOtp"];
         delete?: never;
@@ -124,6 +165,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sign in with Google
+         * @description Open this in the browser (not with fetch): it goes on to Google, which sends the browser
+         *     back to the callback, and then to ``next`` (a page of the site; the account page otherwise).
+         *     A first sign-in makes the account and needs consent: send ``notice`` (the privacy notice's
+         *     version shown) and each ``purpose`` the person chose, or it comes back to the web app's
+         *     sign-in page with ?error=CONSENT_REQUIRED, as it does with any other failure's code.
+         */
+        get: operations["identityStartPeopleGoogleSignIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/staff/google/callback": {
         parameters: {
             query?: never;
@@ -132,10 +197,16 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Where Google sends staff back to
-         * @description Signs the staff member in (a 12-hour staff session; any earlier session in this browser
-         *     ends) and sends them to the web app's staff tools, or back to its staff sign-in page with an
-         *     error code: STAFF_ACCOUNT_NOT_ALLOWED, STAFF_SIGN_IN_EXPIRED, STAFF_SIGN_IN_CANCELLED or
+         * Where Google sends people back to
+         * @description For a staff sign-in: signs the staff member in (a 12-hour staff session; any earlier
+         *     session in this browser ends) and sends them to the web app's staff tools, or back to its
+         *     staff sign-in page with an error code: STAFF_ACCOUNT_NOT_ALLOWED, STAFF_SIGN_IN_EXPIRED,
+         *     STAFF_SIGN_IN_CANCELLED or SERVICE_UNAVAILABLE.
+         *
+         *     For anyone else's (started at /v1/auth/google): signs them in and sends them on to the page
+         *     they came from, or back to the web app's sign-in page with an error code:
+         *     CONSENT_REQUIRED, GOOGLE_ACCOUNT_NOT_USABLE, GOOGLE_SIGN_IN_EXPIRED,
+         *     GOOGLE_SIGN_IN_CANCELLED, ACCOUNT_SUSPENDED, PRIVACY_NOTICE_CHANGED or
          *     SERVICE_UNAVAILABLE.
          */
         get: operations["identityFinishGoogleSignIn"];
@@ -1060,7 +1131,8 @@ export interface paths {
         head?: never;
         /**
          * Change an owner's business details
-         * @description Only the fields sent change; `gstin: null` clears it.
+         * @description Only the fields sent change; `gstin: null` clears it. `email` adds the owner's address to
+         *     their account if it has none.
          */
         patch: operations["catalogUpdateOwner"];
         trace?: never;
@@ -3681,13 +3753,15 @@ export interface components {
         };
         /**
          * BookingContact
-         * @description Whom ops call.
+         * @description Whom ops call, or write to: an account has a phone, an email address or both.
          */
         BookingContact: {
             /** Name */
             name: string | null;
             /** Phone */
-            phone: string;
+            phone: string | null;
+            /** Email */
+            email?: string | null;
         };
         /** BookingDisputeRef */
         BookingDisputeRef: {
@@ -4027,12 +4101,17 @@ export interface components {
          * @enum {string}
          */
         CheckoutOutcome: "paid" | "waiting" | "not_paid" | "late";
-        /** CheckoutPrefill */
+        /**
+         * CheckoutPrefill
+         * @description What the gateway's checkout fills in for the student; it asks for anything missing.
+         */
         CheckoutPrefill: {
             /** Name */
             name: string | null;
             /** Contact */
-            contact: string;
+            contact: string | null;
+            /** Email */
+            email?: string | null;
         };
         /** CheckoutResult */
         CheckoutResult: {
@@ -4239,13 +4318,15 @@ export interface components {
         DisputeStatus: "open" | "resolved_refund" | "resolved_uphold";
         /**
          * DisputeStudent
-         * @description The student, for ops to call.
+         * @description The student, for ops to call or write to.
          */
         DisputeStudent: {
             /** Name */
             name: string | null;
             /** Phone */
-            phone: string;
+            phone: string | null;
+            /** Email */
+            email?: string | null;
         };
         /** DocumentCreate */
         DocumentCreate: {
@@ -4320,6 +4401,19 @@ export interface components {
             minDaysBefore: number;
             /** Bps */
             bps: number;
+        };
+        /**
+         * EmailCodeRequest
+         * @description Ask for a sign-in code by email.
+         */
+        EmailCodeRequest: {
+            /** Email */
+            email: string;
+            /**
+             * Humanchecktoken
+             * @description The token of the sign-in form's Cloudflare Turnstile widget, whose action is `otp_request`.
+             */
+            humanCheckToken: string;
         };
         /**
          * FeeBasis
@@ -5135,7 +5229,7 @@ export interface components {
              */
             id: string;
             /** Phone */
-            phone: string;
+            phone: string | null;
             /** Email */
             email: string | null;
             /** Name */
@@ -5848,6 +5942,8 @@ export interface components {
             gstin?: string | null;
             /** Name */
             name?: string | null;
+            /** Email */
+            email?: string | null;
         };
         /** OwnerInfo */
         OwnerInfo: {
@@ -5866,6 +5962,8 @@ export interface components {
             status: components["schemas"]["OwnerStatus"];
             /** Phone */
             phone: string | null;
+            /** Email */
+            email?: string | null;
             /** Name */
             name: string | null;
             /** Agreementversion */
@@ -5887,7 +5985,8 @@ export interface components {
         OwnerStatus: "active" | "suspended";
         /**
          * OwnerUpdate
-         * @description Only the fields sent change; ``gstin: null`` clears it.
+         * @description Only the fields sent change; ``gstin: null`` clears it. ``email`` adds the owner's address
+         *     to their account if it has none (it can't be changed or removed here).
          */
         OwnerUpdate: {
             /** Legalname */
@@ -5896,6 +5995,8 @@ export interface components {
             businessName?: string | null;
             /** Gstin */
             gstin?: string | null;
+            /** Email */
+            email?: string | null;
         };
         /**
          * OwnerVisit
@@ -6779,7 +6880,9 @@ export interface components {
              */
             id: string;
             /** Phone */
-            phone: string;
+            phone: string | null;
+            /** Email */
+            email?: string | null;
             /** Name */
             name: string | null;
         };
@@ -7108,6 +7211,18 @@ export interface components {
             sessions: components["schemas"]["SessionInfo"][];
         };
         /**
+         * SignInMethods
+         * @description The ways to sign in here now. Phone codes wait for the text sender's DLT registration.
+         */
+        SignInMethods: {
+            /** Phone */
+            phone: boolean;
+            /** Email */
+            email: boolean;
+            /** Google */
+            google: boolean;
+        };
+        /**
          * SignInResult
          * @description Signed in, with the session cookie set. Use ``csrfToken`` (also a cookie) from now on.
          */
@@ -7201,7 +7316,7 @@ export interface components {
             /** Name */
             name: string | null;
             /** Phone */
-            phone: string;
+            phone: string | null;
             /** Email */
             email: string | null;
             /** Roles */
@@ -7722,7 +7837,9 @@ export interface components {
             /** Name */
             name: string | null;
             /** Phone */
-            phone: string;
+            phone: string | null;
+            /** Email */
+            email?: string | null;
         };
         /**
          * VisitPlace
@@ -7958,6 +8075,86 @@ export interface operations {
             };
         };
     };
+    identityRequestEmailCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtpChallengeIssued"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    identitySignInMethods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInMethods"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     identityVerifyOtp: {
         parameters: {
             query?: never;
@@ -8003,6 +8200,46 @@ export interface operations {
     identityStartGoogleSignIn: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            303: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    identityStartPeopleGoogleSignIn: {
+        parameters: {
+            query?: {
+                next?: string | null;
+                notice?: string | null;
+                purpose?: components["schemas"]["ConsentPurpose"][] | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;

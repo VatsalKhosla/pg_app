@@ -166,6 +166,34 @@
   "SignIn": {
     "metaTitle": "Sign in",
     "title": "Sign in or create an account",
+    "email": {
+      "title": "Your email address",
+      "intro": "We'll email you a six-digit code. There's no password to remember.",
+      "label": "Email address",
+      "invalid": "Enter an email address, like name@example.com.",
+      "humanCheck": "First, a quick check that you're not a bot.",
+      "submit": "Email me a code",
+      "sending": "Sending…",
+      "usePhone": "Use your mobile number instead"
+    },
+    "google": {
+      "continue": "Continue with Google",
+      "newHere": {
+        "before": "New here? Tick to agree to the ",
+        "link": "privacy notice",
+        "after": ", so we can make your account. If you have one, there's no need."
+      },
+      "consentNeeded": "To make your account, tick the box to agree to the privacy notice, then continue with Google again.",
+      "or": "or",
+      "errors": {
+        "GOOGLE_ACCOUNT_NOT_USABLE": "That Google account can't sign in here: Google hasn't confirmed its address, or the address belongs to an account that signs in with a different Google account. You can sign in with an email code instead.",
+        "GOOGLE_SIGN_IN_EXPIRED": "That Google sign-in took too long or was started in another tab. Please try again.",
+        "GOOGLE_SIGN_IN_CANCELLED": "Google sign-in was cancelled. You can try again, or use an email code.",
+        "ACCOUNT_SUSPENDED": "This account is suspended. Write to us from the contact page if you think that's wrong.",
+        "PRIVACY_NOTICE_CHANGED": "Our privacy notice changed while you were signing in. Please read it and try again.",
+        "SERVICE_UNAVAILABLE": "Signing in with Google isn't working right now. Please use an email code."
+      }
+    },
     "phone": {
       "title": "Your mobile number",
       "intro": "We'll send a six-digit code to it by SMS.",
@@ -174,18 +202,21 @@
       "invalid": "Enter a 10-digit Indian mobile number.",
       "humanCheck": "First, a quick check that you're not a bot.",
       "submit": "Send code",
-      "sending": "Sending…"
+      "sending": "Sending…",
+      "useEmail": "Use your email address instead"
     },
     "code": {
       "title": "Enter the code",
-      "intro": "We sent a six-digit code to {phone}. It works for 5 minutes.",
-      "developmentCode": "This is a test copy of the site, so no text message is sent. Your code is {code}.",
+      "introEmail": "We emailed a six-digit code to {destination}. It works for 10 minutes. If it isn't in your inbox, look in spam.",
+      "introPhone": "We sent a six-digit code to {destination}. It works for 5 minutes.",
+      "developmentCode": "This is a test copy of the site, so the code isn't sent. Your code is {code}.",
       "label": "Six-digit code",
       "invalid": "The code is six digits.",
       "submit": "Continue",
       "checking": "Checking…",
       "resend": "Send a new code",
       "resendLater": "Didn't get it? You can ask for a new one shortly.",
+      "otherEmail": "Use a different address",
       "otherNumber": "Use a different number"
     },
     "consent": {
@@ -251,6 +282,7 @@
     "title": "Your account",
     "phone": "Mobile number",
     "details": "Your details",
+    "signsInWith": "You sign in with {address}.",
     "signOut": "Sign out",
     "signingOut": "Signing out…",
     "signOutFailed": "Couldn't sign out. Please try again.",
@@ -260,7 +292,7 @@
     "dataIntro": "Ask for your account's deletion. We'll keep only what the law requires us to.",
     "exportButton": "Get a copy of my data",
     "deletionButton": "Ask for my account's deletion",
-    "deletionConfirm": "Ask our team to delete your account? They'll call you to confirm, and tell you what the law makes us keep.",
+    "deletionConfirm": "Ask our team to delete your account? They'll get in touch to confirm, and tell you what the law makes us keep.",
     "status": {
       "exportReceived": "Your copy is being prepared. Refresh this page in a minute.",
       "exportReady": "Your copy is ready to download until {date}.",
@@ -881,7 +913,7 @@
     "signInIntro": "For the {brand} team.",
     "google": "Sign in with Google",
     "googleHint": "With your work Google account.",
-    "withoutGoogle": "Or, without Google: your phone, then your authenticator app.",
+    "withoutGoogle": "Or, without Google: a code sent to your email, then your authenticator app.",
     "errors": {
       "STAFF_ACCOUNT_NOT_ALLOWED": "That Google account can't sign in to staff tools. Use your work account, or ask an admin.",
       "STAFF_SIGN_IN_EXPIRED": "That sign-in took too long or was interrupted. Please start again.",
@@ -974,6 +1006,9 @@
       "phone": "Owner's mobile number",
       "phoneInvalid": "Enter a 10-digit mobile number.",
       "name": "Owner's own name (optional)",
+      "email": "Owner's email address",
+      "emailHint": "They sign in with it: phone sign-in is off until text messages are set up.",
+      "emailInvalid": "Enter an email address, like name@example.com.",
       "legalName": "Legal name",
       "businessName": "Business name",
       "gstin": "GSTIN (optional)",
@@ -995,6 +1030,7 @@
     "ownerPage": {
       "metaTitle": "Owner",
       "details": "Business details",
+      "signsInWith": "Signs in with {email}.",
       "save": "Save",
       "saving": "Saving…",
       "saved": "Saved.",
@@ -1269,6 +1305,7 @@
       "ROOM_FULL": "That room already has as many beds as its sharing.",
       "LABEL_TAKEN": "That name is already used here.",
       "OWNER_EXISTS": "That number already belongs to an owner. Find them above.",
+      "EMAIL_TAKEN": "That email address belongs to another account, or this owner already has a different one.",
       "MEDIA_NOT_ALLOWED": "That file can't be used:",
       "MEDIA_NOT_UPLOADED": "The file didn't reach storage. Try again.",
       "NOT_FOUND": "That's gone. Reload the page.",
@@ -1345,6 +1382,7 @@
         "metaTitle": "Visit",
         "requestedAt": "Asked for {when}",
         "call": "Call {phone}",
+        "write": "Email {email}",
         "schedule": "Book a time",
         "reschedule": "Change the time or agent",
         "time": "Time",
@@ -2231,6 +2269,7 @@
         "directions": "Directions",
         "student": "Student",
         "call": "Call {name}",
+        "write": "Email {name}",
         "checkIn": "Check in at the building",
         "locating": "Finding where you are…",
         "noLocation": "Your phone couldn't say where you are. Allow location for this site, then try again.",

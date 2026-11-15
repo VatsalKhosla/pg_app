@@ -1,12 +1,4 @@
-import { readFile } from "node:fs/promises";
-
-import { API_LOG } from "./api-log";
-
-interface LogLine {
-  event?: string;
-  phone?: string;
-  code?: string;
-}
+import { expect, type Page } from "@playwright/test";
 
 /** A mobile number nobody else in the run uses: ten digits starting 6 to 9. */
 export function newMobile(): string {
@@ -14,28 +6,22 @@ export function newMobile(): string {
   return `9${digits}`;
 }
 
-/**
- * The newest sign-in code the API "sent" to `mobile`: the console sender logs it, with the number
- * masked to its last four digits (apps/api/src/app/modules/identity/adapters/console_otp.py).
- * Waits a little for the line to arrive.
- */
-export async function codeSentTo(mobile: string, { after = 0 } = {}): Promise<string> {
-  const lastFour = `******${mobile.slice(-4)}`;
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    const lines = (await readFile(API_LOG, "utf8")).split("\n").slice(after);
-    for (const line of lines.reverse()) {
-      if (!line.startsWith("{")) continue;
-      const entry = JSON.parse(line) as LogLine;
-      if (entry.event === "development sign-in code, not sent" && entry.phone === lastFour) {
-        if (entry.code !== undefined) return entry.code;
-      }
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  throw new Error(`no sign-in code was logged for ${lastFour}`);
+/** A fictional address nobody else in the run uses. */
+export function newEmail(who = "student"): string {
+  return `${who}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}@example.com`;
 }
 
-/** How many lines the API's log has now, to look only at what comes after. */
-export async function logLength(): Promise<number> {
-  return (await readFile(API_LOG, "utf8")).split("\n").length - 1;
+/**
+ * Ask for a code for `email` and type in the one the API "sent". The tests' API sends no mail: it
+ * logs it, and the sign-in page shows the code, as a test site does (scripts/e2e-env.sh).
+ */
+export async function enterEmailAndCode(page: Page, email: string): Promise<void> {
+  await page.getByLabel("Email address", { exact: true }).fill(email);
+  await page.getByRole("button", { name: "Email me a code" }).click();
+  await expect(page.getByRole("heading", { name: "Enter the code" })).toBeVisible();
+  const shown = await page.getByText(/Your code is [0-9]{6}\./u).textContent();
+  const code = /Your code is ([0-9]{6})\./u.exec(shown ?? "")?.[1];
+  if (code === undefined) throw new Error("the sign-in page showed no code");
+  await page.getByLabel("Six-digit code", { exact: true }).fill(code);
+  await page.getByRole("button", { name: "Continue" }).click();
 }

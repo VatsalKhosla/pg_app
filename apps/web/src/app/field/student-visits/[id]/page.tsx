@@ -82,12 +82,22 @@ export default async function StudentVisitPage({
         <h2 id="student-title" className="font-display text-title-3 text-foreground">
           {t("detail.student")}
         </h2>
-        <a
-          href={`tel:${visit.student.phone}`}
-          className="inline-flex min-h-6 items-center font-medium text-primary underline underline-offset-4"
-        >
-          {t("detail.call", { name: visit.student.name ?? visit.student.phone })}
-        </a>
+        {visit.student.phone === null ? null : (
+          <a
+            href={`tel:${visit.student.phone}`}
+            className="inline-flex min-h-6 items-center font-medium text-primary underline underline-offset-4"
+          >
+            {t("detail.call", { name: visit.student.name ?? visit.student.phone })}
+          </a>
+        )}
+        {visit.student.phone !== null || visit.student.email == null ? null : (
+          <a
+            href={`mailto:${visit.student.email}`}
+            className="inline-flex min-h-6 items-center font-medium text-primary underline underline-offset-4"
+          >
+            {t("detail.write", { name: visit.student.name ?? visit.student.email })}
+          </a>
+        )}
       </section>
       {visit.checkIn === null ? null : (
         <p className="text-sm text-muted-foreground">

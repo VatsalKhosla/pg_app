@@ -28,6 +28,9 @@ from tests.conftest import NOTICE_VERSION, TEST_SECRET_KEY
 
 pytestmark = pytest.mark.integration
 
+# A notice newer than the one in force, whatever that is.
+NEWER_NOTICE = f"{NOTICE_VERSION}.1"
+
 type Scenario = Callable[[FastAPI, httpx.AsyncClient], Awaitable[Any]]
 
 START = datetime(2027, 7, 14, 10, 0, tzinfo=UTC)
@@ -229,7 +232,7 @@ def test_a_new_notice_asks_signed_in_people_to_agree_again(run: Callable[..., An
         )
         agreed = await client.post(
             "/v1/me/consents",
-            json={"noticeVersion": "draft-2", "purposes": ["account"]},
+            json={"noticeVersion": NEWER_NOTICE, "purposes": ["account"]},
             headers=_browser(session),
         )
         after = (await client.get("/v1/me", headers=signed_in)).json()["consentRequired"]
@@ -239,7 +242,7 @@ def test_a_new_notice_asks_signed_in_people_to_agree_again(run: Callable[..., An
         assert agreed.status_code == 200
         assert after is False
 
-    run(under_a_new_notice, privacy_notice_version="draft-2")
+    run(under_a_new_notice, privacy_notice_version=NEWER_NOTICE)
 
 
 def test_optional_consent_comes_and_goes_and_the_accounts_stays(run: Callable[..., Any]) -> None:

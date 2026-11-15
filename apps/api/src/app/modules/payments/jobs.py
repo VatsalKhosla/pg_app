@@ -93,8 +93,8 @@ def refund_text_handler(texts: Texts) -> JobHandler:
         if found is None:
             logger.info("no refund text to send")
             return
-        phone, template, values = found
-        await texts.send(phone, template, values)
+        to, template, values = found
+        await texts.send(to, template, values)
 
     return handle
 

@@ -104,7 +104,10 @@ def _staff(view: VisitView) -> StaffVisit:
             location=LatLng(lat=place.exact.lat, lng=place.exact.lng),
         ),
         student=VisitPerson(
-            id=view.student.public_id, name=view.student.name, phone=view.student.phone_e164
+            id=view.student.public_id,
+            name=view.student.name,
+            phone=view.student.phone_e164,
+            email=view.student.email,
         ),
         preferred_starts=visit.preferred_starts,
         requested_at=visit.requested_at,
@@ -112,7 +115,10 @@ def _staff(view: VisitView) -> StaffVisit:
         agent=None
         if view.agent is None
         else VisitPerson(
-            id=view.agent.public_id, name=view.agent.name, phone=view.agent.phone_e164
+            id=view.agent.public_id,
+            name=view.agent.name,
+            phone=view.agent.phone_e164,
+            email=view.agent.email,
         ),
         check_in=check_in,
         outcome=None if visit.outcome is None else Outcome(visit.outcome),

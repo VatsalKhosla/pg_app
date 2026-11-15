@@ -89,13 +89,25 @@ export default async function OpsVisitPage({ params }: PageProps<"/ops/visits/[i
         <h2 id="student-title" className="font-display text-title-3 text-foreground">
           {t("student")}
         </h2>
-        <p className="font-medium text-foreground">{visit.student.name ?? visit.student.phone}</p>
-        <a
-          href={`tel:${visit.student.phone}`}
-          className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
-        >
-          {t("detail.call", { phone: visit.student.phone })}
-        </a>
+        <p className="font-medium text-foreground">
+          {visit.student.name ?? visit.student.phone ?? visit.student.email}
+        </p>
+        {visit.student.phone === null ? null : (
+          <a
+            href={`tel:${visit.student.phone}`}
+            className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+          >
+            {t("detail.call", { phone: visit.student.phone })}
+          </a>
+        )}
+        {visit.student.email == null ? null : (
+          <a
+            href={`mailto:${visit.student.email}`}
+            className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline underline-offset-4"
+          >
+            {t("detail.write", { email: visit.student.email })}
+          </a>
+        )}
       </section>
       <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs">
         <StudentVisitForms

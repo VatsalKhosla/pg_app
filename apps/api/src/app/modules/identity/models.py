@@ -42,8 +42,10 @@ class User(Model):
     __tablename__ = "users"
 
     public_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, default=new_public_id)
-    # E.164 (+919876543210): the account's login identity.
-    phone_e164: Mapped[str] = mapped_column(Text, unique=True)
+    # E.164 (+919876543210). An account has a phone, an email address or both (ADR 0068): each
+    # signs in to it, by a code sent there (or, for the address, by Google).
+    phone_e164: Mapped[str | None] = mapped_column(Text, unique=True)
+    # Proven or entered by staff, never typed in unproven (domain/emails.py).
     email: Mapped[str | None] = mapped_column(CITEXT, unique=True)
     name: Mapped[str | None] = mapped_column(Text)
     # Where they study or work, as they write it.
@@ -55,6 +57,7 @@ class User(Model):
 
     __table_args__ = (
         CheckConstraint(r"phone_e164 ~ '^\+[1-9][0-9]{6,14}$'", name="phone_e164"),
+        CheckConstraint("phone_e164 IS NOT NULL OR email IS NOT NULL", name="contact"),
         CheckConstraint("status IN ('active', 'suspended')", name="status"),
         CheckConstraint(_one_of("gender", Gender), name="gender"),
     )
@@ -103,14 +106,16 @@ class UserSession(Model):
 
 
 class OtpChallenge(Model):
-    """One sign-in code sent to a phone. The code is kept only as an HMAC under SECRET_KEY, bound to
-    the challenge, so a leaked table reveals no code."""
+    """One sign-in code sent to a phone or an email address. The code is kept only as an HMAC under
+    SECRET_KEY, bound to the challenge, so a leaked table reveals no code."""
 
     __tablename__ = "otp_challenges"
 
     # The browser's handle on the challenge; the code alone identifies nothing.
     public_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, default=new_public_id)
-    phone_e164: Mapped[str] = mapped_column(Text)
+    # Where the code went: one of the two.
+    phone_e164: Mapped[str | None] = mapped_column(Text)
+    email: Mapped[str | None] = mapped_column(CITEXT)
     purpose: Mapped[str] = mapped_column(Text)
     code_hash: Mapped[str] = mapped_column(Text)
     attempts: Mapped[int] = mapped_column(Integer, server_default="0")
@@ -125,7 +130,9 @@ class OtpChallenge(Model):
     __table_args__ = (
         CheckConstraint(_one_of("purpose", OtpPurpose), name="purpose"),
         CheckConstraint("attempts >= 0", name="attempts"),
+        CheckConstraint("num_nonnulls(phone_e164, email) = 1", name="destination"),
         Index("ix_otp_challenges_phone_e164_requested_at", "phone_e164", "requested_at"),
+        Index("ix_otp_challenges_email_requested_at", "email", "requested_at"),
     )
 
 

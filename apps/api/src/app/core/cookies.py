@@ -23,6 +23,8 @@ CSRF_HEADER: Final = "X-CSRF-Token"
 # A Google sign-in in progress (step 1.3): the login id its state, nonce and PKCE verifier come
 # from. HttpOnly, host-only and short-lived.
 STAFF_LOGIN_COOKIE: Final = "__Host-staff-login"
+# The same for anyone signing in with Google (ADR 0068).
+GOOGLE_LOGIN_COOKIE: Final = "__Host-google-login"
 
 
 @dataclass(frozen=True)

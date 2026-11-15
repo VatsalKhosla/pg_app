@@ -60,7 +60,7 @@ def grievance_text_handler(texts: Texts) -> JobHandler:
         if found is None:
             logger.info("grievance text no longer applies", template=template)
             return
-        phone, values = found
-        await texts.send(phone, template, values)
+        to, values = found
+        await texts.send(to, template, values)
 
     return handle

@@ -28,6 +28,7 @@ from app.core.telemetry import (
     configure_sentry,
     configure_tracing,
 )
+from app.messages import build_mailer
 from app.modules.booking.contact import BookingContacts
 from app.modules.booking.router import router as booking_router
 from app.modules.catalog.agreements import FileAgreements
@@ -36,10 +37,12 @@ from app.modules.catalog.router import router as catalog_router
 from app.modules.compliance.router import router as compliance_router
 from app.modules.geo.router import router as geo_router
 from app.modules.identity.adapters.console_otp import ConsoleOtpSender
+from app.modules.identity.adapters.email_codes import EmailCodes
 from app.modules.identity.adapters.google_oidc import GoogleOidc
 from app.modules.identity.adapters.screen_otp import ScreenOtpSender
 from app.modules.identity.adapters.unavailable_otp import UnavailableOtpSender
 from app.modules.identity.auth import authenticate_session
+from app.modules.identity.domain.otp import EMAIL_CODE_TTL
 from app.modules.identity.router import GOOGLE_CALLBACK_PATH
 from app.modules.identity.router import router as identity_router
 from app.modules.insights.router import router as insights_router
@@ -73,6 +76,46 @@ CORS_ALLOWED_HEADERS = ["Content-Type", CSRF_HEADER, "Idempotency-Key", REQUEST_
 CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
 # Outside providers: connect within 3 s, answer within 10 s (the backend rules).
 PROVIDER_TIMEOUT = httpx.Timeout(10.0, connect=3.0)
+
+
+def email_codes(settings: Settings, *, shows_code: bool) -> EmailCodes:
+    """Sign-in codes by email: through the mailer when there is one (ConsoleMailer's log shows
+    the code, as the console text sender does); without one, shown on screen where text codes
+    are (a test site), and off anywhere else."""
+    if settings.mail_sender == "unavailable":
+        return EmailCodes(
+            None, shows_code=shows_code, ttl=EMAIL_CODE_TTL, site_url=settings.site_url
+        )
+    return EmailCodes(
+        build_mailer(settings),
+        shows_code=settings.mail_sender == "console",
+        ttl=EMAIL_CODE_TTL,
+        site_url=settings.site_url,
+    )
+
+
+def _set_up_sign_in(
+    app: FastAPI, settings: Settings, *, clock: Clock, google_http: httpx.AsyncClient
+) -> None:
+    """Codes by text, codes by email and Google. Codes by text wait for the sender's DLT
+    registration; email and Google carry sign-in meanwhile (ADR 0068)."""
+    app.state.otp_sender = _OTP_SENDERS[settings.otp_sender]()
+    app.state.phone_sign_in = settings.phone_sign_in and settings.otp_sender != "unavailable"
+    app.state.email_codes = email_codes(settings, shows_code=app.state.otp_sender.shows_code)
+    app.state.google_sign_in = (
+        None
+        if settings.google_client_id is None or settings.google_client_secret is None
+        else GoogleOidc(
+            google_http,
+            client_id=settings.google_client_id,
+            client_secret=settings.google_client_secret,
+            redirect_uri=f"{settings.api_url}{GOOGLE_CALLBACK_PATH}",
+            clock=clock,
+            hosted_domain=settings.google_hosted_domain_hint,
+        )
+    )
+
+
 _OTP_SENDERS: Final = {
     "console": ConsoleOtpSender,
     "screen": ScreenOtpSender,
@@ -177,20 +220,8 @@ def create_app(
                 turnstile_http, settings.turnstile_secret_key, hostnames=settings.web_hostnames
             )
         )
-        app.state.otp_sender = _OTP_SENDERS[settings.otp_sender]()
+        _set_up_sign_in(app, settings, clock=clock, google_http=google_http)
         app.state.payment_gateway = build_gateway(settings, payments_http)
-        app.state.google_sign_in = (
-            None
-            if settings.google_client_id is None or settings.google_client_secret is None
-            else GoogleOidc(
-                google_http,
-                client_id=settings.google_client_id,
-                client_secret=settings.google_client_secret,
-                redirect_uri=f"{settings.api_url}{GOOGLE_CALLBACK_PATH}",
-                clock=clock,
-                hosted_domain=settings.google_hosted_domain_hint,
-            )
-        )
         logger.info("api started", environment=settings.app_env, version=SERVICE_VERSION)
         try:
             yield

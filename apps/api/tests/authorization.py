@@ -221,11 +221,17 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ("POST", "/v1/auth/otp/request"): Rule(
         everyone(202), lambda: {"json": {"phone": _new_mobile(), "humanCheckToken": "token"}}
     ),
+    ("POST", "/v1/auth/email/request"): Rule(
+        everyone(202),
+        lambda: {"json": {"email": f"{_new_mobile()}@example.com", "humanCheckToken": "token"}},
+    ),
+    ("GET", "/v1/auth/methods"): Rule(everyone(200)),
     # A challenge nobody asked for: refused alike, whoever asks.
     ("POST", "/v1/auth/otp/verify"): Rule(
         everyone(400), lambda: {"json": {"challengeId": str(uuid.uuid7()), "code": "123456"}}
     ),
-    # Google sign-in isn't set up here: both redirect to the staff sign-in page with an error.
+    # Google sign-in isn't set up here: each redirects to a sign-in page with an error.
+    ("GET", "/v1/auth/google"): Rule(everyone(303)),
     ("GET", "/v1/auth/staff/google"): Rule(everyone(303)),
     ("GET", "/v1/auth/staff/google/callback"): Rule(
         everyone(303), lambda: {"params": {"code": "code", "state": "state"}}

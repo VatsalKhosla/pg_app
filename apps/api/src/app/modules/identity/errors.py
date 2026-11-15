@@ -70,6 +70,40 @@ class StaffAccountNotAllowedError(AppError):
     title = "This account can't sign in to staff tools"
 
 
+class GoogleSignInExpiredError(AppError):
+    """Signing in with Google can't be finished: it took too long, was started in another browser,
+    or its code was already used. Starting again fixes it (ADR 0068)."""
+
+    status = 400
+    code = "GOOGLE_SIGN_IN_EXPIRED"
+    title = "Sign-in expired; please start again"
+
+
+class GoogleSignInCancelledError(AppError):
+    status = 400
+    code = "GOOGLE_SIGN_IN_CANCELLED"
+    title = "Sign-in was cancelled"
+
+
+class GoogleAccountNotUsableError(AppError):
+    """Google hasn't verified the account's address, or the account with that address signs in
+    with a different Google account (an address that changed hands). An email code still
+    works."""
+
+    status = 403
+    code = "GOOGLE_ACCOUNT_NOT_USABLE"
+    title = "This Google account can't sign in here"
+
+
+class EmailTakenError(AppError):
+    """An address can't go on an account (ADR 0068): another account has it, or this one already
+    has a different one, which people keep (they proved it, or staff entered it)."""
+
+    status = 409
+    code = "EMAIL_TAKEN"
+    title = "That email address can't be added"
+
+
 class TotpInvalidError(AppError):
     status = 400
     code = "TOTP_INVALID"

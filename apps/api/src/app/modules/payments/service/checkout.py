@@ -110,7 +110,10 @@ class TokenCheckout:
         async with self._db.begin():
             due = await self._tokens.due(actor, code)
             key = token_key(self._gateway.name, due.code)
-            expires_at = self._mandate_until(due, now)
+            student = (await self._accounts.many([actor.user_id]))[actor.user_id]
+            # A UPI mandate needs the payer's phone at the gateway; without one, the token is an
+            # ordinary payment, as the product's fallback has it (ADR 0068).
+            expires_at = None if student.phone_e164 is None else self._mandate_until(due, now)
             payment = await self._payments.add_once(
                 booking_id=due.booking_id,
                 purpose=PaymentPurpose.TOKEN,
@@ -123,7 +126,6 @@ class TokenCheckout:
             )
             public_id, order_id = payment.public_id, payment.provider_order_id
             mode, customer_id = PaymentMode(payment.mode), payment.provider_customer_id
-            student = (await self._accounts.many([actor.user_id]))[actor.user_id]
         payer = MandatePayer(student.name, student.phone_e164)
         if order_id is None:
             order_id, customer_id = await self._make_order(actor, public_id, due, payer)
@@ -137,7 +139,9 @@ class TokenCheckout:
             amount_paise=due.amount_paise,
             currency=INR,
             expires_in_seconds=max(1, math.ceil(seconds)),
-            prefill=CheckoutPrefill(name=student.name, contact=student.phone_e164),
+            prefill=CheckoutPrefill(
+                name=student.name, contact=student.phone_e164, email=student.email
+            ),
             mode=mode,
             customer_id=customer_id,
         )

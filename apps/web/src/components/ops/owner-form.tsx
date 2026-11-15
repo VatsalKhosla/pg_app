@@ -12,13 +12,16 @@ import { z } from "@/lib/forms/zod";
 import { type Owner, updateOwner } from "@/lib/ops/client";
 
 import { Field, FormOutcome } from "@/components/ui/fields";
-import { GSTIN_MAX, NAME_MAX } from "./owner-picker";
+import { GSTIN_MAX, LOOKS_LIKE_EMAIL, NAME_MAX } from "./owner-picker";
 import { useOpsProblem } from "./problems";
 import { useRefresh } from "./use-refresh";
 
-const FIELDS = ["legalName", "businessName", "gstin"] as const;
+const FIELDS = ["legalName", "businessName", "gstin", "email"] as const;
 
-/** An owner's business details; only what ops changed is sent, and an empty GSTIN clears it. */
+/**
+ * An owner's business details; only what ops changed is sent, and an empty GSTIN clears it. An
+ * owner without an email address can be given one, to sign in with; once set, it stays.
+ */
 export function OwnerForm({ owner }: { owner: Owner }) {
   const t = useTranslations("Ops");
   const problem = useOpsProblem();
@@ -32,6 +35,10 @@ export function OwnerForm({ owner }: { owner: Owner }) {
     legalName: z.string().trim().min(1, required).max(NAME_MAX, tooLong),
     businessName: z.string().trim().min(1, required).max(NAME_MAX, tooLong),
     gstin: z.string().trim().max(GSTIN_MAX, tooLong),
+    email: z.union([
+      z.literal(""),
+      z.string().trim().regex(LOOKS_LIKE_EMAIL, t("owner.emailInvalid")),
+    ]),
   });
   type Values = z.infer<typeof schema>;
   const form = useForm<Values>({
@@ -40,6 +47,7 @@ export function OwnerForm({ owner }: { owner: Owner }) {
       legalName: owner.legalName,
       businessName: owner.businessName,
       gstin: owner.gstin ?? "",
+      email: "",
     },
   });
   const { errors, isSubmitting, dirtyFields } = form.formState;
@@ -52,6 +60,7 @@ export function OwnerForm({ owner }: { owner: Owner }) {
         ...(dirtyFields.legalName ? { legalName: values.legalName } : {}),
         ...(dirtyFields.businessName ? { businessName: values.businessName } : {}),
         ...(dirtyFields.gstin ? { gstin: values.gstin === "" ? null : values.gstin } : {}),
+        ...(values.email === "" ? {} : { email: values.email }),
       };
       if (Object.keys(changes).length > 0) await updateOwner(owner.id, changes);
       // What was saved is the new starting point, so the next save sends only what changes next.
@@ -98,6 +107,28 @@ export function OwnerForm({ owner }: { owner: Owner }) {
             />
           )}
         </Field>
+        {owner.email == null ? (
+          <Field
+            id={`${id}-email`}
+            label={t("owner.email")}
+            hint={t("owner.emailHint")}
+            error={errors.email?.message}
+          >
+            {(control) => (
+              <Input
+                {...control}
+                type="email"
+                autoComplete="off"
+                spellCheck={false}
+                {...form.register("email")}
+              />
+            )}
+          </Field>
+        ) : (
+          <p className="self-end text-sm text-muted-foreground sm:pb-2.5">
+            {t("ownerPage.signsInWith", { email: owner.email })}
+          </p>
+        )}
       </div>
       <FormOutcome failure={failure} {...(saved ? { saved: t("ownerPage.saved") } : {})} />
       <Button type="submit" size="lg" disabled={isSubmitting}>

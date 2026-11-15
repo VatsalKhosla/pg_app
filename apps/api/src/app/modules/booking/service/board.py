@@ -171,8 +171,12 @@ class BookingBoard:
         timer = _timer(booking, dispute, now)
         return OpsBooking(
             **managed.model_dump(),
-            student_contact=BookingContact(name=student.name, phone=student.phone_e164),
-            owner_contact=BookingContact(name=owner.name, phone=owner.phone_e164),
+            student_contact=BookingContact(
+                name=student.name, phone=student.phone_e164, email=student.email
+            ),
+            owner_contact=BookingContact(
+                name=owner.name, phone=owner.phone_e164, email=owner.email
+            ),
             owner_cancellations=await self._bookings.owner_cancellations(booking.owner_id),
             monthly_charges_paise=booking.monthly_charges_paise,
             one_time_charges_paise=booking.one_time_charges_paise,

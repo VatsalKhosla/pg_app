@@ -4,6 +4,7 @@ part (app/jobs.py lists them)."""
 
 from typing import TYPE_CHECKING
 
+from app.modules.identity.domain.otp import Channel, Destination
 from app.modules.identity.domain.staff import IdentityProvider
 from app.modules.identity.repository import (
     ConsentRepository,
@@ -18,6 +19,22 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.modules.identity.models import OtpChallenge, User
+
+
+async def _sign_in_codes(db: AsyncSession, user: User) -> list[OtpChallenge]:
+    """The codes sent to the account's phone and address, oldest first."""
+    challenges = OtpRepository(db)
+    sent = [
+        *([] if user.phone_e164 is None else await challenges.for_phone(user.phone_e164)),
+        *(
+            []
+            if user.email is None
+            else await challenges.sent_to(Destination(Channel.EMAIL, user.email))
+        ),
+    ]
+    return sorted(sent, key=lambda challenge: challenge.requested_at)
 
 
 def _iso(moment: datetime | None) -> str | None:
@@ -73,7 +90,7 @@ async def personal_data(db: AsyncSession, user_id: int) -> dict[str, object]:
                 "ipAddress": challenge.ip_address,
                 "userAgent": challenge.user_agent,
             }
-            for challenge in await OtpRepository(db).for_phone(user.phone_e164)
+            for challenge in await _sign_in_codes(db, user)
         ],
         "googleAccount": None
         if google is None

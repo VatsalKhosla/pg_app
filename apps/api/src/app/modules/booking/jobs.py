@@ -73,8 +73,8 @@ def notify_handler(texts: Texts) -> JobHandler:
         if found is None:
             logger.info("no booking text to send", booking_event=event, to=who)
             return
-        phone, template, values = found
-        await texts.send(phone, template, values)
+        to, template, values = found
+        await texts.send(to, template, values)
 
     return handle
 

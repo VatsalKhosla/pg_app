@@ -18,6 +18,7 @@ from app.core.errors import InvalidTransitionError, NotFoundError
 from app.core.flags import Flag
 from app.core.geometry import NCR_BOUNDS, distance_m
 from app.core.outbox import enqueue
+from app.core.texts import Recipient
 from app.modules.catalog.service import CatalogLookup, VisitPlace
 from app.modules.identity.service import Account, Accounts
 from app.modules.visits.domain.visits import (
@@ -451,7 +452,7 @@ class VisitTexts:
 
     async def message(
         self, visit_id: uuid.UUID, template: str, at: str
-    ) -> tuple[str, dict[str, str]] | None:
+    ) -> tuple[Recipient, dict[str, str]] | None:
         visit = await self._visits.get(visit_id)
         if visit is None or visit.scheduled_at != datetime.fromisoformat(at):
             return None
@@ -467,7 +468,7 @@ class VisitTexts:
         values = {"brand": BRAND_NAME, "pg": place.name, "when": when(visit.scheduled_at)}
         if template != CANCELLED:
             values["address"] = f"{place.address_line}, {place.locality}"
-        return student.phone_e164, values
+        return Recipient(student.phone_e164, student.email), values
 
 
 def _moment(value: datetime | None) -> str | None:

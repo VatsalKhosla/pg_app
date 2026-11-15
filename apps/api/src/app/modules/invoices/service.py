@@ -25,6 +25,7 @@ from app.core.ids import normalize_booking_code
 from app.core.money import format_inr
 from app.core.outbox import enqueue
 from app.core.pagination import split_page
+from app.core.texts import Recipient
 from app.modules.catalog.service import CatalogLookup
 from app.modules.identity.service import Accounts
 from app.modules.invoices.domain.invoices import (
@@ -258,15 +259,16 @@ class OwnerInvoices:
         )
         return True
 
-    async def text_for(self, public_id: uuid.UUID) -> tuple[str, str, dict[str, str]] | None:
-        """The owner's phone, the template and its blanks."""
+    async def text_for(self, public_id: uuid.UUID) -> tuple[Recipient, str, dict[str, str]] | None:
+        """Whom to tell (the owner), the template and its blanks."""
         invoice = await self._invoices.by_public_id(public_id)
         if invoice is None:
             return None
         user_id = (await self._catalog.owner_user_ids({invoice.owner_id})).get(invoice.owner_id)
         if user_id is None:
             return None
-        phone = (await Accounts(self._db).many([user_id]))[user_id].phone_e164
+        account = (await Accounts(self._db).many([user_id]))[user_id]
+        to = Recipient(account.phone_e164, account.email)
         values = {
             "brand": BRAND_NAME,
             "number": invoice.number,
@@ -274,9 +276,9 @@ class OwnerInvoices:
             "total": format_inr(invoice.total_paise),
         }
         if invoice.balance_due_paise == 0:
-            return phone, ISSUED_PAID, values
+            return to, ISSUED_PAID, values
         return (
-            phone,
+            to,
             ISSUED,
             values
             | {

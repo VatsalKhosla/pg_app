@@ -7,12 +7,9 @@ allowed by Google isn't enough: an admin must have made the user staff (python -
 Every refusal looks the same from outside (STAFF_ACCOUNT_NOT_ALLOWED), and is logged with its
 reason.
 
-A Google sign-in keeps no server state. A random login id goes into a short-lived host-only cookie,
-and the state, nonce and PKCE verifier are HMACs of it under SECRET_KEY: only the browser that
-started a sign-in can finish it, and nothing about one sign-in helps with another.
+A Google sign-in keeps no server state (service/google_login.py).
 """
 
-import base64
 import hashlib
 import hmac
 import re
@@ -54,6 +51,14 @@ from app.modules.identity.repository import (
     TotpRepository,
     UserRepository,
 )
+from app.modules.identity.service.google_login import (
+    GoogleLogin,
+    LoginSecrets,
+    login_is_fresh,
+    login_secrets,
+    new_login_id,
+    same_state,
+)
 
 if TYPE_CHECKING:
     import uuid
@@ -68,8 +73,6 @@ if TYPE_CHECKING:
     from app.modules.identity.models import User
     from app.modules.identity.ports import GoogleSignIn
 
-# A Google sign-in must be finished within this long of starting it.
-LOGIN_TTL: Final = timedelta(minutes=10)
 # Authenticator codes: five tries per staff member per 15 minutes, refused while Redis is down.
 TOTP_CHECKS_PER_USER: Final = RateLimit(
     "staff-totp-checks-per-user", limit=5, window=timedelta(minutes=15), fail_open=False
@@ -77,21 +80,12 @@ TOTP_CHECKS_PER_USER: Final = RateLimit(
 # The name authenticator apps show next to the codes.
 AUTHENTICATOR_ISSUER: Final = f"{BRAND_NAME} staff"
 _LOGIN_ID: Final = re.compile(r"(?P<nonce>[A-Za-z0-9_-]{43})\.(?P<issued>[0-9]{1,12})")
-_CLOCK_SKEW: Final = timedelta(minutes=1)
 
 logger = structlog.stdlib.get_logger(__name__)
 # Counted by method and outcome, so refusals and failures can raise alerts (ARCHITECTURE §17).
 _sign_ins = metrics.get_meter("app.identity").create_counter(
     "identity.staff.sign_ins", unit="{sign_in}"
 )
-
-
-@dataclass(frozen=True)
-class GoogleLogin:
-    """A Google sign-in to start: the login cookie's value, and where to send the browser."""
-
-    cookie: str
-    authorization_url: str
 
 
 @dataclass(frozen=True)
@@ -104,34 +98,6 @@ class Enrolment:
 
 class StaffAdminError(Exception):
     """An operator command that can't be carried out; the message says why."""
-
-
-@dataclass(frozen=True)
-class _LoginSecrets:
-    state: str
-    nonce: str
-    code_verifier: str
-
-    @property
-    def code_challenge(self) -> str:
-        return _b64(hashlib.sha256(self.code_verifier.encode()).digest())
-
-
-def _b64(raw: bytes) -> str:
-    return base64.urlsafe_b64encode(raw).decode().rstrip("=")
-
-
-def _derive(secret: bytes, purpose: str, value: str) -> str:
-    return _b64(hmac.new(secret, f"{purpose}\x00{value}".encode(), hashlib.sha256).digest())
-
-
-def _login_secrets(secret: bytes, login_id: str) -> _LoginSecrets:
-    # 43 characters each: a valid PKCE verifier (RFC 7636 asks for 43 to 128).
-    return _LoginSecrets(
-        state=_derive(secret, "staff-login-state", login_id),
-        nonce=_derive(secret, "staff-login-nonce", login_id),
-        code_verifier=_derive(secret, "staff-login-pkce", login_id),
-    )
 
 
 def totp_secret(secret: bytes, salt: bytes) -> bytes:
@@ -178,8 +144,8 @@ class StaffSignInService:
     def start_google(self) -> GoogleLogin:
         """A new Google sign-in for this browser."""
         google = self._require_google()
-        login_id = f"{secrets.token_urlsafe(32)}.{int(self._clock.now().timestamp())}"
-        derived = _login_secrets(self._secret, login_id)
+        login_id = new_login_id(self._clock.now())
+        derived = login_secrets(self._secret, login_id, kind="staff")
         url = google.authorization_url(
             state=derived.state, nonce=derived.nonce, code_challenge=derived.code_challenge
         )
@@ -196,7 +162,7 @@ class StaffSignInService:
             logger.error("Google sign-in failed at Google", oauth_error=error[:64])
             raise ServiceUnavailableError("Signing in with Google isn't working right now.")
         derived = self._login(login_cookie)
-        if state is None or code is None or not hmac.compare_digest(state, derived.state):
+        if code is None or not same_state(derived.state, state):
             raise StaffSignInExpiredError
         account = await google.finish(
             code, code_verifier=derived.code_verifier, nonce=derived.nonce
@@ -214,15 +180,14 @@ class StaffSignInService:
             await self._record_sign_in(user, method="google")
         return user.id
 
-    def _login(self, login_cookie: str | None) -> _LoginSecrets:
+    def _login(self, login_cookie: str | None) -> LoginSecrets:
         """The secrets of the sign-in this browser started, if it started one recently."""
         match = _LOGIN_ID.fullmatch(login_cookie or "")
         if login_cookie is None or match is None:
             raise StaffSignInExpiredError
-        age = self._clock.now().timestamp() - int(match["issued"])
-        if not -_CLOCK_SKEW.total_seconds() <= age <= LOGIN_TTL.total_seconds():
+        if not login_is_fresh(int(match["issued"]), self._clock.now()):
             raise StaffSignInExpiredError
-        return _login_secrets(self._secret, login_cookie)
+        return login_secrets(self._secret, login_cookie, kind="staff")
 
     async def _google_user(self, account: GoogleAccount) -> User | None:
         """The active staff user a Google account signs in as, if any: the user it is linked to
@@ -382,7 +347,7 @@ class StaffAdmin:
             salt = secrets.token_bytes(SALT_BYTES)
             await self._totp.replace(user.id, salt=salt)
             secret = totp_secret(self._secret, salt)
-            account = user.email or user.phone_e164
+            account = user.email or user.phone_e164 or str(user.public_id)
         return Enrolment(
             uri=provisioning_uri(secret, issuer=AUTHENTICATOR_ISSUER, account=account),
             secret=secret_text(secret),

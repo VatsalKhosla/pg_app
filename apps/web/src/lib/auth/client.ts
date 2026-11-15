@@ -24,6 +24,14 @@ export function requestCode(phone: string, humanCheckToken: string): Promise<Cha
   );
 }
 
+export function requestEmailCode(email: string, humanCheckToken: string): Promise<ChallengeIssued> {
+  return withCsrf((headers) =>
+    unwrap(
+      browserApi.POST("/v1/auth/email/request", { body: { email, humanCheckToken }, headers }),
+    ),
+  );
+}
+
 export function verifyCode(
   challengeId: string,
   code: string,

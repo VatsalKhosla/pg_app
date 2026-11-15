@@ -76,6 +76,20 @@ services:
         value: screen
       - key: TEXT_SENDER
         value: unavailable
+      # Email carries sign-in codes and messages (ADR 0068). Until the founders set the Gmail
+      # app password (SMTP_USERNAME, SMTP_PASSWORD and MAIL_FROM, then MAIL_SENDER=smtp), nothing
+      # is emailed and the sign-in page shows the code, as phone codes do here. Phone sign-in is
+      # off until the SMS sender's DLT registration is done.
+      - key: MAIL_SENDER
+        value: unavailable
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: PHONE_SIGN_IN
+        value: "false"
       # Razorpay's test mode: Pay opens Razorpay's own checkout, and no real money moves (ADR
       # 0056). The test key, its secret and the webhook's secret are set on the service; the API
       # refuses a live key anywhere but production. "fake" goes back to the site's own test bank.

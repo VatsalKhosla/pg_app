@@ -64,7 +64,9 @@ class StudentVisitList(ApiModel):
 class VisitPerson(ApiModel):
     id: uuid.UUID
     name: str | None
-    phone: str
+    # How to reach them: an account has a phone, an email address or both (ADR 0068).
+    phone: str | None
+    email: str | None = None
 
 
 class StaffVisitPlace(ApiModel):

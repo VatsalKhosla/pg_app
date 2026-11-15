@@ -49,7 +49,9 @@ def _queued(item: QueuedRequest) -> QueuedDataRequest:
         **_info(item.request).model_dump(),
         requester=None
         if person is None
-        else Requester(id=person.public_id, phone=person.phone_e164, name=person.name),
+        else Requester(
+            id=person.public_id, phone=person.phone_e164, email=person.email, name=person.name
+        ),
     )
 
 

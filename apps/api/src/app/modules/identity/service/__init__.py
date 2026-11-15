@@ -9,6 +9,8 @@ from app.modules.identity.service.consent import (
     privacy_notice,
 )
 from app.modules.identity.service.export import personal_data
+from app.modules.identity.service.google import GoogleSignedIn, GoogleSignInService
+from app.modules.identity.service.google_login import GoogleLogin
 from app.modules.identity.service.otp import (
     OTP_RETENTION,
     IssuedChallenge,
@@ -29,7 +31,6 @@ from app.modules.identity.service.sessions import (
 )
 from app.modules.identity.service.staff import (
     Enrolment,
-    GoogleLogin,
     StaffAdmin,
     StaffAdminError,
     StaffDirectory,
@@ -46,6 +47,8 @@ __all__ = [
     "ConsentService",
     "Enrolment",
     "GoogleLogin",
+    "GoogleSignInService",
+    "GoogleSignedIn",
     "IssuedChallenge",
     "IssuedSession",
     "OtpService",

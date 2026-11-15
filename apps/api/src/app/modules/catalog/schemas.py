@@ -82,14 +82,18 @@ class OwnerCreate(ApiModel):
     gstin: str | None = Field(default=None, max_length=20)
     # The owner's own name, for their account; kept only if the account has none yet.
     name: str | None = Field(default=None, max_length=200)
+    # The owner's email address, to sign in with and get messages at (ADR 0068).
+    email: str | None = Field(default=None, max_length=262)
 
 
 class OwnerUpdate(ApiModel):
-    """Only the fields sent change; ``gstin: null`` clears it."""
+    """Only the fields sent change; ``gstin: null`` clears it. ``email`` adds the owner's address
+    to their account if it has none (it can't be changed or removed here)."""
 
     legal_name: str | None = Field(default=None, max_length=200)
     business_name: str | None = Field(default=None, max_length=200)
     gstin: str | None = Field(default=None, max_length=20)
+    email: str | None = Field(default=None, max_length=262)
 
 
 class OwnerInfo(ApiModel):
@@ -99,8 +103,9 @@ class OwnerInfo(ApiModel):
     gstin: str | None
     kyc_status: KycStatus
     status: OwnerStatus
-    # Staff, and the owner, see the owner's phone in full.
+    # Staff, and the owner, see the owner's phone and address in full.
     phone: str | None
+    email: str | None = None
     name: str | None
     # The owner agreement's version they accepted last, and whether that is the current one
     # (ADR 0025): a new version asks them to accept again.

@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { brand } from "@/config/brand";
 import { publicEnv } from "@/config/env";
+import { codeChannels, getSignInSetup } from "@/lib/auth/methods";
 import { safeNext, STAFF_HOME_PATH } from "@/lib/auth/routes";
 import { getSessionForHeader, isStaff } from "@/lib/auth/session";
 
@@ -35,7 +36,7 @@ export default async function StaffSignInPage({ searchParams }: PageProps<"/staf
   const next = safeNext(params.next, STAFF_HOME_PATH);
   const me = await getSessionForHeader();
   if (me !== null && isStaff(me)) redirect(next);
-  const t = await getTranslations("Staff");
+  const [t, setup] = await Promise.all([getTranslations("Staff"), getSignInSetup()]);
   const error = isGoogleError(params.error) ? t(`errors.${params.error}`) : undefined;
   const siteKey = publicEnv.turnstileSiteKey;
   const nonce = (await headers()).get("x-nonce") ?? undefined;
@@ -71,6 +72,7 @@ export default async function StaffSignInPage({ searchParams }: PageProps<"/staf
             text={await signInText()}
             next={next}
             mode="staff"
+            channels={codeChannels(setup.methods)}
             turnstile={siteKey === undefined ? undefined : { siteKey, nonce }}
           />
         </div>

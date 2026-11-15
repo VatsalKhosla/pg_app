@@ -2,8 +2,8 @@ import type { LegalDocument } from "../index";
 
 /** Its version is the one people consent to: the API's PRIVACY_NOTICE_VERSION. */
 export const privacy: LegalDocument = {
-  version: "draft-1",
-  updated: "2026-10-29",
+  version: "draft-2",
+  updated: "2026-11-15",
   text: String.raw`
 ## 1. Who we are
 
@@ -11,8 +11,9 @@ export const privacy: LegalDocument = {
 
 ## 2. What we collect
 
-- **Your mobile number**, to sign you in with a code and to text you about your visits and complaints.
-- **What you tell us**: your name and, if you choose, your email address, where you study or work, and your gender (which decides whether girls', boys' or co-living PGs are shown to you).
+- **Your email address or mobile number**, to sign you in with a code and to message you about your visits, bookings and complaints. We send these messages by email, and by text once text messages are set up.
+- **Your Google account's address and id**, if you sign in with Google: Google tells us only these two, never your name, photo or contacts.
+- **What you tell us**: your name, where you study or work, and your gender (which decides whether girls', boys' or co-living PGs are shown to you).
 - **Your visits**: the PGs, the times you offered, the one booked, and how the visit went.
 - **Your complaints**: what you tell our grievance officer, and their replies.
 - **Sign-in records**: the IP address and browser you signed in from, to keep your account safe.
@@ -28,7 +29,8 @@ export const privacy: LegalDocument = {
 
 - **The owner of a PG** you visit or reserve, only what's needed to arrange it.
 - **Our staff**, only those who need it for their work. Every look at sensitive details is logged.
-- **Companies that work for us**: for hosting, text messages, error reports and site analytics (both with phone numbers and other identifying details removed) and, when booking opens, payments. They may use your data only to do that work for us.
+- **Companies that work for us**: for hosting, email (Google Workspace sends our emails), text messages, error reports and site analytics (both with phone numbers and other identifying details removed) and, when booking opens, payments. They may use your data only to do that work for us.
+- **Google**, if you sign in with it: Google knows you signed in to us, under its own privacy policy.
 - **Authorities**, when the law requires it.
 
 We never sell your personal data.
@@ -58,7 +60,7 @@ Our database is in India (Mumbai). Some companies that work for us, such as for 
 
 ## 8. Keeping it safe
 
-Your connection to us is encrypted, sign-in codes are stored only in a form that can't be read back, and staff access is limited and recorded. If a breach puts your data at risk, we'll tell you and the Data Protection Board as the law requires.
+Your connection to us is encrypted, sign-in codes are stored only in a form that can't be read back and work only for minutes, and staff access is limited and recorded. If a breach puts your data at risk, we'll tell you and the Data Protection Board as the law requires.
 
 ## 9. Changes to this notice
 

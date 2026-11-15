@@ -23,6 +23,7 @@ from app.core.errors import InvalidTransitionError, NotFoundError
 from app.core.money import format_inr
 from app.core.outbox import enqueue
 from app.core.pagination import split_page
+from app.core.texts import Recipient
 from app.modules.booking.service import BookingTokens
 from app.modules.identity.service import Accounts
 from app.modules.ledger.domain.ledger import owner_refunded, token_refunded
@@ -325,8 +326,8 @@ class Refunds:
             for payment in payments
         ]
 
-    async def text_for(self, refund_id: uuid.UUID) -> tuple[str, str, dict[str, str]] | None:
-        """The phone, the template and its blanks for a refund that's gone through."""
+    async def text_for(self, refund_id: uuid.UUID) -> tuple[Recipient, str, dict[str, str]] | None:
+        """Whom to tell, the template and its blanks for a refund that's gone through."""
         refund = await self._payments.refund_by_public_id(refund_id)
         if refund is None or refund.status != RefundStatus.PROCESSED:
             return None
@@ -334,9 +335,10 @@ class Refunds:
         if payment.purpose != PaymentPurpose.TOKEN:
             return None  # the gateway gave an owner's payment back: not the student's news
         student, code = await self._tokens.student_and_code(payment.booking_id)
-        phone = (await self._accounts.many([student]))[student].phone_e164
+        account = (await self._accounts.many([student]))[student]
+        to = Recipient(account.phone_e164, account.email)
         return (
-            phone,
+            to,
             REFUND_PROCESSED,
             {"brand": BRAND_NAME, "amount": format_inr(refund.amount_paise), "code": code},
         )

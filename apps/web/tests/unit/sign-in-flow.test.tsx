@@ -10,6 +10,7 @@ import { WCAG_22_AA } from "../wcag";
 
 vi.mock("@/lib/auth/client", () => ({
   requestCode: vi.fn(),
+  requestEmailCode: vi.fn(),
   verifyCode: vi.fn(),
   privacyNotice: vi.fn(),
   updateProfile: vi.fn(),
@@ -17,6 +18,16 @@ vi.mock("@/lib/auth/client", () => ({
 }));
 
 const text: SignInText = {
+  email: {
+    title: "Your email address",
+    intro: "We'll email you a code.",
+    label: "Email address",
+    invalid: "Enter an email address.",
+    humanCheck: "A quick check.",
+    submit: "Email me a code",
+    sending: "Sending",
+    usePhone: "Use your mobile number instead",
+  },
   phone: {
     title: "Your mobile number",
     intro: "We'll text you a code.",
@@ -26,10 +37,18 @@ const text: SignInText = {
     humanCheck: "A quick check.",
     submit: "Send code",
     sending: "Sending",
+    useEmail: "Use your email address instead",
+  },
+  google: {
+    continue: "Continue with Google",
+    newHere: ["New here? Tick to agree to the ", "privacy notice", "."],
+    consentNeeded: "Tick the box, then continue with Google again.",
+    or: "or",
   },
   code: {
     title: "Enter the code",
-    intro: "Sent to {phone}.",
+    introEmail: "Emailed to {destination}.",
+    introPhone: "Sent to {destination}.",
     developmentCode: "Local development: the code is {code}.",
     label: "Six-digit code",
     invalid: "The code is six digits.",
@@ -37,6 +56,7 @@ const text: SignInText = {
     checking: "Checking",
     resend: "Send a new code",
     resendLater: "Wait a moment.",
+    otherEmail: "Use a different address",
     otherNumber: "Use a different number",
   },
   consent: {
@@ -157,7 +177,7 @@ describe("SignInFlow", () => {
       ],
     });
     vi.mocked(client.updateProfile).mockResolvedValue(person("Asha"));
-    render(<SignInFlow text={text} next="/account" mode="people" />);
+    render(<SignInFlow text={text} next="/account" mode="people" channels={["phone"]} />);
 
     await sendCode();
     expect(client.requestCode).toHaveBeenCalledWith("98765 43210", "not-checked");
@@ -201,7 +221,7 @@ describe("SignInFlow", () => {
       csrfToken: "token",
       newUser: false,
     });
-    render(<SignInFlow text={text} next="/privacy" mode="people" />);
+    render(<SignInFlow text={text} next="/privacy" mode="people" channels={["phone"]} />);
 
     await sendCode();
     enterCode();
@@ -214,7 +234,7 @@ describe("SignInFlow", () => {
 
   it("shows the code where nothing sends it, and only there", async () => {
     vi.mocked(client.requestCode).mockResolvedValue({ ...challenge, developmentCode: "482916" });
-    render(<SignInFlow text={text} next="/privacy" mode="people" />);
+    render(<SignInFlow text={text} next="/privacy" mode="people" channels={["phone"]} />);
 
     await sendCode();
 
@@ -223,7 +243,7 @@ describe("SignInFlow", () => {
 
   it("shows no code when the API sends one by text", async () => {
     vi.mocked(client.requestCode).mockResolvedValue({ ...challenge, developmentCode: null });
-    render(<SignInFlow text={text} next="/privacy" mode="people" />);
+    render(<SignInFlow text={text} next="/privacy" mode="people" channels={["phone"]} />);
 
     await sendCode();
 
@@ -234,7 +254,7 @@ describe("SignInFlow", () => {
     vi.mocked(client.requestCode).mockRejectedValue(
       problem(422, "VALIDATION_ERROR", [{ pointer: "/phone", detail: "Enter a number." }]),
     );
-    render(<SignInFlow text={text} next="/account" mode="people" />);
+    render(<SignInFlow text={text} next="/account" mode="people" channels={["phone"]} />);
 
     type("Mobile number", "12345 67890");
     fireEvent.click(screen.getByRole("button", { name: "Send code" }));
@@ -248,7 +268,7 @@ describe("SignInFlow", () => {
   it("sends someone back for a new code when theirs has expired", async () => {
     vi.mocked(client.requestCode).mockResolvedValue(challenge);
     vi.mocked(client.verifyCode).mockRejectedValue(problem(400, "OTP_EXPIRED"));
-    render(<SignInFlow text={text} next="/account" mode="people" />);
+    render(<SignInFlow text={text} next="/account" mode="people" channels={["phone"]} />);
 
     await sendCode();
     enterCode();
@@ -269,7 +289,7 @@ describe("SignInFlow", () => {
       user: { ...person("Asha"), roles: ["ops"] },
       csrfToken: "token",
     });
-    render(<SignInFlow text={text} next="/staff" mode="staff" />);
+    render(<SignInFlow text={text} next="/staff" mode="staff" channels={["phone"]} />);
 
     await sendCode();
     enterCode();
@@ -283,6 +303,102 @@ describe("SignInFlow", () => {
     expect(client.signInWithAuthenticator).toHaveBeenCalledWith("654321");
   });
 
+  it("offers an email code first, and a phone number where texts are on", async () => {
+    vi.mocked(client.requestEmailCode).mockResolvedValue(challenge);
+    render(<SignInFlow text={text} next="/account" mode="people" channels={["email", "phone"]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Use your mobile number instead" }));
+    expect(screen.getByLabelText("Mobile number")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Use your email address instead" }));
+    type("Email address", "asha@example.com");
+    fireEvent.click(screen.getByRole("button", { name: "Email me a code" }));
+
+    await screen.findByRole("heading", { name: "Enter the code" });
+    expect(client.requestEmailCode).toHaveBeenCalledWith("asha@example.com", "not-checked");
+    expect(client.requestCode).not.toHaveBeenCalled();
+    expect(screen.getByText("Emailed to asha@example.com.")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Use a different address" })).toBeDefined();
+  });
+
+  it("offers no phone number where texts are off", () => {
+    render(<SignInFlow text={text} next="/account" mode="people" channels={["email"]} />);
+
+    expect(screen.getByLabelText("Email address")).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Use your mobile number instead" })).toBeNull();
+  });
+
+  it("shows an address the API refuses next to its field", async () => {
+    vi.mocked(client.requestEmailCode).mockRejectedValue(
+      problem(422, "VALIDATION_ERROR", [{ pointer: "/email", detail: "Not an address." }]),
+    );
+    render(<SignInFlow text={text} next="/account" mode="people" channels={["email"]} />);
+
+    type("Email address", "asha@example.c");
+    fireEvent.click(screen.getByRole("button", { name: "Email me a code" }));
+
+    const error = await screen.findByText("Enter an email address.");
+    expect(screen.getByLabelText("Email address").getAttribute("aria-describedby")).toContain(
+      error.id,
+    );
+  });
+
+  it("goes to Google with consent only once the box is ticked, and nothing is ticked for anyone", () => {
+    render(
+      <SignInFlow
+        text={text}
+        next="/search"
+        mode="people"
+        channels={["email"]}
+        google={{ href: "https://api.example.in/v1/auth/google", noticeVersion: "draft-2" }}
+      />,
+    );
+    const link = screen.getByRole<HTMLAnchorElement>("link", { name: "Continue with Google" });
+    const box = screen.getByRole<HTMLInputElement>("checkbox", { name: /Tick to agree/ });
+
+    expect(box.checked).toBe(false);
+    expect(link.href).toBe("https://api.example.in/v1/auth/google?next=%2Fsearch");
+    fireEvent.click(box);
+    expect(link.href).toBe(
+      "https://api.example.in/v1/auth/google?next=%2Fsearch&notice=draft-2&purpose=account",
+    );
+  });
+
+  it("says why a Google sign-in came back, and points at the box when consent was missing", () => {
+    render(
+      <SignInFlow
+        text={text}
+        next="/account"
+        mode="people"
+        channels={["email"]}
+        google={{ href: "https://api.example.in/v1/auth/google", noticeVersion: "draft-2" }}
+        notice="That Google sign-in took too long."
+        consentNeeded
+      />,
+    );
+
+    expect(screen.getByRole("alert").textContent).toBe("That Google sign-in took too long.");
+    const box = screen.getByRole("checkbox", { name: /Tick to agree/ });
+    const why = screen.getByText("Tick the box, then continue with Google again.");
+    expect(box.getAttribute("aria-describedby")).toBe(why.id);
+  });
+
+  it("meets WCAG 2.2 AA with Google and an email code offered", async () => {
+    const { container } = render(
+      <SignInFlow
+        text={text}
+        next="/account"
+        mode="people"
+        channels={["email", "phone"]}
+        google={{ href: "https://api.example.in/v1/auth/google", noticeVersion: "draft-2" }}
+        consentNeeded
+      />,
+    );
+
+    const results = await axe.run(container, { runOnly: [...WCAG_22_AA] });
+
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  });
+
   it("meets WCAG 2.2 AA on the number and consent steps", async () => {
     vi.mocked(client.requestCode).mockResolvedValue(challenge);
     vi.mocked(client.verifyCode).mockRejectedValue(problem(400, "CONSENT_REQUIRED"));
@@ -290,7 +406,9 @@ describe("SignInFlow", () => {
       version: "draft-1",
       purposes: [{ purpose: "account", required: true }],
     });
-    const { container } = render(<SignInFlow text={text} next="/account" mode="people" />);
+    const { container } = render(
+      <SignInFlow text={text} next="/account" mode="people" channels={["phone"]} />,
+    );
 
     const onPhone = await axe.run(container, { runOnly: [...WCAG_22_AA] });
     await sendCode();

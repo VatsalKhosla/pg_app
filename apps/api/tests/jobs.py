@@ -7,7 +7,7 @@ from fastapi import FastAPI
 
 from app.core.analytics import Analytics, AnalyticsEvent, NoAnalytics
 from app.core.outbox import OutboxWorker
-from app.core.texts import ConsoleTexts, Texts
+from app.core.texts import ConsoleTexts, Recipient, Texts
 from app.core.web_cache import WebCache
 from app.jobs import build_registry
 from app.modules.pricing.occupancy import NoBookingsYet
@@ -40,8 +40,8 @@ class RecordedTexts:
     def __init__(self) -> None:
         self.sent: list[tuple[str, str, dict[str, str]]] = []
 
-    async def send(self, phone_e164: str, template: str, values: Mapping[str, str]) -> None:
-        self.sent.append((phone_e164, template, dict(values)))
+    async def send(self, to: Recipient, template: str, values: Mapping[str, str]) -> None:
+        self.sent.append((to.phone_e164 or to.email or "", template, dict(values)))
 
 
 async def run_due_jobs(

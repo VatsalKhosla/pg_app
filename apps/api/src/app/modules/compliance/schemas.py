@@ -67,7 +67,9 @@ class DataRequestPage(ApiModel):
 
 class Requester(ApiModel):
     id: uuid.UUID
-    phone: str
+    # How to reach them: an account has a phone, an email address or both.
+    phone: str | None
+    email: str | None = None
     name: str | None
 
 

@@ -19,7 +19,9 @@ export const NAME_MAX = 120;
 export const GSTIN_MAX = 20;
 const SEARCH_MAX = 100;
 
-const OWNER_FIELDS = ["phone", "name", "legalName", "businessName", "gstin"] as const;
+const OWNER_FIELDS = ["phone", "email", "name", "legalName", "businessName", "gstin"] as const;
+/** Loose on purpose: the API says exactly which addresses it takes. */
+export const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
 /**
  * Who owns the PG: found by their phone number or business name, or added here. Adding an owner
@@ -156,7 +158,7 @@ export function OwnerPicker({
   );
 }
 
-/** A new owner, by their phone number and business names. */
+/** A new owner, by their phone number, email address (to sign in with) and business names. */
 export function AddOwner({ onAdded }: { onAdded: (owner: Owner) => void }) {
   const t = useTranslations("Ops");
   const problem = useOpsProblem();
@@ -170,6 +172,11 @@ export function AddOwner({ onAdded }: { onAdded: (owner: Owner) => void }) {
       .string()
       .trim()
       .regex(/^[0-9+()\-\s]{10,20}$/u, t("owner.phoneInvalid")),
+    // Optional for the API, but an owner can't sign in without it while phone sign-in is off.
+    email: z.union([
+      z.literal(""),
+      z.string().trim().regex(LOOKS_LIKE_EMAIL, t("owner.emailInvalid")),
+    ]),
     name: z.string().trim().max(NAME_MAX, tooLong),
     legalName: z.string().trim().min(1, required).max(NAME_MAX, tooLong),
     businessName: z.string().trim().min(1, required).max(NAME_MAX, tooLong),
@@ -178,7 +185,14 @@ export function AddOwner({ onAdded }: { onAdded: (owner: Owner) => void }) {
   type Values = z.infer<typeof schema>;
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { phone: "", name: "", legalName: "", businessName: "", gstin: "" },
+    defaultValues: {
+      phone: "",
+      email: "",
+      name: "",
+      legalName: "",
+      businessName: "",
+      gstin: "",
+    },
   });
   const { errors, isSubmitting } = form.formState;
 
@@ -188,6 +202,7 @@ export function AddOwner({ onAdded }: { onAdded: (owner: Owner) => void }) {
       onAdded(
         await addOwner({
           phone: values.phone,
+          email: values.email === "" ? null : values.email,
           legalName: values.legalName,
           businessName: values.businessName,
           gstin: values.gstin === "" ? null : values.gstin,
@@ -215,6 +230,22 @@ export function AddOwner({ onAdded }: { onAdded: (owner: Owner) => void }) {
         <Field id={`${id}-phone`} label={t("owner.phone")} error={errors.phone?.message}>
           {(control) => (
             <Input {...control} type="tel" autoComplete="off" {...form.register("phone")} />
+          )}
+        </Field>
+        <Field
+          id={`${id}-email`}
+          label={t("owner.email")}
+          hint={t("owner.emailHint")}
+          error={errors.email?.message}
+        >
+          {(control) => (
+            <Input
+              {...control}
+              type="email"
+              autoComplete="off"
+              spellCheck={false}
+              {...form.register("email")}
+            />
           )}
         </Field>
         <Field id={`${id}-name`} label={t("owner.name")} error={errors.name?.message}>

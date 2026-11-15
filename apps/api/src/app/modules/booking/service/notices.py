@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from app.config import BRAND_NAME
 from app.core.calendar import spoken_time
+from app.core.texts import Recipient
 from app.modules.booking.domain.cancellation import late_refund
 from app.modules.booking.domain.state_machine import BookingEvent, BookingStatus, Party
 from app.modules.booking.repository import BookingRepository
@@ -53,7 +54,7 @@ class BookingNotices:
         status: BookingStatus,
         *,
         instant: bool = False,
-    ) -> tuple[str, str, dict[str, str]] | None:
+    ) -> tuple[Recipient, str, dict[str, str]] | None:
         """The phone, the template and its blanks; None when there's nothing to send.
         ``instant``: the PG confirmed the booking itself as the token came in."""
         template = FOR.get((who, event))
@@ -69,7 +70,8 @@ class BookingNotices:
             user = (await self._catalog.owner_user_ids([booking.owner_id]))[booking.owner_id]
         else:
             user = booking.student_id
-        phone = (await self._accounts.many([user]))[user].phone_e164
+        account = (await self._accounts.many([user]))[user]
+        to = Recipient(account.phone_e164, account.email)
         values = {"brand": BRAND_NAME, "pg": place.name, "code": booking.code}
         if template in {TOKEN_IN, NEW_CONFIRMED, CONFIRM_REMINDER}:
             bed = await self._catalog.bed_ref(booking.bed_id)
@@ -95,4 +97,4 @@ class BookingNotices:
                 booking.token_paise, terms.late_cancel_policy
             ):
                 template = NO_SHOW_KEPT
-        return phone, template, values
+        return to, template, values

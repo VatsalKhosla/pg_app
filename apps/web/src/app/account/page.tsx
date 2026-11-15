@@ -68,7 +68,7 @@ export default async function AccountPage() {
     ),
   );
 
-  const who = me.name ?? me.phone;
+  const who = me.name ?? me.email ?? me.phone ?? "";
   const sections = [
     { id: "details", label: t("details"), Icon: UserRound },
     { id: "stays", label: t("staysTitle"), Icon: CalendarDays },
@@ -153,6 +153,11 @@ export default async function AccountPage() {
       <div className="mt-6 grid gap-6">
         <section id="details" aria-labelledby="details-title" className={sectionClass}>
           {heading("details", UserRound, t("details"))}
+          {me.email == null && me.phone == null ? null : (
+            <p className="text-sm text-muted-foreground">
+              {t("signsInWith", { address: me.email ?? me.phone ?? "" })}
+            </p>
+          )}
           <ProfileForm text={await profileText()} initial={me} />
         </section>
 

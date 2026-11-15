@@ -5,7 +5,7 @@ import { devices, type Page } from "@playwright/test";
 
 import { expect, test, wcagViolations } from "./fixtures";
 import { eventsOf } from "./posthog";
-import { codeSentTo, logLength, newMobile } from "./sign-in-codes";
+import { enterEmailAndCode, newEmail } from "./sign-in-codes";
 import { manage, newStaff, signInAsStaff } from "./staff";
 
 // A visit end to end (BUILD_PLAN 3.7 and 5.9), on phones, against the real API and its worker: a
@@ -54,14 +54,7 @@ async function signUpAsStudent(page: Page, name: string) {
   await expect(page).toHaveURL(new RegExp(`/pg/${ASTER}$`));
   await page.getByRole("link", { name: "Book a visit" }).first().click();
   await expect(page).toHaveURL(/\/sign-in\?next=/);
-  const mobile = newMobile();
-  await page.getByLabel("Mobile number", { exact: true }).fill(mobile);
-  const from = await logLength();
-  await page.getByRole("button", { name: "Send code" }).click();
-  await page
-    .getByLabel("Six-digit code", { exact: true })
-    .fill(await codeSentTo(mobile, { after: from }));
-  await page.getByRole("button", { name: "Continue" }).click();
+  await enterEmailAndCode(page, newEmail());
   await page.getByRole("checkbox", { name: /^I agree/ }).check();
   await page.getByRole("button", { name: "Agree and continue" }).click();
   await page.getByLabel("Your name", { exact: true }).fill(name);

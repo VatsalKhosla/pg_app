@@ -32,8 +32,11 @@ class CheckoutOutcome(StrEnum):
 
 
 class CheckoutPrefill(ApiModel):
+    """What the gateway's checkout fills in for the student; it asks for anything missing."""
+
     name: str | None
-    contact: str
+    contact: str | None
+    email: str | None = None
 
 
 class PaymentStart(ApiModel):

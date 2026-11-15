@@ -159,6 +159,7 @@ def owner_info(record: OwnerRecord, *, current_agreement: str) -> OwnerInfo:
         kyc_status=KycStatus(owner.kyc_status),
         status=OwnerStatus(owner.status),
         phone=None if account is None else account.phone_e164,
+        email=None if account is None else account.email,
         name=None if account is None else account.name,
         agreement_version=owner.agreement_version,
         agreement_current=not needs_acceptance(owner.agreement_version, current_agreement),

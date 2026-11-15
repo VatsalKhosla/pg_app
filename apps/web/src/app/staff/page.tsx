@@ -36,7 +36,9 @@ export default async function StaffHomePage() {
     <div className="mx-auto w-full max-w-2xl space-y-8 px-gutter py-10 sm:py-16">
       <div className="space-y-2">
         <h1 className="font-display text-title-1 text-foreground">{t("homeTitle")}</h1>
-        <p className="text-muted-foreground">{t("signedInAs", { name: me.name ?? me.phone })}</p>
+        <p className="text-muted-foreground">
+          {t("signedInAs", { name: me.name ?? me.email ?? me.phone ?? "" })}
+        </p>
       </div>
       <section
         aria-labelledby="roles-title"

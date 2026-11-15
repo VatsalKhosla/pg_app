@@ -1,14 +1,17 @@
-"""Phone sign-in (ARCHITECTURE §12): send a code, check it, find or create the account.
+"""Sign-in by a code (ARCHITECTURE §12, ADR 0068): send a code to a phone or an email address,
+check it, find or create the account.
 
 Abuse controls, in the order a request meets them:
 1. Per-IP limits on requests and checks (the routes).
 2. A Turnstile check before any code is sent.
-3. A 30-second cooldown per phone (in PostgreSQL, under a per-phone lock).
-4. At most five codes per phone per hour (Redis, refusing if Redis is down).
+3. A 30-second cooldown per phone or address (in PostgreSQL, under a lock for it).
+4. At most five codes per phone or address per hour (Redis, refusing if Redis is down).
 5. Five wrong tries lock a code.
 
-Responses never say whether a phone number has an account. Codes are HMACs under SECRET_KEY,
-bound to their challenge, and never stored or logged in plain text outside development.
+Responses never say whether a phone number or address has an account. Codes are HMACs under
+SECRET_KEY, bound to their challenge, and never stored or logged in plain text outside
+development. A code proves the phone or address it went to, so it signs in to the account with
+that phone or address (an address on an account is never one typed in unproven: domain/emails.py).
 
 A first sign-in creates the account only with consent to the current privacy notice. Without it
 the answer is CONSENT_REQUIRED, given only once the code has proved to be right (so it says nothing
@@ -30,14 +33,16 @@ from app.core.errors import AppError, ServiceUnavailableError
 from app.core.hashing import keyed_digest
 from app.core.human_check import HumanCheckFailedError
 from app.core.ids import new_public_id
+from app.core.pii import mask_email
 from app.core.ratelimit import RateLimit, enforce
 from app.modules.identity.domain.consent import has_agreed
 from app.modules.identity.domain.otp import (
     CODE_DIGITS,
-    CODE_TTL,
     HUMAN_CHECK_ACTION,
     RESEND_COOLDOWN,
     ChallengeState,
+    Channel,
+    Destination,
     OtpPurpose,
     attempts_left,
     challenge_state,
@@ -65,14 +70,20 @@ if TYPE_CHECKING:
     from app.core.human_check import HumanCheck
     from app.core.ratelimit import RateLimiter
     from app.modules.identity.models import User
-    from app.modules.identity.ports import OtpSender
+    from app.modules.identity.ports import EmailCodeSender, OtpSender
     from app.modules.identity.service.consent import ConsentGiven
 
 # At most five codes per phone per hour; refuse while Redis is down, since each code costs an SMS.
 OTP_SENDS_PER_PHONE: Final = RateLimit(
     "otp-sends-per-phone", limit=5, window=timedelta(hours=1), fail_open=False
 )
-# Challenges (with the phone number, IP address and user agent) are deleted after this long.
+# The same for an address, which no one should be able to flood with mail.
+OTP_SENDS_PER_EMAIL: Final = RateLimit(
+    "otp-sends-per-email", limit=5, window=timedelta(hours=1), fail_open=False
+)
+_SENDS_PER: Final = {Channel.PHONE: OTP_SENDS_PER_PHONE, Channel.EMAIL: OTP_SENDS_PER_EMAIL}
+# Challenges (with the phone number or address, IP address and user agent) are deleted after this
+# long.
 OTP_RETENTION: Final = timedelta(days=7)
 _MAX_USER_AGENT_LENGTH: Final = 512
 
@@ -88,7 +99,8 @@ class IssuedChallenge:
     public_id: uuid.UUID
     expires_at: datetime
     resend_after: datetime
-    # The code itself, only from a sender that shows it (local development's console sender).
+    # The code itself, only from a sender that shows it (local development's console sender, and a
+    # test site's screen sender).
     development_code: str | None = None
 
 
@@ -96,6 +108,14 @@ class IssuedChallenge:
 class SignedIn:
     user_id: int
     new_user: bool
+
+
+def _logged(destination: Destination) -> dict[str, str]:
+    """How a destination appears in the log: phones are masked by the log itself (core/logging),
+    addresses here."""
+    if destination.channel is Channel.PHONE:
+        return {"phone": destination.address}
+    return {"email": mask_email(destination.address)}
 
 
 def _clean_ip(value: str | None) -> str | None:
@@ -113,20 +133,34 @@ class OtpService:
         *,
         secret: bytes,
         sender: OtpSender,
+        email_codes: EmailCodeSender,
         human_check: HumanCheck,
         limiter: RateLimiter,
         notice_version: str,
+        phone_sign_in: bool = True,
     ) -> None:
         self._db = db
         self._clock = clock
         self._secret = secret
         self._sender = sender
+        self._email_codes = email_codes
         self._human_check = human_check
         self._limiter = limiter
         self._notice_version = notice_version
+        self._phone_sign_in = phone_sign_in
         self._challenges = OtpRepository(db)
         self._users = UserRepository(db)
         self._consents = ConsentRepository(db)
+
+    @property
+    def phone_available(self) -> bool:
+        """Codes by text: off until the text sender is registered (PHONE_SIGN_IN=false, or no
+        sender at all)."""
+        return self._phone_sign_in
+
+    @property
+    def email_available(self) -> bool:
+        return self._email_codes.available
 
     def _code_hash(self, challenge: uuid.UUID, code: str) -> str:
         return keyed_digest(self._secret, purpose="otp", value=f"{challenge}:{code}")
@@ -139,7 +173,42 @@ class OtpService:
         ip_address: str | None,
         user_agent: str | None,
     ) -> IssuedChallenge:
-        """Send a new sign-in code to ``phone_e164``, replacing any earlier one."""
+        """Send a new sign-in code to ``phone_e164`` by text, replacing any earlier one."""
+        if not self._phone_sign_in:
+            raise ServiceUnavailableError("Signing in by phone isn't available yet.")
+        return await self._issue(
+            Destination(Channel.PHONE, phone_e164),
+            human_check_token=human_check_token,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
+    async def request_email(
+        self,
+        email: str,
+        *,
+        human_check_token: str,
+        ip_address: str | None,
+        user_agent: str | None,
+    ) -> IssuedChallenge:
+        """Send a new sign-in code to ``email`` (lowercase), replacing any earlier one."""
+        if not self._email_codes.available:
+            raise ServiceUnavailableError("Signing in by email isn't available yet.")
+        return await self._issue(
+            Destination(Channel.EMAIL, email),
+            human_check_token=human_check_token,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
+    async def _issue(
+        self,
+        destination: Destination,
+        *,
+        human_check_token: str,
+        ip_address: str | None,
+        user_agent: str | None,
+    ) -> IssuedChallenge:
         ip_address = _clean_ip(ip_address)
         if not await self._human_check.verify(
             human_check_token, remote_ip=ip_address, action=HUMAN_CHECK_ACTION
@@ -148,57 +217,64 @@ class OtpService:
         purpose = OtpPurpose.SIGN_IN
         code = f"{secrets.randbelow(10**CODE_DIGITS):0{CODE_DIGITS}d}"
         now = self._clock.now()
+        by_phone = destination.channel is Channel.PHONE
         async with self._db.begin():
-            await self._challenges.lock_phone(phone_e164)
+            await self._challenges.lock(destination)
             wait = resend_wait(
                 now=now,
                 last_requested_at=await self._challenges.last_requested_at(
-                    phone_e164, purpose=purpose
+                    destination, purpose=purpose
                 ),
             )
             if wait > timedelta(0):
                 raise OtpResendTooSoonError(wait)
-            await enforce(self._limiter, OTP_SENDS_PER_PHONE, phone_e164)
-            await self._challenges.supersede_open(phone_e164, purpose=purpose, now=now)
+            await enforce(self._limiter, _SENDS_PER[destination.channel], destination.address)
+            await self._challenges.supersede_open(destination, purpose=purpose, now=now)
             public_id = new_public_id()
             challenge = OtpChallenge(
                 public_id=public_id,
-                phone_e164=phone_e164,
+                phone_e164=destination.address if by_phone else None,
+                email=None if by_phone else destination.address,
                 purpose=purpose,
                 code_hash=self._code_hash(public_id, code),
                 attempts=0,
                 requested_at=now,
-                expires_at=now + CODE_TTL,
+                expires_at=now + destination.code_ttl,
                 ip_address=ip_address,
                 user_agent=None if user_agent is None else user_agent[:_MAX_USER_AGENT_LENGTH],
             )
             self._challenges.add(challenge)
             await self._db.flush()
+        channel = {"channel": destination.channel.value}
         try:
-            await self._sender.send(phone_e164, code)
+            if by_phone:
+                await self._sender.send(destination.address, code)
+            else:
+                await self._email_codes.send(destination.address, code)
         except Exception as error:
-            logger.exception("sign-in code not sent", phone=phone_e164)
-            _codes_sent.add(1, {"outcome": "failed"})
+            logger.exception("sign-in code not sent", **_logged(destination))
+            _codes_sent.add(1, {"outcome": "failed", **channel})
             # Undo the challenge, so the cooldown doesn't hold up an immediate retry.
             async with self._db.begin():
                 await self._challenges.delete(challenge.id)
             if isinstance(error, AppError):
                 raise
             raise ServiceUnavailableError("We couldn't send the code. Please try again.") from None
-        _codes_sent.add(1, {"outcome": "sent"})
-        logger.info("sign-in code sent", phone=phone_e164)
+        _codes_sent.add(1, {"outcome": "sent", **channel})
+        logger.info("sign-in code sent", **_logged(destination))
+        shown = self._sender.shows_code if by_phone else self._email_codes.shows_code
         return IssuedChallenge(
             public_id=challenge.public_id,
             expires_at=challenge.expires_at,
             resend_after=now + RESEND_COOLDOWN,
-            development_code=code if self._sender.shows_code else None,
+            development_code=code if shown else None,
         )
 
     async def verify(
         self, challenge_id: uuid.UUID, code: str, *, consent: ConsentGiven | None = None
     ) -> SignedIn:
-        """Check ``code`` against the challenge and sign the phone's owner in, recording
-        ``consent`` if given; a new account needs it."""
+        """Check ``code`` against the challenge and sign in the owner of the phone or address it
+        went to, recording ``consent`` if given; a new account needs it."""
         now = self._clock.now()
         async with self._db.begin():
             challenge = await self._challenges.by_public_id_for_update(challenge_id)
@@ -210,7 +286,7 @@ class OtpService:
         if user.status != "active":
             raise _refused("suspended", AccountSuspendedError())
         _checks.add(1, {"outcome": "signed_in"})
-        logger.info("signed in with a phone code", user_id=user.id, new_user=created)
+        logger.info("signed in with a code", user_id=user.id, new_user=created)
         return SignedIn(user_id=user.id, new_user=created)
 
     async def _use(
@@ -239,7 +315,10 @@ class OtpService:
             left = attempts_left(challenge.attempts)
             detail = f"{left} attempts left." if left else "No attempts left; ask for a new code."
             return OtpInvalidError(detail)
-        existing = await self._users.by_phone(challenge.phone_e164)
+        phone, email = challenge.phone_e164, challenge.email
+        existing = await (
+            self._users.by_phone(phone) if phone is not None else self._users.by_email(email or "")
+        )
         # A first sign-in: no account yet, or one made for this person that they never agreed to.
         first = existing is None or not has_agreed(await self._consents.active(existing.id))
         if consent is not None:
@@ -248,7 +327,11 @@ class OtpService:
             # Nothing has changed yet, so the challenge stays open for a try with the consent.
             raise _refused("consent_required", ConsentRequiredError())
         challenge.consumed_at = now
-        user, created = await self._users.get_or_create_by_phone(challenge.phone_e164)
+        user, created = await (
+            self._users.get_or_create_by_phone(phone)
+            if phone is not None
+            else self._users.get_or_create_by_email(email or "")
+        )
         if consent is not None:
             await self._consents.grant(
                 user.id, consent.purposes, notice_version=consent.notice_version, now=now

@@ -22,12 +22,16 @@ export API_URL="http://127.0.0.1:$api_port"
 export CORS_ALLOWED_ORIGINS="$SITE_URL"
 export SESSION_COOKIE_DOMAIN=
 export OTP_SENDER=console
+# As on the live site until text messages are registered (ADR 0068): no phone sign-in, and email
+# codes, which the console mailer logs and the sign-in page shows (nothing is sent).
+export PHONE_SIGN_IN=false
+export MAIL_SENDER=console
 export TURNSTILE_SECRET_KEY=
 export GOOGLE_CLIENT_ID=
 export GOOGLE_CLIENT_SECRET=
 export STAFF_GOOGLE_DOMAINS=
 export STAFF_GOOGLE_EMAILS=
-export PRIVACY_NOTICE_VERSION=draft-1
+export PRIVACY_NOTICE_VERSION=draft-2
 export OWNER_AGREEMENT_VERSION=draft-2
 export SENTRY_DSN=
 # PostHog's stand-in (apps/web/tests/e2e/fake-posthog.mjs), where the worker sends the funnel's

@@ -11,6 +11,8 @@ from app.core.actor import Role
 from app.core.human_check import MAX_TOKEN_LENGTH
 from app.core.schemas import ApiModel
 from app.modules.identity.domain.consent import ConsentPurpose
+from app.modules.identity.domain.emails import MAX_LENGTH as EMAIL_MAX_LENGTH
+from app.modules.identity.domain.emails import normalize_email
 from app.modules.identity.domain.otp import CODE_DIGITS, HUMAN_CHECK_ACTION
 from app.modules.identity.domain.phones import normalize_indian_mobile
 from app.modules.identity.domain.profile import NAME_MAX_LENGTH, PLACE_MAX_LENGTH, Gender
@@ -27,6 +29,19 @@ def _indian_mobile(value: str) -> str:
 IndianMobile = Annotated[str, StringConstraints(max_length=32), AfterValidator(_indian_mobile)]
 
 
+def _email(value: str) -> str:
+    email = normalize_email(value)
+    if email is None:
+        raise PydanticCustomError("email_invalid", "Enter an email address, like name@example.com.")
+    return email
+
+
+# Stored in lowercase.
+EmailAddress = Annotated[
+    str, StringConstraints(max_length=EMAIL_MAX_LENGTH + 8), AfterValidator(_email)
+]
+
+
 class CsrfToken(ApiModel):
     """Send this value in the X-CSRF-Token header of every POST, PUT, PATCH and DELETE."""
 
@@ -37,7 +52,8 @@ class Me(ApiModel):
     """The signed-in user."""
 
     id: uuid.UUID
-    phone: str
+    # An account has a phone, an email address or both.
+    phone: str | None
     email: str | None
     name: str | None
     college_or_workplace: str | None
@@ -104,6 +120,28 @@ class OtpRequest(ApiModel):
     )
 
 
+class EmailCodeRequest(ApiModel):
+    """Ask for a sign-in code by email."""
+
+    email: EmailAddress
+    human_check_token: str = Field(
+        min_length=1,
+        max_length=MAX_TOKEN_LENGTH,
+        description=(
+            "The token of the sign-in form's Cloudflare Turnstile widget, whose action is "
+            f"`{HUMAN_CHECK_ACTION}`."
+        ),
+    )
+
+
+class SignInMethods(ApiModel):
+    """The ways to sign in here now. Phone codes wait for the text sender's DLT registration."""
+
+    phone: bool
+    email: bool
+    google: bool
+
+
 class OtpChallengeIssued(ApiModel):
     """A code is on its way. Send it back with ``challengeId`` to sign in."""
 
@@ -112,8 +150,8 @@ class OtpChallengeIssued(ApiModel):
     # When another code may be asked for.
     resend_after: datetime
     # The code itself, where nothing really sends it: local development (OTP_SENDER=console) and a
-    # test site with no SMS yet (OTP_SENDER=screen). Production refuses both, so this is null
-    # wherever codes are really sent.
+    # test site with no SMS yet (OTP_SENDER=screen), or no email yet. Production refuses both, so
+    # this is null wherever codes are really sent.
     development_code: str | None = None
 
 
@@ -159,7 +197,7 @@ class StaffSignInResult(ApiModel):
 class StaffMember(ApiModel):
     id: uuid.UUID
     name: str | None
-    phone: str
+    phone: str | None
     email: str | None
     roles: list[Role]
     # The address of the Google account linked at their first Google sign-in, if any.

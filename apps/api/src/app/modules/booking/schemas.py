@@ -229,10 +229,11 @@ class OpsBookingSummary(ApiModel):
 
 
 class BookingContact(ApiModel):
-    """Whom ops call."""
+    """Whom ops call, or write to: an account has a phone, an email address or both."""
 
     name: str | None
-    phone: str
+    phone: str | None
+    email: str | None = None
 
 
 class BookingHistoryEntry(ApiModel):
@@ -304,10 +305,11 @@ class DisputePhotoView(ApiModel):
 
 
 class DisputeStudent(ApiModel):
-    """The student, for ops to call."""
+    """The student, for ops to call or write to."""
 
     name: str | None
-    phone: str
+    phone: str | None
+    email: str | None = None
 
 
 class OpsDisputeItem(ApiModel):

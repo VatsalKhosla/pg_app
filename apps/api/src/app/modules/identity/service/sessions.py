@@ -206,7 +206,7 @@ class SessionService:
 @dataclass(frozen=True)
 class Profile:
     public_id: uuid.UUID
-    phone_e164: str
+    phone_e164: str | None
     email: str | None
     name: str | None
     college_or_workplace: str | None
@@ -225,8 +225,9 @@ class Person:
     """Whose record something is, for other modules' staff tools."""
 
     public_id: uuid.UUID
-    phone_e164: str
+    phone_e164: str | None
     name: str | None
+    email: str | None = None
 
 
 class UserService:
@@ -277,7 +278,12 @@ class UserService:
         async with self._db.begin():
             users = await self._users.many(user_ids)
         return {
-            user.id: Person(public_id=user.public_id, phone_e164=user.phone_e164, name=user.name)
+            user.id: Person(
+                public_id=user.public_id,
+                phone_e164=user.phone_e164,
+                name=user.name,
+                email=user.email,
+            )
             for user in users
         }
 

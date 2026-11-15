@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import insert
 from app.core.actor import STAFF_ROLES, Role
 from app.core.ids import new_public_id
 from app.modules.identity.domain.consent import ConsentPurpose
+from app.modules.identity.domain.otp import Channel, Destination
 from app.modules.identity.domain.staff import IdentityProvider
 from app.modules.identity.models import (
     Consent,
@@ -25,6 +26,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
     from datetime import datetime
 
+    from sqlalchemy import ColumnElement
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.modules.identity.domain.sessions import EndReason
@@ -63,6 +65,19 @@ class UserRepository:
         user = (
             await self._db.execute(select(User).where(User.phone_e164 == phone_e164))
         ).scalar_one()
+        return user, created_id is not None
+
+    async def get_or_create_by_email(self, email: str) -> tuple[User, bool]:
+        """The account with ``email``, created (without roles or a phone) if there is none yet.
+        Safe when two sign-ins for the same address race. Returns the user and whether it was
+        created."""
+        created_id = await self._db.scalar(
+            insert(User)
+            .values(email=email, public_id=new_public_id())
+            .on_conflict_do_nothing(index_elements=[User.email])
+            .returning(User.id)
+        )
+        user = (await self._db.execute(select(User).where(User.email == email))).scalar_one()
         return user, created_id is not None
 
     async def roles(self, user_id: int) -> frozenset[Role]:
@@ -224,6 +239,12 @@ class SessionRepository:
         return len(deleted.all())
 
 
+def _sent_to(destination: Destination) -> ColumnElement[bool]:
+    if destination.channel is Channel.PHONE:
+        return OtpChallenge.phone_e164 == destination.address
+    return OtpChallenge.email == destination.address
+
+
 class OtpRepository:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
@@ -231,25 +252,30 @@ class OtpRepository:
     def add(self, challenge: OtpChallenge) -> None:
         self._db.add(challenge)
 
-    async def lock_phone(self, phone_e164: str) -> None:
-        """Serialise code requests for one phone until the transaction ends, so two requests
-        racing past the resend cooldown can't both send a code."""
+    async def lock(self, destination: Destination) -> None:
+        """Serialise code requests for one phone or address until the transaction ends, so two
+        requests racing past the resend cooldown can't both send a code. (A phone starts with +
+        and an address has an @, so the two never share a lock.)"""
         await self._db.execute(
-            select(func.pg_advisory_xact_lock(func.hashtextextended("otp:" + phone_e164, 0)))
-        )
-
-    async def last_requested_at(self, phone_e164: str, *, purpose: str) -> datetime | None:
-        return await self._db.scalar(
-            select(func.max(OtpChallenge.requested_at)).where(
-                OtpChallenge.phone_e164 == phone_e164, OtpChallenge.purpose == purpose
+            select(
+                func.pg_advisory_xact_lock(func.hashtextextended("otp:" + destination.address, 0))
             )
         )
 
-    async def supersede_open(self, phone_e164: str, *, purpose: str, now: datetime) -> None:
+    async def last_requested_at(self, destination: Destination, *, purpose: str) -> datetime | None:
+        return await self._db.scalar(
+            select(func.max(OtpChallenge.requested_at)).where(
+                _sent_to(destination), OtpChallenge.purpose == purpose
+            )
+        )
+
+    async def supersede_open(
+        self, destination: Destination, *, purpose: str, now: datetime
+    ) -> None:
         await self._db.execute(
             update(OtpChallenge)
             .where(
-                OtpChallenge.phone_e164 == phone_e164,
+                _sent_to(destination),
                 OtpChallenge.purpose == purpose,
                 OtpChallenge.consumed_at.is_(None),
                 OtpChallenge.superseded_at.is_(None),
@@ -266,10 +292,11 @@ class OtpRepository:
         await self._db.execute(delete(OtpChallenge).where(OtpChallenge.id == challenge_id))
 
     async def for_phone(self, phone_e164: str) -> list[OtpChallenge]:
+        return await self.sent_to(Destination(Channel.PHONE, phone_e164))
+
+    async def sent_to(self, destination: Destination) -> list[OtpChallenge]:
         rows = await self._db.scalars(
-            select(OtpChallenge)
-            .where(OtpChallenge.phone_e164 == phone_e164)
-            .order_by(OtpChallenge.requested_at)
+            select(OtpChallenge).where(_sent_to(destination)).order_by(OtpChallenge.requested_at)
         )
         return list(rows)
 

@@ -37,6 +37,13 @@ def environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.Monke
         "PRIVACY_NOTICE_VERSION",
         "REVALIDATE_SECRET",
         "TEXT_SENDER",
+        "MAIL_SENDER",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USERNAME",
+        "SMTP_PASSWORD",
+        "MAIL_FROM",
+        "PHONE_SIGN_IN",
         "POSTHOG_PROJECT_KEY",
         "POSTHOG_HOST",
     ):
@@ -61,6 +68,7 @@ def _deployed(environment: pytest.MonkeyPatch, app_env: str = "production") -> p
         "OWNER_AGREEMENT_VERSION": "2027-01",
         "REVALIDATE_SECRET": "a-revalidation-secret-of-32-chars!!",
         "TEXT_SENDER": "unavailable",
+        "MAIL_SENDER": "unavailable",
     }.items():
         environment.setenv(name, value)
     if app_env == "production":
@@ -529,3 +537,44 @@ def test_storage_settings_are_checked(
 
     with pytest.raises(ValidationError, match=message):
         Settings()
+
+
+@pytest.mark.parametrize("app_env", ["staging", "production"])
+def test_deployed_environments_never_write_email_to_the_log(
+    environment: pytest.MonkeyPatch, app_env: str
+) -> None:
+    _deployed(environment, app_env).setenv("MAIL_SENDER", "console")
+
+    with pytest.raises(ValidationError, match="MAIL_SENDER=console"):
+        Settings()
+
+
+@pytest.mark.parametrize("missing", ["SMTP_USERNAME", "SMTP_PASSWORD", "MAIL_FROM"])
+def test_sending_email_needs_the_login_and_the_address(
+    environment: pytest.MonkeyPatch, missing: str
+) -> None:
+    environment.setenv("MAIL_SENDER", "smtp")
+    for name, value in {
+        "SMTP_USERNAME": "support@example.in",
+        "SMTP_PASSWORD": "an-app-password-for-smtp",
+        "MAIL_FROM": "support@example.in",
+    }.items():
+        if name != missing:
+            environment.setenv(name, value)
+
+    with pytest.raises(ValidationError, match="MAIL_SENDER=smtp needs") as raised:
+        Settings()
+    assert "an-app-password-for-smtp" not in str(raised.value)
+
+
+def test_the_smtp_password_stays_out_of_repr(environment: pytest.MonkeyPatch) -> None:
+    environment.setenv("MAIL_SENDER", "smtp")
+    environment.setenv("SMTP_USERNAME", "support@example.in")
+    environment.setenv("SMTP_PASSWORD", "an-app-password-for-smtp")
+    environment.setenv("MAIL_FROM", "support@example.in")
+
+    settings = Settings()
+
+    assert settings.smtp_host == "smtp.gmail.com"
+    assert settings.smtp_port == 587
+    assert "an-app-password-for-smtp" not in repr(settings)

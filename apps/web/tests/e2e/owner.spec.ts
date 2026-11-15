@@ -1,22 +1,16 @@
 import type { Page } from "@playwright/test";
 
 import { expect, test, wcagViolations } from "./fixtures";
-import { codeSentTo, logLength, newMobile } from "./sign-in-codes";
+import { enterEmailAndCode, newEmail, newMobile } from "./sign-in-codes";
 import { newStaff, signInAsStaff } from "./staff";
 
 // Owners and the owner agreement end to end (BUILD_PLAN 2.6), on phones, against the real API: ops
 // add an owner; the owner signs in with their phone, reads the agreement and accepts it, with
 // nothing ticked for them; ops see the acceptance, with when, from where and in which browser.
 
-/** Sign in by phone: the number, the code the API "sent", and agreeing to the privacy notice. */
-async function signInByPhone(page: Page, mobile: string) {
-  await page.getByLabel("Mobile number", { exact: true }).fill(mobile);
-  const from = await logLength();
-  await page.getByRole("button", { name: "Send code" }).click();
-  await page
-    .getByLabel("Six-digit code", { exact: true })
-    .fill(await codeSentTo(mobile, { after: from }));
-  await page.getByRole("button", { name: "Continue" }).click();
+/** Sign in by email: the address ops gave, the code, and agreeing to the privacy notice. */
+async function signInByEmail(page: Page, email: string) {
+  await enterEmailAndCode(page, email);
   await expect(page.getByRole("heading", { name: "Before we create your account" })).toBeVisible();
   await page.getByRole("checkbox", { name: /^I agree/ }).check();
   await page.getByRole("button", { name: "Agree and continue" }).click();
@@ -42,7 +36,9 @@ test.describe("owner agreement", () => {
 
     // Ops add the owner, who has never signed in.
     const mobile = newMobile();
+    const email = newEmail("owner");
     await page.getByLabel("Owner's mobile number", { exact: true }).fill(mobile);
+    await page.getByLabel("Owner's email address", { exact: true }).fill(email);
     await page.getByLabel("Owner's own name (optional)", { exact: true }).fill("A Fictional Owner");
     await page.getByLabel("Legal name", { exact: true }).fill("Fictional Homes LLP");
     await page.getByLabel("Business name", { exact: true }).fill("Fictional Homes");
@@ -57,7 +53,7 @@ test.describe("owner agreement", () => {
     const owner = await phone.newPage();
     await owner.goto("/owner");
     await expect(owner).toHaveURL(/\/sign-in\?next=%2Fowner$/);
-    await signInByPhone(owner, mobile);
+    await signInByEmail(owner, email);
     await expect(owner).toHaveURL(/\/owner\/agreement$/);
     await expect(owner.getByRole("heading", { name: "Owner agreement", level: 1 })).toBeVisible();
     // The owner area stays out of search engines.

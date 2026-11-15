@@ -63,7 +63,8 @@ class MandatePayer:
     """Who a mandate is from, as the gateway needs them to authorise and to debit it."""
 
     name: str | None
-    contact: str
+    # None for someone signed in by email only, who then pays the token outright.
+    contact: str | None
 
 
 def mandate_expiry(move_in: date, *, no_show_days: int, check_window_hours: int) -> datetime:

@@ -150,7 +150,9 @@ class Disputes:
             resolved_at=dispute.resolved_at,
             notes=dispute.notes,
             booking=await self._views.managed(booking, await self._views.place(booking)),
-            student=DisputeStudent(name=student.name, phone=student.phone_e164),
+            student=DisputeStudent(
+                name=student.name, phone=student.phone_e164, email=student.email
+            ),
             photos=[_photo(media[media_id]) for media_id in ordered if media_id in media],
         )
 

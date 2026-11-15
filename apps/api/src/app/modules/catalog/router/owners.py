@@ -102,6 +102,7 @@ async def add_owner(
         business_name=body.business_name,
         gstin=body.gstin,
         name=body.name,
+        email=body.email,
     )
     return owner_info(record, current_agreement=agreement)
 
@@ -128,7 +129,8 @@ async def update_owner(
     clock: ClockDep,
     agreement: CurrentAgreement,
 ) -> OwnerInfo:
-    """Only the fields sent change; `gstin: null` clears it."""
+    """Only the fields sent change; `gstin: null` clears it. `email` adds the owner's address to
+    their account if it has none."""
     require_listing_staff(actor)
     sent = body.model_fields_set
     changes: OwnerChanges = {}
@@ -138,6 +140,8 @@ async def update_owner(
         changes["business_name"] = body.business_name
     if "gstin" in sent:
         changes["gstin"] = body.gstin
+    if "email" in sent and body.email is not None:
+        changes["email"] = body.email
     record = await OwnerService(db, clock).update(actor, owner_id, changes)
     return owner_info(record, current_agreement=agreement)
 

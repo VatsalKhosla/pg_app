@@ -25,7 +25,7 @@ interface RazorpayOptions {
   order_id: string;
   /** Seconds until checkout closes itself: the hold's time left. */
   timeout: number;
-  prefill: { name?: string; contact: string };
+  prefill: { name?: string; contact?: string; email?: string };
   theme: { color: string };
   /** A UPI one-time mandate's authorisation (step 6.7): the block, for this customer. */
   recurring?: 1;
@@ -96,7 +96,8 @@ export async function openRazorpayCheckout(
       timeout: start.expiresInSeconds,
       prefill: {
         ...(start.prefill.name === null ? {} : { name: start.prefill.name }),
-        contact: start.prefill.contact,
+        ...(start.prefill.contact === null ? {} : { contact: start.prefill.contact }),
+        ...(start.prefill.email == null ? {} : { email: start.prefill.email }),
       },
       theme: { color: brand.colors.primary },
       ...(start.mode === "upi_mandate" && start.customerId !== null

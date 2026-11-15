@@ -80,7 +80,7 @@ export default async function OpsVisitsPage({ searchParams }: PageProps<"/ops/vi
                   ? `${t("offered")}: ${visit.preferredStarts.map(when).join(", ")}`
                   : t("booked", {
                       when: when(visit.scheduledAt),
-                      agent: visit.agent.name ?? visit.agent.phone,
+                      agent: visit.agent.name ?? visit.agent.phone ?? "",
                     })}
               </p>
             </li>

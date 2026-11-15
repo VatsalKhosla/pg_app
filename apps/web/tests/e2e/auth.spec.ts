@@ -1,27 +1,16 @@
 import type { Page } from "@playwright/test";
 
 import { expect, test, wcagViolations } from "./fixtures";
-import { codeSentTo, logLength, newMobile } from "./sign-in-codes";
+import { enterEmailAndCode, newEmail } from "./sign-in-codes";
 
 // Signing in end to end, against the real API (scripts/e2e-api.sh): BUILD_PLAN 1.6's done
-// criterion is login, logout and protected-route redirects on a phone.
-
-/** Ask for a code for `mobile` and type in the one the API "sent". */
-async function enterNumberAndCode(page: Page, mobile: string) {
-  await page.getByLabel("Mobile number", { exact: true }).fill(mobile);
-  const from = await logLength();
-  await page.getByRole("button", { name: "Send code" }).click();
-  await expect(page.getByRole("heading", { name: "Enter the code" })).toBeVisible();
-  await page
-    .getByLabel("Six-digit code", { exact: true })
-    .fill(await codeSentTo(mobile, { after: from }));
-  await page.getByRole("button", { name: "Continue" }).click();
-}
+// criterion is login, logout and protected-route redirects on a phone. Codes go by email, as on
+// the live site until text messages are registered (ADR 0068).
 
 /** A new person signs up: consent, then their name. Ends on the account page. */
-async function signUp(page: Page, mobile: string) {
+async function signUp(page: Page, email: string) {
   await page.goto("/sign-in?next=/account");
-  await enterNumberAndCode(page, mobile);
+  await enterEmailAndCode(page, email);
   await expect(page.getByRole("heading", { name: "Before we create your account" })).toBeVisible();
   await page.getByRole("checkbox", { name: /^I agree/ }).check();
   await page.getByRole("button", { name: "Agree and continue" }).click();
@@ -48,7 +37,11 @@ test.describe("signing in", () => {
 
   test("a new person agrees, nothing ticked for them, then signs out", async ({ page }) => {
     await page.goto("/sign-in?next=/account");
-    await enterNumberAndCode(page, newMobile());
+    // Phone sign-in is off: only email codes are offered.
+    await expect(page.getByRole("button", { name: "Use your mobile number instead" })).toHaveCount(
+      0,
+    );
+    await enterEmailAndCode(page, newEmail());
 
     await expect(
       page.getByRole("heading", { name: "Before we create your account" }),
@@ -79,23 +72,23 @@ test.describe("signing in", () => {
   test("someone with an account goes straight back, once the resend wait is over", async ({
     page,
   }) => {
-    // The API sends a number a new code at most every 30 seconds, and this waits that out.
+    // The API sends an address a new code at most every 30 seconds, and this waits that out.
     test.slow();
-    const mobile = newMobile();
+    const email = newEmail();
     const firstCode = Date.now();
-    await signUp(page, mobile);
+    await signUp(page, email);
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/$/);
     await page.goto("/account");
     await expect(page).toHaveURL(/\/sign-in\?next=%2Faccount$/);
 
-    await page.getByLabel("Mobile number", { exact: true }).fill(mobile);
-    await page.getByRole("button", { name: "Send code" }).click();
+    await page.getByLabel("Email address", { exact: true }).fill(email);
+    await page.getByRole("button", { name: "Email me a code" }).click();
     await expect(page.getByRole("main").getByRole("alert")).toHaveText(
       "Please wait a few seconds before asking for another code.",
     );
     await page.waitForTimeout(Math.max(0, firstCode + 31_000 - Date.now()));
-    await enterNumberAndCode(page, mobile);
+    await enterEmailAndCode(page, email);
 
     await expect(page).toHaveURL(/\/account$/);
     await expect(page.getByLabel("Your name", { exact: true })).toHaveValue("Asha Test");

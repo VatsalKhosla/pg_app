@@ -4,13 +4,15 @@ import path from "node:path";
 
 import { expect, type Page } from "@playwright/test";
 
-import { codeSentTo, logLength, newMobile } from "./sign-in-codes";
+import { enterEmailAndCode, newEmail, newMobile } from "./sign-in-codes";
 
 /** scripts/e2e-manage.sh: operator commands against the tests' API (Playwright runs in apps/web). */
 const MANAGE = path.resolve(process.cwd(), "../../scripts/e2e-manage.sh");
 
 export interface StaffAccount {
   mobile: string;
+  /** Their address: codes go to it while phone sign-in is off (ADR 0068). */
+  email: string;
   /** The authenticator's setup key, as an operator reads it out (base32). */
   secret: string;
 }
@@ -71,10 +73,13 @@ export function totp(secret: string, step = Math.floor(Date.now() / 30_000)): st
 /** A new staff member with these roles and an authenticator app, as an operator sets one up. */
 export async function newStaff(roles: readonly string[], name = "Test Ops"): Promise<StaffAccount> {
   const mobile = newMobile();
+  const email = newEmail("staff");
   await manage([
     "staff",
     "add",
     mobile,
+    "--email",
+    email,
     ...roles.flatMap((role) => ["--role", role]),
     "--name",
     name,
@@ -87,22 +92,16 @@ export async function newStaff(roles: readonly string[], name = "Test Ops"): Pro
     secret = key.replaceAll(" ", "");
     return totp(secret);
   });
-  return { mobile, secret };
+  return { mobile, email, secret };
 }
 
 /**
- * Sign in on the staff sign-in page without Google: the phone code, consent the first time, then
+ * Sign in on the staff sign-in page without Google: the email code, consent the first time, then
  * the authenticator. Its code is the next step's: the enrolment just used this step's, and each
  * step's code works once (the API allows one step of clock drift).
  */
 export async function signInAsStaff(page: Page, account: StaffAccount): Promise<void> {
-  await page.getByLabel("Mobile number", { exact: true }).fill(account.mobile);
-  const from = await logLength();
-  await page.getByRole("button", { name: "Send code" }).click();
-  await page
-    .getByLabel("Six-digit code", { exact: true })
-    .fill(await codeSentTo(account.mobile, { after: from }));
-  await page.getByRole("button", { name: "Continue" }).click();
+  await enterEmailAndCode(page, account.email);
   const consent = page.getByRole("heading", { name: "Before we create your account" });
   const authenticator = page.getByRole("heading", { name: "Your authenticator code" });
   await expect(consent.or(authenticator)).toBeVisible();
