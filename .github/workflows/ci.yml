@@ -291,10 +291,11 @@ jobs:
       # Google's map set up below, they're what the maps fall back to if Google's fails.
       NEXT_PUBLIC_MAP_TILES_URL: https://tile.openstreetmap.org/{z}/{x}/{y}.png
       NEXT_PUBLIC_MAP_TILES_ATTRIBUTION: © OpenStreetMap contributors
-      # Google's map (ADR 0069), once the founders add both as repository variables
-      # (docs/runbooks/staging.md). Empty until then: MapLibre with the tiles above.
+      # Google's map (ADR 0069): the key is a repository variable (docs/runbooks/staging.md), and
+      # without it the maps are MapLibre with the tiles above. The founders' map ID isn't secret
+      # (every map request names it), so it's here, unless a variable of that name replaces it.
       NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
-      NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID }}
+      NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || '4fdedc4df3f2d207acc8c8b8' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

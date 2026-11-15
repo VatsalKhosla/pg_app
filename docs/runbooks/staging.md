@@ -56,14 +56,15 @@ Until Google's map is set up, every map uses OpenStreetMap's tiles. Once it is, 
    - **Name:** `fixyourstay-web`;
    - **Map type:** **JavaScript**, and **Vector**. Leave tilt and rotation unticked: the site sets them itself.
    - Save, and copy the map ID.
-5. In the GitHub repository, open **Settings**, then **Secrets and variables**, then **Actions**, then the **Variables** tab, then **New repository variable**. Add:
-   - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`: the key;
-   - `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`: the map ID.
+5. In the GitHub repository, open **Settings**, then **Secrets and variables**, then **Actions**, then the **Variables** tab, then **New repository variable**. Add `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, the key.
+   - The map ID is built in from `.github/workflows/ci.yml` (`4fdedc4df3f2d207acc8c8b8`, made on 2026-11-15); a variable `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` replaces it. It isn't secret: every map request names it.
 6. Rebuild. Both are built into the web image, so they take effect with the next deploy: a push to `main`, or, in the **Actions** tab, the latest **CI** run on `main`, then **Re-run all jobs**.
    - Setting them in Render's **Environment** for `fys-staging-web` does nothing: Render runs the image CI built.
 7. Open https://fixyourstay.in/search. The map is Google's, with its logo in the corner. If it's still the OpenStreetMap map, Google refused the key: the browser console names the reason (`RefererNotAllowedMapError`, `ApiNotActivatedMapError`, `BillingNotEnabledMapError`).
 
-To go back to OpenStreetMap's tiles, delete either variable and rebuild.
+To go back to OpenStreetMap's tiles, delete the key's variable and rebuild.
+
+Set up on 2026-11-15: the key is restricted to the two addresses above and to the Maps JavaScript API.
 
 ## Booking without a visit
 
