@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { DisputeResolve } from "@/components/ops/dispute-resolve";
+import { ContactLinks } from "@/components/ops/contact-links";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getServerApi } from "@/lib/api/server";
@@ -67,14 +68,9 @@ export default async function OpsDisputePage({ params }: PageProps<"/ops/dispute
         <h2 id="student" className="font-display text-title-3 text-foreground">
           {t("student")}
         </h2>
-        <p className="font-medium text-foreground">{student.name ?? t("noName")}</p>
-        <p>
-          <a
-            href={`tel:${student.phone}`}
-            className="font-medium text-primary underline underline-offset-4"
-          >
-            {student.phone}
-          </a>
+        <p className="font-medium text-foreground">
+          {student.name ?? t("noName")}
+          <ContactLinks phone={student.phone} email={student.email} />
         </p>
       </section>
 

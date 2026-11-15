@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { BookingDesk } from "@/components/ops/booking-desk";
+import { ContactLinks } from "@/components/ops/contact-links";
 import { LiveRefresh } from "@/components/ops/live-refresh";
 import { RefundDesk } from "@/components/ops/refund-desk";
 import { unwrap } from "@/lib/api/client";
@@ -166,25 +167,18 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
           <div>
             <dt className="text-sm text-muted-foreground">{t("detail.student")}</dt>
             <dd>
-              {booking.studentContact.name ?? t("noName")} ·{" "}
-              <a
-                href={`tel:${booking.studentContact.phone}`}
-                className="font-medium text-primary underline underline-offset-4"
-              >
-                {booking.studentContact.phone}
-              </a>
+              {booking.studentContact.name ?? t("noName")}
+              <ContactLinks
+                phone={booking.studentContact.phone}
+                email={booking.studentContact.email}
+              />
             </dd>
           </div>
           <div>
             <dt className="text-sm text-muted-foreground">{t("detail.owner")}</dt>
             <dd>
-              {booking.ownerContact.name ?? t("noName")} ·{" "}
-              <a
-                href={`tel:${booking.ownerContact.phone}`}
-                className="font-medium text-primary underline underline-offset-4"
-              >
-                {booking.ownerContact.phone}
-              </a>
+              {booking.ownerContact.name ?? t("noName")}
+              <ContactLinks phone={booking.ownerContact.phone} email={booking.ownerContact.email} />
             </dd>
           </div>
         </dl>
