@@ -42,6 +42,29 @@ Test mode allows 30 payment links for the account, which owners' invoices use (A
 
 To take tokens as UPI one-time mandates in test mode (ADR 0064), set `TEST_SITE_TOKEN_MODE` to `upi_mandate` on `fys-staging-api`; `payment` goes back to normal payments. The site sets the `token_mode` flag as it starts.
 
+## Google Maps
+
+Until Google's map is set up, every map uses OpenStreetMap's tiles. Once it is, every map is Google's, and the tiles are what it falls back to if Google refuses the key (ADR 0069). Google Maps Platform is a paid service with a monthly free allowance; setting up its billing is the founders' choice.
+
+1. In [Google Cloud's console](https://console.cloud.google.com), create a project (for example `fixyourstay-maps`) and link a billing account to it. Under **Billing**, then **Budgets & alerts**, add a budget with an email alert.
+2. Open **APIs & Services**, then **Library**, find **Maps JavaScript API** and choose **Enable**.
+3. Open **APIs & Services**, then **Credentials**, then **Create credentials**, then **API key**. Edit the new key:
+   - **Application restrictions:** **Websites**, with `https://fixyourstay.in/*` and `https://www.fixyourstay.in/*` (Render serves both).
+   - **API restrictions:** **Restrict key**, with **Maps JavaScript API** only.
+   - Save. The key shows in every visitor's browser by design; these restrictions are what keep others from using it.
+4. Open **Google Maps Platform**, then **Map management**, then **Create map ID**:
+   - **Name:** `fixyourstay-web`;
+   - **Map type:** **JavaScript**, and **Vector**. Leave tilt and rotation unticked: the site sets them itself.
+   - Save, and copy the map ID.
+5. In the GitHub repository, open **Settings**, then **Secrets and variables**, then **Actions**, then the **Variables** tab, then **New repository variable**. Add:
+   - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`: the key;
+   - `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`: the map ID.
+6. Rebuild. Both are built into the web image, so they take effect with the next deploy: a push to `main`, or, in the **Actions** tab, the latest **CI** run on `main`, then **Re-run all jobs**.
+   - Setting them in Render's **Environment** for `fys-staging-web` does nothing: Render runs the image CI built.
+7. Open https://fixyourstay.in/search. The map is Google's, with its logo in the corner. If it's still the OpenStreetMap map, Google refused the key: the browser console names the reason (`RefererNotAllowedMapError`, `ApiNotActivatedMapError`, `BillingNotEnabledMapError`).
+
+To go back to OpenStreetMap's tiles, delete either variable and rebuild.
+
 ## Booking without a visit
 
 Season one is visit-first, so anywhere else a bed is reserved only from a visit an agent has checked in to. Here, `TEST_SITE_REMOTE_BOOKING=true` in `render.yaml` lets anyone reserve a bed and pay at the test bank, because staging has no staff sign-in or agents yet, and nobody could reach a booking otherwise (ADR 0058). Set it to `false` and restart to go back.
@@ -51,7 +74,7 @@ Season one is visit-first, so anywhere else a bed is reserved only from a visit 
 - **Texts:** there's no SMS provider yet (a paid vendor the founders choose). Sign-in codes show on the sign-in page instead (`OTP_SENDER=screen`, ADR 0055), and visit and booking texts aren't sent.
   - Anyone can sign in with any number here, so never put real people's details on this site. Staff roles never come with a phone sign-in, and production refuses this setting.
 - **Real listings:** staging shows the six fictional sample PGs, added on its first start. A banner on every page says they're samples (see [Later](#later)).
-- **Map:** it uses OpenStreetMap's tiles, which their policy allows for a site this lightly used. The live site needs a map provider the founders choose.
+- **Map:** it uses OpenStreetMap's tiles, which their policy allows for a site this lightly used, until Google's map is set up ([Google Maps](#google-maps)).
 - **Search engines** are kept out: `robots.txt` disallows everything on staging.
 
 ## One-time setup (founders)
