@@ -106,6 +106,7 @@ class Uploader:
                 analytics=NoAnalytics(),
                 beds=NoBookingsYet(),
                 gateway=FakeGateway(),
+                cipher=self.app.state.field_cipher,
             ),
             clock=self.app.state.clock,
             worker_id="test",

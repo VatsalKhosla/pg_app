@@ -8,8 +8,9 @@ from fastapi import FastAPI, Request
 from app.config import Settings
 from app.core.security import API_CSP, HSTS
 from app.main import create_app
+from app.modules.agreements.templates import Templates
 from app.modules.catalog.domain.agreements import Agreement
-from tests.agreements import FixedAgreements
+from tests.agreements import FixedAgreements, FixedTemplates
 
 type Requester = Callable[..., httpx.Response]
 type SettingsFactory = Callable[..., Settings]
@@ -57,8 +58,13 @@ def test_deployed_environments_add_hsts_and_hide_the_interactive_docs(
             revalidate_secret="a-revalidation-secret-of-32-chars!!",
             text_sender="unavailable",
             mail_sender="unavailable",
+            # A fictional key: 32 bytes of zeros.
+            field_encryption_keys="k1:" + "A" * 43,
         ),
         agreements=FixedAgreements(Agreement("2027-01", "A fictional reviewed agreement.")),
+        rent_templates=Templates(
+            FixedTemplates(("2027-01", "A fictional reviewed rent agreement.")), version="2027-01"
+        ),
     )
 
     assert request_app(app, "GET", "/healthz").headers["strict-transport-security"] == HSTS

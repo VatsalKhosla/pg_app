@@ -119,6 +119,7 @@ async def _run_worker(app: FastAPI) -> None:
             analytics=NoAnalytics(),
             beds=NoBookingsYet(),
             gateway=FakeGateway(),
+            cipher=app.state.field_cipher,
         ),
         clock=app.state.clock,
         worker_id="test",

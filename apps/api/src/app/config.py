@@ -185,6 +185,12 @@ class Settings(DatabaseSettings):
     # asks every owner to accept again. A "draft" one (not yet reviewed by a lawyer) can't go to
     # production.
     owner_agreement_version: str = Field(default="draft-2", pattern=r"^[a-z0-9][a-z0-9.-]{0,63}$")
+    # The keys that seal personal data the app must read back, such as tenants' police
+    # verification details (ADR 0070): comma-separated "id:key" pairs, each key 32 random bytes in
+    # base64url, the first sealing new values. Unset, one key is derived from SECRET_KEY: fine
+    # locally, in tests and on the test site, but production needs keys of its own, so rotating
+    # SECRET_KEY can't make sealed values unreadable.
+    field_encryption_keys: SecretStr | None = None
 
     # Object storage (S3; SeaweedFS locally). Uploads and private files go to one bucket; listing
     # media anyone may see go to the other, which the CDN serves when deployed. On AWS the endpoint
@@ -248,6 +254,7 @@ class Settings(DatabaseSettings):
         "smtp_username",
         "smtp_password",
         "mail_from",
+        "field_encryption_keys",
         mode="before",
     )
     @classmethod
@@ -420,6 +427,16 @@ class Settings(DatabaseSettings):
             msg = (
                 "production invoices are tax invoices: set INVOICE_SELLER_NAME, "
                 "INVOICE_SELLER_ADDRESS, INVOICE_SELLER_GSTIN and INVOICE_SAC_CODE"
+            )
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def _own_encryption_keys_in_production(self) -> Self:
+        if self.app_env == "production" and self.field_encryption_keys is None:
+            msg = (
+                "FIELD_ENCRYPTION_KEYS is required in production: personal data sealed with a key"
+                " derived from SECRET_KEY would be lost when SECRET_KEY is rotated"
             )
             raise ValueError(msg)
         return self

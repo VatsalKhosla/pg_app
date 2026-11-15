@@ -184,6 +184,9 @@ class QuoteRepository:
     async def get(self, public_id: uuid.UUID) -> PriceQuote | None:
         return await self._db.scalar(select(PriceQuote).where(PriceQuote.public_id == public_id))
 
+    async def by_id(self, quote_id: int) -> PriceQuote | None:
+        return await self._db.scalar(select(PriceQuote).where(PriceQuote.id == quote_id))
+
 
 class AlertRepository:
     def __init__(self, db: AsyncSession) -> None:

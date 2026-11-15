@@ -21,6 +21,7 @@ from app.core.openapi import PROBLEM_RESPONSES, Api, operation_id
 from app.core.ratelimit import RateLimiter
 from app.core.redis import create_redis
 from app.core.request_context import PROBE_PATHS, REQUEST_ID_HEADER, RequestContextMiddleware
+from app.core.sealing import field_cipher
 from app.core.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.telemetry import (
     SERVICE_VERSION,
@@ -29,6 +30,12 @@ from app.core.telemetry import (
     configure_tracing,
 )
 from app.messages import build_mailer
+from app.modules.agreements.adapters.console import (
+    ConsoleSigningCodeSender,
+    UnavailableSigningCodeSender,
+)
+from app.modules.agreements.router import router as agreements_router
+from app.modules.agreements.templates import Templates, is_draft
 from app.modules.booking.contact import BookingContacts
 from app.modules.booking.router import router as booking_router
 from app.modules.catalog.agreements import FileAgreements
@@ -143,6 +150,7 @@ ROUTERS: Final = (
     owner_inventory_router,
     insights_router,
     booking_router,
+    agreements_router,
     payments_router,
     ledger_router,
     invoices_router,
@@ -151,10 +159,28 @@ ROUTERS: Final = (
 )
 
 
-def _set_shared_state(app: FastAPI, settings: Settings, agreements: AgreementLibrary) -> None:
+def _set_shared_state(
+    app: FastAPI, settings: Settings, agreements: AgreementLibrary, rent_templates: Templates
+) -> None:
     """What routes read from ``app.state`` that needs no connection, so is there before startup."""
     app.state.cookies = CookiePolicy(domain=settings.session_cookie_domain)
     app.state.secret_key = settings.secret_key.get_secret_value().encode()
+    # What seals personal data the app reads back (ADR 0070): its own keys, or outside production
+    # one derived from SECRET_KEY. Keys that can't be read stop the API starting.
+    app.state.field_cipher = field_cipher(settings)
+    # The rent agreement's template in force (ADR 0070); production refuses a draft, as it does
+    # the owner agreement and the privacy notice.
+    if settings.app_env == "production" and is_draft(rent_templates.version):
+        msg = f"the rent agreement's template {rent_templates.version} is a draft"
+        raise RuntimeError(msg)
+    app.state.rent_templates = rent_templates
+    # Signing codes for rent agreements (ADR 0070): written to the log, and shown on the page,
+    # only locally; anywhere deployed they go by email once the mail port is wired in, and are
+    # refused (503) until then.
+    app.state.signing_code_sender = (
+        UnavailableSigningCodeSender() if settings.is_deployed else ConsoleSigningCodeSender()
+    )
+    app.state.signing_codes_shown = not settings.is_deployed
     # Who a request's session belongs to, for every module's CurrentActor.
     app.state.authenticate = authenticate_session
     app.state.site_url = settings.site_url
@@ -185,9 +211,10 @@ def create_app(
     *,
     clock: Clock | None = None,
     agreements: AgreementLibrary | None = None,
+    rent_templates: Templates | None = None,
 ) -> FastAPI:
     """Build the API. Tests pass their own ``settings``, a ``FrozenClock`` and, to try versions of
-    the owner agreement that aren't written yet, the agreement's texts."""
+    the owner agreement or the rent agreement that aren't written yet, their texts."""
     settings = settings or get_settings()
     clock = clock or SystemClock()
     configure_logging(level=settings.log_level, fmt=settings.log_format)
@@ -251,7 +278,7 @@ def create_app(
         dependencies=[Depends(require_csrf_token)],
         telemetry={"exclude": _is_probe},
     )
-    _set_shared_state(app, settings, agreements or FileAgreements())
+    _set_shared_state(app, settings, agreements or FileAgreements(), rent_templates or Templates())
     install_error_handlers(app)
     # Added innermost first, so a request passes RequestContext, SecurityHeaders, CORS and then
     # BodySizeLimit before reaching a route.

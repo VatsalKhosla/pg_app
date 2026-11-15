@@ -163,6 +163,41 @@ def _charge(charge: MandatoryCharge) -> dict[str, object]:
 
 
 @dataclass(frozen=True, slots=True)
+class QuotedCharge:
+    """A mandatory charge as a quote showed it to the student (ADR 0039): what a booking's rent
+    agreement lists (ADR 0070)."""
+
+    label: str
+    # "monthly", "metered" (billed on use, with a monthly estimate) or "one_time".
+    cadence: str
+    # A monthly or one-time charge's amount; a metered one's monthly estimate.
+    amount_paise: int
+    rate_paise: int | None = None
+    unit: str | None = None
+
+
+def _quoted(stored: dict[str, object]) -> QuotedCharge:
+    """A charge as ``_charge`` kept it."""
+    label = str(stored["label"])
+    match stored["type"]:
+        case "monthly":
+            return QuotedCharge(label, "monthly", int(str(stored["amount_paise"])))
+        case "metered":
+            return QuotedCharge(
+                label,
+                "metered",
+                int(str(stored["monthly_estimate_paise"])),
+                rate_paise=int(str(stored["rate_paise"])),
+                unit=str(stored["unit"]),
+            )
+        case "oneTime":
+            return QuotedCharge(label, "one_time", int(str(stored["amount_paise"])))
+        case other:
+            msg = f"unknown charge type {other!r}"
+            raise ValueError(msg)
+
+
+@dataclass(frozen=True, slots=True)
 class BookableQuote:
     """A quote as the booking that takes it copies it: its money, never priced again (rule 5),
     and the booking terms it was made under."""
@@ -193,6 +228,14 @@ class QuoteLookup:
     def __init__(self, db: AsyncSession, clock: Clock) -> None:
         self._clock = clock
         self._quotes = QuoteRepository(db)
+
+    async def charges(self, quote_id: int) -> tuple[QuotedCharge, ...]:
+        """The mandatory charges a quote showed, in its order, whether or not it has expired: a
+        booking that took it has these charges for its whole stay."""
+        row = await self._quotes.by_id(quote_id)
+        if row is None:
+            raise NotFoundError
+        return tuple(_quoted(charge) for charge in row.mandatory_charges)
 
     async def usable(self, quote_id: uuid.UUID) -> BookableQuote:
         """A quote a booking may take: 404 for none by that id, 409 QUOTE_EXPIRED once its 30

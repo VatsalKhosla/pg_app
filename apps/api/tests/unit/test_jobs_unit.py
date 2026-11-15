@@ -10,6 +10,7 @@ from hypothesis import strategies as st
 from app.core.analytics import NoAnalytics
 from app.core.outbox import FIRST_RETRY_DELAY, MAX_RETRY_DELAY, JobRegistry, retry_delay
 from app.core.scheduler import DailyAt, Every, ScheduledJob, dedupe_key
+from app.core.sealing import FieldCipher
 from app.core.texts import NoTexts
 from app.core.web_cache import NoWebCache
 from app.jobs import SCHEDULES, build_registry
@@ -66,6 +67,7 @@ def test_every_schedule_has_a_registered_handler() -> None:
         analytics=NoAnalytics(),
         beds=NoBookingsYet(),
         gateway=FakeGateway(),
+        cipher=FieldCipher.from_config(None, secret_key=b"test-only-secret-key"),
     ).kinds
 
     assert {job.kind for job in SCHEDULES} <= kinds

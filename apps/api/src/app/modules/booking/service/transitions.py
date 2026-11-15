@@ -20,6 +20,7 @@ from app.core.errors import InvalidTransitionError
 from app.core.outbox import enqueue
 from app.modules.booking.domain.cancellation import late_refund
 from app.modules.booking.domain.state_machine import (
+    FINAL,
     ActivateAllocation,
     ApplyLateCancelPolicy,
     AutoConfirm,
@@ -76,6 +77,10 @@ NOTIFY: Final = "booking.notify"
 REFUND_DUE: Final = "booking.refund_due"
 # A settled booking's token is earned: payments debits a token that was only blocked (step 6.7).
 TOKEN_EARNED: Final = "booking.token_earned"  # noqa: S105 - a job's name, not a password
+# The owner (or ops for them, or the PG itself) confirmed a booking, and it ended: other modules
+# follow these, the rent agreement first (ADR 0070), since bookings never call them.
+CONFIRMED: Final = "booking.confirmed"
+ENDED: Final = "booking.ended"
 # Rejected, cancelled, a no-show or refunded: the booking ended early, and the row says how.
 ENDED_EARLY: Final = frozenset(
     {
@@ -176,10 +181,24 @@ class Transitions:
             raise InvalidTransitionError("The booking changed a moment ago. Try again.")
         await self.carry_out(booking, event, step, by=by)
         await self.log(booking, event, was, step, party, by=by, note=note)
+        await self._announce(booking, step.to)
         _changed.add(1, {"event": event, "from": was, "to": step.to, "by": party})
         if AutoConfirm() in step.effects:
             await self.apply(booking, BookingEvent.CONFIRM, Party.SYSTEM, place, by=None)
         return step
+
+    async def _announce(self, booking: Booking, to: BookingStatus) -> None:
+        """The booking's confirmation, and its end however it came, for other modules: each once
+        per booking, as neither comes twice."""
+        kind = CONFIRMED if to is BookingStatus.CONFIRMED else ENDED if to in FINAL else None
+        if kind is not None:
+            await enqueue(
+                self._db,
+                kind,
+                {"booking": str(booking.public_id), "status": to},
+                clock=self._clock,
+                dedupe_key=f"{kind}:{booking.public_id}",
+            )
 
     async def remind_to_check_in(self, booking: Booking, place: BookingPlace, *, by: int) -> bool:
         """Ops' nudge to a student who has moved in to say so, only while they may (409
