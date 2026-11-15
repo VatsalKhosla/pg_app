@@ -124,7 +124,7 @@ test.describe("search", () => {
 
     // Move the map: the search follows it, as its area instead of the campus.
     if (isMobile) {
-      // One finger scrolls the page past the map, so here the arrow keys move it.
+      // The arrow keys move it, as they would for anyone using the keyboard.
       await map.focus();
       await page.keyboard.press("ArrowRight");
     } else {
