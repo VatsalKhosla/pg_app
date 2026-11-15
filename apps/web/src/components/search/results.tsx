@@ -130,13 +130,9 @@ export function Results({
           {t("results.rents", { months: DEFAULT_STAY })}
         </p>
       </div>
-      <ul
-        aria-busy={refreshing}
-        className={cn(
-          "grid gap-x-4 gap-y-7 transition-opacity sm:grid-cols-2 motion-reduce:transition-none",
-          refreshing && "opacity-60",
-        )}
-      >
+      {/* While new results come, the old ones stay as they are (the count says they're
+          updating): dimmed, their text would fall below AA contrast. */}
+      <ul aria-busy={refreshing} className="grid gap-x-4 gap-y-7 sm:grid-cols-2">
         {cards.map((card, index) => (
           <li key={card.id}>
             <ResultCard

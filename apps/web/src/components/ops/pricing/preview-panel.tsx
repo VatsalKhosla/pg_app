@@ -165,10 +165,9 @@ export function PreviewPanel({
       </div>
 
       {result === null ? null : (
-        // While the next answer comes, the last one stays, dimmed: no jump, no flash.
-        <div
-          className={`space-y-4 transition-opacity motion-reduce:transition-none ${busy ? "opacity-60" : ""}`}
-        >
+        // While the next answer comes, the last one stays as it is, with "Checking…" above it: no
+        // jump, no flash, and no dimming, which would take its text below AA contrast.
+        <div aria-busy={busy} className="space-y-4">
           <p className="text-sm text-muted-foreground">{result.explanation}</p>
           <dl className="grid gap-5 sm:grid-cols-2">
             <DefinitionRow term={t("adjustments")}>
