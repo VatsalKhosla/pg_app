@@ -13,6 +13,13 @@ from app.core.idempotency import IDEMPOTENCY_CLEANUP, delete_expired_keys
 from app.core.outbox import OUTBOX_CLEANUP, JobRegistry, delete_finished_jobs
 from app.core.scheduler import DailyAt, Every, ScheduledJob
 from app.core.web_cache import REVALIDATE, revalidate_handler
+from app.modules.agreements.jobs import CONFIRMED, ENDED, follow_booking_handler
+from app.modules.agreements.service import (
+    agreements_part,
+    delete_old_signing_codes,
+    erase_police_details,
+)
+from app.modules.agreements.templates import Templates
 from app.modules.booking.jobs import (
     CHECK_WINDOWS,
     CONFIRMATION_TIMEOUTS,
@@ -105,6 +112,7 @@ from app.modules.visits.service import visits_part
 
 if TYPE_CHECKING:
     from app.core.analytics import Analytics
+    from app.core.sealing import FieldCipher
     from app.core.texts import Texts
     from app.core.web_cache import WebCache
     from app.modules.media.ports import ObjectStorage
@@ -113,7 +121,8 @@ if TYPE_CHECKING:
     from app.modules.pricing.occupancy import BedsTaken
 
 # A person's data export (DPDP): one part from every module that holds personal data. A module
-# that starts keeping personal data adds its part here.
+# that starts keeping personal data adds its part here. The rent agreements' part opens sealed
+# details, so it joins these when the registry is built, with the cipher (ADR 0070).
 EXPORTERS: Final = (
     personal_data,
     owner_data,
@@ -139,6 +148,17 @@ RETENTION_RULES: Final = (
         delete_old_challenges,
     ),
     RetentionRule("data_exports", "Data export files: 7 days after they are ready", expire_exports),
+    RetentionRule(
+        "agreement_signing_codes",
+        "Rent agreement signing codes, with the IP address and user agent: after 7 days",
+        delete_old_signing_codes,
+    ),
+    RetentionRule(
+        "police_verification_details",
+        "Tenants' police-verification details: 30 days after the police verified the tenant or"
+        " the booking ended (the record that it happened stays)",
+        erase_police_details,
+    ),
 )
 
 SCHEDULES: Final = (
@@ -181,16 +201,18 @@ def build_registry(
     analytics: Analytics,
     beds: BedsTaken,
     gateway: PaymentGateway,
+    cipher: FieldCipher,
     seller: InvoiceSeller | None = None,
+    rent_templates: Templates | None = None,
 ) -> JobRegistry:
     """Every handler, with what it needs from outside: the object storage media jobs use, the
     web app whose cached pages are revalidated, the texts visits, bookings and grievances send,
-    where the funnel's server-side steps go, how full rooms are for the prices search keeps, and
-    the gateway refunds go to."""
+    where the funnel's server-side steps go, how full rooms are for the prices search keeps, the
+    gateway refunds go to, and the cipher that opens sealed personal data for its owner's export."""
     registry = JobRegistry()
     registry.register(OUTBOX_CLEANUP, delete_finished_jobs)
     registry.register(IDEMPOTENCY_CLEANUP, delete_expired_keys)
-    registry.register(BUILD_EXPORT, build_export_handler(EXPORTERS))
+    registry.register(BUILD_EXPORT, build_export_handler((*EXPORTERS, agreements_part(cipher))))
     registry.register(RETENTION, retention_handler(RETENTION_RULES))
     registry.register(PROCESS_EVENT, process_event)
     registry.register(REFUND_DUE, refund_due)
@@ -237,6 +259,11 @@ def build_registry(
     registry.register(REMIND_OWNERS, remind_owners)
     registry.register(CHECK_WINDOWS, settle_check_windows)
     registry.register(NO_SHOWS, mark_no_shows)
+    # Rent agreements follow their bookings (ADR 0070): made once confirmed, void if one ends early
+    # before both sides have signed.
+    follow_booking = follow_booking_handler(rent_templates or Templates())
+    registry.register(CONFIRMED, follow_booking)
+    registry.register(ENDED, follow_booking)
     registry.register(GRIEVANCE_TEXT, grievance_text_handler(texts))
     registry.register(ANALYTICS_CAPTURE, capture_handler(analytics))
     return registry

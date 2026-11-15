@@ -165,6 +165,36 @@ def _reason() -> dict[str, Any]:
     return {"json": {"reason": "A fictional reason"}}
 
 
+def _signature() -> dict[str, Any]:
+    # Well formed, so only whose booking it is decides the answer.
+    return {"json": {"code": "123456", "fullName": "A Fictional Student", "textSha256": "0" * 64}}
+
+
+def _police_details() -> dict[str, Any]:
+    return {
+        "json": {
+            "fullName": "A Fictional Student",
+            "parentName": "A Fictional Parent",
+            "dateOfBirth": "2007-03-09",
+            "gender": "female",
+            "phone": _new_mobile(),
+            "permanentAddress": {
+                "line": "House 1, a fictional lane",
+                "city": "Fictional Town",
+                "district": "Fictional District",
+                "state": "Fictional State",
+                "pinCode": "123456",
+            },
+            "occupation": "student",
+            "institution": "A fictional college",
+            "idType": "passport",
+            "idLast4": "567K",
+            "references": [],
+            "consent": True,
+        }
+    }
+
+
 # The defaults in force: sending them again changes nothing (422), yet shows who may.
 FEE_IN_FORCE: Final = {"rateBps": 3000, "gstRateBps": 1800, "gstMode": "exclusive"}
 BOOKING_IN_FORCE: Final = {
@@ -769,6 +799,53 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     # A new listing isn't verified yet, so there is nothing to suspend.
     ("POST", "/v1/ops/properties/{property_id}/verification/suspend"): Rule(
         ops_only(409), _reason, path={"property_id": "a_listing"}
+    ),
+    # Rent agreements and police verification (ADR 0070): the student who booked and the PG's
+    # owner sign and fill in their own booking's; ops read any. The booking asked for is nobody's.
+    ("GET", "/v1/bookings/{code}/agreement"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403), path={"code": "a_missing_booking"}
+    ),
+    ("POST", "/v1/bookings/{code}/agreement/signing-codes"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403), path={"code": "a_missing_booking"}
+    ),
+    ("POST", "/v1/bookings/{code}/agreement/signatures"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403),
+        _signature,
+        path={"code": "a_missing_booking"},
+    ),
+    ("GET", "/v1/bookings/{code}/police-verification"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403), path={"code": "a_missing_booking"}
+    ),
+    ("PUT", "/v1/bookings/{code}/police-verification"): Rule(
+        signed_in(404, field_agent=403, ops=403, admin=403),
+        _police_details,
+        path={"code": "a_missing_booking"},
+    ),
+    ("GET", "/v1/owner/bookings/{code}/agreement"): Rule(
+        signed_in(403, owner=404), path={"code": "a_missing_booking"}
+    ),
+    ("POST", "/v1/owner/bookings/{code}/agreement/signing-codes"): Rule(
+        signed_in(403, owner=404), path={"code": "a_missing_booking"}
+    ),
+    ("POST", "/v1/owner/bookings/{code}/agreement/signatures"): Rule(
+        signed_in(403, owner=404), _signature, path={"code": "a_missing_booking"}
+    ),
+    ("GET", "/v1/owner/bookings/{code}/police-verification"): Rule(
+        signed_in(403, owner=404), path={"code": "a_missing_booking"}
+    ),
+    ("POST", "/v1/owner/bookings/{code}/police-verification/mark-submitted"): Rule(
+        signed_in(403, owner=404),
+        lambda: {"json": {"acknowledgement": str(uuid.uuid7()), "reference": "A-1"}},
+        path={"code": "a_missing_booking"},
+    ),
+    ("POST", "/v1/owner/bookings/{code}/police-verification/mark-verified"): Rule(
+        signed_in(403, owner=404), path={"code": "a_missing_booking"}
+    ),
+    ("GET", "/v1/ops/bookings/{code}/agreement"): Rule(
+        ops_only(404), path={"code": "a_missing_booking"}
+    ),
+    ("GET", "/v1/ops/bookings/{code}/police-verification"): Rule(
+        ops_only(404), path={"code": "a_missing_booking"}
     ),
 }
 

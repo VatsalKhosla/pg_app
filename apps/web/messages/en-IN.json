@@ -2845,5 +2845,240 @@
     "bookings": "Bookings by status",
     "table": "See the numbers",
     "week": "Week of"
+  },
+  "Agreements": {
+    "title": "Rent agreement",
+    "metaTitle": "Rent agreement",
+    "printTitle": "Rent agreement for booking {code}",
+    "back": "Back to the booking",
+    "draft": "DRAFT: a lawyer hasn't reviewed this text yet. It isn't a final agreement, and the questions in square brackets are still open.",
+    "status": {
+      "awaiting_signatures": "Waiting for both signatures",
+      "signed_by_student": "Signed by the student",
+      "signed_by_owner": "Signed by the owner",
+      "signed": "Signed by both",
+      "void": "Void"
+    },
+    "next": {
+      "student": {
+        "awaiting_signatures": "Your owner confirmed your booking. Read the agreement, then sign it with a code we send you. The owner signs the same text.",
+        "signed_by_student": "You've signed. We're waiting for the owner to sign.",
+        "signed_by_owner": "The owner has signed. Read the agreement and sign to finish.",
+        "signed": "You and the owner have both signed this agreement.",
+        "void": "This agreement is void: the booking ended before both of you signed."
+      },
+      "owner": {
+        "awaiting_signatures": "Read the agreement, then sign it with a code we send you. The student signs the same text.",
+        "signed_by_student": "The student has signed. Read the agreement and sign to finish.",
+        "signed_by_owner": "You've signed. We're waiting for the student to sign.",
+        "signed": "You and the student have both signed this agreement.",
+        "void": "This agreement is void: the booking ended before both of you signed."
+      },
+      "ops": {
+        "awaiting_signatures": "Neither side has signed yet.",
+        "signed_by_student": "The student has signed; the owner hasn't yet.",
+        "signed_by_owner": "The owner has signed; the student hasn't yet.",
+        "signed": "Both sides have signed.",
+        "void": "Void: the booking ended before both sides signed."
+      }
+    },
+    "missing": {
+      "student": "Add your full name to your account first: the agreement names you by it, and nobody can sign until it does.",
+      "owner": "The student hasn't added their full name to their account yet. You can both sign once they have.",
+      "ops": "Waiting for the student to add their full name to their account."
+    },
+    "addName": "Add your name",
+    "parties": {
+      "student": "Student (licensee)",
+      "owner": "Owner (licensor)"
+    },
+    "notSigned": "Not signed yet",
+    "signed": "Signed as {name}, {when}",
+    "readFull": "Read the whole agreement",
+    "fingerprint": "Text version {version}. SHA-256 fingerprint of this exact text: {sha}",
+    "printLink": "Open to print or save as PDF",
+    "print": "Print or save as PDF",
+    "signaturesTitle": "Signatures",
+    "sign": {
+      "title": "Sign the agreement",
+      "intro": "We'll email you a 6-digit code. Enter it with your full name to sign the text above, exactly as it's shown.",
+      "getCode": "Send me a code",
+      "sending": "Sending…",
+      "sent": "We've emailed you a code. It works for 10 minutes.",
+      "resend": "Send a new code",
+      "developmentCode": "Development code (local only): {code}",
+      "code": "6-digit code",
+      "needCode": "Enter the 6 digits we sent you.",
+      "fullName": "Your full name",
+      "fullNameHint": "Type it as you'd sign it.",
+      "needName": "Type your full name in letters.",
+      "agree": "Sign the agreement",
+      "signing": "Signing…",
+      "errors": {
+        "generic": "We couldn't do that. Please try again.",
+        "SIGNING_CODE_INVALID": "That code isn't right.",
+        "SIGNING_CODE_EXPIRED": "That code has expired. Ask for a new one.",
+        "SIGNING_CODE_LOCKED": "Too many wrong codes. Ask for a new one.",
+        "SIGNING_CODE_TOO_SOON": "Please wait a few seconds before asking for another code.",
+        "AGREEMENT_TEXT_CHANGED": "The agreement changed while you were reading it. We've loaded the new text: read it again, then sign.",
+        "AGREEMENT_NOT_READY": "The agreement isn't ready to sign yet.",
+        "INVALID_TRANSITION": "This agreement can't be signed now. We've loaded where it stands.",
+        "RATE_LIMITED": "That's a lot of tries. Please wait a few minutes.",
+        "SERVICE_UNAVAILABLE": "We can't send codes right now. Please try again later.",
+        "SIGNING_NEEDS_EMAIL": "We email signing codes, and your account has no email address yet. Contact us and we'll add yours."
+      }
+    },
+    "evidence": {
+      "title": "Signatures and their evidence",
+      "who": "{side, select, student {Student} owner {Owner} other {Signer}}: {name}, {when}",
+      "ip": "IP address: {ip}",
+      "userAgent": "Browser: {agent}",
+      "sha": "Signed text: {sha} (version {version})"
+    }
+  },
+  "PoliceVerification": {
+    "title": "Police verification",
+    "status": {
+      "not_started": "Not started",
+      "details_submitted": "Details given",
+      "submitted_to_police": "Submitted to the police",
+      "verified": "Verified by the police"
+    },
+    "next": {
+      "student": {
+        "not_started": "Delhi Police ask PG owners to register their tenants. Give the details the police form asks for: we show them only to your PG's owner, who submits them on the Delhi Police portal.",
+        "details_submitted": "Thanks. Your PG's owner can now submit your details to the police. You can correct them until they do.",
+        "submitted_to_police": "Your PG's owner has submitted your details to Delhi Police.",
+        "verified": "Delhi Police have verified you as your PG's tenant."
+      },
+      "owner": {
+        "not_started": "The student hasn't given their details for the police form yet.",
+        "details_submitted": "Print the student's details, submit them on the Delhi Police portal, then upload the acknowledgement it gives you.",
+        "submitted_to_police": "You've submitted the details. Mark them verified once the police have verified the tenant.",
+        "verified": "The police have verified this tenant."
+      },
+      "ops": {
+        "not_started": "The student hasn't given their details yet.",
+        "details_submitted": "The student has given their details; the owner hasn't submitted them yet.",
+        "submitted_to_police": "The owner has submitted the details to the police.",
+        "verified": "The owner says the police have verified the tenant."
+      }
+    },
+    "stepNumber": "{number}.",
+    "steps": {
+      "details": "Details given",
+      "submitted": "Submitted to Delhi Police",
+      "verified": "Verified"
+    },
+    "notYet": "Not yet",
+    "on": "On {date}",
+    "reference": "Acknowledgement number {reference}",
+    "erased": "The details were erased 30 days after the verification finished or the booking ended, as our retention schedule says. The record that it happened stays.",
+    "givenTitle": "The details you gave",
+    "detailsTitle": "The tenant's details",
+    "openAcknowledgement": "Open the acknowledgement",
+    "errors": {
+      "generic": "We couldn't do that. Please try again.",
+      "INVALID_TRANSITION": "That can't be done now. We've loaded where it stands.",
+      "POLICE_DETAILS_INVALID": "Some of those details can't be used. Check them and try again.",
+      "ACKNOWLEDGEMENT_INVALID": "That file can't be used as the acknowledgement. Upload it again as a PDF or a photo.",
+      "RATE_LIMITED": "That's a lot of tries. Please wait a few minutes.",
+      "VALIDATION_ERROR": "Some of those details can't be used. Check the fields marked."
+    },
+    "form": {
+      "title": "Your details for the police form",
+      "titleAgain": "Correct your details",
+      "intro": "We share these only with your PG's owner, for your tenant verification with Delhi Police. Never type a full Aadhaar number anywhere: we don't keep one.",
+      "fullName": "Full name, as on your ID",
+      "parentName": "Father's, mother's or guardian's name",
+      "dateOfBirth": "Date of birth",
+      "gender": "Gender",
+      "genders": {
+        "female": "Female",
+        "male": "Male",
+        "other": "Other"
+      },
+      "phone": "Mobile number",
+      "address": "Permanent address",
+      "line": "House, street and area",
+      "city": "City or town",
+      "district": "District",
+      "state": "State",
+      "pinCode": "PIN code",
+      "policeStation": "Police station for that address (if you know it)",
+      "occupation": "You are",
+      "occupations": {
+        "student": "A student",
+        "working": "Working",
+        "other": "Something else"
+      },
+      "institution": "College or workplace, with its city",
+      "idType": "Identity document",
+      "idTypes": {
+        "aadhaar": "Aadhaar",
+        "passport": "Passport",
+        "voter_id": "Voter ID",
+        "driving_licence": "Driving licence",
+        "pan": "PAN card"
+      },
+      "idValue": "{type}, ending {last4}",
+      "idLast4": "Last 4 characters of its number",
+      "idLast4Hint": "Only the last 4. The owner copies the full number from your document when they submit the form.",
+      "references": "People who know you (optional)",
+      "referencesHint": "The police form may ask for up to two people who know you, with their mobile numbers.",
+      "referenceName": "Their name",
+      "referencePhone": "Their mobile number",
+      "referenceRelation": "How they know you",
+      "referenceNumbered": "Someone who knows them ({number})",
+      "addReference": "Add someone who knows you",
+      "removeReference": "Remove this person",
+      "consent": "I agree to share these details with my PG's owner, for my tenant verification with Delhi Police.",
+      "save": "Give my details",
+      "update": "Save the changes",
+      "saving": "Saving…",
+      "messages": {
+        "required": "Fill this in.",
+        "aadhaar": "Leave out Aadhaar numbers: we never keep one.",
+        "phone": "Enter a 10-digit Indian mobile number.",
+        "pin": "A PIN code is 6 digits.",
+        "last4": "Give the last 4 letters or digits only.",
+        "aadhaarLast4": "An Aadhaar number's last 4 characters are digits.",
+        "consent": "Tick the box to share your details with your PG's owner."
+      }
+    },
+    "owner": {
+      "metaTitle": "Police verification details",
+      "printTitle": "Tenant verification details: booking {code}",
+      "back": "Back to the booking",
+      "portalSteps": "Copy these details into the tenant registration on the Delhi Police portal. Take the full ID number from the tenant's original document: we never keep it. Then upload the acknowledgement the portal gives you on the booking's page.",
+      "tenancy": "The tenancy",
+      "tenant": "The tenant",
+      "licensor": "Owner",
+      "pg": "PG and address",
+      "room": "Bed",
+      "stay": "Stay",
+      "stayValue": "From {from} until {to}",
+      "booking": "Booking",
+      "notYet": "The student hasn't given their details yet.",
+      "idReminder": "We keep only the last 4 characters of the tenant's ID number. Copy the full number from their original document, and never write a full Aadhaar number into our site.",
+      "print": "Print",
+      "printLink": "Open the details to print",
+      "upload": {
+        "title": "After you've submitted it",
+        "intro": "Upload the acknowledgement the Delhi Police portal gives you, as a PDF or a photo, with its number if it shows one.",
+        "file": "Acknowledgement",
+        "fileHint": "A PDF, JPEG or PNG, up to 10 MB. Only you and our team can open it.",
+        "reference": "Acknowledgement number (optional)",
+        "submit": "Upload and mark as submitted",
+        "submitting": "Saving…",
+        "uploading": "Uploading…",
+        "needFile": "Choose the acknowledgement file first.",
+        "refused": "That file can't be used: {reason}",
+        "tooSlow": "The file is taking a while to check. Please try again in a few minutes.",
+        "verify": "Mark as verified by the police",
+        "verifyHint": "Once the police have verified the tenant:",
+        "verifying": "Saving…"
+      }
+    }
   }
 }

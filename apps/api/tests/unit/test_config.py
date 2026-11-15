@@ -8,6 +8,8 @@ from app.config import BRAND_NAME, TURNSTILE_TEST_SECRETS, Settings
 
 DATABASE_URL = "postgresql+asyncpg://app:db-secret-password@db.internal:5432/app"
 REDIS_URL = "redis://:redis-secret-password@cache.internal:6379/0"
+# A fictional key, 32 bytes of zeros: never one to use.
+FIELD_KEYS = "k1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 
 @pytest.fixture
@@ -47,6 +49,7 @@ def environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.Monke
         "GOOGLE_SIGN_IN_FOR_EVERYONE",
         "POSTHOG_PROJECT_KEY",
         "POSTHOG_HOST",
+        "FIELD_ENCRYPTION_KEYS",
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("DATABASE_URL", DATABASE_URL)
@@ -82,6 +85,7 @@ def _deployed(environment: pytest.MonkeyPatch, app_env: str = "production") -> p
         environment.setenv("INVOICE_SELLER_ADDRESS", "1 A Fictional Road, New Delhi")
         environment.setenv("INVOICE_SELLER_GSTIN", "00ABCDE0000F0Z0")
         environment.setenv("INVOICE_SAC_CODE", "0000")
+        environment.setenv("FIELD_ENCRYPTION_KEYS", FIELD_KEYS)
     return environment
 
 
@@ -487,6 +491,21 @@ def test_staging_may_run_with_a_draft_owner_agreement(environment: pytest.Monkey
     _deployed(environment, "staging").setenv("OWNER_AGREEMENT_VERSION", "draft-2")
 
     assert Settings().owner_agreement_version == "draft-2"
+
+
+def test_production_needs_encryption_keys_of_its_own(environment: pytest.MonkeyPatch) -> None:
+    _deployed(environment).delenv("FIELD_ENCRYPTION_KEYS")
+
+    with pytest.raises(ValidationError, match="FIELD_ENCRYPTION_KEYS is required in production"):
+        Settings()
+
+
+def test_staging_may_seal_with_a_key_derived_from_the_secret_key(
+    environment: pytest.MonkeyPatch,
+) -> None:
+    _deployed(environment, "staging").setenv("FIELD_ENCRYPTION_KEYS", "")
+
+    assert Settings().field_encryption_keys is None
 
 
 @pytest.mark.parametrize("version", ["", "Draft 1", "../draft-1", "x" * 65])

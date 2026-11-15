@@ -6,6 +6,12 @@ from app.core.db import Base
 from app.core.flags import FeatureFlag
 from app.core.idempotency import IdempotencyRecord
 from app.core.outbox import OutboxJob
+from app.modules.agreements.models import (
+    AgreementSignature,
+    RentalAgreement,
+    SigningCode,
+    TenantVerification,
+)
 from app.modules.booking.models import Booking, BookingEventRecord
 from app.modules.catalog.models import (
     Amenity,
@@ -59,6 +65,7 @@ from app.modules.search.models import PropertyPriceSummary, SearchListing
 from app.modules.visits.models import Visit
 
 __all__ = [
+    "AgreementSignature",
     "Amenity",
     "AuditLog",
     "Base",
@@ -106,9 +113,12 @@ __all__ = [
     "ReconciliationIssue",
     "Refund",
     "RentBand",
+    "RentalAgreement",
     "Room",
     "RoomCategory",
     "SearchListing",
+    "SigningCode",
+    "TenantVerification",
     "TotpCredential",
     "User",
     "UserIdentity",

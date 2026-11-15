@@ -27,6 +27,7 @@ from app.core.db import create_engine, create_sessionmaker
 from app.core.logging import configure_logging
 from app.core.outbox import JobRegistry, OutboxWorker
 from app.core.scheduler import ScheduledJob, Scheduler
+from app.core.sealing import field_cipher
 from app.core.telemetry import configure_metrics, configure_sentry
 from app.core.texts import ConsoleTexts, MailTexts, NoTexts, Texts
 from app.core.web_cache import NoWebCache, SignedWebCache, WebCache
@@ -151,6 +152,7 @@ async def _serve_until_signalled(
                 seller=InvoiceSeller.from_settings(settings),
                 analytics=analytics(settings, http),
                 beds=AllocationsTaken(),
+                cipher=field_cipher(settings),
             ),
             schedules=SCHEDULES,
         )

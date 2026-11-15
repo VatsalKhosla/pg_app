@@ -3,7 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { AgreementCard } from "@/components/agreements/agreement-card";
+import { PoliceCard } from "@/components/agreements/police-card";
 import { BookingAnswer } from "@/components/owner/booking-answer";
+import { ownerAgreement, ownerPoliceVerification } from "@/lib/agreements/server";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getServerApi } from "@/lib/api/server";
@@ -36,7 +39,13 @@ export default async function OwnerBookingPage({ params }: PageProps<"/owner/boo
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
-  const [t, format] = await Promise.all([getTranslations("Owner.booking"), getFormatter()]);
+  const [t, format, agreement, police] = await Promise.all([
+    getTranslations("Owner.booking"),
+    getFormatter(),
+    // Once the booking is confirmed (ADR 0070).
+    ownerAgreement(code),
+    ownerPoliceVerification(code),
+  ]);
   const when = (moment: string) =>
     format.dateTime(new Date(moment), { dateStyle: "medium", timeStyle: "short" });
   const day = (date: string) =>
@@ -113,6 +122,20 @@ export default async function OwnerBookingPage({ params }: PageProps<"/owner/boo
           ))}
         </dl>
       </section>
+      {agreement === null ? null : (
+        <AgreementCard
+          agreement={agreement}
+          viewer="owner"
+          printHref={`${path}/agreement` as Route}
+        />
+      )}
+      {police === null ? null : (
+        <PoliceCard
+          viewer="owner"
+          verification={police}
+          printHref={`${path}/police-verification` as Route}
+        />
+      )}
     </>
   );
 }

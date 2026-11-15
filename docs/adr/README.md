@@ -73,5 +73,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0067](0067-frontend-v2-golden-hour.md) | Frontend v2: Golden hour, an evening scene in CSS and SVG, and simulators that show only the live policy | Accepted |
 | [0068](0068-email-and-google-sign-in.md) | Sign-in by Google and by email code, phone codes off until texts are registered, and every message by email through Gmail | Accepted |
 | [0069](0069-google-maps.md) | Google Maps behind the map interface, with MapLibre as the fallback, and maps that move smoothly | Accepted |
+| [0070](0070-rent-agreements-and-police-verification.md) | Rent agreements and police verification: a template-made DRAFT agreement both sides sign in the app with a one-time code against the text's SHA-256, a database that keeps signed texts and signatures as they are, and a tenant's police-verification details sealed at rest, never with an Aadhaar number | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.
