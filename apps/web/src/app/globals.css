@@ -818,6 +818,20 @@
     }
   }
 
+  /*
+   * A working area's page heading (ops, owners, field, admin; components/layout/area-band.tsx):
+   * a short stroke of the dusk under it, so pages open with the site's colour, not just text.
+   */
+  .console-area h1::after {
+    content: "";
+    display: block;
+    width: 2.75rem;
+    height: 0.25rem;
+    margin-top: 0.625rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--sun), var(--ember));
+  }
+
   /* A page's opening band (components/story/sky-band.tsx): the home page's dusk, in brief. */
   .sky-band {
     background: linear-gradient(

@@ -1,8 +1,10 @@
+import { MapPinned } from "lucide-react";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { buttonVariants } from "@/components/ui/button";
+import { PageHero } from "@/components/layout/page-hero";
 import { Card } from "@/components/ui/card";
 import { CancelMyVisit } from "@/components/visits/cancel-my-visit";
 import { unwrap } from "@/lib/api/client";
@@ -56,10 +58,7 @@ export default async function VisitsPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 px-gutter py-10 sm:py-16">
-      <div className="space-y-2.5">
-        <h1 className="text-title-1 font-medium text-foreground">{t("title")}</h1>
-        <p className="relative text-body text-muted-foreground">{t("intro")}</p>
-      </div>
+      <PageHero title={t("title")} intro={t("intro")} Icon={MapPinned} />
       {items.length === 0 ? (
         <Card variant="warm" className="space-y-4 rounded-3xl border-dashed p-6">
           <p className="text-body text-muted-foreground">{t("none")}</p>

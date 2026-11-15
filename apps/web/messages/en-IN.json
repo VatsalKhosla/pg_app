@@ -550,6 +550,10 @@
         "failed": "That didn't go through. Try again.",
         "needFile": "Choose a file."
       }
+    },
+    "area": {
+      "eyebrow": "{brand} for PG owners",
+      "title": "Your PGs, bookings and invoices"
     }
   },
   "Search": {
@@ -2144,6 +2148,10 @@
         "closed": "Someone has closed it already.",
         "failed": "That didn't work. Try again."
       }
+    },
+    "area": {
+      "eyebrow": "{brand} staff",
+      "title": "Ops console"
     }
   },
   "Field": {
@@ -2287,6 +2295,10 @@
         "failed": "That didn't work: {detail}",
         "reserved": "The student reserved a bed on the spot: booking {code}"
       }
+    },
+    "area": {
+      "eyebrow": "{brand} field agents",
+      "title": "Visits and verifications"
     }
   },
   "Trust": {
@@ -2571,6 +2583,10 @@
       "INVALID_TRANSITION": "It changed a moment ago: reload the page and try again.",
       "CSRF_TOKEN_INVALID": "Your session changed in another tab. Please try again.",
       "FORBIDDEN": "Only admins can change these."
+    },
+    "area": {
+      "eyebrow": "{brand} staff",
+      "title": "Policies and rent bands"
     }
   },
   "Bookings": {

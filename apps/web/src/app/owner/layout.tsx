@@ -1,7 +1,10 @@
+import { Building2 } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
+import { AreaBand } from "@/components/layout/area-band";
 import { OpsNav } from "@/components/ops/ops-nav";
+import { brand } from "@/config/brand";
 import {
   OWNER_BOOKINGS_PATH,
   OWNER_HOME_PATH,
@@ -23,17 +26,25 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function OwnerLayout({ children }: LayoutProps<"/owner">) {
   const t = await getTranslations("Owner.nav");
+  const tArea = await getTranslations("Owner.area");
   return (
-    <div className="working-type mx-auto w-full max-w-4xl space-y-8 px-gutter py-8 sm:py-12">
-      <OpsNav
-        label={t("label")}
-        links={[
-          { href: OWNER_HOME_PATH, label: t("home"), exact: true },
-          { href: OWNER_BOOKINGS_PATH, label: t("bookings") },
-          { href: OWNER_PGS_PATH, label: t("pgs") },
-          { href: OWNER_INVOICES_PATH, label: t("invoices") },
-        ]}
-      />
+    <div className="working-type console-area mx-auto w-full max-w-4xl space-y-8 px-gutter py-8 sm:py-12">
+      <AreaBand
+        eyebrow={tArea("eyebrow", { brand: brand.name })}
+        title={tArea("title")}
+        Icon={Building2}
+      >
+        <OpsNav
+          tone="night"
+          label={t("label")}
+          links={[
+            { href: OWNER_HOME_PATH, label: t("home"), exact: true },
+            { href: OWNER_BOOKINGS_PATH, label: t("bookings") },
+            { href: OWNER_PGS_PATH, label: t("pgs") },
+            { href: OWNER_INVOICES_PATH, label: t("invoices") },
+          ]}
+        />
+      </AreaBand>
       {children}
     </div>
   );

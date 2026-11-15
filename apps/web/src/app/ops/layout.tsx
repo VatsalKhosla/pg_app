@@ -1,8 +1,11 @@
+import { LayoutDashboard } from "lucide-react";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 
+import { AreaBand } from "@/components/layout/area-band";
 import { OpsNav } from "@/components/ops/ops-nav";
+import { brand } from "@/config/brand";
 import {
   OPS_INVOICES_PATH,
   OPS_LEDGER_PATH,
@@ -34,30 +37,38 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function OpsLayout({ children }: LayoutProps<"/ops">) {
   const t = await getTranslations("Ops.nav");
+  const tArea = await getTranslations("Ops.area");
   const messages = await getMessages();
 
   return (
     <NextIntlClientProvider messages={{ Ops: messages.Ops }}>
-      <div className="working-type mx-auto w-full max-w-5xl space-y-8 px-gutter py-8 sm:py-10">
-        <OpsNav
-          label={t("label")}
-          links={[
-            { href: OPS_HOME_PATH, label: t("dashboard"), exact: true },
-            { href: OPS_LISTINGS_PATH, label: t("listings"), exact: true },
-            { href: OPS_NEW_LISTING_PATH, label: t("newListing"), exact: true },
-            { href: OPS_OWNERS_PATH, label: t("owners") },
-            { href: OPS_BOOKINGS_PATH, label: t("bookings") },
-            { href: OPS_VISITS_PATH, label: t("visits") },
-            { href: OPS_DISPUTES_PATH, label: t("disputes") },
-            { href: OPS_REFUNDS_PATH, label: t("refunds") },
-            { href: OPS_INVOICES_PATH, label: t("invoices") },
-            { href: OPS_LEDGER_PATH, label: t("ledger") },
-            { href: OPS_RECONCILIATION_PATH, label: t("reconciliation") },
-            { href: OPS_GRIEVANCES_PATH, label: t("grievances") },
-            { href: OPS_PRICING_ALERTS_PATH, label: t("pricingAlerts") },
-            { href: STAFF_HOME_PATH, label: t("staffHome"), exact: true },
-          ]}
-        />
+      <div className="working-type console-area mx-auto w-full max-w-5xl space-y-8 px-gutter py-8 sm:py-10">
+        <AreaBand
+          eyebrow={tArea("eyebrow", { brand: brand.name })}
+          title={tArea("title")}
+          Icon={LayoutDashboard}
+        >
+          <OpsNav
+            tone="night"
+            label={t("label")}
+            links={[
+              { href: OPS_HOME_PATH, label: t("dashboard"), exact: true },
+              { href: OPS_LISTINGS_PATH, label: t("listings"), exact: true },
+              { href: OPS_NEW_LISTING_PATH, label: t("newListing"), exact: true },
+              { href: OPS_OWNERS_PATH, label: t("owners") },
+              { href: OPS_BOOKINGS_PATH, label: t("bookings") },
+              { href: OPS_VISITS_PATH, label: t("visits") },
+              { href: OPS_DISPUTES_PATH, label: t("disputes") },
+              { href: OPS_REFUNDS_PATH, label: t("refunds") },
+              { href: OPS_INVOICES_PATH, label: t("invoices") },
+              { href: OPS_LEDGER_PATH, label: t("ledger") },
+              { href: OPS_RECONCILIATION_PATH, label: t("reconciliation") },
+              { href: OPS_GRIEVANCES_PATH, label: t("grievances") },
+              { href: OPS_PRICING_ALERTS_PATH, label: t("pricingAlerts") },
+              { href: STAFF_HOME_PATH, label: t("staffHome"), exact: true },
+            ]}
+          />
+        </AreaBand>
         {children}
       </div>
     </NextIntlClientProvider>

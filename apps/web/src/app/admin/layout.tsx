@@ -1,8 +1,11 @@
+import { SlidersHorizontal } from "lucide-react";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 
+import { AreaBand } from "@/components/layout/area-band";
 import { OpsNav } from "@/components/ops/ops-nav";
+import { brand } from "@/config/brand";
 import { ADMIN_POLICIES_PATH, ADMIN_RENT_BANDS_PATH, STAFF_HOME_PATH } from "@/lib/auth/routes";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -17,19 +20,27 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const t = await getTranslations("Admin.nav");
+  const tArea = await getTranslations("Admin.area");
   const messages = await getMessages();
 
   return (
     <NextIntlClientProvider messages={{ Admin: messages.Admin }}>
-      <div className="working-type mx-auto w-full max-w-5xl space-y-8 px-gutter py-8 sm:py-10">
-        <OpsNav
-          label={t("label")}
-          links={[
-            { href: ADMIN_POLICIES_PATH, label: t("policies") },
-            { href: ADMIN_RENT_BANDS_PATH, label: t("rentBands") },
-            { href: STAFF_HOME_PATH, label: t("staffHome"), exact: true },
-          ]}
-        />
+      <div className="working-type console-area mx-auto w-full max-w-5xl space-y-8 px-gutter py-8 sm:py-10">
+        <AreaBand
+          eyebrow={tArea("eyebrow", { brand: brand.name })}
+          title={tArea("title")}
+          Icon={SlidersHorizontal}
+        >
+          <OpsNav
+            tone="night"
+            label={t("label")}
+            links={[
+              { href: ADMIN_POLICIES_PATH, label: t("policies") },
+              { href: ADMIN_RENT_BANDS_PATH, label: t("rentBands") },
+              { href: STAFF_HOME_PATH, label: t("staffHome"), exact: true },
+            ]}
+          />
+        </AreaBand>
         {children}
       </div>
     </NextIntlClientProvider>

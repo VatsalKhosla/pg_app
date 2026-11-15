@@ -1,8 +1,11 @@
+import { MapPinned } from "lucide-react";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 
+import { AreaBand } from "@/components/layout/area-band";
 import { OpsNav } from "@/components/ops/ops-nav";
+import { brand } from "@/config/brand";
 import { FIELD_STUDENT_VISITS_PATH, FIELD_VISITS_PATH, STAFF_HOME_PATH } from "@/lib/auth/routes";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,19 +21,27 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function FieldLayout({ children }: LayoutProps<"/field">) {
   const t = await getTranslations("Field.nav");
+  const tArea = await getTranslations("Field.area");
   const messages = await getMessages();
 
   return (
     <NextIntlClientProvider messages={{ Ops: messages.Ops, Field: messages.Field }}>
-      <div className="working-type mx-auto w-full max-w-3xl space-y-8 px-gutter py-8 sm:py-10">
-        <OpsNav
-          label={t("label")}
-          links={[
-            { href: FIELD_VISITS_PATH, label: t("visits"), exact: true },
-            { href: FIELD_STUDENT_VISITS_PATH, label: t("studentVisits") },
-            { href: STAFF_HOME_PATH, label: t("staffHome"), exact: true },
-          ]}
-        />
+      <div className="working-type console-area mx-auto w-full max-w-3xl space-y-8 px-gutter py-8 sm:py-10">
+        <AreaBand
+          eyebrow={tArea("eyebrow", { brand: brand.name })}
+          title={tArea("title")}
+          Icon={MapPinned}
+        >
+          <OpsNav
+            tone="night"
+            label={t("label")}
+            links={[
+              { href: FIELD_VISITS_PATH, label: t("visits"), exact: true },
+              { href: FIELD_STUDENT_VISITS_PATH, label: t("studentVisits") },
+              { href: STAFF_HOME_PATH, label: t("staffHome"), exact: true },
+            ]}
+          />
+        </AreaBand>
         {children}
       </div>
     </NextIntlClientProvider>
