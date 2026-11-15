@@ -5,7 +5,7 @@ Abuse controls, as signing codes meet them:
 1. A 30-second wait before the same person asks again for the same agreement (in PostgreSQL,
    under the agreement's row lock).
 2. At most five codes per person an hour (Redis, refusing while Redis is down: each code is an
-   email), and a per-person limit on signing attempts (the routes).
+   email to the account's address), and a per-person limit on signing attempts (the routes).
 3. Five wrong tries lock a code; a code lasts ten minutes and signs once, for the side that asked.
 
 Codes are HMACs under SECRET_KEY bound to their row, never stored or logged in plain text outside
@@ -58,10 +58,12 @@ from app.modules.agreements.errors import (
     SigningCodeInvalidError,
     SigningCodeLockedError,
     SigningCodeTooSoonError,
+    SigningNeedsEmailError,
 )
 from app.modules.agreements.models import AgreementSignature, SigningCode
 from app.modules.agreements.repository import AgreementRepository
 from app.modules.agreements.service.agreements import ENTITY, RentAgreements, party_view
+from app.modules.identity.service import Accounts
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -134,15 +136,14 @@ class AgreementSigning:
         secret: bytes,
         sender: SigningCodeSender,
         limiter: RateLimiter,
-        shows_code: bool,
     ) -> None:
         self._db = db
         self._clock = clock
         self._secret = secret
         self._sender = sender
         self._limiter = limiter
-        self._shows_code = shows_code
         self._agreements = RentAgreements(db, clock, templates=templates)
+        self._accounts = Accounts(db)
         self._rows = AgreementRepository(db)
 
     def _code_hash(self, code_row: str, code: str) -> str:
@@ -168,6 +169,10 @@ class AgreementSigning:
                 raise NotFoundError
             _check_can_sign(current, side)
             agreement = current.row
+            account = (await self._accounts.many([actor.user_id])).get(actor.user_id)
+            email = None if account is None else account.email
+            if email is None and not self._sender.shows_code:
+                raise SigningNeedsEmailError
             wait = resend_wait(
                 now=now,
                 last_requested_at=await self._rows.last_requested_at(agreement.id, actor.user_id),
@@ -192,7 +197,8 @@ class AgreementSigning:
             self._rows.add_code(row)
             await self._db.flush()
         try:
-            await self._sender.send(actor.user_id, code)
+            if email is not None:
+                await self._sender.send(email, code)
         except Exception as error:
             logger.exception("signing code not sent", user_id=actor.user_id)
             _codes_sent.add(1, {"outcome": "failed"})
@@ -206,7 +212,7 @@ class AgreementSigning:
         return IssuedCode(
             expires_at=row.expires_at,
             resend_after=now + RESEND_COOLDOWN,
-            development_code=code if self._shows_code else None,
+            development_code=code if self._sender.shows_code else None,
         )
 
     async def sign(self, actor: Actor, booking_code: str, signing: Signing) -> RentAgreement:

@@ -41,9 +41,12 @@ The rest is set by the rules already in force: modules talk through services and
   - lasts ten minutes; five wrong tries lock it; a new one at most every 30 seconds;
   - at most five an hour per person (Redis, refusing while Redis is down, as each costs an email);
   - signing attempts limited to 20 per person per 15 minutes.
-- **Delivery** goes through the module's own port, `SigningCodeSender.send(user_id, code)`, never through the outbox (which would store the code).
-  - Locally, a console adapter logs the code and the API hands it back to the page.
-  - Deployed, an `unavailable` adapter answers 503 until the mail port (`app.core.mail.Mailer`, on main) is wired in at merge.
+- **Delivery** is by email to the account's address, through the module's own port (`SigningCodeSender.send(to, code)`) and the site's mailer (`app.core.mail.Mailer`, ADR 0068), straight away and never through the outbox (which would store the code). It goes the way sign-in codes do:
+  - locally, the console mailer logs it and the API hands the code back to the page;
+  - a test site without email shows it on screen, as it does sign-in codes;
+  - anywhere else the mailer sends it, and without one asking answers 503.
+
+  An account without an email address can't be sent one (`409 SIGNING_NEEDS_EMAIL`).
 - **Signing** takes the code, the signer's full name as typed, and the SHA-256 of the text they read. If the text has changed since, it's refused (`409 AGREEMENT_TEXT_CHANGED`) and the code stays usable.
 - **The evidence.** Each signature is a row with:
   - the side and the account;
@@ -106,7 +109,7 @@ Each route is in the authorization matrix. Another person's booking, and a booki
 | The PG's owner | `GET /v1/owner/bookings/{code}/agreement`, `POST …/agreement/signing-codes`, `POST …/agreement/signatures`, `GET /v1/owner/bookings/{code}/police-verification`, `POST …/police-verification/mark-submitted`, `POST …/police-verification/mark-verified` |
 | Ops and admins, read-only | `GET /v1/ops/bookings/{code}/agreement` (with every signature's evidence), `GET /v1/ops/bookings/{code}/police-verification` |
 
-New error codes: `AGREEMENT_TEXT_CHANGED` and `AGREEMENT_NOT_READY` (409); `SIGNING_CODE_INVALID`, `SIGNING_CODE_EXPIRED` and `SIGNING_CODE_LOCKED` (400); `SIGNING_CODE_TOO_SOON` (429, with `Retry-After`); `POLICE_DETAILS_INVALID` and `ACKNOWLEDGEMENT_INVALID` (422).
+New error codes: `AGREEMENT_TEXT_CHANGED`, `AGREEMENT_NOT_READY` and `SIGNING_NEEDS_EMAIL` (409); `SIGNING_CODE_INVALID`, `SIGNING_CODE_EXPIRED` and `SIGNING_CODE_LOCKED` (400); `SIGNING_CODE_TOO_SOON` (429, with `Retry-After`); `POLICE_DETAILS_INVALID` and `ACKNOWLEDGEMENT_INVALID` (422).
 
 ### 7. The web app
 
@@ -146,7 +149,7 @@ Nothing below is settled. Each item needs checking before real tenants sign.
 ## Consequences
 
 - **Production gates:** a reviewed rent agreement template and `FIELD_ENCRYPTION_KEYS`.
-- **Signing in deployed environments** waits for the mail port to be wired into `SigningCodeSender` (on merge). Until then, asking for a code there answers 503.
+- **Signing needs email.** Production sends codes once `MAIL_SENDER=smtp` is set up (ADR 0068's steps). Accounts without an email address, such as phone accounts from before ADR 0068, can't sign until one is added: ops can add an owner's, but students can't add one themselves yet.
 - **Keys:** rotating `FIELD_ENCRYPTION_KEYS` means listing the new key first and keeping the old one until every value has been sealed again (a re-sealing job isn't built yet). Losing a key loses what it sealed.
 - **Not built yet:**
   - telling either side by email or text that an agreement is ready or signed;

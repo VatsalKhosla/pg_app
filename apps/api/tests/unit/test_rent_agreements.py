@@ -2,6 +2,7 @@
 any order of events), signing codes, typed names, the text made from a booking, and the templates
 on file."""
 
+import asyncio
 import hashlib
 from collections.abc import Callable
 from dataclasses import replace
@@ -14,7 +15,9 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from app.config import BRAND_NAME, Settings
-from app.main import create_app
+from app.core.errors import ServiceUnavailableError
+from app.main import create_app, signing_codes
+from app.modules.agreements.adapters.mail import MailSigningCodes
 from app.modules.agreements.domain.agreements import (
     FINAL,
     SIGNS,
@@ -334,6 +337,7 @@ def test_production_refuses_to_start_on_a_draft_rent_agreement(
         "turnstile_secret_key": "test-turnstile-secret",
         "revalidate_secret": "a-revalidation-secret-of-32-chars!!",
         "text_sender": "unavailable",
+        "mail_sender": "unavailable",
         "field_encryption_keys": "k1:" + "A" * 43,
     }
     owners = FixedAgreements(Agreement("2027-01", "A fictional reviewed agreement."))
@@ -342,3 +346,46 @@ def test_production_refuses_to_start_on_a_draft_rent_agreement(
 
     reviewed = Templates(FixedTemplates(("2027-01", "Agreed: {licensee}.")), version="2027-01")
     create_app(make_settings(**production), agreements=owners, rent_templates=reviewed)
+
+
+class RecordedMailer:
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, str, str]] = []
+
+    async def send(self, to: str, subject: str, text: str) -> None:
+        self.sent.append((to, subject, text))
+
+
+def test_a_signing_code_goes_by_email_through_the_sites_mailer() -> None:
+    mailer = RecordedMailer()
+    codes = MailSigningCodes(mailer, shows_code=False, site_url="https://www.example.in")
+
+    asyncio.run(codes.send("asha@example.com", "123456"))
+
+    [(to, subject, text)] = mailer.sent
+    assert to == "asha@example.com"
+    assert BRAND_NAME in subject
+    assert "123456" in text
+    assert "10 minutes" in text
+    assert "https://www.example.in" in text
+
+
+def test_without_a_mailer_codes_show_on_a_test_site_and_go_nowhere_else() -> None:
+    shown = MailSigningCodes(None, shows_code=True, site_url="https://test.example.in")
+    asyncio.run(shown.send("asha@example.com", "123456"))
+
+    off = MailSigningCodes(None, shows_code=False, site_url="https://www.example.in")
+    with pytest.raises(ServiceUnavailableError):
+        asyncio.run(off.send("asha@example.com", "123456"))
+
+
+@pytest.mark.parametrize(
+    ("mail_sender", "shows_code", "expected"),
+    [("console", False, True), ("unavailable", True, True), ("unavailable", False, False)],
+)
+def test_signing_codes_go_the_way_sign_in_codes_do(
+    make_settings: Callable[..., Settings], mail_sender: str, shows_code: bool, expected: bool
+) -> None:
+    sender = signing_codes(make_settings(mail_sender=mail_sender), shows_code=shows_code)
+
+    assert sender.shows_code is expected

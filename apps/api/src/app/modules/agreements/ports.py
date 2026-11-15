@@ -4,10 +4,14 @@ from typing import Protocol
 
 
 class SigningCodeSender(Protocol):
-    """Delivers a signing code to the person signing (ADR 0070): by email once the mail port is
-    wired in; to the API's log in local development. ``user_id`` is the internal id of their
-    account, so the adapter finds the address itself."""
+    """Delivers a signing code to the person signing (ADR 0070): by email, through the site's
+    mailer (app/core/mail.py, ADR 0068), to their account's address."""
 
-    async def send(self, user_id: int, code: str) -> None:
-        """Deliver ``code``, or raise if it couldn't be handed over."""
+    # Whether the code may go back to the page that asked for it, because nothing really sends it:
+    # local development (the console mailer logs it), and a test site without email that shows
+    # sign-in codes on screen too (ADR 0055). Never in production.
+    shows_code: bool
+
+    async def send(self, to: str, code: str) -> None:
+        """Deliver ``code`` to the address ``to``, or raise if it couldn't be handed over."""
         ...

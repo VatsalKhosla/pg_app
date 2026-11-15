@@ -30,10 +30,7 @@ from app.core.telemetry import (
     configure_tracing,
 )
 from app.messages import build_mailer
-from app.modules.agreements.adapters.console import (
-    ConsoleSigningCodeSender,
-    UnavailableSigningCodeSender,
-)
+from app.modules.agreements.adapters.mail import MailSigningCodes
 from app.modules.agreements.router import router as agreements_router
 from app.modules.agreements.templates import Templates, is_draft
 from app.modules.booking.contact import BookingContacts
@@ -101,6 +98,19 @@ def email_codes(settings: Settings, *, shows_code: bool) -> EmailCodes:
     )
 
 
+def signing_codes(settings: Settings, *, shows_code: bool) -> MailSigningCodes:
+    """Codes to sign a rent agreement with (ADR 0070), by email as sign-in codes are: through the
+    mailer when there is one; without one, shown on screen where text codes are (a test site), and
+    refused anywhere else."""
+    if settings.mail_sender == "unavailable":
+        return MailSigningCodes(None, shows_code=shows_code, site_url=settings.site_url)
+    return MailSigningCodes(
+        build_mailer(settings),
+        shows_code=settings.mail_sender == "console",
+        site_url=settings.site_url,
+    )
+
+
 def _set_up_sign_in(
     app: FastAPI, settings: Settings, *, clock: Clock, google_http: httpx.AsyncClient
 ) -> None:
@@ -110,6 +120,10 @@ def _set_up_sign_in(
     app.state.phone_sign_in = settings.phone_sign_in and settings.otp_sender != "unavailable"
     app.state.email_codes = email_codes(settings, shows_code=app.state.otp_sender.shows_code)
     app.state.google_for_everyone = settings.google_sign_in_for_everyone
+    # Rent agreements' signing codes go the same way (ADR 0070).
+    app.state.signing_code_sender = signing_codes(
+        settings, shows_code=app.state.otp_sender.shows_code
+    )
     app.state.google_sign_in = (
         None
         if settings.google_client_id is None or settings.google_client_secret is None
@@ -174,13 +188,6 @@ def _set_shared_state(
         msg = f"the rent agreement's template {rent_templates.version} is a draft"
         raise RuntimeError(msg)
     app.state.rent_templates = rent_templates
-    # Signing codes for rent agreements (ADR 0070): written to the log, and shown on the page,
-    # only locally; anywhere deployed they go by email once the mail port is wired in, and are
-    # refused (503) until then.
-    app.state.signing_code_sender = (
-        UnavailableSigningCodeSender() if settings.is_deployed else ConsoleSigningCodeSender()
-    )
-    app.state.signing_codes_shown = not settings.is_deployed
     # Who a request's session belongs to, for every module's CurrentActor.
     app.state.authenticate = authenticate_session
     app.state.site_url = settings.site_url

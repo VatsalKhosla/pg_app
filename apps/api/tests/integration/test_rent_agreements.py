@@ -7,6 +7,7 @@
 - the database itself keeps signatures and signed texts as they are.
 """
 
+import secrets
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
 from typing import Any
@@ -22,6 +23,7 @@ from app.core.money import format_rupees
 from app.modules.agreements.models import AgreementSignature, RentalAgreement
 from app.modules.booking.models import Booking
 from app.modules.identity.domain.sessions import SessionKind
+from app.modules.identity.repository import UserRepository
 from tests.flags import FixedFlags
 from tests.integration.test_booking_confirmation import _held, _owner_of, _secure
 from tests.integration.test_booking_holds import _listing
@@ -33,17 +35,36 @@ pytestmark = pytest.mark.integration
 SIGNED = "signed_by_student"
 
 
+# The address each person in these tests signs with, by account.
+_EMAILS: dict[int, str] = {}
+
+
 class RecordedCodes:
-    """The signing codes the port was asked to deliver, as (user id, code), in order."""
+    """The signing codes the port was asked to email, as (address, code), in order. Nothing is
+    shown on screen, as wherever email really goes."""
+
+    shows_code = False
 
     def __init__(self) -> None:
-        self.sent: list[tuple[int, str]] = []
+        self.sent: list[tuple[str, str]] = []
 
-    async def send(self, user_id: int, code: str) -> None:
-        self.sent.append((user_id, code))
+    async def send(self, to: str, code: str) -> None:
+        self.sent.append((to, code))
 
     def last(self, person: Staff) -> str:
-        return next(code for user_id, code in reversed(self.sent) if user_id == person.user_id)
+        email = _EMAILS[person.user_id]
+        return next(code for to, code in reversed(self.sent) if to == email)
+
+
+async def give_email(person: Staff) -> str:
+    """An address on this person's account, as a sign-in by email leaves one (ADR 0068)."""
+    email = f"{secrets.token_hex(6)}@example.com"
+    async with person.app.state.sessionmaker() as db, db.begin():
+        user = await UserRepository(db).get(person.user_id)
+        assert user is not None
+        user.email = email
+    _EMAILS[person.user_id] = email
+    return email
 
 
 @pytest.fixture
@@ -71,6 +92,8 @@ async def _confirmed(ops: Staff, *, name: str | None = "Asha Verma") -> tuple[St
     student, held = await _held(ops, listing)
     if name is not None:
         await name_first(student, name)
+    await give_email(student)
+    await give_email(owner)
     code = held["code"]
     await _secure(ops, code)
     await owner.ok("POST", f"/v1/owner/bookings/{code}/confirm")
@@ -142,8 +165,11 @@ def test_both_sides_sign_the_same_text_with_a_code_each(run: Callable[..., Any])
             await student.call("POST", f"{paths['student']}/signing-codes")
         ).json()
         seen["ops"] = await ops.ok("GET", paths["ops"])
-        seen["codes"] = [user_id for user_id, _ in codes.sent]
-        seen["people"] = [student.user_id, owner.user_id]
+        seen |= {
+            "codes": [to for to, _ in codes.sent],
+            "emails": [_EMAILS[student.user_id], _EMAILS[owner.user_id]],
+            "people": [student.user_id, owner.user_id],
+        }
         row = await _row(ops, code)
         seen["audit"] = await _audit(ops, str(row.public_id))
         async with ops.app.state.sessionmaker() as db:
@@ -199,7 +225,8 @@ def test_both_sides_sign_the_same_text_with_a_code_each(run: Callable[..., Any])
     evidence = seen["ops"]["signatures"]
     assert {each["textSha256"] for each in evidence} == {read["textSha256"]}
     assert all(each["ipAddress"] and each["templateVersion"] == "draft-1" for each in evidence)
-    assert seen["codes"] == seen["people"]
+    # Each code went to the signer's own address, and nowhere else.
+    assert seen["codes"] == seen["emails"]
     assert seen["signatures"] == [
         ("student", seen["people"][0], "Asha Verma"),
         ("owner", seen["people"][1], "A Fictional Owner"),
@@ -422,3 +449,24 @@ def test_nobody_sees_another_persons_agreement(run: Callable[..., Any]) -> None:
         "student as owner": 403,
         "not confirmed": 404,
     }
+
+
+def test_a_signer_without_an_email_address_is_told_so(run: Callable[..., Any]) -> None:
+    async def scenario(ops: Staff, codes: RecordedCodes) -> dict[str, Any]:
+        student, _owner, code = await _confirmed(ops)
+        async with ops.app.state.sessionmaker() as db, db.begin():
+            user = await UserRepository(db).get(student.user_id)
+            assert user is not None
+            user.email = None
+        path = _paths(code)["student"]
+        refused = await student.call("POST", f"{path}/signing-codes")
+        # A test site without email shows the code on screen instead, as it does sign-in codes.
+        codes.shows_code = True
+        shown = await student.call("POST", f"{path}/signing-codes")
+        return {"refused": refused.json()["code"], "shown": shown.json(), "sent": codes.sent}
+
+    seen = run(scenario)
+
+    assert seen["refused"] == "SIGNING_NEEDS_EMAIL"
+    assert seen["shown"]["developmentCode"] is not None
+    assert seen["sent"] == []

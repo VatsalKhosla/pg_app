@@ -2901,10 +2901,10 @@
     "signaturesTitle": "Signatures",
     "sign": {
       "title": "Sign the agreement",
-      "intro": "We'll send you a 6-digit code. Enter it with your full name to sign the text above, exactly as it's shown.",
+      "intro": "We'll email you a 6-digit code. Enter it with your full name to sign the text above, exactly as it's shown.",
       "getCode": "Send me a code",
       "sending": "Sending…",
-      "sent": "We've sent you a code. It works for 10 minutes.",
+      "sent": "We've emailed you a code. It works for 10 minutes.",
       "resend": "Send a new code",
       "developmentCode": "Development code (local only): {code}",
       "code": "6-digit code",
@@ -2924,7 +2924,8 @@
         "AGREEMENT_NOT_READY": "The agreement isn't ready to sign yet.",
         "INVALID_TRANSITION": "This agreement can't be signed now. We've loaded where it stands.",
         "RATE_LIMITED": "That's a lot of tries. Please wait a few minutes.",
-        "SERVICE_UNAVAILABLE": "We can't send codes right now. Please try again later."
+        "SERVICE_UNAVAILABLE": "We can't send codes right now. Please try again later.",
+        "SIGNING_NEEDS_EMAIL": "We email signing codes, and your account has no email address yet. Contact us and we'll add yours."
       }
     },
     "evidence": {

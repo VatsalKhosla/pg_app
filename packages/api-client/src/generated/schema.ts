@@ -2746,9 +2746,10 @@ export interface paths {
         put?: never;
         /**
          * Ask for a code to sign your rent agreement
-         * @description A six-digit code, sent to you, for ten minutes. A new one replaces the last, every 30
-         *     seconds at most (429 SIGNING_CODE_TOO_SOON); five an hour. 409 INVALID_TRANSITION once you've
-         *     signed or the agreement is void; 409 AGREEMENT_NOT_READY while it lacks your name.
+         * @description A six-digit code, emailed to your account's address, for ten minutes. A new one replaces
+         *     the last, every 30 seconds at most (429 SIGNING_CODE_TOO_SOON); five an hour. 409
+         *     INVALID_TRANSITION once you've signed or the agreement is void; 409 AGREEMENT_NOT_READY while
+         *     it lacks your name; 409 SIGNING_NEEDS_EMAIL for an account without an email address.
          */
         post: operations["agreementsAskForSigningCode"];
         delete?: never;

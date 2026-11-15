@@ -27,6 +27,15 @@ class AgreementNotReadyError(AppError):
     title = "The agreement isn't ready to sign yet"
 
 
+class SigningNeedsEmailError(AppError):
+    """The signer's account has no email address to send the code to, while texts can't go yet
+    (ADR 0068). An owner's address is added by ops; a student signs in with theirs."""
+
+    status = 409
+    code = "SIGNING_NEEDS_EMAIL"
+    title = "Your account needs an email address to sign"
+
+
 class SigningCodeInvalidError(AppError):
     """A wrong code, a used or replaced one, or none asked for: deliberately one error."""
 
