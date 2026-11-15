@@ -102,6 +102,7 @@ def _set_up_sign_in(
     app.state.otp_sender = _OTP_SENDERS[settings.otp_sender]()
     app.state.phone_sign_in = settings.phone_sign_in and settings.otp_sender != "unavailable"
     app.state.email_codes = email_codes(settings, shows_code=app.state.otp_sender.shows_code)
+    app.state.google_for_everyone = settings.google_sign_in_for_everyone
     app.state.google_sign_in = (
         None
         if settings.google_client_id is None or settings.google_client_secret is None

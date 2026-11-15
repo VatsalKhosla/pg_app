@@ -89,7 +89,7 @@ def get_google_sign_in_service(
         db,
         clock,
         secret=state.secret_key,
-        google=state.google_sign_in,
+        google=state.google_sign_in if state.google_for_everyone else None,
         notice_version=notice_version,
     )
 

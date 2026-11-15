@@ -150,6 +150,9 @@ class Settings(DatabaseSettings):
     # Sign-in by a code sent to a phone (ADR 0068): off until the SMS sender's DLT registration is
     # done, when email codes and Google carry sign-in.
     phone_sign_in: bool = True
+    # Anyone, not only staff, may sign in with Google (ADR 0068). It needs the OAuth client's
+    # audience to be External: while it's Internal, Google turns everyone else away.
+    google_sign_in_for_everyone: bool = True
     # Product analytics (ADR 0035): the PostHog project's key and its ingestion host, such as
     # https://eu.i.posthog.com. The founders choose the account and its region; until both are
     # set, the funnel's server-side steps aren't sent.

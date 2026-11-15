@@ -540,6 +540,17 @@ def test_google_gives_staff_an_ordinary_session_here(
     run(scenario)
 
 
+def test_google_for_everyone_can_wait_for_the_oauth_client(run: Callable[..., Any]) -> None:
+    async def scenario(_app: FastAPI, browser: Browser) -> None:
+        methods = await browser.request("GET", "/v1/auth/methods")
+        started = await browser.request("GET", "/v1/auth/google")
+
+        assert methods.json()["google"] is False
+        assert _went_to(started) == (f"{SITE}/sign-in", {"error": ["SERVICE_UNAVAILABLE"]})
+
+    run(scenario, google_sign_in_for_everyone=False)
+
+
 def test_a_staff_sign_in_in_the_same_browser_still_finishes_as_staff(
     run: Callable[..., Any], google: FakeGoogle
 ) -> None:

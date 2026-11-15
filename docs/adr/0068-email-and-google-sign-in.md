@@ -42,6 +42,6 @@
 - **Gmail's own limits:** about 2,000 messages a day for a Workspace account. That's enough to start with; a transactional mail provider is a paid vendor for the founders to choose later.
 - **The app password is a secret like any other:** it's set on the service, never in the repository. It needs 2-Step Verification on the account, and a Workspace admin can turn app passwords off; Google's SMTP relay service is the alternative then.
 - **Mail lands in spam without SPF, DKIM and DMARC** on fixyourstay.in. The runbook (staging.md) has the founders' steps.
-- **Google sign-in for everyone needs the OAuth client's audience to be External and published.** Staff sign-in still checks the Workspace domain, so staff tools stay staff-only.
+- **Google sign-in for everyone needs the OAuth client's audience to be External and published.** Until the founders change it, `GOOGLE_SIGN_IN_FOR_EVERYONE=false` keeps the button off the sign-in page. Staff sign-in still checks the Workspace domain, so staff tools stay staff-only.
 - **The API's contract widened:** phone fields may be null. Each change is recorded in docs/api-contract-exceptions.md; the web app was changed in the same commit.
 - **Turning phone sign-in back on** is one variable once the DLT registration is done. Accounts made by email can then add a phone (a later step: proving a phone on an existing account).

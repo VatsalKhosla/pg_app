@@ -90,6 +90,10 @@ services:
         sync: false
       - key: PHONE_SIGN_IN
         value: "false"
+      # Google sign-in for everyone: off until the OAuth client's audience is External and
+      # published (docs/runbooks/staging.md); staff sign in with Google either way.
+      - key: GOOGLE_SIGN_IN_FOR_EVERYONE
+        value: "false"
       # Razorpay's test mode: Pay opens Razorpay's own checkout, and no real money moves (ADR
       # 0056). The test key, its secret and the webhook's secret are set on the service; the API
       # refuses a live key anywhere but production. "fake" goes back to the site's own test bank.

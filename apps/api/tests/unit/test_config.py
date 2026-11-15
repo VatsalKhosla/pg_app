@@ -44,6 +44,7 @@ def environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.Monke
         "SMTP_PASSWORD",
         "MAIL_FROM",
         "PHONE_SIGN_IN",
+        "GOOGLE_SIGN_IN_FOR_EVERYONE",
         "POSTHOG_PROJECT_KEY",
         "POSTHOG_HOST",
     ):
