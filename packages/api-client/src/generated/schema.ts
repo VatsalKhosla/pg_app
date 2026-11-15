@@ -2714,6 +2714,262 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bookings/{code}/agreement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your rent agreement
+         * @description Once the owner has confirmed your booking: the full text (Markdown, marked DRAFT until a
+         *     lawyer has reviewed it), who has signed and when, and whether you may sign now.
+         */
+        get: operations["agreementsMyAgreement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{code}/agreement/signing-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for a code to sign your rent agreement
+         * @description A six-digit code, sent to you, for ten minutes. A new one replaces the last, every 30
+         *     seconds at most (429 SIGNING_CODE_TOO_SOON); five an hour. 409 INVALID_TRANSITION once you've
+         *     signed or the agreement is void; 409 AGREEMENT_NOT_READY while it lacks your name.
+         */
+        post: operations["agreementsAskForSigningCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{code}/agreement/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign your rent agreement
+         * @description With the code sent to you, your full name, and the ``textSha256`` of the text you read:
+         *     409 AGREEMENT_TEXT_CHANGED if the text has changed since (read it again). 400
+         *     SIGNING_CODE_INVALID, SIGNING_CODE_EXPIRED or SIGNING_CODE_LOCKED for the code.
+         */
+        post: operations["agreementsSignMyAgreement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{code}/police-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your police verification
+         * @description Where the police verification of your stay is, with the details you gave.
+         */
+        get: operations["agreementsMyPoliceVerification"];
+        /**
+         * Give your police-verification details
+         * @description What the Delhi Police tenant form asks, for your PG's owner to submit; correct it until
+         *     they have. An identity document is its type and last four characters only: never type a full
+         *     Aadhaar number anywhere (422). 422 POLICE_DETAILS_INVALID for an impossible date of birth;
+         *     409 INVALID_TRANSITION once submitted or after the booking ended.
+         */
+        put: operations["agreementsGivePoliceDetails"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/bookings/{code}/agreement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A booking's rent agreement
+         * @description The agreement for a booking at one of your PGs, once you've confirmed it.
+         */
+        get: operations["agreementsOwnerRentAgreement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/bookings/{code}/agreement/signing-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for a code to sign a booking's rent agreement
+         * @description As for students: a six-digit code, sent to you, for ten minutes.
+         */
+        post: operations["agreementsOwnerSigningCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/bookings/{code}/agreement/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign a booking's rent agreement
+         * @description As for students: the code, your full name, and the hash of the text you read.
+         */
+        post: operations["agreementsOwnerSignAgreement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/bookings/{code}/police-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A tenant's police verification, to submit
+         * @description The tenant's details and the tenancy, to copy onto the Delhi Police portal, with the
+         *     acknowledgement once uploaded (links signed for five minutes). Every look is audited.
+         */
+        get: operations["agreementsOwnerPoliceVerification"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/bookings/{code}/police-verification/mark-submitted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Say you've submitted the tenant's police verification
+         * @description With the portal's acknowledgement, uploaded as your own document, and its number if it
+         *     gave one. 422 ACKNOWLEDGEMENT_INVALID for a file that isn't yours or isn't a document; 409
+         *     INVALID_TRANSITION before the tenant has given their details, or after.
+         */
+        post: operations["agreementsOwnerMarkSubmitted"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/bookings/{code}/police-verification/mark-verified": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Say the police have verified the tenant
+         * @description Once submitted: 409 INVALID_TRANSITION before.
+         */
+        post: operations["agreementsOwnerMarkVerified"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/bookings/{code}/agreement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A booking's rent agreement, with evidence
+         * @description The text and every signature with its evidence: the account, the name typed, the time,
+         *     the IP address and browser, and the hash of the text signed.
+         */
+        get: operations["agreementsOpsRentAgreement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/bookings/{code}/police-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A tenant's police verification, read-only
+         * @description Everything the owner sees; every look at the details is audited.
+         */
+        get: operations["agreementsOpsPoliceVerification"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bookings/{code}/payment": {
         parameters: {
             query?: never;
@@ -3484,6 +3740,28 @@ export interface components {
          * @enum {string}
          */
         AccountType: "asset" | "liability" | "revenue" | "expense";
+        /** AcknowledgementFile */
+        AcknowledgementFile: {
+            /** Contenttype */
+            contentType: string;
+            /** Url */
+            url: string;
+        };
+        /** AddressDetails */
+        AddressDetails: {
+            /** Line */
+            line: string;
+            /** City */
+            city: string;
+            /** District */
+            district: string;
+            /** State */
+            state: string;
+            /** Pincode */
+            pinCode: string;
+            /** Policestation */
+            policeStation?: string | null;
+        };
         /**
          * AdminPolicies
          * @description Each policy's version in force.
@@ -3518,6 +3796,25 @@ export interface components {
             /** Acceptedversion */
             acceptedVersion: string | null;
         };
+        /**
+         * AgreementSignatureView
+         * @description A side's signature as the parties see it: whose, the name they typed, and when.
+         */
+        AgreementSignatureView: {
+            signer: components["schemas"]["Signer"];
+            /** Name */
+            name: string;
+            /**
+             * Signedat
+             * Format: date-time
+             */
+            signedAt: string;
+        };
+        /**
+         * AgreementStatus
+         * @enum {string}
+         */
+        AgreementStatus: "awaiting_signatures" | "signed_by_student" | "signed_by_owner" | "signed" | "void";
         /**
          * AlertKind
          * @enum {string}
@@ -4621,6 +4918,13 @@ export interface components {
             /** Visit */
             visit?: string | null;
         };
+        /**
+         * IdType
+         * @description Identity documents the police form accepts, as their type and last four characters only.
+         *     [The founders and a lawyer confirm the list against the current Delhi Police form.]
+         * @enum {string}
+         */
+        IdType: "aadhaar" | "passport" | "voter_id" | "driving_licence" | "pan";
         /** InventoryBed */
         InventoryBed: {
             /**
@@ -5443,6 +5747,11 @@ export interface components {
             /** Bps */
             bps: number;
         };
+        /**
+         * Occupation
+         * @enum {string}
+         */
+        Occupation: "student" | "working" | "other";
         /** OneTimeCharge */
         OneTimeCharge: {
             /**
@@ -5757,6 +6066,29 @@ export interface components {
             /** Items */
             items: components["schemas"]["OpsPayment"][];
         };
+        /**
+         * OpsPoliceVerification
+         * @description The same, for ops: read-only.
+         */
+        OpsPoliceVerification: {
+            /** Booking */
+            booking: string;
+            status: components["schemas"]["PoliceVerificationStatus"];
+            details: components["schemas"]["TenantDetails"] | null;
+            tenancy: components["schemas"]["TenancySummary"];
+            /** Detailssubmittedat */
+            detailsSubmittedAt: string | null;
+            /** Submittedtopoliceat */
+            submittedToPoliceAt: string | null;
+            /** Policereference */
+            policeReference: string | null;
+            /** Acknowledgement */
+            acknowledgement: components["schemas"]["AcknowledgementFile"][];
+            /** Verifiedat */
+            verifiedAt: string | null;
+            /** Erased */
+            erased: boolean;
+        };
         /** OpsRefund */
         OpsRefund: {
             /**
@@ -5796,6 +6128,37 @@ export interface components {
             items: components["schemas"]["OpsRefund"][];
             /** Nextcursor */
             nextCursor: string | null;
+        };
+        /**
+         * OpsRentAgreement
+         * @description A booking's rent agreement with every signature's evidence, read-only.
+         */
+        OpsRentAgreement: {
+            /** Booking */
+            booking: string;
+            status: components["schemas"]["AgreementStatus"];
+            /** Templateversion */
+            templateVersion: string;
+            /** Draft */
+            draft: boolean;
+            /** Text */
+            text: string;
+            /** Textsha256 */
+            textSha256: string;
+            /** Ready */
+            ready: boolean;
+            /** Missing */
+            missing: string[];
+            /** Signatures */
+            signatures: components["schemas"]["SignatureEvidence"][];
+            /** Createdat */
+            createdAt: string | null;
+            /** Signedat */
+            signedAt: string | null;
+            /** Voidedat */
+            voidedAt: string | null;
+            /** Bookingendedat */
+            bookingEndedAt: string | null;
         };
         /**
          * OtpChallengeIssued
@@ -5979,6 +6342,34 @@ export interface components {
             nextCursor: string | null;
         };
         /**
+         * OwnerPoliceVerification
+         * @description The tenant's police verification, as the owner submits it: the details to copy onto the
+         *     Delhi Police portal, the tenancy, and the acknowledgement once uploaded.
+         */
+        OwnerPoliceVerification: {
+            /** Booking */
+            booking: string;
+            status: components["schemas"]["PoliceVerificationStatus"];
+            details: components["schemas"]["TenantDetails"] | null;
+            tenancy: components["schemas"]["TenancySummary"];
+            /** Detailssubmittedat */
+            detailsSubmittedAt: string | null;
+            /** Submittedtopoliceat */
+            submittedToPoliceAt: string | null;
+            /** Policereference */
+            policeReference: string | null;
+            /** Acknowledgement */
+            acknowledgement: components["schemas"]["AcknowledgementFile"][];
+            /** Verifiedat */
+            verifiedAt: string | null;
+            /** Canmarksubmitted */
+            canMarkSubmitted: boolean;
+            /** Canmarkverified */
+            canMarkVerified: boolean;
+            /** Erased */
+            erased: boolean;
+        };
+        /**
          * OwnerStatus
          * @enum {string}
          */
@@ -6121,6 +6512,25 @@ export interface components {
             gstRateBps: number;
             gstMode: components["schemas"]["GstMode"];
         };
+        /**
+         * PoliceSubmission
+         * @description The owner submitted the details on the Delhi Police portal: the acknowledgement they
+         *     uploaded as a private document, and its number if the portal gave one.
+         */
+        PoliceSubmission: {
+            /**
+             * Acknowledgement
+             * Format: uuid
+             */
+            acknowledgement: string;
+            /** Reference */
+            reference?: string | null;
+        };
+        /**
+         * PoliceVerificationStatus
+         * @enum {string}
+         */
+        PoliceVerificationStatus: "not_started" | "details_submitted" | "submitted_to_police" | "verified";
         /**
          * PolicyHistory
          * @description Each policy's latest versions, newest first.
@@ -6738,6 +7148,18 @@ export interface components {
             /** Refundswaiting */
             refundsWaiting: number;
         };
+        /**
+         * ReferenceDetails
+         * @description Someone who knows the tenant.
+         */
+        ReferenceDetails: {
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string;
+            /** Relation */
+            relation: string;
+        };
         /** RefundDecline */
         RefundDecline: {
             /** Reason */
@@ -6787,6 +7209,37 @@ export interface components {
             height: number | null;
             /** Bytes */
             bytes: number;
+        };
+        /**
+         * RentAgreement
+         * @description A booking's rent agreement, as the student or the owner sees it. ``text`` is Markdown in
+         *     the subset the owner agreement uses; ``textSha256`` is what a signature names.
+         */
+        RentAgreement: {
+            /** Booking */
+            booking: string;
+            status: components["schemas"]["AgreementStatus"];
+            you: components["schemas"]["Signer"];
+            /** Templateversion */
+            templateVersion: string;
+            /** Draft */
+            draft: boolean;
+            /** Text */
+            text: string;
+            /** Textsha256 */
+            textSha256: string;
+            /** Ready */
+            ready: boolean;
+            /** Missing */
+            missing: string[];
+            /** Cansign */
+            canSign: boolean;
+            /** Signatures */
+            signatures: components["schemas"]["AgreementSignatureView"][];
+            /** Signedat */
+            signedAt: string | null;
+            /** Voidedat */
+            voidedAt: string | null;
         };
         /** RentBandEnd */
         RentBandEnd: {
@@ -7233,6 +7686,71 @@ export interface components {
             /** Newuser */
             newUser: boolean;
         };
+        /**
+         * SignatureEvidence
+         * @description A signature with its evidence, for ops: the account, the name typed, the server's time, the
+         *     IP address and browser it came from, and the text it names.
+         */
+        SignatureEvidence: {
+            signer: components["schemas"]["Signer"];
+            /**
+             * User
+             * Format: uuid
+             */
+            user: string;
+            /** Name */
+            name: string;
+            /**
+             * Signedat
+             * Format: date-time
+             */
+            signedAt: string;
+            /** Ipaddress */
+            ipAddress: string;
+            /** Useragent */
+            userAgent: string | null;
+            /** Textsha256 */
+            textSha256: string;
+            /** Templateversion */
+            templateVersion: string;
+        };
+        /**
+         * SignatureRequest
+         * @description Signing: the code that was sent, the signer's full name as they sign it, and the hash of
+         *     the text they read (``textSha256``). A text that has changed since is refused.
+         */
+        SignatureRequest: {
+            /** Code */
+            code: string;
+            /** Fullname */
+            fullName: string;
+            /** Textsha256 */
+            textSha256: string;
+        };
+        /**
+         * Signer
+         * @description The two sides: the student who booked (the licensee) and the PG's owner (the licensor).
+         * @enum {string}
+         */
+        Signer: "student" | "owner";
+        /**
+         * SigningCodeSent
+         * @description A code is on its way to the signer. Sign with it before ``expiresAt``.
+         */
+        SigningCodeSent: {
+            /**
+             * Expiresat
+             * Format: date-time
+             */
+            expiresAt: string;
+            /**
+             * Resendafter
+             * Format: date-time
+             */
+            resendAfter: string;
+            /** Developmentcode */
+            developmentCode?: string | null;
+        };
         /** SitemapListing */
         SitemapListing: {
             /** Slug */
@@ -7553,6 +8071,25 @@ export interface components {
             /** Items */
             items: components["schemas"]["StudentPayment"][];
         };
+        /** StudentPoliceVerification */
+        StudentPoliceVerification: {
+            /** Booking */
+            booking: string;
+            status: components["schemas"]["PoliceVerificationStatus"];
+            details: components["schemas"]["TenantDetails"] | null;
+            /** Detailssubmittedat */
+            detailsSubmittedAt: string | null;
+            /** Submittedtopoliceat */
+            submittedToPoliceAt: string | null;
+            /** Policereference */
+            policeReference: string | null;
+            /** Verifiedat */
+            verifiedAt: string | null;
+            /** Canedit */
+            canEdit: boolean;
+            /** Erased */
+            erased: boolean;
+        };
         /** StudentRefund */
         StudentRefund: {
             /** Amountpaise */
@@ -7630,6 +8167,93 @@ export interface components {
          * @enum {string}
          */
         StudentVisitStatus: "requested" | "scheduled" | "completed" | "no_show" | "cancelled";
+        /**
+         * TenancySummary
+         * @description The tenancy the police form describes, as the agreement has it.
+         */
+        TenancySummary: {
+            /** Booking */
+            booking: string;
+            /** Licensor */
+            licensor: string;
+            /** Pgname */
+            pgName: string;
+            /** Pgaddress */
+            pgAddress: string;
+            /** Room */
+            room: string;
+            /**
+             * Movein
+             * Format: date
+             */
+            moveIn: string;
+            /**
+             * Plannedmoveout
+             * Format: date
+             */
+            plannedMoveOut: string;
+        };
+        /**
+         * TenantDetails
+         * @description What the police form asks about the tenant. An identity document is its type and the last
+         *     four characters of its number only: never a full Aadhaar number, or any other.
+         */
+        TenantDetails: {
+            /** Fullname */
+            fullName: string;
+            /** Parentname */
+            parentName: string;
+            /**
+             * Dateofbirth
+             * Format: date
+             */
+            dateOfBirth: string;
+            gender: components["schemas"]["Gender"];
+            /** Phone */
+            phone: string;
+            permanentAddress: components["schemas"]["AddressDetails"];
+            occupation: components["schemas"]["Occupation"];
+            /** Institution */
+            institution: string;
+            idType: components["schemas"]["IdType"];
+            /** Idlast4 */
+            idLast4: string;
+            /** References */
+            references?: components["schemas"]["ReferenceDetails"][];
+        };
+        /**
+         * TenantDetailsInput
+         * @description The student's details, with their agreement to share them with the PG's owner for the
+         *     police (it can't be anything but true: nothing is pre-ticked).
+         */
+        TenantDetailsInput: {
+            /** Fullname */
+            fullName: string;
+            /** Parentname */
+            parentName: string;
+            /**
+             * Dateofbirth
+             * Format: date
+             */
+            dateOfBirth: string;
+            gender: components["schemas"]["Gender"];
+            /** Phone */
+            phone: string;
+            permanentAddress: components["schemas"]["AddressDetails"];
+            occupation: components["schemas"]["Occupation"];
+            /** Institution */
+            institution: string;
+            idType: components["schemas"]["IdType"];
+            /** Idlast4 */
+            idLast4: string;
+            /** References */
+            references?: components["schemas"]["ReferenceDetails"][];
+            /**
+             * Consent
+             * @constant
+             */
+            consent: true;
+        };
         /**
          * TimelineEntry
          * @description One change to the booking, as its history has it.
@@ -13991,6 +14615,542 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpsDispute"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsMyAgreement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentAgreement"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsAskForSigningCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningCodeSent"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsSignMyAgreement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignatureRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentAgreement"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsMyPoliceVerification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentPoliceVerification"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsGivePoliceDetails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantDetailsInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentPoliceVerification"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsOwnerRentAgreement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentAgreement"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsOwnerSigningCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningCodeSent"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsOwnerSignAgreement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignatureRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentAgreement"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsOwnerPoliceVerification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerPoliceVerification"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsOwnerMarkSubmitted: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoliceSubmission"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerPoliceVerification"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsOwnerMarkVerified: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerPoliceVerification"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsOpsRentAgreement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsRentAgreement"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    agreementsOpsPoliceVerification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsPoliceVerification"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

@@ -3,10 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { AgreementCard } from "@/components/agreements/agreement-card";
+import { PoliceCard } from "@/components/agreements/police-card";
 import { BookingDesk } from "@/components/ops/booking-desk";
 import { ContactLinks } from "@/components/ops/contact-links";
 import { LiveRefresh } from "@/components/ops/live-refresh";
 import { RefundDesk } from "@/components/ops/refund-desk";
+import { opsAgreement, opsPoliceVerification } from "@/lib/agreements/server";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getServerApi } from "@/lib/api/server";
@@ -47,9 +50,12 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
-  const payments = await unwrap(
-    api.GET("/v1/ops/bookings/{code}/payments", { params: { path: { code } } }),
-  );
+  // The rent agreement and police verification, read-only (ADR 0070): there once confirmed.
+  const [payments, agreement, police] = await Promise.all([
+    unwrap(api.GET("/v1/ops/bookings/{code}/payments", { params: { path: { code } } })),
+    opsAgreement(code),
+    opsPoliceVerification(code),
+  ]);
   const [t, format, desk, refunds] = await Promise.all([
     getTranslations("Ops.bookings"),
     getFormatter(),
@@ -336,6 +342,9 @@ export default async function OpsBookingPage({ params }: PageProps<"/ops/booking
           ))
         )}
       </section>
+
+      {agreement === null ? null : <AgreementCard agreement={agreement} viewer="ops" />}
+      {police === null ? null : <PoliceCard viewer="ops" verification={police} />}
 
       <section
         aria-labelledby="history"

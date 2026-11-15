@@ -6,12 +6,15 @@ import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getFormatter, getMessages, getTranslations } from "next-intl/server";
 
+import { AgreementCard } from "@/components/agreements/agreement-card";
+import { PoliceCard } from "@/components/agreements/police-card";
 import { BookingActions } from "@/components/bookings/booking-actions";
 import { CheckWindow } from "@/components/bookings/check-window";
 import { DisputeForm } from "@/components/bookings/dispute-form";
 import { TokenTrack } from "@/components/bookings/token-track";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { studentAgreement, studentPoliceVerification } from "@/lib/agreements/server";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { getSearchPage } from "@/lib/api/public";
@@ -79,9 +82,12 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
-  const paid = await unwrap(
-    api.GET("/v1/bookings/{code}/payments", { params: { path: { code } } }),
-  );
+  // The rent agreement and police verification come once the owner has confirmed (ADR 0070).
+  const [paid, agreement, police] = await Promise.all([
+    unwrap(api.GET("/v1/bookings/{code}/payments", { params: { path: { code } } })),
+    studentAgreement(code),
+    studentPoliceVerification(code),
+  ]);
   const t = await getTranslations("Bookings");
   const messages = await getMessages();
   const format = await getFormatter();
@@ -296,6 +302,16 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[code
           findAnother: t("actions.findAnother"),
         }}
       />
+
+      {agreement === null ? null : (
+        <AgreementCard
+          agreement={agreement}
+          viewer="student"
+          printHref={`${BOOKINGS_PATH}/${booking.code}/agreement` as Route}
+        />
+      )}
+
+      {police === null ? null : <PoliceCard viewer="student" verification={police} />}
 
       {contact === null ? null : (
         <Card asChild variant="warm" className="relative space-y-4 overflow-hidden rounded-3xl p-6">

@@ -1114,3 +1114,13 @@
     }
   }
 }
+
+/*
+ * A page with a document to print (a rent agreement, a tenant's police-verification details; ADR
+ * 0070) prints that document alone: no header, footer, menus or buttons.
+ */
+@media print {
+  body:has([data-print-document]) :is(header, footer, nav, [data-print-hidden]) {
+    display: none !important;
+  }
+}

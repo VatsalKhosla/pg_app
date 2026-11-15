@@ -9170,6 +9170,733 @@
         }
       }
     },
+    "/v1/bookings/{code}/agreement": {
+      "get": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "Your rent agreement",
+        "description": "Once the owner has confirmed your booking: the full text (Markdown, marked DRAFT until a\nlawyer has reviewed it), who has signed and when, and whether you may sign now.",
+        "operationId": "agreementsMyAgreement",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentAgreement"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{code}/agreement/signing-codes": {
+      "post": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "Ask for a code to sign your rent agreement",
+        "description": "A six-digit code, sent to you, for ten minutes. A new one replaces the last, every 30\nseconds at most (429 SIGNING_CODE_TOO_SOON); five an hour. 409 INVALID_TRANSITION once you've\nsigned or the agreement is void; 409 AGREEMENT_NOT_READY while it lacks your name.",
+        "operationId": "agreementsAskForSigningCode",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SigningCodeSent"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{code}/agreement/signatures": {
+      "post": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "Sign your rent agreement",
+        "description": "With the code sent to you, your full name, and the ``textSha256`` of the text you read:\n409 AGREEMENT_TEXT_CHANGED if the text has changed since (read it again). 400\nSIGNING_CODE_INVALID, SIGNING_CODE_EXPIRED or SIGNING_CODE_LOCKED for the code.",
+        "operationId": "agreementsSignMyAgreement",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignatureRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentAgreement"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{code}/police-verification": {
+      "get": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "Your police verification",
+        "description": "Where the police verification of your stay is, with the details you gave.",
+        "operationId": "agreementsMyPoliceVerification",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentPoliceVerification"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "Give your police-verification details",
+        "description": "What the Delhi Police tenant form asks, for your PG's owner to submit; correct it until\nthey have. An identity document is its type and last four characters only: never type a full\nAadhaar number anywhere (422). 422 POLICE_DETAILS_INVALID for an impossible date of birth;\n409 INVALID_TRANSITION once submitted or after the booking ended.",
+        "operationId": "agreementsGivePoliceDetails",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantDetailsInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentPoliceVerification"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/owner/bookings/{code}/agreement": {
+      "get": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "A booking's rent agreement",
+        "description": "The agreement for a booking at one of your PGs, once you've confirmed it.",
+        "operationId": "agreementsOwnerRentAgreement",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentAgreement"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/owner/bookings/{code}/agreement/signing-codes": {
+      "post": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "Ask for a code to sign a booking's rent agreement",
+        "description": "As for students: a six-digit code, sent to you, for ten minutes.",
+        "operationId": "agreementsOwnerSigningCode",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SigningCodeSent"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/owner/bookings/{code}/agreement/signatures": {
+      "post": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "Sign a booking's rent agreement",
+        "description": "As for students: the code, your full name, and the hash of the text you read.",
+        "operationId": "agreementsOwnerSignAgreement",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignatureRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentAgreement"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/owner/bookings/{code}/police-verification": {
+      "get": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "A tenant's police verification, to submit",
+        "description": "The tenant's details and the tenancy, to copy onto the Delhi Police portal, with the\nacknowledgement once uploaded (links signed for five minutes). Every look is audited.",
+        "operationId": "agreementsOwnerPoliceVerification",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerPoliceVerification"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/owner/bookings/{code}/police-verification/mark-submitted": {
+      "post": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "Say you've submitted the tenant's police verification",
+        "description": "With the portal's acknowledgement, uploaded as your own document, and its number if it\ngave one. 422 ACKNOWLEDGEMENT_INVALID for a file that isn't yours or isn't a document; 409\nINVALID_TRANSITION before the tenant has given their details, or after.",
+        "operationId": "agreementsOwnerMarkSubmitted",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PoliceSubmission"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerPoliceVerification"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/owner/bookings/{code}/police-verification/mark-verified": {
+      "post": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "Say the police have verified the tenant",
+        "description": "Once submitted: 409 INVALID_TRANSITION before.",
+        "operationId": "agreementsOwnerMarkVerified",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerPoliceVerification"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/bookings/{code}/agreement": {
+      "get": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "A booking's rent agreement, with evidence",
+        "description": "The text and every signature with its evidence: the account, the name typed, the time,\nthe IP address and browser, and the hash of the text signed.",
+        "operationId": "agreementsOpsRentAgreement",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsRentAgreement"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ops/bookings/{code}/police-verification": {
+      "get": {
+        "tags": [
+          "agreements"
+        ],
+        "summary": "A tenant's police verification, read-only",
+        "description": "Everything the owner sees; every look at the details is audited.",
+        "operationId": "agreementsOpsPoliceVerification",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsPoliceVerification"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/bookings/{code}/payment": {
       "post": {
         "tags": [
@@ -11513,6 +12240,86 @@
         ],
         "title": "AccountType"
       },
+      "AcknowledgementFile": {
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "title": "Contenttype"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "contentType",
+          "url"
+        ],
+        "title": "AcknowledgementFile"
+      },
+      "AddressDetails": {
+        "properties": {
+          "line": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Line"
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "City"
+          },
+          "district": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "District"
+          },
+          "state": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "State"
+          },
+          "pinCode": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{5}$",
+            "title": "Pincode"
+          },
+          "policeStation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 2,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policestation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "line",
+          "city",
+          "district",
+          "state",
+          "pinCode"
+        ],
+        "title": "AddressDetails"
+      },
       "AdminPolicies": {
         "properties": {
           "fee": {
@@ -11615,6 +12422,42 @@
           "acceptedVersion"
         ],
         "title": "AgreementInfo"
+      },
+      "AgreementSignatureView": {
+        "properties": {
+          "signer": {
+            "$ref": "#/components/schemas/Signer"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "signedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Signedat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "signer",
+          "name",
+          "signedAt"
+        ],
+        "title": "AgreementSignatureView",
+        "description": "A side's signature as the parties see it: whose, the name they typed, and when."
+      },
+      "AgreementStatus": {
+        "type": "string",
+        "enum": [
+          "awaiting_signatures",
+          "signed_by_student",
+          "signed_by_owner",
+          "signed",
+          "void"
+        ],
+        "title": "AgreementStatus"
       },
       "AlertKind": {
         "type": "string",
@@ -14522,6 +15365,18 @@
         ],
         "title": "HoldRequest"
       },
+      "IdType": {
+        "type": "string",
+        "enum": [
+          "aadhaar",
+          "passport",
+          "voter_id",
+          "driving_licence",
+          "pan"
+        ],
+        "title": "IdType",
+        "description": "Identity documents the police form accepts, as their type and last four characters only.\n[The founders and a lawyer confirm the list against the current Delhi Police form.]"
+      },
       "InventoryBed": {
         "properties": {
           "id": {
@@ -16852,6 +17707,15 @@
         ],
         "title": "OccupancyRuleTier"
       },
+      "Occupation": {
+        "type": "string",
+        "enum": [
+          "student",
+          "working",
+          "other"
+        ],
+        "title": "Occupation"
+      },
       "OneTimeCharge": {
         "properties": {
           "type": {
@@ -17753,6 +18617,104 @@
         ],
         "title": "OpsPayments"
       },
+      "OpsPoliceVerification": {
+        "properties": {
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PoliceVerificationStatus"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TenantDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tenancy": {
+            "$ref": "#/components/schemas/TenancySummary"
+          },
+          "detailsSubmittedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detailssubmittedat"
+          },
+          "submittedToPoliceAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submittedtopoliceat"
+          },
+          "policeReference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policereference"
+          },
+          "acknowledgement": {
+            "items": {
+              "$ref": "#/components/schemas/AcknowledgementFile"
+            },
+            "type": "array",
+            "title": "Acknowledgement"
+          },
+          "verifiedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verifiedat"
+          },
+          "erased": {
+            "type": "boolean",
+            "title": "Erased"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "booking",
+          "status",
+          "details",
+          "tenancy",
+          "detailsSubmittedAt",
+          "submittedToPoliceAt",
+          "policeReference",
+          "acknowledgement",
+          "verifiedAt",
+          "erased"
+        ],
+        "title": "OpsPoliceVerification",
+        "description": "The same, for ops: read-only."
+      },
       "OpsRefund": {
         "properties": {
           "id": {
@@ -17899,6 +18861,118 @@
           "nextCursor"
         ],
         "title": "OpsRefundPage"
+      },
+      "OpsRentAgreement": {
+        "properties": {
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AgreementStatus"
+          },
+          "templateVersion": {
+            "type": "string",
+            "title": "Templateversion"
+          },
+          "draft": {
+            "type": "boolean",
+            "title": "Draft"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "textSha256": {
+            "type": "string",
+            "title": "Textsha256"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "signatures": {
+            "items": {
+              "$ref": "#/components/schemas/SignatureEvidence"
+            },
+            "type": "array",
+            "title": "Signatures"
+          },
+          "createdAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdat"
+          },
+          "signedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signedat"
+          },
+          "voidedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voidedat"
+          },
+          "bookingEndedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookingendedat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "booking",
+          "status",
+          "templateVersion",
+          "draft",
+          "text",
+          "textSha256",
+          "ready",
+          "missing",
+          "signatures",
+          "createdAt",
+          "signedAt",
+          "voidedAt",
+          "bookingEndedAt"
+        ],
+        "title": "OpsRentAgreement",
+        "description": "A booking's rent agreement with every signature's evidence, read-only."
       },
       "OtpChallengeIssued": {
         "properties": {
@@ -18381,6 +19455,114 @@
         ],
         "title": "OwnerPage"
       },
+      "OwnerPoliceVerification": {
+        "properties": {
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PoliceVerificationStatus"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TenantDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tenancy": {
+            "$ref": "#/components/schemas/TenancySummary"
+          },
+          "detailsSubmittedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detailssubmittedat"
+          },
+          "submittedToPoliceAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submittedtopoliceat"
+          },
+          "policeReference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policereference"
+          },
+          "acknowledgement": {
+            "items": {
+              "$ref": "#/components/schemas/AcknowledgementFile"
+            },
+            "type": "array",
+            "title": "Acknowledgement"
+          },
+          "verifiedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verifiedat"
+          },
+          "canMarkSubmitted": {
+            "type": "boolean",
+            "title": "Canmarksubmitted"
+          },
+          "canMarkVerified": {
+            "type": "boolean",
+            "title": "Canmarkverified"
+          },
+          "erased": {
+            "type": "boolean",
+            "title": "Erased"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "booking",
+          "status",
+          "details",
+          "tenancy",
+          "detailsSubmittedAt",
+          "submittedToPoliceAt",
+          "policeReference",
+          "acknowledgement",
+          "verifiedAt",
+          "canMarkSubmitted",
+          "canMarkVerified",
+          "erased"
+        ],
+        "title": "OwnerPoliceVerification",
+        "description": "The tenant's police verification, as the owner submits it: the details to copy onto the\nDelhi Police portal, the tenancy, and the acknowledgement once uploaded."
+      },
       "OwnerStatus": {
         "type": "string",
         "enum": [
@@ -18733,6 +19915,46 @@
         ],
         "title": "PlacementFeeTerms",
         "description": "What an owner pays, once per tenant placed: ``rateBps`` of ``basis``, with GST at\n``gstRateBps`` added (``exclusive``) or included (``inclusive``)."
+      },
+      "PoliceSubmission": {
+        "properties": {
+          "acknowledgement": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Acknowledgement"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "acknowledgement"
+        ],
+        "title": "PoliceSubmission",
+        "description": "The owner submitted the details on the Delhi Police portal: the acknowledgement they\nuploaded as a private document, and its number if the portal gave one."
+      },
+      "PoliceVerificationStatus": {
+        "type": "string",
+        "enum": [
+          "not_started",
+          "details_submitted",
+          "submitted_to_police",
+          "verified"
+        ],
+        "title": "PoliceVerificationStatus"
       },
       "PolicyHistory": {
         "properties": {
@@ -20526,6 +21748,38 @@
         ],
         "title": "ReconciliationSummary"
       },
+      "ReferenceDetails": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Phone"
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Relation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "phone",
+          "relation"
+        ],
+        "title": "ReferenceDetails",
+        "description": "Someone who knows the tenant."
+      },
       "RefundDecline": {
         "properties": {
           "reason": {
@@ -20685,6 +21939,101 @@
           "bytes"
         ],
         "title": "RenditionInfo"
+      },
+      "RentAgreement": {
+        "properties": {
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AgreementStatus"
+          },
+          "you": {
+            "$ref": "#/components/schemas/Signer"
+          },
+          "templateVersion": {
+            "type": "string",
+            "title": "Templateversion"
+          },
+          "draft": {
+            "type": "boolean",
+            "title": "Draft"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "textSha256": {
+            "type": "string",
+            "title": "Textsha256"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "canSign": {
+            "type": "boolean",
+            "title": "Cansign"
+          },
+          "signatures": {
+            "items": {
+              "$ref": "#/components/schemas/AgreementSignatureView"
+            },
+            "type": "array",
+            "title": "Signatures"
+          },
+          "signedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signedat"
+          },
+          "voidedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voidedat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "booking",
+          "status",
+          "you",
+          "templateVersion",
+          "draft",
+          "text",
+          "textSha256",
+          "ready",
+          "missing",
+          "canSign",
+          "signatures",
+          "signedAt",
+          "voidedAt"
+        ],
+        "title": "RentAgreement",
+        "description": "A booking's rent agreement, as the student or the owner sees it. ``text`` is Markdown in\nthe subset the owner agreement uses; ``textSha256`` is what a signature names."
       },
       "RentBandEnd": {
         "properties": {
@@ -21825,6 +23174,135 @@
         "title": "SignInResult",
         "description": "Signed in, with the session cookie set. Use ``csrfToken`` (also a cookie) from now on."
       },
+      "SignatureEvidence": {
+        "properties": {
+          "signer": {
+            "$ref": "#/components/schemas/Signer"
+          },
+          "user": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "signedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Signedat"
+          },
+          "ipAddress": {
+            "type": "string",
+            "title": "Ipaddress"
+          },
+          "userAgent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Useragent"
+          },
+          "textSha256": {
+            "type": "string",
+            "title": "Textsha256"
+          },
+          "templateVersion": {
+            "type": "string",
+            "title": "Templateversion"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "signer",
+          "user",
+          "name",
+          "signedAt",
+          "ipAddress",
+          "userAgent",
+          "textSha256",
+          "templateVersion"
+        ],
+        "title": "SignatureEvidence",
+        "description": "A signature with its evidence, for ops: the account, the name typed, the server's time, the\nIP address and browser it came from, and the text it names."
+      },
+      "SignatureRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$",
+            "title": "Code"
+          },
+          "fullName": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 2,
+            "title": "Fullname"
+          },
+          "textSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Textsha256"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "fullName",
+          "textSha256"
+        ],
+        "title": "SignatureRequest",
+        "description": "Signing: the code that was sent, the signer's full name as they sign it, and the hash of\nthe text they read (``textSha256``). A text that has changed since is refused."
+      },
+      "Signer": {
+        "type": "string",
+        "enum": [
+          "student",
+          "owner"
+        ],
+        "title": "Signer",
+        "description": "The two sides: the student who booked (the licensee) and the PG's owner (the licensor)."
+      },
+      "SigningCodeSent": {
+        "properties": {
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expiresat"
+          },
+          "resendAfter": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Resendafter"
+          },
+          "developmentCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Developmentcode"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expiresAt",
+          "resendAfter"
+        ],
+        "title": "SigningCodeSent",
+        "description": "A code is on its way to the signer. Sign with it before ``expiresAt``."
+      },
       "SitemapListing": {
         "properties": {
           "slug": {
@@ -22807,6 +24285,96 @@
         ],
         "title": "StudentPayments"
       },
+      "StudentPoliceVerification": {
+        "properties": {
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PoliceVerificationStatus"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TenantDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "detailsSubmittedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detailssubmittedat"
+          },
+          "submittedToPoliceAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submittedtopoliceat"
+          },
+          "policeReference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policereference"
+          },
+          "verifiedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verifiedat"
+          },
+          "canEdit": {
+            "type": "boolean",
+            "title": "Canedit"
+          },
+          "erased": {
+            "type": "boolean",
+            "title": "Erased"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "booking",
+          "status",
+          "details",
+          "detailsSubmittedAt",
+          "submittedToPoliceAt",
+          "policeReference",
+          "verifiedAt",
+          "canEdit",
+          "erased"
+        ],
+        "title": "StudentPoliceVerification"
+      },
       "StudentRefund": {
         "properties": {
           "amountPaise": {
@@ -23067,6 +24635,211 @@
           "cancelled"
         ],
         "title": "StudentVisitStatus"
+      },
+      "TenancySummary": {
+        "properties": {
+          "booking": {
+            "type": "string",
+            "title": "Booking"
+          },
+          "licensor": {
+            "type": "string",
+            "title": "Licensor"
+          },
+          "pgName": {
+            "type": "string",
+            "title": "Pgname"
+          },
+          "pgAddress": {
+            "type": "string",
+            "title": "Pgaddress"
+          },
+          "room": {
+            "type": "string",
+            "title": "Room"
+          },
+          "moveIn": {
+            "type": "string",
+            "format": "date",
+            "title": "Movein"
+          },
+          "plannedMoveOut": {
+            "type": "string",
+            "format": "date",
+            "title": "Plannedmoveout"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "booking",
+          "licensor",
+          "pgName",
+          "pgAddress",
+          "room",
+          "moveIn",
+          "plannedMoveOut"
+        ],
+        "title": "TenancySummary",
+        "description": "The tenancy the police form describes, as the agreement has it."
+      },
+      "TenantDetails": {
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Fullname"
+          },
+          "parentName": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Parentname"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "title": "Dateofbirth"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Phone"
+          },
+          "permanentAddress": {
+            "$ref": "#/components/schemas/AddressDetails"
+          },
+          "occupation": {
+            "$ref": "#/components/schemas/Occupation"
+          },
+          "institution": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Institution"
+          },
+          "idType": {
+            "$ref": "#/components/schemas/IdType"
+          },
+          "idLast4": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{4}$",
+            "title": "Idlast4"
+          },
+          "references": {
+            "items": {
+              "$ref": "#/components/schemas/ReferenceDetails"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "References"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fullName",
+          "parentName",
+          "dateOfBirth",
+          "gender",
+          "phone",
+          "permanentAddress",
+          "occupation",
+          "institution",
+          "idType",
+          "idLast4"
+        ],
+        "title": "TenantDetails",
+        "description": "What the police form asks about the tenant. An identity document is its type and the last\nfour characters of its number only: never a full Aadhaar number, or any other."
+      },
+      "TenantDetailsInput": {
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Fullname"
+          },
+          "parentName": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Parentname"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "title": "Dateofbirth"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Phone"
+          },
+          "permanentAddress": {
+            "$ref": "#/components/schemas/AddressDetails"
+          },
+          "occupation": {
+            "$ref": "#/components/schemas/Occupation"
+          },
+          "institution": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Institution"
+          },
+          "idType": {
+            "$ref": "#/components/schemas/IdType"
+          },
+          "idLast4": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{4}$",
+            "title": "Idlast4"
+          },
+          "references": {
+            "items": {
+              "$ref": "#/components/schemas/ReferenceDetails"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "References"
+          },
+          "consent": {
+            "type": "boolean",
+            "const": true,
+            "title": "Consent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fullName",
+          "parentName",
+          "dateOfBirth",
+          "gender",
+          "phone",
+          "permanentAddress",
+          "occupation",
+          "institution",
+          "idType",
+          "idLast4",
+          "consent"
+        ],
+        "title": "TenantDetailsInput",
+        "description": "The student's details, with their agreement to share them with the PG's owner for the\npolice (it can't be anything but true: nothing is pre-ticked)."
       },
       "TimelineEntry": {
         "properties": {
