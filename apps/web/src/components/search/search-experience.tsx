@@ -204,7 +204,12 @@ export function SearchExperience({
   });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // What the pointer is on: a card in the list, or a pin on the map. Kept apart, because moving
+  // straight from a pin onto a card tells the card first (React's enter comes with the browser's
+  // mouseout) and the pin after (its mouseleave): one shared value would end up cleared.
+  const [cardHoverId, setCardHoverId] = useState<string | null>(null);
+  const [pinHoverId, setPinHoverId] = useState<string | null>(null);
+  const hoveredId = cardHoverId ?? pinHoverId;
   const [snap, setSnap] = useState<SheetSnap>("peek");
   const [filtersOpen, setFiltersOpen] = useState(false);
   // Once opened, the sheet stays mounted, so it can animate closed and open again at once.
@@ -294,7 +299,7 @@ export function SearchExperience({
       results={results}
       problem={fromServer ? initialProblem : null}
       hoveredId={activeId}
-      onHover={setHoveredId}
+      onHover={setCardHoverId}
       onClear={clearAll}
     />
   );
@@ -340,7 +345,7 @@ export function SearchExperience({
                 hoveredId={hoveredId}
                 onBoundsChange={onBoundsChange}
                 onPinSelect={onPinSelect}
-                onPinHover={setHoveredId}
+                onPinHover={setPinHoverId}
                 campuses={campuses}
                 chosenCampus={campus?.slug ?? null}
                 stations={stations}

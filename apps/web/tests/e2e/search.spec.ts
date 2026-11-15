@@ -117,7 +117,10 @@ test.describe("search", () => {
     );
 
     if (!isMobile) {
-      // A card and its pin light up together.
+      // A card and its pin light up together, also when the pointer comes straight off the pin
+      // (React tells the card it was entered before the pin hears it was left).
+      await pin.hover();
+      await expect(pin).toHaveAttribute("data-state", "active");
       await asterCard.hover();
       await expect(pin).toHaveAttribute("data-state", "active");
     }
