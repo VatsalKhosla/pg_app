@@ -1,3 +1,4 @@
+import { ArrowRight, CalendarClock } from "lucide-react";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
@@ -12,6 +13,16 @@ import { getOwnProfile } from "@/lib/owner/server";
 import { cn } from "@/lib/utils";
 
 const FILTERS = ["token_secured", "confirmed", "checked_in", "active"] as const;
+// Each status's chip, by what it means for the owner: waiting on them, on its way, living there,
+// a problem, or over (grey). The chip's words say it too: colour is never the only sign.
+const TONES: Partial<Record<string, string>> = {
+  token_secured: "border-marigold-border bg-marigold-soft text-marigold-soft-foreground",
+  confirmed: "border-primary/30 bg-primary-soft text-primary-soft-foreground",
+  checked_in: "border-dusk-border bg-dusk-soft text-dusk-soft-foreground",
+  active: "border-neem-border bg-neem-soft text-neem-soft-foreground",
+  disputed: "border-ember-border bg-ember-soft text-ember-soft-foreground",
+};
+const OVER = "border-border/80 bg-surface text-muted-foreground";
 type Filter = (typeof FILTERS)[number];
 const PAGE = 50;
 
@@ -40,6 +51,13 @@ export default async function OwnerBookingsPage({ searchParams }: PageProps<"/ow
     format.dateTime(new Date(moment), { dateStyle: "medium", timeStyle: "short" });
   const day = (date: string) =>
     format.dateTime(new Date(`${date}T00:00:00+05:30`), { dateStyle: "medium" });
+  const dayPart = (date: string, part: "month" | "day") =>
+    format.dateTime(
+      new Date(`${date}T00:00:00+05:30`),
+      part === "month"
+        ? { month: "short", timeZone: "Asia/Kolkata" }
+        : { day: "numeric", timeZone: "Asia/Kolkata" },
+    );
   const filters: { href: Route; label: string; current: boolean }[] = [
     { href: OWNER_BOOKINGS_PATH, label: t("all"), current: status === undefined },
     ...FILTERS.map((each) => ({
@@ -76,41 +94,76 @@ export default async function OwnerBookingsPage({ searchParams }: PageProps<"/ow
         </p>
       ) : (
         <ul className="space-y-3">
-          {bookings.items.map((booking) => (
-            <li
-              key={booking.code}
-              className="space-y-1.5 rounded-2xl border border-border/80 bg-card p-4 shadow-xs sm:p-5"
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <Link
-                  href={`${OWNER_BOOKINGS_PATH}/${booking.code}` as Route}
-                  aria-label={t("open", { code: booking.code })}
-                  className="font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
+          {bookings.items.map((booking) => {
+            const waiting = booking.status === "token_secured";
+            const href = `${OWNER_BOOKINGS_PATH}/${booking.code}` as Route;
+            return (
+              <li
+                key={booking.code}
+                className={cn(
+                  "flex gap-4 rounded-[1.5rem] border bg-card p-4 shadow-sm sm:p-5",
+                  waiting ? "border-marigold-border" : "border-border/70",
+                )}
+              >
+                {/* The move-in day at a glance; the line below says it in full. */}
+                <div
+                  aria-hidden="true"
+                  className="flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-primary-soft py-2 text-primary-soft-foreground"
                 >
-                  {t("line", {
-                    code: booking.code,
-                    place: booking.property.name,
-                    roomType: booking.roomType,
-                  })}
-                </Link>
-                <span className="rounded-full border border-border/80 bg-surface px-2.5 py-0.5 text-xs font-semibold text-foreground">
-                  {t(`status.${booking.status}`)}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground tabular-nums">
-                {t("moveIn", {
-                  date: day(booking.moveIn),
-                  months: booking.stayMonths,
-                  rent: formatINR(booking.monthlyRentPaise),
-                })}
-              </p>
-              {booking.status === "token_secured" && booking.confirmBy !== null ? (
-                <p className="text-sm font-medium text-warning">
-                  {t("answerBy", { when: when(booking.confirmBy) })}
-                </p>
-              ) : null}
-            </li>
-          ))}
+                  <span className="text-xs font-semibold uppercase">
+                    {dayPart(booking.moveIn, "month")}
+                  </span>
+                  <span className="text-xl leading-tight font-semibold tabular-nums">
+                    {dayPart(booking.moveIn, "day")}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <Link
+                      href={href}
+                      aria-label={t("open", { code: booking.code })}
+                      className="font-semibold text-primary underline underline-offset-4 hover:text-primary-hover"
+                    >
+                      {t("line", {
+                        code: booking.code,
+                        place: booking.property.name,
+                        roomType: booking.roomType,
+                      })}
+                    </Link>
+                    <span
+                      className={cn(
+                        "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                        TONES[booking.status] ?? OVER,
+                      )}
+                    >
+                      {t(`status.${booking.status}`)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground tabular-nums">
+                    {t("moveIn", {
+                      date: day(booking.moveIn),
+                      months: booking.stayMonths,
+                      rent: formatINR(booking.monthlyRentPaise),
+                    })}
+                  </p>
+                  {waiting && booking.confirmBy !== null ? (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-marigold-soft px-3 py-2">
+                      <p className="text-sm font-semibold text-marigold-soft-foreground">
+                        {t("answerBy", { when: when(booking.confirmBy) })}
+                      </p>
+                      <Link
+                        href={href}
+                        className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-sun px-3.5 text-sm font-semibold text-sun-foreground shadow-sm hover:bg-sun-hover"
+                      >
+                        {t("answer")}
+                        <ArrowRight aria-hidden="true" className="size-4" />
+                      </Link>
+                    </div>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
       <section
@@ -125,7 +178,8 @@ export default async function OwnerBookingsPage({ searchParams }: PageProps<"/ow
         ) : (
           <ul className="divide-y divide-border/80 rounded-xl border border-border/80 bg-surface/50">
             {visits.items.map((visit) => (
-              <li key={visit.id} className="px-4 py-3 text-sm">
+              <li key={visit.id} className="flex items-start gap-3 px-4 py-3 text-sm">
+                <CalendarClock aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
                 {visit.student === null
                   ? t("visitNoName", { when: when(visit.scheduledAt), place: visit.place })
                   : t("visit", {

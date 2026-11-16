@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { BarRows } from "@/components/charts/bar-rows";
+import { RingMeter } from "@/components/charts/ring-meter";
 import { DocumentUpload } from "@/components/owner/document-upload";
 import { unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
@@ -11,6 +13,8 @@ import { OWNER_PGS_PATH } from "@/lib/auth/routes";
 import { requireOwner } from "@/lib/auth/session";
 import { formatINR } from "@/lib/money";
 
+const sectionClass =
+  "space-y-5 rounded-[2rem] border border-border/70 bg-card p-5 shadow-md sm:p-7";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 const DAYS = 30;
 
@@ -52,22 +56,28 @@ export default async function OwnerPgPage({ params }: PageProps<"/owner/pgs/[id]
   }
   const [t, format] = await Promise.all([getTranslations("Owner.pg"), getFormatter()]);
   const day = (moment: string) => format.dateTime(new Date(moment), { dateStyle: "medium" });
-  const numbers = [
-    { term: t("views"), value: String(insights.views) },
-    { term: t("visits"), value: String(insights.visitRequests) },
-    { term: t("bookings"), value: String(insights.bookings) },
+  const count = (value: number) => format.number(value);
+  const funnel = [
+    { key: "views", label: t("views"), value: insights.views, shown: count(insights.views) },
     {
-      term: t("conversion"),
-      value:
-        insights.conversionBps === null
-          ? t("noValue")
-          : t("percent", { value: percent(insights.conversionBps) }),
+      key: "visits",
+      label: t("visits"),
+      value: insights.visitRequests,
+      shown: count(insights.visitRequests),
     },
     {
-      term: t("taken"),
-      value: t("takenOf", { taken: insights.bedsTaken, beds: insights.beds }),
+      key: "bookings",
+      label: t("bookings"),
+      value: insights.bookings,
+      shown: count(insights.bookings),
     },
   ];
+  const share = insights.takenBps === null ? 0 : Math.round(insights.takenBps / 100);
+  // One scale for every room type's rents, so their bars compare across rooms too.
+  const rentScale = Math.max(
+    0,
+    ...insights.rooms.flatMap((room) => [room.rentPaise, room.localityMedianPaise ?? 0]),
+  );
   const kinds = (["licence", "society_permission"] as const).map((value) => ({
     value,
     label: t(`kind.${value}`),
@@ -100,41 +110,73 @@ export default async function OwnerPgPage({ params }: PageProps<"/owner/pgs/[id]
         </Link>
       </nav>
 
-      <section aria-labelledby="numbers-title" className="space-y-3">
-        <h2 id="numbers-title" className="font-display text-title-3 text-foreground">
+      <section aria-labelledby="numbers-title" className={sectionClass}>
+        <h2 id="numbers-title" className="text-title-3 font-semibold tracking-tight">
           {t("insightsTitle", { days: DAYS })}
         </h2>
-        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {numbers.map((number) => (
-            <div
-              key={number.term}
-              className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs"
-            >
-              <dt className="text-sm text-muted-foreground">{number.term}</dt>
-              <dd className="mt-1 font-display text-2xl font-semibold text-foreground tabular-nums">
-                {number.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <div className="grid items-center gap-8 md:grid-cols-[minmax(0,14rem)_1fr]">
+          <div className="space-y-3">
+            <RingMeter value={insights.bedsTaken} total={insights.beds}>
+              <p className="text-title-1 leading-none font-semibold tabular-nums">
+                {insights.takenBps === null ? t("noValue") : t("percent", { value: share })}
+              </p>
+              <p className="mt-1 text-sm font-medium text-muted-foreground">{t("takenWord")}</p>
+            </RingMeter>
+            <p className="text-center text-sm font-semibold tabular-nums">
+              {t("bedsToday", { taken: insights.bedsTaken, beds: insights.beds })}
+            </p>
+          </div>
+          <div className="space-y-4">
+            <BarRows label={t("funnel")} rows={funnel} />
+            <p className="text-sm text-muted-foreground">
+              {t("conversion")}:{" "}
+              <span className="font-semibold text-foreground tabular-nums">
+                {insights.conversionBps === null
+                  ? t("noValue")
+                  : t("percent", { value: percent(insights.conversionBps) })}
+              </span>
+            </p>
+          </div>
+        </div>
       </section>
 
-      <section aria-labelledby="rents-title" className="space-y-3">
-        <h2 id="rents-title" className="font-display text-title-3 text-foreground">
-          {t("rents")}
-        </h2>
-        <ul className="divide-y divide-border/60 rounded-2xl border border-border/80 bg-card shadow-xs">
+      <section aria-labelledby="rents-title" className={sectionClass}>
+        <div className="space-y-1">
+          <h2 id="rents-title" className="text-title-3 font-semibold tracking-tight">
+            {t("rents")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("rentsLead")}</p>
+        </div>
+        <ul className="grid gap-6 lg:grid-cols-2">
           {insights.rooms.map((room) => (
-            <li key={room.roomType} className="space-y-1 p-4">
+            <li key={room.roomType} className="space-y-3 rounded-2xl bg-surface/60 p-4">
               <p className="font-semibold text-foreground">{room.roomType}</p>
-              <p className="text-sm tabular-nums">
-                {t("yourRent")}: {formatINR(room.rentPaise)}
-              </p>
-              <p className="text-sm text-muted-foreground tabular-nums">
-                {room.localityMedianPaise === null
-                  ? t("noMedian")
-                  : `${t("median")}: ${formatINR(room.localityMedianPaise)} (${t("comparables", { count: room.comparables })})`}
-              </p>
+              <BarRows
+                label={t("rentsOf", { room: room.roomType })}
+                max={rentScale}
+                rows={[
+                  {
+                    key: "yours",
+                    label: t("yourRent"),
+                    value: room.rentPaise,
+                    shown: formatINR(room.rentPaise),
+                  },
+                  ...(room.localityMedianPaise === null
+                    ? []
+                    : [
+                        {
+                          key: "locality",
+                          label: `${t("median")} (${t("comparables", { count: room.comparables })})`,
+                          value: room.localityMedianPaise,
+                          shown: formatINR(room.localityMedianPaise),
+                          muted: true,
+                        },
+                      ]),
+                ]}
+              />
+              {room.localityMedianPaise === null ? (
+                <p className="text-sm text-muted-foreground">{t("noMedian")}</p>
+              ) : null}
             </li>
           ))}
         </ul>

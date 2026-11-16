@@ -979,6 +979,11 @@
     background: var(--chart-series);
   }
 
+  /* A row compared against, beside the owner's own (components/charts/bar-rows.tsx). */
+  .share-bar-fill-muted {
+    background: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+  }
+
   /* A PG's card, until it has a photo. */
   .listing-placeholder {
     background: linear-gradient(

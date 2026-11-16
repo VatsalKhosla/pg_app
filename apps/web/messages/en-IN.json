@@ -494,7 +494,8 @@
       "visitsTitle": "Visits coming up",
       "visitsNone": "No visits booked in the next two weeks.",
       "visit": "{when}: {place}, with {student}",
-      "visitNoName": "{when}: {place}"
+      "visitNoName": "{when}: {place}",
+      "answer": "Answer now"
     },
     "booking": {
       "metaTitle": "Booking {code}",
@@ -601,7 +602,12 @@
         "refused": "That file wasn't accepted. Try a clear PDF or photo.",
         "failed": "That didn't go through. Try again.",
         "needFile": "Choose a file."
-      }
+      },
+      "takenWord": "taken today",
+      "bedsToday": "{taken} of {beds} beds taken today",
+      "funnel": "From page views to bookings",
+      "rentsLead": "Each room type's listed rent beside the middle of what the locality's other live PGs list for the same sharing.",
+      "rentsOf": "{room}: your rent and the locality's"
     },
     "area": {
       "eyebrow": "{brand} for PG owners",

@@ -4,6 +4,7 @@ import { BedDouble } from "lucide-react";
 import type { Route } from "next";
 import { describe, expect, it } from "vitest";
 
+import { BarRows } from "@/components/charts/bar-rows";
 import { PeriodBars } from "@/components/charts/period-bars";
 import { RingMeter } from "@/components/charts/ring-meter";
 import { BedsByPg, NeedsYouCard, StatTile } from "@/components/owner/overview";
@@ -140,5 +141,43 @@ describe("the owner's overview", () => {
     expect(screen.getByRole("heading", { level: 3 }).textContent).toBe(
       "Rent from tenants we placed, by month",
     );
+  });
+});
+
+describe("BarRows", () => {
+  it("puts rows on one scale, writes every value, and greys the one compared against", async () => {
+    const { container } = render(
+      <BarRows
+        label="Twin sharing: your rent and the locality's"
+        max={2_000_000}
+        rows={[
+          { key: "yours", label: "Your listed rent", value: 1_000_000, shown: "₹10,000" },
+          {
+            key: "locality",
+            label: "Middle of the locality's",
+            value: 1_500_000,
+            shown: "₹15,000",
+            muted: true,
+          },
+        ]}
+      />,
+    );
+
+    const widths = [...container.querySelectorAll<HTMLElement>("[style]")].map(
+      (bar) => bar.style.width,
+    );
+    expect(widths).toEqual(["50%", "75%"]);
+    expect(container.querySelector(".share-bar-fill-muted")).not.toBeNull();
+    expect(screen.getByText("₹15,000")).toBeDefined();
+    const results = await axe.run(container, { runOnly: [...WCAG_22_AA] });
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  });
+
+  it("draws no bar where there's nothing to show", () => {
+    const { container } = render(
+      <BarRows label="Funnel" rows={[{ key: "views", label: "Views", value: 0, shown: "0" }]} />,
+    );
+
+    expect(container.querySelector(".share-bar-fill")).toBeNull();
   });
 });
