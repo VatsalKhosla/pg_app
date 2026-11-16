@@ -919,7 +919,7 @@
     }
   }
 
-  /* The staff dashboard's charts (components/ops/weekly-bars.tsx): recessive chrome, thin bars. */
+  /* Charts (components/charts/period-bars.tsx and ring-meter.tsx): recessive chrome, thin bars. */
   .ops-chart-grid {
     stroke: var(--chart-grid);
     stroke-width: 1;
@@ -946,6 +946,37 @@
 
   .ops-chart .ops-chart-mark:hover .ops-chart-bar {
     opacity: 1;
+  }
+
+  /* A ring's track and its filled arc (components/charts/ring-meter.tsx). */
+  .ring-meter-track {
+    stroke: color-mix(in oklch, var(--chart-series) 15%, transparent);
+  }
+
+  .ring-meter-arc {
+    stroke: var(--chart-series);
+    animation: ring-meter-draw 900ms var(--ease-standard) both;
+  }
+
+  @keyframes ring-meter-draw {
+    from {
+      stroke-dasharray: 0 999;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring-meter-arc {
+      animation: none;
+    }
+  }
+
+  /* A share of a whole as a bar (an owner's PGs' beds): the same track and fill as the ring. */
+  .share-bar-track {
+    background: color-mix(in oklch, var(--chart-series) 15%, transparent);
+  }
+
+  .share-bar-fill {
+    background: var(--chart-series);
   }
 
   /* A PG's card, until it has a photo. */

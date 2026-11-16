@@ -29,3 +29,16 @@ export async function getAgreement(): Promise<Schemas["AgreementInfo"] | null> {
   const api = await getServerApi();
   return orNull(() => unwrap(api.GET("/v1/owner/agreement")));
 }
+
+export type OwnerOverview = Schemas["OwnerOverview"];
+
+/** The owner's whole business at a glance (ADR 0071), the last twelve months; null if the API
+ * can't say right now, so the rest of the page still shows. */
+export async function getOwnerOverview(): Promise<OwnerOverview | null> {
+  const api = await getServerApi();
+  try {
+    return await unwrap(api.GET("/v1/owner/overview", { params: { query: { months: 12 } } }));
+  } catch {
+    return null;
+  }
+}

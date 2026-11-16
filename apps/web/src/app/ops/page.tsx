@@ -3,8 +3,8 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { PeriodBars } from "@/components/charts/period-bars";
 import { StatusBars } from "@/components/ops/status-bars";
-import { WeeklyBars } from "@/components/ops/weekly-bars";
 import { unwrap } from "@/lib/api/client";
 import { getServerApi } from "@/lib/api/server";
 import { OPS_BOOKINGS_PATH, OPS_DISPUTES_PATH } from "@/lib/auth/routes";
@@ -69,7 +69,7 @@ export default async function OpsDashboardPage() {
       href: `${OPS_BOOKINGS_PATH}?attention=true` as Route,
     },
   ];
-  const chart = { tableLabel: t("table"), weekLabel: t("week"), weeks };
+  const chart = { tableLabel: t("table"), periodLabel: t("week"), periods: weeks };
 
   return (
     <div className="space-y-6">
@@ -100,7 +100,7 @@ export default async function OpsDashboardPage() {
       </ul>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <WeeklyBars
+        <PeriodBars
           id="visits"
           title={t("visits")}
           total={count.format(sum(data.visitsRequested))}
@@ -109,7 +109,7 @@ export default async function OpsDashboardPage() {
           value={(value) => count.format(value)}
           {...chart}
         />
-        <WeeklyBars
+        <PeriodBars
           id="tokens"
           title={t("tokens")}
           total={count.format(sum(data.tokensSecured))}
@@ -118,7 +118,7 @@ export default async function OpsDashboardPage() {
           value={(value) => count.format(value)}
           {...chart}
         />
-        <WeeklyBars
+        <PeriodBars
           id="fees"
           title={t("fees")}
           total={formatINR(sum(data.feesInvoicedPaise))}

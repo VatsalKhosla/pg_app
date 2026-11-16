@@ -60,3 +60,42 @@ export async function opsWithListing(
   }
   return { listing, post };
 }
+
+/**
+ * A PG of `beds` beds in one double room for the owner `ownerId`, added through the API by the ops
+ * person signed in on `page` (their CSRF cookie with it). It stays a draft: nobody books it.
+ */
+export async function listingForOwner(page: Page, ownerId: string, name: string, beds: number) {
+  const csrf = (await page.context().cookies(API)).find(
+    (cookie) => cookie.name === "__Secure-csrf",
+  )?.value;
+  if (csrf === undefined) throw new Error("no CSRF cookie: is ops signed in on this page?");
+  const post = async (path: string, data: object) => {
+    const response = await page.request.post(`${API}${path}`, {
+      data,
+      headers: { "X-CSRF-Token": csrf },
+    });
+    expect(response.ok(), `${path}: ${String(response.status())}`).toBe(true);
+    return (await response.json()) as { id: string; categories?: { id: string }[] };
+  };
+  const listing = await post("/v1/ops/properties", {
+    owner: ownerId,
+    locality: "kamla-nagar",
+    name,
+    addressLine: "House 12, a fictional lane",
+    location: { lat: 28.6883, lng: 77.2102 },
+    locationPrecision: "exact",
+    genderPolicy: "girls",
+    meals: "two",
+  });
+  const built = await post(`/v1/ops/properties/${listing.id}/room-categories`, {
+    occupancy: "double",
+    label: "Twin sharing",
+    baseRentPaise: 1_000_000,
+    securityDepositPaise: 1_000_000,
+  });
+  const category = built.categories?.[0]?.id;
+  if (category === undefined) throw new Error("the room type wasn't made");
+  await post(`/v1/ops/room-categories/${category}/rooms`, { label: "101", beds });
+  return listing;
+}

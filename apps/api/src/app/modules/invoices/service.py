@@ -445,6 +445,21 @@ def _view(row: OwnerInvoice, place: str) -> InvoiceView:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class FeeTotals:
+    """An owner's placement fees, GST included: everything invoiced, and what's unpaid."""
+
+    invoiced_paise: int
+    unpaid: int
+    due_paise: int
+
+
+async def fee_totals(db: AsyncSession, owner_id: int) -> FeeTotals:
+    """The owner's fees, in the caller's transaction (an owner's overview, ADR 0071)."""
+    invoiced, unpaid, due = await InvoiceRepository(db).totals_of_owner(owner_id)
+    return FeeTotals(invoiced_paise=invoiced, unpaid=unpaid, due_paise=due)
+
+
 async def invoices_part(db: AsyncSession, user_id: int) -> dict[str, object]:
     """An owner's invoices, for their data export (DPDP; ADR 0018)."""
     owner_id = await CatalogLookup(db).owner_id_of_user(user_id)

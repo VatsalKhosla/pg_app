@@ -323,7 +323,7 @@
     "metaTitle": "Owner area",
     "home": {
       "metaTitle": "Your business",
-      "intro": "Your business as we keep it on file.",
+      "intro": "Your PGs and the tenants we've placed, at a glance.",
       "detailsTitle": "Business details",
       "businessName": "Business name",
       "legalName": "Legal name",
@@ -338,7 +338,59 @@
       "invoicesLink": "See your invoices",
       "runTitle": "Run your PGs",
       "bookingsLink": "Bookings, and visits coming up",
-      "pgsLink": "Your PGs: how they're doing, beds and pricing"
+      "pgsLink": "Your PGs: how they're doing, beds and pricing",
+      "summary": "Today, {date}: {taken} of {beds} beds taken across {pgs, plural, one {your PG} other {your # PGs}}.",
+      "summaryNoBeds": "Today, {date}. How full your PGs are shows here once our team adds their beds.",
+      "unavailable": "Your numbers couldn't load just now. Refresh the page in a moment.",
+      "needs": {
+        "title": "Needs you",
+        "confirm": "{count, plural, one {# booking waits} other {# bookings wait}} for your answer",
+        "confirmBy": "The first is due by {when}.",
+        "visits": "{count, plural, one {# visit} other {# visits}} booked in the next 7 days",
+        "visitsDetail": "See who's coming, and when.",
+        "invoices": "{count, plural, one {# invoice} other {# invoices}} to pay",
+        "invoicesDetail": "{amount} due",
+        "clear": "Nothing waits for you right now."
+      },
+      "beds": {
+        "title": "How full your PGs are",
+        "lead": "Every bed today: taken by a tenant, a booking or a hold, or free.",
+        "share": "{share}%",
+        "taken": "taken",
+        "ofBeds": "{taken} of {beds} beds",
+        "legendTaken": "Taken: {count}",
+        "legendFree": "Free: {count}",
+        "list": "Beds at each PG",
+        "pgWords": "{taken} of {beds} taken",
+        "place": "{locality} · {status}",
+        "none": "No beds yet: once our team adds your PG's rooms and beds, how full it is shows here."
+      },
+      "money": {
+        "title": "What we've brought you",
+        "lead": "Tenants who found your PGs through {brand}, and the rent their stays were booked at. Rent after the first month is paid to you directly, so these are booked amounts, not money we collected.",
+        "placed": "Tenants we placed",
+        "placedNote": "{count} living with you now",
+        "rentNow": "Their monthly rent now",
+        "rentNowNote": "From the tenants we placed who live with you today",
+        "booked": "Rent booked through us",
+        "bookedNote": "{amount} after our fees",
+        "fees": "Our fees, GST included",
+        "feesDue": "{amount} due now",
+        "feesPaid": "Nothing due",
+        "rentChart": "Rent from tenants we placed, by month",
+        "rentTotal": "{amount} this month",
+        "moveInsChart": "Tenants who moved in, by month",
+        "moveInsTotal": "{count} in 12 months",
+        "table": "See the numbers",
+        "month": "Month",
+        "none": "No tenants placed through {brand} yet. When a student books one of your beds and moves in, they show here, with their rent."
+      },
+      "linksNote": {
+        "bookings": "Answer new bookings, and see who's visiting.",
+        "pgs": "Each PG's numbers, documents, beds and prices.",
+        "invoices": "Our fees for each tenant we placed."
+      },
+      "email": "Email address"
     },
     "agreement": {
       "metaTitle": "Owner agreement",

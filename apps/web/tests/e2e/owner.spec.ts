@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import { expect, test, wcagViolations } from "./fixtures";
+import { listingForOwner } from "./ops-api";
 import { enterEmailAndCode, newEmail, newMobile } from "./sign-in-codes";
 import { newStaff, signInAsStaff } from "./staff";
 
@@ -47,6 +48,10 @@ test.describe("owner agreement", () => {
     await expect(page.getByText(/^Hasn't accepted the owner agreement yet/)).toBeVisible();
     await expect(page.getByText("No acceptances yet.")).toBeVisible();
     expect(await wcagViolations(page)).toEqual([]);
+    // And their first PG, of two beds in one room, which nobody has booked.
+    const ownerId = /\/ops\/owners\/([0-9a-f-]+)$/u.exec(page.url())?.[1];
+    if (ownerId === undefined) throw new Error("not on the owner's page");
+    await listingForOwner(page, ownerId, "Fictional Homes Kamla Nagar", 2);
 
     // The owner, on their own phone: the agreement comes before anything else.
     const phone = await browser.newContext({ ...testInfo.project.use });
@@ -75,6 +80,12 @@ test.describe("owner agreement", () => {
     await expect(
       owner.getByText("You've accepted version draft-2 of the owner agreement."),
     ).toBeVisible();
+    // Their business at a glance (ADR 0071): nothing waits, both beds are free, nobody placed yet.
+    await expect(owner.getByText("Nothing waits for you right now.")).toBeVisible();
+    await expect(owner.getByRole("heading", { name: "How full your PGs are" })).toBeVisible();
+    await expect(owner.getByText("0 of 2 beds", { exact: true })).toBeVisible();
+    await expect(owner.getByRole("link", { name: "Fictional Homes Kamla Nagar" })).toBeVisible();
+    await expect(owner.getByText(/^No tenants placed through .+ yet\./u)).toBeVisible();
     expect(await wcagViolations(owner)).toEqual([]);
     const browserName = await owner.evaluate(() => navigator.userAgent);
 
@@ -86,7 +97,7 @@ test.describe("owner agreement", () => {
     expect(await wcagViolations(owner)).toEqual([]);
 
     // The rest of the owner dashboard (BUILD_PLAN 7.x): bookings with visits coming up, and their
-    // PGs, from the owner area's own navigation. Ops haven't added a PG for this owner.
+    // PGs, from the owner area's own navigation. Ops added one PG, still being set up.
     const nav = owner.getByRole("navigation", { name: "Your account" });
     await nav.getByRole("link", { name: "Bookings" }).click();
     await expect(owner.getByRole("heading", { name: "Bookings", level: 1 })).toBeVisible();
@@ -95,7 +106,7 @@ test.describe("owner agreement", () => {
     expect(await wcagViolations(owner)).toEqual([]);
     await nav.getByRole("link", { name: "Your PGs" }).click();
     await expect(owner.getByRole("heading", { name: "Your PGs", level: 1 })).toBeVisible();
-    await expect(owner.getByText(/^No PGs yet/)).toBeVisible();
+    await expect(owner.getByText("Fictional Homes Kamla Nagar").first()).toBeVisible();
     expect(await wcagViolations(owner)).toEqual([]);
     await phone.close();
 

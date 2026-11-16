@@ -130,6 +130,26 @@ class VisitRepository:
             or 0
         )
 
+    async def booked_between(
+        self, property_ids: Collection[int], start: datetime, end: datetime
+    ) -> int:
+        """Visits booked at these PGs for a time in ``[start, end)`` (ADR 0071)."""
+        if not property_ids:
+            return 0
+        return int(
+            await self._db.scalar(
+                select(func.count())
+                .select_from(Visit)
+                .where(
+                    Visit.property_id.in_(list(property_ids)),
+                    Visit.status == StudentVisitStatus.SCHEDULED,
+                    Visit.scheduled_at >= start,
+                    Visit.scheduled_at < end,
+                )
+            )
+            or 0
+        )
+
     async def of_agent(self, agent_id: int, *, since: datetime, limit: int) -> list[Visit]:
         """An agent's booked visits from ``since``, soonest first."""
         found = await self._db.scalars(

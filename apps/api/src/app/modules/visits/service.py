@@ -48,7 +48,7 @@ from app.modules.visits.texts import CANCELLED, REMINDER, SCHEDULED
 
 if TYPE_CHECKING:
     import uuid
-    from collections.abc import Sequence
+    from collections.abc import Collection, Sequence
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -119,6 +119,13 @@ class VisitLookup:
     async def requested_at(self, property_id: int, start: datetime, end: datetime) -> int:
         """Visits asked for at a PG in ``[start, end)``, in the caller's transaction (step 7.6)."""
         return await self._visits.requested_between(property_id, start, end)
+
+    async def booked_between(
+        self, property_ids: Collection[int], start: datetime, end: datetime
+    ) -> int:
+        """Visits booked at these PGs for a time in ``[start, end)``, in the caller's
+        transaction (an owner's overview, ADR 0071)."""
+        return await self._visits.booked_between(property_ids, start, end)
 
     async def requested_by_week(self, start: datetime, end: datetime) -> dict[date, int]:
         """Visits asked for everywhere in ``[start, end)``, by week (the staff dashboard)."""

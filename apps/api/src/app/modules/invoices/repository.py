@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.core.calendar import INDIA_ZONE
+from app.modules.invoices.domain.invoices import InvoiceStatus
 from app.modules.invoices.models import InvoiceSequence, OwnerInvoice
 
 if TYPE_CHECKING:
@@ -81,6 +82,21 @@ class InvoiceRepository:
             query.order_by(OwnerInvoice.public_id.desc()).limit(limit + 1)
         )
         return list(rows)
+
+    async def totals_of_owner(self, owner_id: int) -> tuple[int, int, int]:
+        """What the owner's invoices add up to, GST included: every invoice's total, and how many
+        are unpaid with what's left to pay on them (ADR 0071)."""
+        unpaid = OwnerInvoice.status == InvoiceStatus.ISSUED
+        row = (
+            await self._db.execute(
+                select(
+                    func.coalesce(func.sum(OwnerInvoice.total_paise), 0),
+                    func.count().filter(unpaid),
+                    func.coalesce(func.sum(OwnerInvoice.balance_due_paise).filter(unpaid), 0),
+                ).where(OwnerInvoice.owner_id == owner_id)
+            )
+        ).one()
+        return int(row[0]), int(row[1]), int(row[2])
 
     async def of_owner(self, owner_id: int) -> list[OwnerInvoice]:
         rows = await self._db.scalars(

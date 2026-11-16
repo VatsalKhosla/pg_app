@@ -7706,6 +7706,62 @@
         }
       }
     },
+    "/v1/owner/overview": {
+      "get": {
+        "tags": [
+          "insights"
+        ],
+        "summary": "Your business at a glance",
+        "description": "Every one of your PGs' beds today; the tenants we placed, month by month for the last\n``months`` months (this one included), with the rent their stays were booked at; our fees;\nand what waits for you: bookings to answer and the week's visits.",
+        "operationId": "insightsMyOverview",
+        "parameters": [
+          {
+            "name": "months",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 24,
+              "minimum": 3,
+              "default": 12,
+              "title": "Months"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerOverview"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/owner/properties/{property_id}/insights": {
       "get": {
         "tags": [
@@ -19425,6 +19481,128 @@
         ],
         "title": "OwnerInfo"
       },
+      "OwnerOverview": {
+        "properties": {
+          "today": {
+            "type": "string",
+            "format": "date",
+            "title": "Today"
+          },
+          "beds": {
+            "type": "integer",
+            "title": "Beds"
+          },
+          "bedsTaken": {
+            "type": "integer",
+            "title": "Bedstaken"
+          },
+          "properties": {
+            "items": {
+              "$ref": "#/components/schemas/PropertyBeds"
+            },
+            "type": "array",
+            "title": "Properties"
+          },
+          "months": {
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": "array",
+            "title": "Months"
+          },
+          "moveIns": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Moveins"
+          },
+          "rentPaise": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Rentpaise"
+          },
+          "tenantsPlaced": {
+            "type": "integer",
+            "title": "Tenantsplaced"
+          },
+          "tenantsNow": {
+            "type": "integer",
+            "title": "Tenantsnow"
+          },
+          "rentNowPaise": {
+            "type": "integer",
+            "title": "Rentnowpaise"
+          },
+          "rentBookedPaise": {
+            "type": "integer",
+            "title": "Rentbookedpaise"
+          },
+          "rentAfterFeesPaise": {
+            "type": "integer",
+            "title": "Rentafterfeespaise"
+          },
+          "feesPaise": {
+            "type": "integer",
+            "title": "Feespaise"
+          },
+          "invoicesUnpaid": {
+            "type": "integer",
+            "title": "Invoicesunpaid"
+          },
+          "feesDuePaise": {
+            "type": "integer",
+            "title": "Feesduepaise"
+          },
+          "bookingsToConfirm": {
+            "type": "integer",
+            "title": "Bookingstoconfirm"
+          },
+          "confirmBy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmby"
+          },
+          "visitsThisWeek": {
+            "type": "integer",
+            "title": "Visitsthisweek"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "today",
+          "beds",
+          "bedsTaken",
+          "properties",
+          "months",
+          "moveIns",
+          "rentPaise",
+          "tenantsPlaced",
+          "tenantsNow",
+          "rentNowPaise",
+          "rentBookedPaise",
+          "rentAfterFeesPaise",
+          "feesPaise",
+          "invoicesUnpaid",
+          "feesDuePaise",
+          "bookingsToConfirm",
+          "confirmBy",
+          "visitsThisWeek"
+        ],
+        "title": "OwnerOverview",
+        "description": "An owner's business at a glance (ADR 0071). Rent is what the stays we placed were booked\nat (rent after the first month goes straight to the owner, so it isn't what was collected);\nfees are our invoices, GST included."
+      },
       "OwnerPage": {
         "properties": {
           "items": {
@@ -20680,6 +20858,46 @@
           "code"
         ],
         "title": "ProblemDetail"
+      },
+      "PropertyBeds": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "locality": {
+            "type": "string",
+            "title": "Locality"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PropertyStatus"
+          },
+          "beds": {
+            "type": "integer",
+            "title": "Beds"
+          },
+          "bedsTaken": {
+            "type": "integer",
+            "title": "Bedstaken"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "locality",
+          "status",
+          "beds",
+          "bedsTaken"
+        ],
+        "title": "PropertyBeds",
+        "description": "One of the owner's PGs today: its beds, and how many are taken (a tenant, a booking, a\nhold or a block on them)."
       },
       "PropertyCreate": {
         "properties": {

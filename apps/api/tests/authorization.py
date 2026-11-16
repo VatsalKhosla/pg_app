@@ -730,6 +730,8 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ),
     ("GET", "/v1/owner/bookings"): Rule(signed_in(403, owner=200)),
     ("GET", "/v1/owner/visits"): Rule(signed_in(403, owner=200)),
+    # The owner's whole business (ADR 0071): theirs only, by the session.
+    ("GET", "/v1/owner/overview"): Rule(signed_in(403, owner=200)),
     ("GET", "/v1/owner/properties/{property_id}/insights"): Rule(
         signed_in(403, owner=404), path={"property_id": "a_listing"}
     ),

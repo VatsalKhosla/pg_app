@@ -2246,6 +2246,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/owner/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your business at a glance
+         * @description Every one of your PGs' beds today; the tenants we placed, month by month for the last
+         *     ``months`` months (this one included), with the rent their stays were booked at; our fees;
+         *     and what waits for you: bookings to answer and the week's visits.
+         */
+        get: operations["insightsMyOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/owner/properties/{property_id}/insights": {
         parameters: {
             query?: never;
@@ -6335,6 +6357,53 @@ export interface components {
             /** Agreementcurrent */
             agreementCurrent: boolean;
         };
+        /**
+         * OwnerOverview
+         * @description An owner's business at a glance (ADR 0071). Rent is what the stays we placed were booked
+         *     at (rent after the first month goes straight to the owner, so it isn't what was collected);
+         *     fees are our invoices, GST included.
+         */
+        OwnerOverview: {
+            /**
+             * Today
+             * Format: date
+             */
+            today: string;
+            /** Beds */
+            beds: number;
+            /** Bedstaken */
+            bedsTaken: number;
+            /** Properties */
+            properties: components["schemas"]["PropertyBeds"][];
+            /** Months */
+            months: string[];
+            /** Moveins */
+            moveIns: number[];
+            /** Rentpaise */
+            rentPaise: number[];
+            /** Tenantsplaced */
+            tenantsPlaced: number;
+            /** Tenantsnow */
+            tenantsNow: number;
+            /** Rentnowpaise */
+            rentNowPaise: number;
+            /** Rentbookedpaise */
+            rentBookedPaise: number;
+            /** Rentafterfeespaise */
+            rentAfterFeesPaise: number;
+            /** Feespaise */
+            feesPaise: number;
+            /** Invoicesunpaid */
+            invoicesUnpaid: number;
+            /** Feesduepaise */
+            feesDuePaise: number;
+            /** Bookingstoconfirm */
+            bookingsToConfirm: number;
+            /** Confirmby */
+            confirmBy: string | null;
+            /** Visitsthisweek */
+            visitsThisWeek: number;
+        };
         /** OwnerPage */
         OwnerPage: {
             /** Items */
@@ -6768,6 +6837,27 @@ export interface components {
             requestId?: string | null;
             /** Traceid */
             traceId?: string | null;
+        };
+        /**
+         * PropertyBeds
+         * @description One of the owner's PGs today: its beds, and how many are taken (a tenant, a booking, a
+         *     hold or a block on them).
+         */
+        PropertyBeds: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Locality */
+            locality: string;
+            status: components["schemas"]["PropertyStatus"];
+            /** Beds */
+            beds: number;
+            /** Bedstaken */
+            bedsTaken: number;
         };
         /** PropertyCreate */
         PropertyCreate: {
@@ -13647,6 +13737,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlockInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    insightsMyOverview: {
+        parameters: {
+            query?: {
+                months?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerOverview"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

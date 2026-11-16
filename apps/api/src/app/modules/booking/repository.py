@@ -64,6 +64,20 @@ def _move_in_due(today: date) -> ColumnElement[bool]:
     return and_(Booking.status == BookingStatus.CONFIRMED, Booking.move_in <= today)
 
 
+# A tenant we placed has moved in: checked in, settled after the check window, or moved out at
+# the end. A disputed check-in isn't counted until it's resolved (ADR 0071).
+PLACED: Final = (BookingStatus.CHECKED_IN, BookingStatus.ACTIVE, BookingStatus.COMPLETED)
+
+
+@dataclass(frozen=True, slots=True)
+class PlacedRow:
+    property_id: int
+    move_in: date
+    ends: date
+    monthly_rent_paise: int
+    stay_months: int
+
+
 class BookingRepository:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
@@ -350,6 +364,45 @@ class BookingRepository:
             return False
         await self._db.refresh(booking)
         return True
+
+    async def placed_for_owner(self, owner_id: int) -> list[PlacedRow]:
+        """The owner's tenants we placed: bookings whose student moved in (checked in, settled or
+        finished), with their stay and rent, oldest move-in first (ADR 0071)."""
+        rows = await self._db.execute(
+            select(
+                Booking.property_id,
+                Booking.move_in,
+                Booking.planned_move_out,
+                Booking.moved_out_on,
+                Booking.monthly_rent_paise,
+                Booking.stay_months,
+            )
+            .where(Booking.owner_id == owner_id, Booking.status.in_(PLACED))
+            .order_by(Booking.move_in, Booking.id)
+        )
+        return [
+            PlacedRow(
+                property_id=row.property_id,
+                move_in=row.move_in,
+                ends=row.moved_out_on or row.planned_move_out,
+                monthly_rent_paise=row.monthly_rent_paise,
+                stay_months=row.stay_months,
+            )
+            for row in rows
+        ]
+
+    async def waiting_for_owner(self, owner_id: int) -> tuple[int, datetime | None]:
+        """The owner's bookings with the token in that wait for their yes or no, and the soonest
+        time one must be answered by."""
+        row = (
+            await self._db.execute(
+                select(func.count(), func.min(Booking.confirm_by)).where(
+                    Booking.owner_id == owner_id,
+                    Booking.status == BookingStatus.TOKEN_SECURED,
+                )
+            )
+        ).one()
+        return int(row[0] or 0), row[1]
 
     async def secured_by_week(self, start: datetime, end: datetime) -> dict[date, int]:
         """Bookings whose token came in during ``[start, end)``, everywhere, by the Monday (India

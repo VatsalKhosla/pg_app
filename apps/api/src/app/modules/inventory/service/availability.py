@@ -4,11 +4,13 @@ the allocations through the domain's own definitions, so every module counts ali
 
 from collections import Counter
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import TYPE_CHECKING, Final
 
 from app.modules.catalog.service import CatalogLookup
 from app.modules.inventory.domain.allocations import (
     AllocationKind,
+    Period,
     free_beds,
     occupancy_bps,
     stay_period,
@@ -20,7 +22,6 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from app.modules.inventory.domain.allocations import Period
 
 # What fills a bed for pricing's occupancy rules: tenants, never holds or maintenance. Bookings
 # join from the token on, in step 5.3 (ARCHITECTURE §8.2).
@@ -46,6 +47,16 @@ class AvailabilityLookup:
         )
         counts = Counter(owner[bed] for bed in free)
         return {category.id: counts[category.id] for category in categories}
+
+    async def beds_on(self, property_id: int, day: date) -> tuple[int, int]:
+        """A PG's active beds, and how many of them nothing holds on ``day``: the owner's
+        overview's beds and free beds (ADR 0071), counted as the insights count them."""
+        layout = await self._catalog.bed_layout(property_id)
+        if layout is None:
+            return 0, 0
+        beds = sum(len(category.active_beds) for category in layout.categories if category.active)
+        free = await self.free_beds(property_id, Period(day, day + timedelta(days=1)))
+        return beds, sum(free.values())
 
     async def free_beds_for_stay(
         self, property_id: int, move_in: date, stay_months: int

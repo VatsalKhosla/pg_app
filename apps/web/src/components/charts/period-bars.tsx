@@ -1,4 +1,4 @@
-/** Up to this many week labels under a chart; the rest are in its table and tooltips. */
+/** Up to this many period labels under a chart; the rest are in its table and tooltips. */
 const LABELS = 6;
 const WIDTH = 640;
 const HEIGHT = 220;
@@ -30,35 +30,39 @@ function bar(x: number, width: number, top: number, base: number): string {
 }
 
 /**
- * One measure, one bar a week, oldest on the left: a single series, so its title names it and it
- * needs no legend. Each bar names its week and value on hover (and to screen readers through the
- * table under it). Drawn on the server, as plain SVG.
+ * One measure, one bar a period (a week, a month), oldest on the left: a single series, so its
+ * title names it and it needs no legend. Each bar names its period and value on hover (and to
+ * screen readers through the table under it). Drawn on the server, as plain SVG. Its title is a
+ * heading at ``level``: 2 on a page of charts, 3 inside a section.
  */
-export function WeeklyBars({
+export function PeriodBars({
   id,
   title,
   total,
-  weeks,
+  periods,
   values,
   axis,
   value,
   tableLabel,
-  weekLabel,
+  periodLabel,
+  level = 2,
 }: {
   id: string;
   title: string;
   /** The period's total, already formatted. */
   total: string;
-  /** Each week's label, e.g. "18 Aug". */
-  weeks: readonly string[];
+  /** Each period's label, e.g. "18 Aug" or "Aug 26". */
+  periods: readonly string[];
   values: readonly number[];
   /** A tick's label (short). */
   axis: (value: number) => string;
   /** A value in full, for its tooltip and the table. */
   value: (value: number) => string;
   tableLabel: string;
-  weekLabel: string;
+  periodLabel: string;
+  level?: 2 | 3;
 }) {
+  const Heading = level === 2 ? "h2" : "h3";
   const top = niceTop(Math.max(0, ...values));
   const plotWidth = WIDTH - LEFT - RIGHT;
   const plotHeight = HEIGHT - TOP - BOTTOM;
@@ -66,14 +70,14 @@ export function WeeklyBars({
   const barWidth = Math.max(4, band * 0.62);
   const y = (amount: number) => TOP + plotHeight - (amount / top) * plotHeight;
   const ticks = [0, top / 2, top];
-  const every = Math.max(1, Math.ceil(weeks.length / LABELS));
+  const every = Math.max(1, Math.ceil(periods.length / LABELS));
 
   return (
     <figure className="m-0 flex flex-col gap-3 rounded-[1.75rem] border border-border/70 bg-card p-5 shadow-md sm:p-6">
       <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id={`${id}-title`} className="font-sans text-base font-semibold text-foreground">
+        <Heading id={`${id}-title`} className="font-sans text-base font-semibold text-foreground">
           {title}
-        </h2>
+        </Heading>
         <span className="text-title-2 font-semibold text-foreground tabular-nums">{total}</span>
       </figcaption>
       <svg
@@ -98,7 +102,7 @@ export function WeeklyBars({
         ))}
         {values.map((amount, index) => {
           const x = LEFT + index * band + (band - barWidth) / 2;
-          const label = weeks[index] ?? "";
+          const label = periods[index] ?? "";
           return (
             <g key={label} className="ops-chart-mark">
               {/* A target the full height of the plot, so a short bar is as easy to hover. */}
@@ -134,7 +138,7 @@ export function WeeklyBars({
           <thead>
             <tr className="text-muted-foreground">
               <th scope="col" className="py-1 font-medium">
-                {weekLabel}
+                {periodLabel}
               </th>
               <th scope="col" className="py-1 text-right font-medium">
                 {title}
@@ -143,8 +147,8 @@ export function WeeklyBars({
           </thead>
           <tbody>
             {values.map((amount, index) => (
-              <tr key={weeks[index]} className="border-t border-border/60">
-                <td className="py-1">{weeks[index]}</td>
+              <tr key={periods[index]} className="border-t border-border/60">
+                <td className="py-1">{periods[index]}</td>
                 <td className="py-1 text-right">{value(amount)}</td>
               </tr>
             ))}
