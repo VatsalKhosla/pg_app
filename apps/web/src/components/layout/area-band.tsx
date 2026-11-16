@@ -29,7 +29,7 @@ export function AreaBand({
         </span>
         <div className="min-w-0">
           <p className="text-sm font-medium text-night-foreground">{eyebrow}</p>
-          <p className="truncate text-title-3 font-semibold tracking-tight sm:text-title-2">
+          <p className="text-title-3 font-semibold tracking-tight text-balance sm:text-title-2">
             {title}
           </p>
         </div>
