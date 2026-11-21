@@ -62,8 +62,18 @@ LABEL org.opencontainers.image.title="pg-platform-web" \
       org.opencontainers.image.description="Web app for the PG booking platform (staging)" \
       org.opencontainers.image.source="https://github.com/VatsalKhosla/pg_app" \
       org.opencontainers.image.licenses="Apache-2.0"
-# Nothing installs a package in this image, so its package manager goes.
-RUN dpkg --purge apt libapt-pkg7.0
+# First, Debian's security fixes that the pinned base image predates: zlib's (DSA-6613-1,
+# CVE-2026-85091). Drop it once a newer digest of the base image carries the fix. Nothing else
+# installs a package in this image, so its package managers then go: apt, and the npm, corepack
+# and yarn the Node image ships (`node` alone runs the server). npm's own copies of undici and
+# brace-expansion carried advisories the app's locked versions don't.
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends --only-upgrade zlib1g \
+    && rm -rf /var/lib/apt/lists/* \
+    && dpkg --purge apt libapt-pkg7.0 \
+    && rm -rf /usr/local/lib/node_modules /opt/yarn-v* \
+        /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+        /usr/local/bin/yarn /usr/local/bin/yarnpkg
 # The API this image serves, if it was built to (ADR 0055): the server reaches it there too.
 ARG API_PROXY_TARGET
 ENV NODE_ENV=production \

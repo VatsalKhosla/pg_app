@@ -29,10 +29,16 @@ LABEL org.opencontainers.image.title="pg-platform-api" \
       org.opencontainers.image.description="API and background worker for the PG booking platform" \
       org.opencontainers.image.source="https://github.com/VatsalKhosla/pg_app" \
       org.opencontainers.image.licenses="Apache-2.0"
+# First, Debian's security fixes that the pinned base image predates: zlib's (DSA-6613-1,
+# CVE-2026-85091). Drop it once a newer digest of the base image carries the fix.
 # The base image's pip is never used at run time (uv built the environment), and it carries its
-# own older copies of urllib3 and msgpack, so it goes. So does apt: nothing installs a package in
-# this image, and a package manager's own advisories are then no concern of a running API.
-RUN python -m pip uninstall --yes --root-user-action=ignore pip \
+# own older copies of urllib3 and msgpack, so it goes. So does apt, once it has fetched those
+# fixes: nothing else installs a package in this image, and a package manager's own advisories are
+# then no concern of a running API.
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends --only-upgrade zlib1g \
+    && rm -rf /var/lib/apt/lists/* \
+    && python -m pip uninstall --yes --root-user-action=ignore pip \
     && dpkg --purge apt libapt-pkg7.0 \
     && groupadd --system --gid 10001 app \
     && useradd --system --uid 10001 --gid app --home-dir /app --shell /usr/sbin/nologin app
