@@ -23,6 +23,10 @@ from app.modules.geo.service import GeoReferenceLoader, LoadReport
 pytestmark = pytest.mark.integration
 
 DATA = read_reference_data()
+# The farthest any campus seeded so far is from its nearest metro station: Delhi Technological
+# University's, Samaypur Badli, is about 2.3 km off. A campus or station put kilometres from where
+# it is shows up here.
+FARTHEST_STATION_M = 2_500
 type Scenario = Callable[[FastAPI, httpx.AsyncClient], Awaitable[Any]]
 
 
@@ -143,7 +147,7 @@ def test_each_campus_nearest_station_is_the_one_its_coordinates_say(
         expected = distance_m(here, closest.location.point)
         assert nearest["distanceM"] == pytest.approx(expected, rel=0.005, abs=1)
         # Every campus seeded so far has a metro station within a short ride.
-        assert nearest["distanceM"] < NEARBY_RADIUS_M
+        assert nearest["distanceM"] < FARTHEST_STATION_M
 
 
 def test_from_sri_venkateswara_college_the_metro_is_a_short_walk(

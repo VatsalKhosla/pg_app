@@ -115,6 +115,15 @@ osm = "node/10815230046"
 # Campuses: the point is OpenStreetMap's centre for the college's grounds. North Campus as a
 # whole uses the North Campus area's centre.
 
+[[localities]]
+slug = "shahbad-daulatpur"
+city = "delhi"
+name = "Shahbad Daulatpur"
+# The village around Delhi Technological University. OpenStreetMap has no place by this name: its
+# area here is "Sector 27" (Narela), which holds DTU and the village's core. Owners, students and
+# the post office (110042) call it Shahbad Daulatpur, so that's our name, on purpose.
+osm = "relation/3512928"
+
 [[campuses]]
 slug = "du-north-campus"
 city = "delhi"
@@ -232,6 +241,12 @@ osm = "node/13093721243"
 # Metro lines: the Wikidata item each station's lines are read from (P81, "connecting line");
 # the colour comes from the line's item (P465).
 
+[[campuses]]
+slug = "delhi-technological-university"
+city = "delhi"
+name = "Delhi Technological University"
+osm = "way/111212532"
+
 [[metro_lines]]
 slug = "yellow"
 name = "Yellow Line"
@@ -266,6 +281,11 @@ wikidata = "Q5253735"
 # or a stop position. Lines come from the station's Wikidata item.
 
 # Yellow Line, by North Campus.
+
+[[metro_lines]]
+slug = "magenta"
+name = "Magenta Line"
+wikidata = "Q19893471"
 
 [[metro_stations]]
 slug = "vishwavidyalaya"
@@ -340,3 +360,13 @@ osm = "node/6453544486"
 slug = "sarojini-nagar"
 name = "Sarojini Nagar"
 osm = "node/6458202842"
+
+[[metro_stations]]
+slug = "samaypur-badli"
+name = "Samaypur Badli"
+osm = "node/2837147019"
+
+[[metro_stations]]
+slug = "haiderpur-badli-mor"
+name = "Haiderpur Badli Mor"
+osm = "node/5397665618"
