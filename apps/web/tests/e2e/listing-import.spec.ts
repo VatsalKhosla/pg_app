@@ -7,6 +7,10 @@ import { newStaff, signInAsStaff } from "./staff";
 // name and number is fictional.
 
 test.describe("importing owners and PGs", () => {
+  // A new staff member's first sign-in is refused until consent is given (400 CONSENT_REQUIRED),
+  // by design.
+  test.use({ expectedConsoleErrors: [/status of 400/] });
+
   test("ops check a file, import it, and open the draft it made", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "one run is enough: a desktop task");
     const staff = await newStaff(["ops"]);
