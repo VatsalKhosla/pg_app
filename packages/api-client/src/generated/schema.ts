@@ -950,6 +950,30 @@ export interface paths {
         patch: operations["catalogUpdateBed"];
         trace?: never;
     };
+    "/v1/ops/listing-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check, then import, owners and their PGs
+         * @description The template's rows, one per room type (``GET /listing-import-template.csv`` on the web
+         *     app). With ``dryRun`` (the default), says what it would make and what's wrong, making
+         *     nothing. Without it, adds each owner (or finds them by phone) and makes each PG a draft with
+         *     its room types and amenities; a PG without a pin waits for one, and running the file again
+         *     makes nothing twice.
+         */
+        post: operations["catalogImportListings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ops/field-agents": {
         parameters: {
             query?: never;
@@ -4948,6 +4972,31 @@ export interface components {
          * @enum {string}
          */
         IdType: "aadhaar" | "passport" | "voter_id" | "driving_licence" | "pan";
+        /** ImportedPgResult */
+        ImportedPgResult: {
+            /** Row */
+            row: number;
+            /** Name */
+            name: string;
+            /** Ownername */
+            ownerName: string;
+            /**
+             * Owner
+             * @enum {string}
+             */
+            owner: "new" | "existing" | "failed";
+            /**
+             * Listing
+             * @enum {string}
+             */
+            listing: "new" | "exists" | "needs_pin" | "failed" | "skipped";
+            /** Listingid */
+            listingId: string | null;
+            /** Roomtypes */
+            roomTypes: number;
+            /** Problems */
+            problems: string[];
+        };
         /** InventoryBed */
         InventoryBed: {
             /**
@@ -5268,6 +5317,25 @@ export interface components {
             problems: string[];
             /** Possibleduplicates */
             possibleDuplicates: string[];
+        };
+        /** ListingImportReport */
+        ListingImportReport: {
+            /** Done */
+            done: boolean;
+            /** Pgs */
+            pgs: components["schemas"]["ImportedPgResult"][];
+            /** Problems */
+            problems: string[];
+        };
+        /** ListingImportRequest */
+        ListingImportRequest: {
+            /** Csv */
+            csv: string;
+            /**
+             * Dryrun
+             * @default true
+             */
+            dryRun: boolean;
         };
         /** ListingInfo */
         ListingInfo: {
@@ -10735,6 +10803,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListingInfo"];
+                };
+            };
+            /** @description Client error (RFC 9457 problem details) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Server error (RFC 9457 problem details) */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    catalogImportListings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListingImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingImportReport"];
                 };
             };
             /** @description Client error (RFC 9457 problem details) */

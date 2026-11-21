@@ -22,6 +22,15 @@ export function findOwners(q: string): Promise<Schemas["OwnerPage"]> {
   return unwrap(browserApi.GET("/v1/ops/owners", { params: { query: { q, limit: 10 } } }));
 }
 
+export type ListingImportReport = Schemas["ListingImportReport"];
+
+/** Check a filled-in owners-and-PGs template (``dryRun``), or import it (ADR 0072). */
+export function importListings(csv: string, dryRun: boolean): Promise<ListingImportReport> {
+  return withCsrf((headers) =>
+    unwrap(browserApi.POST("/v1/ops/listing-imports", { body: { csv, dryRun }, headers })),
+  );
+}
+
 export function addOwner(body: Schemas["OwnerCreate"]): Promise<Owner> {
   return withCsrf((headers) => unwrap(browserApi.POST("/v1/ops/owners", { body, headers })));
 }

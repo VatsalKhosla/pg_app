@@ -20,6 +20,7 @@ from app.modules.catalog.domain.listing import (
     SocietyPermission,
     VerificationStatus,
 )
+from app.modules.catalog.domain.listing_import import MAX_TEXT as IMPORT_MAX_TEXT
 from app.modules.catalog.domain.owners import KycStatus, OwnerStatus
 from app.modules.catalog.domain.rooms import BedStatus, CategoryStatus, Occupancy
 from app.modules.catalog.domain.verification import (
@@ -612,3 +613,35 @@ class DocumentCreate(ApiModel):
 class DocumentReview(ApiModel):
     accepted: bool
     note: Annotated[str, Field(max_length=500)] = ""
+
+
+# Importing owners and their PGs (ADR 0072).
+
+
+class ListingImportRequest(ApiModel):
+    # The filled-in template, as text (CSV, one row per room type).
+    csv: str = Field(min_length=1, max_length=IMPORT_MAX_TEXT)
+    # True: say what it would make, making nothing.
+    dry_run: bool = True
+
+
+class ImportedPgResult(ApiModel):
+    # The file's first row for the PG (1 is the first after the header).
+    row: int
+    name: str
+    owner_name: str
+    owner: Literal["new", "existing", "failed"]
+    # new: made (or, in a check, would be); exists: the owner has a PG of this name; needs_pin: no
+    # latitude and longitude, so ops add it from the console; skipped: the problems below.
+    listing: Literal["new", "exists", "needs_pin", "failed", "skipped"]
+    listing_id: uuid.UUID | None
+    room_types: int
+    problems: list[str]
+
+
+class ListingImportReport(ApiModel):
+    # False for a check, which made nothing.
+    done: bool
+    pgs: list[ImportedPgResult]
+    # Rows that couldn't be read, and why: they were left out.
+    problems: list[str]

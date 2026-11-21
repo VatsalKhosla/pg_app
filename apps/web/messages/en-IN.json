@@ -1015,7 +1015,8 @@
       "pricingAlerts": "Pricing alerts",
       "invoices": "Invoices",
       "reconciliation": "Reconciliation",
-      "dashboard": "Dashboard"
+      "dashboard": "Dashboard",
+      "import": "Import"
     },
     "listings": {
       "title": "Listings",
@@ -2210,6 +2211,32 @@
     "area": {
       "eyebrow": "{brand} staff",
       "title": "Ops console"
+    },
+    "import": {
+      "title": "Import owners and PGs",
+      "intro": "Fill in the template, one row per room type: rows with the same owner phone and PG name are one PG. Check it first: nothing is made until you import. Each PG becomes a draft with its room types and amenities, for you to look over, pin, photograph and publish; one without a latitude and longitude waits for its pin. Importing the same file again makes nothing twice.",
+      "template": "Download the template (CSV)",
+      "file": "Choose the filled-in file",
+      "paste": "Or paste it here",
+      "check": "Check the file",
+      "import": "Import",
+      "working": "Working…",
+      "checkTitle": "What an import would make",
+      "doneTitle": "What the import made",
+      "nothing": "No PGs in this file.",
+      "row": "Row {row} · {owner}",
+      "owner": {
+        "new": "New owner",
+        "existing": "Owner found",
+        "failed": "Owner not added"
+      },
+      "listing": {
+        "new": "Draft listing, {count, plural, one {# room type} other {# room types}}",
+        "exists": "Listing already here",
+        "needs_pin": "Needs a pin: add it from New listing",
+        "skipped": "Not made",
+        "failed": "Listing not made"
+      }
     }
   },
   "Field": {

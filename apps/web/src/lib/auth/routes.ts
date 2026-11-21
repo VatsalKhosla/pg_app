@@ -14,6 +14,7 @@ export const STAFF_HOME_PATH = "/staff" satisfies Route;
 export const OPS_HOME_PATH = "/ops" satisfies Route;
 export const OPS_LISTINGS_PATH = "/ops/listings" satisfies Route;
 export const OPS_NEW_LISTING_PATH = "/ops/listings/new" satisfies Route;
+export const OPS_LISTING_IMPORT_PATH = "/ops/listings/import" satisfies Route;
 export const FIELD_HOME_PATH = "/field" satisfies Route;
 export const FIELD_VISITS_PATH = "/field/visits" satisfies Route;
 export const OPS_OWNERS_PATH = "/ops/owners" satisfies Route;

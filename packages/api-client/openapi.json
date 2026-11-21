@@ -2939,6 +2939,58 @@
         }
       }
     },
+    "/v1/ops/listing-imports": {
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Check, then import, owners and their PGs",
+        "description": "The template's rows, one per room type (``GET /listing-import-template.csv`` on the web\napp). With ``dryRun`` (the default), says what it would make and what's wrong, making\nnothing. Without it, adds each owner (or finds them by phone) and makes each PG a draft with\nits room types and amenities; a PG without a pin waits for one, and running the file again\nmakes nothing twice.",
+        "operationId": "catalogImportListings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingImportReport"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/ops/field-agents": {
       "get": {
         "tags": [
@@ -15433,6 +15485,78 @@
         "title": "IdType",
         "description": "Identity documents the police form accepts, as their type and last four characters only.\n[The founders and a lawyer confirm the list against the current Delhi Police form.]"
       },
+      "ImportedPgResult": {
+        "properties": {
+          "row": {
+            "type": "integer",
+            "title": "Row"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "ownerName": {
+            "type": "string",
+            "title": "Ownername"
+          },
+          "owner": {
+            "type": "string",
+            "enum": [
+              "new",
+              "existing",
+              "failed"
+            ],
+            "title": "Owner"
+          },
+          "listing": {
+            "type": "string",
+            "enum": [
+              "new",
+              "exists",
+              "needs_pin",
+              "failed",
+              "skipped"
+            ],
+            "title": "Listing"
+          },
+          "listingId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listingid"
+          },
+          "roomTypes": {
+            "type": "integer",
+            "title": "Roomtypes"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "row",
+          "name",
+          "ownerName",
+          "owner",
+          "listing",
+          "listingId",
+          "roomTypes",
+          "problems"
+        ],
+        "title": "ImportedPgResult"
+      },
       "InventoryBed": {
         "properties": {
           "id": {
@@ -16324,6 +16448,57 @@
           "possibleDuplicates"
         ],
         "title": "ListingCreated"
+      },
+      "ListingImportReport": {
+        "properties": {
+          "done": {
+            "type": "boolean",
+            "title": "Done"
+          },
+          "pgs": {
+            "items": {
+              "$ref": "#/components/schemas/ImportedPgResult"
+            },
+            "type": "array",
+            "title": "Pgs"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "done",
+          "pgs",
+          "problems"
+        ],
+        "title": "ListingImportReport"
+      },
+      "ListingImportRequest": {
+        "properties": {
+          "csv": {
+            "type": "string",
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Csv"
+          },
+          "dryRun": {
+            "type": "boolean",
+            "title": "Dryrun",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "csv"
+        ],
+        "title": "ListingImportRequest"
       },
       "ListingInfo": {
         "properties": {

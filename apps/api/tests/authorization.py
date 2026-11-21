@@ -730,6 +730,11 @@ MATRIX: Final[dict[tuple[str, str], Rule]] = {
     ),
     ("GET", "/v1/owner/bookings"): Rule(signed_in(403, owner=200)),
     ("GET", "/v1/owner/visits"): Rule(signed_in(403, owner=200)),
+    # Ops check a file of owners and PGs (ADR 0072); a check makes nothing.
+    ("POST", "/v1/ops/listing-imports"): Rule(
+        ops_only(200),
+        lambda: {"json": {"csv": "owner_name,owner_phone\n", "dryRun": True}},
+    ),
     # The owner's whole business (ADR 0071): theirs only, by the session.
     ("GET", "/v1/owner/overview"): Rule(signed_in(403, owner=200)),
     ("GET", "/v1/owner/properties/{property_id}/insights"): Rule(
