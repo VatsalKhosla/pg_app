@@ -140,6 +140,8 @@ class FakeServices:
         self.time = time
         self.requests: list[tuple[float, httpx.Request]] = []
         self.failures: list[httpx.Response] = []
+        # Answers for Wikidata's requests only, before its real ones.
+        self.wikidata_failures: list[httpx.Response] = []
         station_tags = {
             "station": "subway",
             "subway": "yes",
@@ -186,6 +188,8 @@ class FakeServices:
         self.requests.append((self.time.now, request))
         if self.failures:
             return self.failures.pop(0)
+        if request.url.path == "/w/api.php" and self.wikidata_failures:
+            return self.wikidata_failures.pop(0)
         if request.url.path == "/lookup":
             ids = request.url.params["osm_ids"].split(",")
             return httpx.Response(200, json=[self.places[key] for key in ids if key in self.places])
@@ -323,6 +327,22 @@ def test_a_busy_service_is_asked_again_after_the_wait_it_names(
     refresh(MANIFEST, fetcher=_fetcher(services, time), today=TODAY)
 
     assert time.slept[:2] == [7.0, 5.0]
+
+
+def test_a_lagging_query_service_doesnt_hold_up_reading_entities(
+    services: FakeServices, time: FakeTime
+) -> None:
+    # Wikidata counts its query service's lag in maxlag; reading entities doesn't use it.
+    lagging = {"code": "maxlag", "type": "wikibase-queryservice", "lag": 32.8}
+    services.wikidata_failures = [httpx.Response(200, json={"error": lagging})]
+
+    refresh(MANIFEST, fetcher=_fetcher(services, time), today=TODAY)
+
+    wikidata = [request for _, request in services.requests if "wikidata" in str(request.url)]
+    assert wikidata[0].url.params["maxlag"] == "5"
+    assert "maxlag" not in wikidata[1].url.params
+    # Only the usual second between requests: no waiting it out.
+    assert max(time.slept) <= 1.0
 
 
 def test_it_gives_up_on_a_service_that_keeps_failing(

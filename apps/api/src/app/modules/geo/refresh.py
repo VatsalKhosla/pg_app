@@ -66,6 +66,8 @@ if TYPE_CHECKING:
     from typing import TextIO
 
 USER_AGENT: Final = "pg-platform-geo-refresh/1.0 (+https://github.com/VatsalKhosla/pg_app)"
+# The kind of maxlag refusal that comes from Wikidata's query service, which entity reads don't use.
+QUERY_SERVICE_LAG: Final = "wikibase-queryservice"
 NOMINATIM_LOOKUP: Final = "https://nominatim.openstreetmap.org/lookup"
 WIKIDATA_API: Final = "https://www.wikidata.org/w/api.php"
 TIMEOUT: Final = httpx.Timeout(10.0, connect=3.0)
@@ -218,8 +220,14 @@ class Fetcher:
             if response.status_code != httpx.codes.OK:
                 raise RefreshError([f"{url} answered {response.status_code}"])
             body = response.json()
+            refusal = body.get("error", {}) if isinstance(body, dict) else {}
             # Wikidata refuses with maxlag while its replicas lag behind; it says when to retry.
-            if isinstance(body, dict) and body.get("error", {}).get("code") == "maxlag":
+            if isinstance(refusal, dict) and refusal.get("code") == "maxlag":
+                # Its query service's lag counts too, but reading entities never touches the
+                # query service: read again without asking to be refused for it.
+                if refusal.get("type") == QUERY_SERVICE_LAG and "maxlag" in params:
+                    params = {key: value for key, value in params.items() if key != "maxlag"}
+                    continue
                 if last:
                     raise RefreshError([f"{url}: Wikidata is busy (maxlag); try again later"])
                 self._sleep(_retry_after(response) or BACKOFF_S * 2**attempt)
