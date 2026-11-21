@@ -87,6 +87,10 @@ test.describe("owner agreement", () => {
     await expect(owner.getByRole("link", { name: "Fictional Homes Kamla Nagar" })).toBeVisible();
     await expect(owner.getByText(/^No tenants placed through .+ yet\./u)).toBeVisible();
     expect(await wcagViolations(owner)).toEqual([]);
+    // The page for PG owners offers a signed-in owner the way back to their own business.
+    await owner.goto("/owners");
+    await owner.getByRole("link", { name: "Go to your owner area" }).click();
+    await expect(owner).toHaveURL(/\/owner$/);
     const browserName = await owner.evaluate(() => navigator.userAgent);
 
     // Their invoices (BUILD_PLAN 6.5): none until a tenant placed through us has settled in.

@@ -31,6 +31,8 @@ test.describe("on a phone", () => {
     await expect(menu).toBeHidden();
     await expect(page).toHaveURL(/\/owners$/);
     await expect(page.getByRole("heading", { level: 1, name: "For PG owners" })).toBeVisible();
+    // The way into the owner area shows only to an owner who's signed in (owner.spec.ts).
+    await expect(page.getByRole("link", { name: "Go to your owner area" })).toHaveCount(0);
   });
 
   test("Escape closes the menu and returns focus to its button", async ({ page }) => {

@@ -16,6 +16,8 @@ import { FeatureCard, FeatureGrid } from "@/components/story/feature-card";
 import { SkyBand } from "@/components/story/sky-band";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { getPolicies } from "@/lib/api/public";
+import { OWNER_HOME_PATH } from "@/lib/auth/routes";
+import { getSessionForHeader, isOwner } from "@/lib/auth/session";
 import { trustPages } from "@/lib/trust/pages";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -31,19 +33,27 @@ const BASIS_POINTS = 10_000;
 
 /** What the site does for PG owners: the fee from the live policy, in the approved words. */
 export default async function OwnersPage() {
-  const [t, tHome, tPricing, format, policies] = await Promise.all([
+  const [t, tHome, tPricing, format, policies, me] = await Promise.all([
     getTranslations("Owners"),
     getTranslations("Home"),
     getTranslations("Pricing"),
     getFormatter(),
     getPolicies().catch(() => null),
+    // The header asks too, so this costs no second call (React's cache).
+    getSessionForHeader(),
   ]);
+  // An owner who's signed in goes straight to their own business from here.
+  const signedInOwner = me !== null && isOwner(me);
   const percent = (bps: number) =>
     format.number(bps / BASIS_POINTS, { style: "percent", maximumFractionDigits: 2 });
   const talk = (
     <Link
       href={trustPages.contact}
-      className={buttonVariants({ variant: "sun", size: "lg", shape: "pill" })}
+      className={buttonVariants({
+        variant: signedInOwner ? "outline" : "sun",
+        size: "lg",
+        shape: "pill",
+      })}
     >
       <MessageCircle aria-hidden="true" />
       {t("contactCta")}
@@ -54,6 +64,15 @@ export default async function OwnersPage() {
   return (
     <div className="pb-section">
       <SkyBand title={tHome("owners.title")} intro={tHome("owners.body")}>
+        {signedInOwner ? (
+          <Link
+            href={OWNER_HOME_PATH}
+            className={buttonVariants({ variant: "sun", size: "lg", shape: "pill" })}
+          >
+            <LayoutDashboard aria-hidden="true" />
+            {t("ownerAreaCta")}
+          </Link>
+        ) : null}
         {talk}
         <Link
           href={trustPages.pricing}

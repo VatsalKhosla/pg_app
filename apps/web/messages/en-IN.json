@@ -2884,7 +2884,8 @@
     "supportTitle": "Help when you need it",
     "supportBody": "Write to us from the contact page, and follow any complaint through to its answer.",
     "ctaTitle": "Ready to fill your beds?",
-    "ctaBody": "Tell us about your PG, and our field agent will arrange a visit."
+    "ctaBody": "Tell us about your PG, and our field agent will arrange a visit.",
+    "ownerAreaCta": "Go to your owner area"
   },
   "OpsDashboard": {
     "metaTitle": "Dashboard",
