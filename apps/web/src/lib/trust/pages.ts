@@ -24,7 +24,7 @@ export type TrustPage = keyof typeof trustPages;
 // The company facts each page states.
 const FACTS: Record<TrustPage, readonly (keyof Company)[]> = {
   about: ["legalName", "founders"],
-  contact: ["legalName", "registeredAddress", "supportPhone", "supportHours", "supportEmail"],
+  contact: ["legalName", "registeredAddress", "supportPhones", "supportHours", "supportEmail"],
   pricing: [],
   tokenProtection: [],
   terms: ["legalName", "registeredAddress"],

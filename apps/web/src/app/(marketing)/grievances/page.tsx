@@ -6,6 +6,7 @@ import { GrievanceForm } from "@/components/grievances/grievance-form";
 import { Placeholder, TrustPage, TrustSection } from "@/components/trust/trust-page";
 import { brand } from "@/config/brand";
 import { company } from "@/config/company";
+import { formatPhone } from "@/lib/format/phone";
 import { publicEnv } from "@/config/env";
 import { unwrap } from "@/lib/api/client";
 import { getServerApi } from "@/lib/api/server";
@@ -120,7 +121,7 @@ export default async function GrievancesPage() {
                     href={`tel:${officer.phone}`}
                     className="font-medium text-primary underline underline-offset-4"
                   >
-                    {officer.phone}
+                    {formatPhone(officer.phone)}
                   </a>
                 ),
               })}

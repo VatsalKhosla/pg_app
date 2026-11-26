@@ -1,6 +1,6 @@
 # ADR 0068: Sign-in by Google and by email code, phone codes off until texts are registered, and every message by email through Gmail
 
-- Status: accepted
+- Status: accepted. Since ADR 0073 (2026-11-26), `render.yaml` sets `MAIL_SENDER=smtp` and the address, so the app password is the founders' only step.
 - Date: 2026-11-15
 - Build step: the founders' batch of 2026-11-12, item 8
 

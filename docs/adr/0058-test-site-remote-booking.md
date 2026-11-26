@@ -1,6 +1,6 @@
 # ADR 0058: A test site can open booking without a visit, through an audited flag command
 
-- Status: accepted
+- Status: accepted. Since ADR 0073 (2026-11-26), with real PGs on the site, it's off: a visit comes first.
 - Date: 2026-11-05
 - Build step: none (staging; extends ADR 0047)
 

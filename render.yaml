@@ -76,18 +76,19 @@ services:
         value: screen
       - key: TEXT_SENDER
         value: unavailable
-      # Email carries sign-in codes and messages (ADR 0068). Until the founders set the Gmail
-      # app password (SMTP_USERNAME, SMTP_PASSWORD and MAIL_FROM, then MAIL_SENDER=smtp), nothing
-      # is emailed and the sign-in page shows the code, as phone codes do here. Phone sign-in is
-      # off until the SMS sender's DLT registration is done.
+      # Email carries sign-in codes and messages (ADR 0068), from support@fixyourstay.in through
+      # Gmail. It waits only for SMTP_PASSWORD, that Workspace account's app password, which the
+      # founders set on the service: until then nothing is emailed and the sign-in page shows the
+      # code, and from then on codes and messages go by email (ADR 0073). Phone sign-in is off
+      # until the SMS sender's DLT registration is done.
       - key: MAIL_SENDER
-        value: unavailable
+        value: smtp
       - key: SMTP_USERNAME
-        sync: false
+        value: support@fixyourstay.in
       - key: SMTP_PASSWORD
         sync: false
       - key: MAIL_FROM
-        sync: false
+        value: support@fixyourstay.in
       - key: PHONE_SIGN_IN
         value: "false"
       # Google sign-in for everyone: off until the OAuth client's audience is External and
@@ -144,18 +145,19 @@ services:
         value: "2"
       - key: WORKER_CONCURRENCY
         value: "1"
-      # Lets people try reserving a bed and paying here without a visit first, which season one
-      # requires everywhere else: nobody could reach a booking on this copy otherwise (ADR 0058).
+      # Whether people may reserve a bed and pay without a visit first. "true" let testers try it
+      # on the fictional samples (ADR 0058); with the founders' real PGs here, a visit comes first,
+      # as season one requires everywhere (ADR 0073).
       - key: TEST_SITE_REMOTE_BOOKING
-        value: "true"
+        value: "false"
       # How the token is taken here: "payment", or "upi_mandate" to try Razorpay's one-time
       # mandates in test mode (ADR 0064). The site sets the token_mode flag from it as it starts.
       - key: TEST_SITE_TOKEN_MODE
         value: payment
-      # The six fictional sample PGs, added once (the founders' choice; ADR 0047). The web app
-      # says on every page that they're samples.
+      # The six fictional sample PGs (ADR 0047): off since the founders' real PGs came here. Set to
+      # anything but "true", the site delists any still listed as it starts (ADR 0073).
       - key: SEED_SAMPLES
-        value: "true"
+        value: "false"
       - fromGroup: fys-staging-shared
 
   - type: keyvalue

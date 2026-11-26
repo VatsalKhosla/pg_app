@@ -1,6 +1,6 @@
 # ADR 0047: Staging on free plans for now, deployed from GitHub: Render runs the web app, the API with its worker, and a cache; Neon holds the database and the photos
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0073 (2026-11-26): the founders' real PGs replaced the fictional samples, and the banner went with them.
 - Date: 2026-10-31
 - Build step: alongside 5.3 (the founders asked for a staging site that follows the build)
 

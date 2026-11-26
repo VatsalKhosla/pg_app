@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 
 import { Placeholder, TrustPage, TrustSection } from "@/components/trust/trust-page";
 import { brand } from "@/config/brand";
@@ -19,6 +19,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function AboutPage() {
   const t = await getTranslations("About");
   const tTrust = await getTranslations("Trust");
+  const format = await getFormatter();
+  const founders = format.list(
+    company.founders.map((founder) => founder.name),
+    { type: "conjunction" },
+  );
   return (
     <TrustPage title={t("title", { brand: brand.name })} intro={t("intro")}>
       <TrustSection id="why" title={t("whyTitle")}>
@@ -49,13 +54,22 @@ export default async function AboutPage() {
           <ul className="grid gap-6 sm:grid-cols-2">
             {company.founders.map((founder) => (
               <li key={founder.name} className="flex items-center gap-4">
-                <Image
-                  src={founder.photo}
-                  alt=""
-                  width={96}
-                  height={96}
-                  className="size-24 rounded-full object-cover"
-                />
+                {founder.photo === undefined ? (
+                  <span
+                    aria-hidden
+                    className="grid size-24 shrink-0 place-items-center rounded-full bg-primary/10 font-display text-2xl font-semibold text-primary"
+                  >
+                    {initials(founder.name)}
+                  </span>
+                ) : (
+                  <Image
+                    src={founder.photo}
+                    alt=""
+                    width={96}
+                    height={96}
+                    className="size-24 rounded-full object-cover"
+                  />
+                )}
                 <div>
                   <p className="font-semibold">{founder.name}</p>
                   <p className="text-sm text-muted-foreground">{founder.role}</p>
@@ -65,11 +79,9 @@ export default async function AboutPage() {
           </ul>
         )}
         <p className="leading-7">
-          {company.legalName === null ? (
-            <Placeholder fact={tTrust("facts.legalName")} />
-          ) : (
-            t("registered", { brand: brand.name, legalName: company.legalName })
-          )}
+          {company.legalName === null
+            ? t("runByFounders", { brand: brand.name, founders })
+            : t("registered", { brand: brand.name, legalName: company.legalName })}
         </p>
       </TrustSection>
       <p>
@@ -82,4 +94,12 @@ export default async function AboutPage() {
       </p>
     </TrustPage>
   );
+}
+
+/** A name's first and last initials, for a founder without a photo. */
+function initials(name: string): string {
+  const words = name.trim().split(/\s+/u);
+  const first = words[0] ?? "";
+  const last = words.length > 1 ? (words.at(-1) ?? "") : "";
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
 }

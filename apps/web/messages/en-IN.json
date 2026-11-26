@@ -7,7 +7,6 @@
   },
   "Layout": {
     "skipToContent": "Skip to content",
-    "stagingNotice": "This is a test copy of {brand}. Its PGs are fictional samples, and nothing booked here is real.",
     "mainNavigation": "Main",
     "footerNavigation": "Footer",
     "openMenu": "Open menu",
@@ -17,7 +16,7 @@
     "footerPolicies": "Policies",
     "footerExplore": "Explore",
     "copyright": "© {year} {brand}",
-    "apiWaking": "The test site is waking up. This takes two or three minutes, and the page will fill in by itself."
+    "apiWaking": "{brand} is starting up. After a quiet spell this takes two or three minutes, and the page will fill in by itself."
   },
   "Navigation": {
     "search": "Find a PG",
@@ -209,7 +208,7 @@
       "title": "Enter the code",
       "introEmail": "We emailed a six-digit code to {destination}. It works for 10 minutes. If it isn't in your inbox, look in spam.",
       "introPhone": "We sent a six-digit code to {destination}. It works for 5 minutes.",
-      "developmentCode": "This is a test copy of the site, so the code isn't sent. Your code is {code}.",
+      "developmentCode": "We can't send codes from this site yet, so here's yours: {code}",
       "label": "Six-digit code",
       "invalid": "The code is six digits.",
       "submit": "Continue",
@@ -2403,7 +2402,7 @@
     "facts": {
       "legalName": "the company's registered name",
       "registeredAddress": "the registered office's address",
-      "supportPhone": "the phone number a person answers",
+      "supportPhones": "the phone numbers a person answers",
       "supportHours": "when the phone is answered",
       "supportEmail": "the email address for help",
       "founder": "the founders' names, roles and photos",
@@ -2428,6 +2427,7 @@
     "token": "When booking opens, your token is small, refundable and protected until you've moved in and checked the room.",
     "teamTitle": "Who we are",
     "registered": "{brand} is run by {legalName}.",
+    "runByFounders": "{brand} is run by its founders, {founders}.",
     "contact": "Questions? Contact us"
   },
   "Contact": {
@@ -2438,6 +2438,8 @@
     "hours": "Answered {hours}.",
     "emailTitle": "Email",
     "officeTitle": "Registered office",
+    "runByTitle": "Who runs {brand}",
+    "runBy": "Its founders, {founders}.",
     "visitsTitle": "Your visits",
     "visits": "See, change or cancel the visits you've asked for on your visits page.",
     "visitsLink": "Your visits",
@@ -2992,7 +2994,7 @@
       "sending": "Sending…",
       "sent": "We've emailed you a code. It works for 10 minutes.",
       "resend": "Send a new code",
-      "developmentCode": "Development code (local only): {code}",
+      "developmentCode": "We can't send codes from this site yet, so here's yours: {code}",
       "code": "6-digit code",
       "needCode": "Enter the 6 digits we sent you.",
       "fullName": "Your full name",

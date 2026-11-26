@@ -107,15 +107,6 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         >
           {t("skipToContent")}
         </a>
-        {/* Staging is a test copy with fictional sample PGs (ADR 0047): nobody may mistake it. */}
-        {publicEnv.appEnv === "staging" ? (
-          <p
-            role="note"
-            className="border-b bg-accent px-4 py-2 text-center text-sm text-accent-foreground"
-          >
-            {t("stagingNotice", { brand: brand.name })}
-          </p>
-        ) : null}
         {/* A boundary of its own, like the footer's: a signed-in check never holds up the page. */}
         <Suspense fallback={<div className="h-[4.75rem]" />}>
           <SiteHeader />
@@ -136,9 +127,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={null}>
           <SiteFooter />
         </Suspense>
-        {/* The test site's API sleeps when idle, and only a visitor's browser can wake it. */}
+        {/* Staging's API sleeps when idle (a free plan), and only a visitor's browser can wake it. */}
         {publicEnv.appEnv === "staging" ? (
-          <ApiWakerLazy wakeUrl={publicEnv.apiUrl.origin} text={t("apiWaking")} />
+          <ApiWakerLazy
+            wakeUrl={publicEnv.apiUrl.origin}
+            text={t("apiWaking", { brand: brand.name })}
+          />
         ) : null}
         {/* Analytics only where the server collects them (ADR 0035). */}
         {serverEnv.posthog === undefined ? null : <Analytics />}
