@@ -19,8 +19,8 @@ export async function enterEmailAndCode(page: Page, email: string): Promise<void
   await page.getByLabel("Email address", { exact: true }).fill(email);
   await page.getByRole("button", { name: "Email me a code" }).click();
   await expect(page.getByRole("heading", { name: "Enter the code" })).toBeVisible();
-  const shown = await page.getByText(/Your code is [0-9]{6}\./u).textContent();
-  const code = /Your code is ([0-9]{6})\./u.exec(shown ?? "")?.[1];
+  const shown = await page.getByText(/here's yours: [0-9]{6}/u).textContent();
+  const code = /here's yours: ([0-9]{6})/u.exec(shown ?? "")?.[1];
   if (code === undefined) throw new Error("the sign-in page showed no code");
   await page.getByLabel("Six-digit code", { exact: true }).fill(code);
   await page.getByRole("button", { name: "Continue" }).click();

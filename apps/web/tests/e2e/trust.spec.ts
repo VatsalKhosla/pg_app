@@ -30,6 +30,9 @@ const PAGES = [
   { link: "Grievances", heading: "Grievances", path: "/grievances" },
 ] as const;
 
+// The pages with every fact they state and no draft (src/lib/trust/pages.ts).
+const INDEXABLE = ["/pricing", "/token-protection", "/grievances"] as const;
+
 test.describe("the footer", () => {
   for (const { link, heading, path, ...rest } of PAGES) {
     test(`links to ${link}, which meets WCAG 2.2 AA`, async ({ page }) => {
@@ -41,8 +44,9 @@ test.describe("the footer", () => {
       if ("legal" in rest) {
         await expect(page.getByRole("note")).toHaveText(/^DRAFT — needs lawyer review/u);
       }
-      // Drafts and pages still waiting for the founders' facts stay out of search engines.
-      if (path !== "/pricing" && path !== "/token-protection") {
+      // Drafts and pages still waiting for the founders' facts (the registered name and office,
+      // until the business is registered) stay out of search engines.
+      if (!(INDEXABLE as readonly string[]).includes(path)) {
         await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/u);
       }
       expect(await wcagViolations(page)).toEqual([]);
