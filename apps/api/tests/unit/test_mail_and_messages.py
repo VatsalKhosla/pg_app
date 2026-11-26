@@ -123,6 +123,16 @@ def test_the_settings_choose_the_mailer(
     assert isinstance(build_mailer(settings), kind)
 
 
+def test_smtp_waiting_for_its_password_sends_nothing(
+    make_settings: Callable[..., Settings],
+) -> None:
+    settings = make_settings(
+        mail_sender="smtp", smtp_username="support@example.in", mail_from="support@example.in"
+    )
+
+    assert isinstance(build_mailer(settings), NoMailer)
+
+
 class FakeSmtp:
     """smtplib.SMTP as a test sees it: what was called, in order."""
 

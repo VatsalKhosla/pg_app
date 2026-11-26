@@ -86,13 +86,13 @@ def email_codes(settings: Settings, *, shows_code: bool) -> EmailCodes:
     """Sign-in codes by email: through the mailer when there is one (ConsoleMailer's log shows
     the code, as the console text sender does); without one, shown on screen where text codes
     are (a test site), and off anywhere else."""
-    if settings.mail_sender == "unavailable":
+    if settings.mail_sender_in_use == "unavailable":
         return EmailCodes(
             None, shows_code=shows_code, ttl=EMAIL_CODE_TTL, site_url=settings.site_url
         )
     return EmailCodes(
         build_mailer(settings),
-        shows_code=settings.mail_sender == "console",
+        shows_code=settings.mail_sender_in_use == "console",
         ttl=EMAIL_CODE_TTL,
         site_url=settings.site_url,
     )
@@ -102,11 +102,11 @@ def signing_codes(settings: Settings, *, shows_code: bool) -> MailSigningCodes:
     """Codes to sign a rent agreement with (ADR 0070), by email as sign-in codes are: through the
     mailer when there is one; without one, shown on screen where text codes are (a test site), and
     refused anywhere else."""
-    if settings.mail_sender == "unavailable":
+    if settings.mail_sender_in_use == "unavailable":
         return MailSigningCodes(None, shows_code=shows_code, site_url=settings.site_url)
     return MailSigningCodes(
         build_mailer(settings),
-        shows_code=settings.mail_sender == "console",
+        shows_code=settings.mail_sender_in_use == "console",
         site_url=settings.site_url,
     )
 

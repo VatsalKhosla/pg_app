@@ -337,12 +337,26 @@ class Settings(DatabaseSettings):
 
     @model_validator(mode="after")
     def _smtp_complete(self) -> Self:
-        if self.mail_sender == "smtp" and (
-            self.smtp_username is None or self.smtp_password is None or self.mail_from is None
-        ):
+        # Production refuses to start with an SMTP sender missing its login. Anywhere else it waits
+        # for it, sending nothing meanwhile (`mail_sender_in_use`), so the founders' setting the
+        # app password on the host is the one step that turns email on (ADR 0073).
+        if self.mail_sender == "smtp" and self.app_env == "production" and not self.smtp_ready:
             msg = "MAIL_SENDER=smtp needs SMTP_USERNAME, SMTP_PASSWORD and MAIL_FROM"
             raise ValueError(msg)
         return self
+
+    @property
+    def smtp_ready(self) -> bool:
+        """Whether the SMTP login and the sending address are all set."""
+        return None not in (self.smtp_username, self.smtp_password, self.mail_from)
+
+    @property
+    def mail_sender_in_use(self) -> Literal["console", "smtp", "unavailable"]:
+        """The sender in use: "smtp" without its login (outside production) sends nothing yet, as
+        "unavailable" doesn't, and a test site shows sign-in codes on screen meanwhile."""
+        if self.mail_sender == "smtp" and not self.smtp_ready:
+            return "unavailable"
+        return self.mail_sender
 
     @model_validator(mode="after")
     def _google_sign_in_complete(self) -> Self:

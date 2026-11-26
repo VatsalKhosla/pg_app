@@ -570,10 +570,10 @@ def test_deployed_environments_never_write_email_to_the_log(
 
 
 @pytest.mark.parametrize("missing", ["SMTP_USERNAME", "SMTP_PASSWORD", "MAIL_FROM"])
-def test_sending_email_needs_the_login_and_the_address(
+def test_production_sends_email_only_with_the_login_and_the_address(
     environment: pytest.MonkeyPatch, missing: str
 ) -> None:
-    environment.setenv("MAIL_SENDER", "smtp")
+    _deployed(environment, "production").setenv("MAIL_SENDER", "smtp")
     for name, value in {
         "SMTP_USERNAME": "support@example.in",
         "SMTP_PASSWORD": "an-app-password-for-smtp",
@@ -585,6 +585,25 @@ def test_sending_email_needs_the_login_and_the_address(
     with pytest.raises(ValidationError, match="MAIL_SENDER=smtp needs") as raised:
         Settings()
     assert "an-app-password-for-smtp" not in str(raised.value)
+
+
+@pytest.mark.parametrize("app_env", ["local", "staging"])
+def test_elsewhere_smtp_waits_for_its_password_and_sends_nothing_meanwhile(
+    environment: pytest.MonkeyPatch, app_env: str
+) -> None:
+    # The founders' one step (ADR 0073): the app password, set on the host, turns email on.
+    if app_env == "staging":
+        _deployed(environment, "staging")
+    environment.setenv("MAIL_SENDER", "smtp")
+    environment.setenv("SMTP_USERNAME", "support@example.in")
+    environment.setenv("MAIL_FROM", "support@example.in")
+
+    waiting = Settings()
+    environment.setenv("SMTP_PASSWORD", "an-app-password-for-smtp")
+    ready = Settings()
+
+    assert (waiting.smtp_ready, waiting.mail_sender_in_use) == (False, "unavailable")
+    assert (ready.smtp_ready, ready.mail_sender_in_use) == (True, "smtp")
 
 
 def test_the_smtp_password_stays_out_of_repr(environment: pytest.MonkeyPatch) -> None:

@@ -16,10 +16,10 @@ if TYPE_CHECKING:
 
 
 def build_mailer(settings: Settings) -> Mailer:
-    if settings.mail_sender == "smtp":
+    if settings.mail_sender_in_use == "smtp":
         username, password = settings.smtp_username, settings.smtp_password
         sender = settings.mail_from
-        if username is None or password is None or sender is None:  # the settings refuse this
+        if username is None or password is None or sender is None:  # not in use without them
             msg = "MAIL_SENDER=smtp needs SMTP_USERNAME, SMTP_PASSWORD and MAIL_FROM"
             raise ValueError(msg)
         return SmtpMailer(
@@ -30,7 +30,7 @@ def build_mailer(settings: Settings) -> Mailer:
             sender=sender,
             name=BRAND_NAME,
         )
-    if settings.mail_sender == "console":
+    if settings.mail_sender_in_use == "console":
         return ConsoleMailer()
     return NoMailer()
 
