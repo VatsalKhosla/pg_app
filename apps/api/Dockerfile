@@ -29,14 +29,16 @@ LABEL org.opencontainers.image.title="pg-platform-api" \
       org.opencontainers.image.description="API and background worker for the PG booking platform" \
       org.opencontainers.image.source="https://github.com/VatsalKhosla/pg_app" \
       org.opencontainers.image.licenses="Apache-2.0"
-# First, Debian's security fixes that the pinned base image predates: zlib's (DSA-6613-1,
-# CVE-2026-85091). Drop it once a newer digest of the base image carries the fix.
+# First, every Debian security and stable update the pinned base image predates: new advisories
+# in its packages (zlib's DSA-6613-1, zstd's CVE-2026-124851) come faster than new digests, so the
+# image takes each fix up to its build. Python is the image's own build, not Debian's, so it stays
+# as pinned.
 # The base image's pip is never used at run time (uv built the environment), and it carries its
 # own older copies of urllib3 and msgpack, so it goes. So does apt, once it has fetched those
 # fixes: nothing else installs a package in this image, and a package manager's own advisories are
 # then no concern of a running API.
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends --only-upgrade zlib1g \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade --yes \
     && rm -rf /var/lib/apt/lists/* \
     && python -m pip uninstall --yes --root-user-action=ignore pip \
     && dpkg --purge apt libapt-pkg7.0 \
