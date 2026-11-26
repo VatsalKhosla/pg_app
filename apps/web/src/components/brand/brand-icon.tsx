@@ -1,41 +1,37 @@
-import { brand, brandInitial } from "@/config/brand";
+import { LOGO_DATA_URL } from "./logo-data";
 
 /**
- * The app icon for next/og's ImageResponse: the brand initial on a full-bleed ink square, with the
- * sun going down in its corner. Full bleed suits every use: browsers show favicons as they are,
- * while iOS and Android crop home screen icons to their own shapes, so the letter stays inside the
- * central safe zone.
+ * The app icons for next/og's ImageResponse, from the founders' logo: a teal house in a gold ring.
+ *
+ * - **Favicons and the manifest's "any" icons** keep the logo's own round shape, transparent
+ *   around it, as browsers show them as they are.
+ * - **A home screen icon** (`fill`) puts it on a white square that fills the icon, inside the
+ *   safe zone: iOS fills transparency with black and rounds the corners itself, and Android masks
+ *   a "maskable" icon to its own shape, keeping only a circle 80% across (`scale` 0.76).
  */
-export function BrandIcon({ size }: { size: number }) {
+export function BrandIcon({
+  size,
+  fill = false,
+  scale = 1,
+}: {
+  size: number;
+  fill?: boolean;
+  scale?: number;
+}) {
+  const logo = Math.round(size * scale);
   return (
     <div
       style={{
         width: "100%",
         height: "100%",
         display: "flex",
-        position: "relative",
         alignItems: "center",
         justifyContent: "center",
-        background: brand.colors.night,
-        color: "#f3eee4",
-        fontSize: Math.round(size * 0.56),
-        fontWeight: 700,
-        lineHeight: 1,
-        overflow: "hidden",
+        background: fill ? "#ffffff" : "transparent",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          right: Math.round(size * -0.14),
-          bottom: Math.round(size * -0.2),
-          width: Math.round(size * 0.62),
-          height: Math.round(size * 0.62),
-          borderRadius: "50%",
-          background: brand.colors.sun,
-        }}
-      />
-      <div style={{ display: "flex", position: "relative" }}>{brandInitial}</div>
+      {/* eslint-disable-next-line @next/next/no-img-element -- next/og draws plain img elements */}
+      <img src={LOGO_DATA_URL} alt="" width={logo} height={logo} />
     </div>
   );
 }

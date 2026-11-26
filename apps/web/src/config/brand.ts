@@ -65,6 +65,3 @@ export const brandStyle = {
   "--brand-night": brand.colors.night,
   "--brand-night-dark": brand.colors.nightDark,
 } as const;
-
-/** The letter on the brand mark and the app icons. */
-export const brandInitial = brand.name.charAt(0).toUpperCase();

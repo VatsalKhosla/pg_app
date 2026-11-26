@@ -126,7 +126,7 @@ export const config = {
       // Pages only: not static files, image optimisation, icons, the manifest or robots.txt.
       // Whole names only, so a page such as /icons-guide still gets its policy.
       source:
-        "/((?!_next/static/|_next/image|favicon\\.ico$|icon(?:/|$)|apple-icon$|manifest\\.webmanifest$|robots\\.txt$).*)",
+        "/((?!_next/static/|_next/image|favicon\\.ico$|icon(?:/|$)|icon-maskable$|apple-icon$|manifest\\.webmanifest$|robots\\.txt$).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

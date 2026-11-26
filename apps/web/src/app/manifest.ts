@@ -5,7 +5,8 @@ import { brand } from "@/config/brand";
 import { defaultLocale } from "@/i18n/config";
 
 // The web app manifest, so the site can be installed as an app (the service worker comes with
-// step 3.9). The icons are the ones src/app/icon.tsx generates.
+// step 3.9). The icons are the ones src/app/icon.tsx generates, and the maskable one
+// src/app/icon-maskable/route.tsx draws.
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const t = await getTranslations({ locale: defaultLocale, namespace: "Metadata" });
 
@@ -24,7 +25,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     icons: [
       { src: "/icon/192", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icon/512", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icon/512", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/icon-maskable", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }

@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 import { BrandIcon } from "@/components/brand/brand-icon";
 
 // The favicon and the web manifest's icons (192 and 512 px are what Android needs to install the
-// app), drawn from src/config/brand.ts and generated once at build time.
+// app): the founders' logo, transparent around its ring, generated once at build time.
 const iconSizes = [32, 192, 512] as const;
 
 export function generateImageMetadata() {

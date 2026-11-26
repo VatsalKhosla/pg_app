@@ -1,4 +1,5 @@
-import { brand, brandInitial } from "@/config/brand";
+import { LOGO_DATA_URL } from "@/components/brand/logo-data";
+import { brand } from "@/config/brand";
 
 /** The size social sites show a link's picture at. */
 export const OG_SIZE = { width: 1200, height: 630 } as const;
@@ -31,21 +32,8 @@ export function OgCard({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-        <div
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 16,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: brand.colors.primary,
-            color: brand.colors.primaryForeground,
-            fontSize: 44,
-          }}
-        >
-          {brandInitial}
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element -- next/og draws plain img elements */}
+        <img src={LOGO_DATA_URL} alt="" width={80} height={80} />
         <div style={{ fontSize: 40, color: "#111827" }}>{brand.name}</div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
