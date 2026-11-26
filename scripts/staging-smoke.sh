@@ -65,8 +65,8 @@ if [[ "$answer" == 200 ]]; then
   if [[ -n "$slug" ]]; then
     check "$site/pg/$slug"
   else
-    echo "FAIL  $api/v1/search/properties: no live PG to open"
-    failed=1
+    # Between the samples' removal and the founders' first published PG (ADR 0073), none is live.
+    echo "SKIP  $site/pg/<slug>: no PG is live yet"
   fi
 else
   echo "FAIL  $api/v1/search/properties: $answer"

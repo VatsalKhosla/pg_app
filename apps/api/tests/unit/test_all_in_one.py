@@ -1,6 +1,6 @@
-"""One container running the API and its worker (ADR 0047): the database, the geo data and, if
-asked, the samples first; then, when one process stops, so does the other, and the exit code is
-the one that stopped first."""
+"""One container running the API and its worker (ADR 0047): the database, the geo data and the
+samples first (added if asked, otherwise taken away, ADR 0073); then, when one process stops, so
+does the other, and the exit code is the one that stopped first."""
 
 import sys
 import time
@@ -46,10 +46,11 @@ class _Recorder:
 MIGRATE = ("alembic", "upgrade", "head")
 GEO = ("app.manage", "geo", "load")
 SAMPLES = ("app.manage", "catalog", "samples")
+UNSAMPLE = ("app.manage", "catalog", "remove-samples")
 REMOTE_BOOKING = ("app.manage", "flags", "set", "remote_booking_enabled")
 
 
-def test_the_database_and_geo_data_come_first_and_samples_only_when_asked(
+def test_the_database_and_geo_data_come_first_then_the_samples_go_unless_asked_for(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     recorder = _Recorder()
@@ -62,7 +63,7 @@ def test_the_database_and_geo_data_come_first_and_samples_only_when_asked(
     assert all_in_one.main() == 0
 
     serve = ("supervise",)
-    assert recorder.ran == [MIGRATE, GEO, SAMPLES, serve, MIGRATE, GEO, serve]
+    assert recorder.ran == [MIGRATE, GEO, SAMPLES, serve, MIGRATE, GEO, UNSAMPLE, serve]
 
 
 def test_a_test_site_can_open_booking_without_a_visit_only_when_it_says_so(
@@ -83,14 +84,17 @@ def test_a_test_site_can_open_booking_without_a_visit_only_when_it_says_so(
     assert recorder.ran == [
         MIGRATE,
         GEO,
+        UNSAMPLE,
         (*REMOTE_BOOKING, "true"),
         serve,
         MIGRATE,
         GEO,
+        UNSAMPLE,
         (*REMOTE_BOOKING, "false"),
         serve,
         MIGRATE,
         GEO,
+        UNSAMPLE,
         serve,
     ]
 
@@ -111,10 +115,12 @@ def test_a_test_site_can_take_tokens_by_mandate_only_when_it_says_so(
     assert recorder.ran == [
         MIGRATE,
         GEO,
+        UNSAMPLE,
         ("app.manage", "flags", "set", "token_mode", "upi_mandate"),
         serve,
         MIGRATE,
         GEO,
+        UNSAMPLE,
         serve,
     ]
 
@@ -136,6 +142,7 @@ def test_a_test_site_makes_its_staff_as_it_starts(
     assert recorder.ran == [
         MIGRATE,
         GEO,
+        UNSAMPLE,
         (*add, "+91 90000 00001", *roles, "--email", "one@example.in"),
         (*add, "9000000002", *roles, "--email", "two@example.in"),
         ("supervise",),

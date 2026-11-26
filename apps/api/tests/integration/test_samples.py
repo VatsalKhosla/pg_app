@@ -1,6 +1,6 @@
 """Fictional sample PGs for local development (step 3.4, ADR 0030): built live through the same
-services ops and field agents use, photos and a passed visit included; once only; never when
-deployed."""
+services ops and field agents use, photos and a passed visit included; once only; never in
+production; and delisted, all and only them, from a site that carries real PGs (ADR 0073)."""
 
 import asyncio
 import io
@@ -13,6 +13,7 @@ from sqlalchemy import func, select
 from app.config import Settings
 from app.core.clock import FrozenClock
 from app.manage import main as manage
+from app.modules.catalog.models import Property
 from app.samples import LOCK, SAMPLES, SampleBuilder
 from tests.jobs import run_due_jobs
 from tests.staff_api import NOW, Staff, run_as_staff
@@ -102,3 +103,69 @@ def test_sample_pgs_never_go_to_production(
 
     assert status == 1
     assert "never go to production" in out.getvalue()
+
+
+def test_a_site_with_real_pgs_delists_the_samples_and_only_them_once(
+    make_settings: Callable[..., Settings], database_url: str
+) -> None:
+    said: list[str] = []
+
+    async def scenario(ops: Staff) -> dict[str, Any]:
+        sessions = ops.app.state.sessionmaker
+        builder = SampleBuilder(
+            sessions,
+            ops.app.state.clock,
+            storage=MemoryStorage(),
+            buckets=BUCKETS,
+            say=said.append,
+            samples=SAMPLES[:1],
+        )
+
+        async def published() -> int:
+            async with sessions() as db:
+                count = await db.scalar(
+                    select(func.count()).select_from(Property).where(Property.status == "published")
+                )
+            return int(count or 0)
+
+        await builder.build()  # unless an earlier test made them
+        await run_due_jobs(ops.app)
+        before = await published()
+        removed = await builder.remove()
+        await run_due_jobs(ops.app)
+        found = await ops.client.get("/v1/search/properties", params={"q": "fictional sample"})
+        return {
+            "removed": removed,
+            "pages": [
+                (await ops.client.get(f"/v1/properties/{slug}")).status_code for slug in removed
+            ],
+            "found": [item["slug"] for item in found.json()["items"]],
+            "fewer": before - await published(),
+            "again": await builder.remove(),
+        }
+
+    seen = run_as_staff(make_settings(database_url=database_url), scenario)
+
+    removed = seen["removed"]
+    assert removed
+    assert all(slug.startswith("fictional-sample-pg-") for slug in removed)
+    # Gone from their pages and from search, and nothing else unpublished with them.
+    assert set(seen["pages"]) == {404}
+    assert not set(removed) & set(seen["found"])
+    assert seen["fewer"] == len(removed)
+    # A second run finds nothing listed and changes nothing.
+    assert seen["again"] == []
+    assert said[-1] == "No sample listing is listed."
+
+
+def test_removing_the_samples_may_run_anywhere_production_included(
+    make_settings: Callable[..., Settings], database_url: str
+) -> None:
+    settings = make_settings(database_url=database_url).model_copy(update={"app_env": "production"})
+    out = io.StringIO()
+
+    status = manage(
+        ["catalog", "remove-samples"], settings=settings, clock=FrozenClock(NOW), out=out
+    )
+
+    assert status == 0

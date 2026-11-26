@@ -14,6 +14,7 @@ change is written to the audit log.
     geo load [--file PATH]
     media buckets
     catalog samples
+    catalog remove-samples
 
 Making someone staff is the only way to staff sign-in: Google sign-in also needs their address
 (``--email``), and the fallback needs an authenticator app (``enrol-authenticator``).
@@ -31,7 +32,8 @@ deployed, Terraform does.
 
 ``catalog samples`` adds six fictional sample PGs, verified and live with generated photos, to
 try the site on locally and on staging (ADRs 0030, 0047); a second run adds nothing. It refuses
-in production.
+in production. ``catalog remove-samples`` delists any still listed, for a site that carries real
+PGs (ADR 0073); a second run changes nothing.
 """
 
 import argparse
@@ -131,6 +133,9 @@ def _parser() -> argparse.ArgumentParser:
     )
     catalog.add_parser(
         "samples", help="add fictional sample PGs, live, photos included (local development only)"
+    )
+    catalog.add_parser(
+        "remove-samples", help="delist the fictional sample PGs, for a site with real PGs"
     )
     return parser
 
@@ -341,6 +346,26 @@ async def _samples(settings: Settings, *, clock: Clock, out: TextIO) -> int:
     return 0
 
 
+async def _remove_samples(settings: Settings, *, clock: Clock, out: TextIO) -> int:
+    engine = create_engine(settings, application_name=f"{settings.otel_service_name}-manage")
+    try:
+        removed = await SampleBuilder(
+            create_sessionmaker(engine),
+            clock,
+            storage=S3Storage.from_settings(settings),
+            buckets=Buckets.from_settings(settings),
+            say=lambda line: out.write(f"{line}\n"),
+        ).remove()
+    finally:
+        await engine.dispose()
+    if removed:
+        out.write(
+            f"{len(removed)} fictional sample PGs delisted; search drops them once the worker"
+            " has refreshed it.\n"
+        )
+    return 0
+
+
 def _media_buckets(settings: Settings, out: TextIO) -> int:
     if settings.is_deployed:
         out.write("Not done: deployed environments get their buckets from Terraform.\n")
@@ -381,8 +406,9 @@ def main(
             )
         )
     if args.group == "catalog":
+        command = _samples if args.command == "samples" else _remove_samples
         return asyncio.run(
-            _samples(settings or get_settings(), clock=clock or SystemClock(), out=out)
+            command(settings or get_settings(), clock=clock or SystemClock(), out=out)
         )
     return asyncio.run(
         _main(

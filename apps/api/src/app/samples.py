@@ -5,8 +5,9 @@ photos included. A composition root, like app/jobs.py: it calls several modules'
 Everything here is fictional: the names say so, the owners' numbers are random, the photos are
 plain colours with "Fictional sample" written on them, and the places are only offsets from the
 seeded campuses. ``python -m app.manage catalog samples`` refuses to run in production, so none
-of it reaches the live site (CLAUDE.md: never invent real-world data). Staging has them, under a
-banner saying they're fictional (ADR 0047).
+of it reaches the live site (CLAUDE.md: never invent real-world data). Staging had them, under a
+banner saying they're fictional (ADR 0047), until the founders put their real PGs there:
+``catalog remove-samples`` delists any still listed (ADR 0073).
 """
 
 import io
@@ -263,6 +264,33 @@ class SampleBuilder:
             ops = await self._staff(Role.OPS, "Sample data ops (fictional)")
             agent = await self._staff(Role.FIELD_AGENT, "Sample data field agent (fictional)")
             return [await self._listing(sample, ops=ops, agent=agent) for sample in self._samples]
+
+    async def remove(self) -> list[str]:
+        """Delist every sample PG still listed, for a site that carries real PGs (ADR 0073): their
+        slugs. Delisting is ops' own move, audited and taken out of search; the listings, their
+        fictional owners and anything booked on them stay, as any delisted listing's do. A second
+        run finds none and changes nothing. One run at a time, as for `build`."""
+        async with self._sessions() as guard, guard.begin():
+            await guard.execute(select(func.pg_advisory_xact_lock(func.hashtextextended(LOCK, 0))))
+            listed = (
+                await guard.execute(
+                    select(Property.public_id, Property.slug)
+                    .where(
+                        Property.name.startswith(NAME_PREFIX),
+                        Property.status != PropertyStatus.DELISTED,
+                    )
+                    .order_by(Property.slug)
+                )
+            ).all()
+            if not listed:
+                self._say("No sample listing is listed.")
+                return []
+            ops = await self._staff(Role.OPS, "Sample data ops (fictional)")
+            for public_id, slug in listed:
+                async with self._sessions() as db:
+                    await self._listings(db).move(ops, public_id, PropertyStatus.DELISTED)
+                self._say(f"{slug}  delisted")
+        return [slug for _, slug in listed]
 
     async def _staff(self, role: Role, name: str) -> Actor:
         async with self._sessions() as db, db.begin():
