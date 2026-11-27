@@ -19,6 +19,8 @@
    - amenities by their slugs;
    - lists separated by `;`.
 
+   It reads the template however it arrives (2026-11-27): saved as CSV, copied from a spreadsheet or a table view (tab-separated), or exported with semicolons; with the header row below a title, and its names written as people write them ("Owner Name"). Columns the template doesn't have are left out.
+
    Free-text survey answers are turned into rows by a person, who decides what a range like "₹18,000 to 22,000" means for the listed rent (CLAUDE.md rule 2 makes it the fee's basis). The parser refuses anything it would have to guess. The template comes from `/ops/listings/import/template`, with a fictional example.
 2. **Check, then import, in the ops console** (`/ops/listings/import`, `POST /v1/ops/listing-imports`, ops only). Personal data goes from the person's file to the API and nowhere else, and is never logged.
    - A check (`dryRun`, the default) reads every row, asks the database what already exists and what it doesn't know (a locality, an amenity), and makes nothing.

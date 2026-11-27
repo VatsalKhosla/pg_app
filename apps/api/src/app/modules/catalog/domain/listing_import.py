@@ -5,10 +5,16 @@ One row per room type. Rows with the same owner phone and PG name are one PG, wh
 from its first row. Rent and deposit are whole rupees, as people write them ("6,000" works); the
 rest are the words the ops console uses. A PG without both latitude and longitude is still read:
 its owner can be added, and the PG waits for ops to drop its pin.
+
+It reads the file as people bring it: saved as CSV, or copied from a spreadsheet or a table view
+(tab-separated), or exported with semicolons; with the header row first or below a title, and its
+names written as the template has them or as people write them ("Owner Name"). Columns the
+template doesn't have are left out.
 """
 
 import csv
 import io
+import re
 from dataclasses import dataclass, field
 from typing import Final
 
@@ -23,6 +29,13 @@ MAX_TEXT: Final = 200_000
 PAISE_PER_RUPEE: Final = 100
 # Lists inside a cell are separated by semicolons.
 SEPARATOR: Final = ";"
+# What may separate the columns: commas as saved, tabs as copied from a spreadsheet or a table
+# view, semicolons as some spreadsheets export.
+DELIMITERS: Final = (",", "\t", ";")
+# How far down the header row may be, below a title or blank lines, and how many of the template's
+# columns a line must name to be taken for it.
+HEADER_SEARCH_LINES: Final = 5
+HEADER_MIN_COLUMNS: Final = 2
 
 REQUIRED: Final = (
     "owner_name",
@@ -200,21 +213,65 @@ def _pg(draft: _Draft) -> ImportedPg:
     )
 
 
+def column_name(cell: str) -> str:
+    """A header cell as the template names its column: "Owner Name", "owner-name" and
+    "OWNER_NAME *" are all owner_name."""
+    return "_".join(re.findall(r"[a-z0-9]+", cell.lower()))
+
+
+@dataclass(frozen=True, slots=True)
+class _Header:
+    line: int
+    delimiter: str
+    columns: tuple[str, ...]
+
+
+def _header(lines: list[str]) -> _Header | None:
+    """The header row among the first lines, and what separates its columns: the line and
+    separator naming the most of the template's columns, if enough of them."""
+    best: tuple[int, _Header] | None = None
+    for index, line in enumerate(lines[:HEADER_SEARCH_LINES]):
+        for delimiter in DELIMITERS:
+            cells = next(csv.reader([line], delimiter=delimiter), [])
+            columns = tuple(column_name(cell) for cell in cells)
+            known = len(set(columns) & set(COLUMNS))
+            if known >= HEADER_MIN_COLUMNS and (best is None or known > best[0]):
+                best = (known, _Header(index, delimiter, columns))
+    return None if best is None else best[1]
+
+
 def parse_listing_import(text: str) -> ParsedImport:
     """The PGs a filled-in template describes, and every problem with its rows."""
     if len(text) > MAX_TEXT:
         return ParsedImport((), (f"The file is over {MAX_TEXT:,} characters: split it.",))
-    reader = csv.DictReader(io.StringIO(text.lstrip("﻿")))
-    headers = {name.strip().lower() for name in reader.fieldnames or ()}
-    if missing := [name for name in REQUIRED if name not in headers]:
-        return ParsedImport((), (f"Columns missing: {', '.join(missing)}.",))
+    lines = text.lstrip("\ufeff").splitlines(keepends=True)
+    header = _header(lines)
+    if header is None:
+        return ParsedImport(
+            (),
+            (
+                "The header row is missing: the file's first line must name its columns, as the "
+                f"template's does ({', '.join(REQUIRED[:3])}, ...). Copy the whole file, header "
+                "row included.",
+            ),
+        )
+    if missing := [name for name in REQUIRED if name not in header.columns]:
+        found = ", ".join(column for column in header.columns if column) or "nothing"
+        return ParsedImport(
+            (), (f"Columns missing: {', '.join(missing)}. The header row has: {found}.",)
+        )
+    reader = csv.reader(io.StringIO("".join(lines[header.line + 1 :])), delimiter=header.delimiter)
     problems: list[str] = []
     drafts: dict[tuple[str, str], _Draft] = {}
-    for number, raw in enumerate(reader, start=1):
+    for number, cells in enumerate(reader, start=1):
         if number > MAX_ROWS:
             problems.append(f"Only the first {MAX_ROWS} rows are read: split the file.")
             break
-        row = {key.strip().lower(): (value or "") for key, value in raw.items() if key}
+        row = {
+            column: cells[index] if index < len(cells) else ""
+            for index, column in enumerate(header.columns)
+            if column in COLUMNS
+        }
         if not any(value.strip() for value in row.values()):
             continue
         empty = [name for name in REQUIRED if not row.get(name, "").strip()]

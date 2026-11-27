@@ -2217,6 +2217,7 @@
       "template": "Download the template (CSV)",
       "file": "Choose the filled-in file",
       "paste": "Or paste it here",
+      "pasteHint": "The whole file, header row included. Cells copied from Excel or Google Sheets work too.",
       "check": "Check the file",
       "import": "Import",
       "working": "Working…",

@@ -1,6 +1,9 @@
 """Reading the owners-and-PGs template (ADR 0072): what a row says, and every way a row can be
 wrong. Every name, number and address here is fictional."""
 
+import csv
+import io
+
 from app.modules.catalog.domain.listing import GenderPolicy, Meals
 from app.modules.catalog.domain.listing_import import (
     COLUMNS,
@@ -86,7 +89,56 @@ def test_a_file_without_the_needed_columns_is_refused_whole() -> None:
     parsed = parse_listing_import("owner_name,owner_phone\nA,9876543210\n")
 
     assert parsed.pgs == ()
-    assert parsed.problems[0].startswith("Columns missing: pg_name, locality")
+    assert parsed.problems == (
+        "Columns missing: pg_name, locality, address, gender, room_type, rent, deposit. "
+        "The header row has: owner_name, owner_phone.",
+    )
+
+
+def _cells(row: str) -> list[str]:
+    return next(csv.reader([row]))
+
+
+def test_a_copy_from_a_spreadsheet_or_a_semicolon_export_reads_as_the_csv_does() -> None:
+    # Copied cells reach the clipboard separated by tabs; some spreadsheets export semicolons.
+    # Lists inside a cell keep their own semicolons, quoted.
+    rows = [COLUMNS, _cells(_row(amenities="wifi; cctv")), _cells(_row(room_type="single"))]
+    saved = parse_listing_import(_file(_row(amenities="wifi; cctv"), _row(room_type="single")))
+
+    for delimiter in ("\t", ";"):
+        text = io.StringIO()
+        csv.writer(text, delimiter=delimiter, lineterminator="\n").writerows(rows)
+        assert parse_listing_import(text.getvalue()) == saved
+
+    assert saved.problems == ()
+    [pg] = saved.pgs
+    assert (pg.amenities, len(pg.room_types)) == (("wifi", "cctv"), 2)
+
+
+def test_the_header_may_sit_below_a_title_and_name_columns_as_people_write_them() -> None:
+    header = ",".join(name.replace("_", " ").title() for name in COLUMNS)
+    titled = "Owner survey, November\n\n" + header + "\n" + _row() + "\n"
+
+    parsed = parse_listing_import(titled)
+
+    assert parsed.problems == ()
+    assert [pg.name for pg in parsed.pgs] == ["Fictional House"]
+
+
+def test_columns_the_template_doesnt_have_are_left_out() -> None:
+    header = HEADER + ",brokerage,notice_period"
+    parsed = parse_listing_import(f"{header}\n{_row()},None,One month\n")
+
+    assert parsed.problems == ()
+    assert len(parsed.pgs) == 1
+
+
+def test_without_its_header_row_a_file_says_so() -> None:
+    parsed = parse_listing_import(_row() + "\n" + _row(room_type="single") + "\n")
+
+    assert parsed.pgs == ()
+    [problem] = parsed.problems
+    assert problem.startswith("The header row is missing")
 
 
 def test_each_wrong_row_is_named_and_left_out() -> None:

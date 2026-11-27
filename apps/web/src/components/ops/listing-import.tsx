@@ -57,7 +57,7 @@ export function ListingImport() {
         <input
           id={`${id}-file`}
           type="file"
-          accept=".csv,text/csv"
+          accept=".csv,text/csv,.tsv,text/tab-separated-values,.txt,text/plain"
           className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-primary-soft file:px-4 file:py-2 file:font-semibold file:text-primary-soft-foreground"
           onChange={(event) => {
             const file = event.target.files?.[0];
@@ -73,8 +73,12 @@ export function ListingImport() {
         <label htmlFor={`${id}-text`} className="block text-sm font-medium">
           {t("paste")}
         </label>
+        <p id={`${id}-hint`} className="text-sm text-muted-foreground">
+          {t("pasteHint")}
+        </p>
         <textarea
           id={`${id}-text`}
+          aria-describedby={`${id}-hint`}
           value={text}
           onChange={(event) => {
             setText(event.target.value);
