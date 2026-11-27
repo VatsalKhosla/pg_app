@@ -346,9 +346,22 @@ class Settings(DatabaseSettings):
         return self
 
     @property
+    def smtp_missing(self) -> list[str]:
+        """The SMTP login and sending address's settings still unset, by their names."""
+        return [
+            name
+            for name, value in (
+                ("SMTP_USERNAME", self.smtp_username),
+                ("SMTP_PASSWORD", self.smtp_password),
+                ("MAIL_FROM", self.mail_from),
+            )
+            if value is None
+        ]
+
+    @property
     def smtp_ready(self) -> bool:
         """Whether the SMTP login and the sending address are all set."""
-        return None not in (self.smtp_username, self.smtp_password, self.mail_from)
+        return not self.smtp_missing
 
     @property
     def mail_sender_in_use(self) -> Literal["console", "smtp", "unavailable"]:

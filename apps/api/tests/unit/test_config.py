@@ -603,7 +603,9 @@ def test_elsewhere_smtp_waits_for_its_password_and_sends_nothing_meanwhile(
     ready = Settings()
 
     assert (waiting.smtp_ready, waiting.mail_sender_in_use) == (False, "unavailable")
+    assert waiting.smtp_missing == ["SMTP_PASSWORD"]
     assert (ready.smtp_ready, ready.mail_sender_in_use) == (True, "smtp")
+    assert ready.smtp_missing == []
 
 
 def test_the_smtp_password_stays_out_of_repr(environment: pytest.MonkeyPatch) -> None:

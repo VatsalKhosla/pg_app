@@ -190,3 +190,22 @@ def test_email_goes_to_the_smtp_server_over_tls_after_logging_in(
     assert server.message["Subject"] == "Your visit is booked"
     assert server.message["Message-ID"].endswith("@example.in>")
     assert server.message.get_content() == "The whole message.\n"
+
+
+def test_a_gmail_app_password_copied_with_its_spaces_still_logs_in(
+    monkeypatch: pytest.MonkeyPatch, make_settings: Callable[..., Settings]
+) -> None:
+    # Google shows it as "abcd efgh ijkl mnop"; the spaces aren't part of it.
+    FakeSmtp.instances.clear()
+    monkeypatch.setattr(smtplib, "SMTP", FakeSmtp)
+    settings = make_settings(
+        mail_sender="smtp",
+        smtp_username="support@example.in",
+        smtp_password=" abcd efgh ijkl mnop ",
+        mail_from="support@example.in",
+    )
+
+    asyncio.run(build_mailer(settings).send("student@example.com", "A code", "123456"))
+
+    [server] = FakeSmtp.instances
+    assert ("login", "support@example.in", "abcdefghijklmnop") in server.calls
