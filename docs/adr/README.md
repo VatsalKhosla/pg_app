@@ -77,5 +77,6 @@ One file per real decision: the context, what was decided and what follows from 
 | [0071](0071-owner-overview.md) | The owner's overview: beds today, the tenants we placed month by month, our fees, and what waits for the owner | Accepted |
 | [0072](0072-listing-import.md) | Owners and their PGs from a filled-in template: checked first, then made as drafts through the console's own services | Accepted |
 | [0073](0073-real-pgs-before-launch.md) | fixyourstay.in carries the founders' real PGs before launch: the samples go, a visit comes first, and email waits only for its password | Accepted |
+| [0074](0074-email-through-gmails-api.md) | Email through Gmail's API over HTTPS, where the host blocks SMTP | Accepted |
 
 0001–0006 were decided in the founders' planning (ARCHITECTURE.md) and written down in build step 0.8. The others were written in the step that made the decision.

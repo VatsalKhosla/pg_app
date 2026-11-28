@@ -118,11 +118,12 @@ def _set_up_sign_in(
     registration; email and Google carry sign-in meanwhile (ADR 0068)."""
     app.state.otp_sender = _OTP_SENDERS[settings.otp_sender]()
     app.state.phone_sign_in = settings.phone_sign_in and settings.otp_sender != "unavailable"
-    if settings.mail_sender == "smtp" and not settings.smtp_ready:
-        # By name only: what the host still has to set before email goes (ADR 0073).
+    if missing := settings.mail_missing:
+        # By name only: what the host still has to set, or set right, before email goes.
         logger.warning(
-            "email waits for its login: nothing is emailed, and codes are shown on screen",
-            missing=settings.smtp_missing,
+            "email waits for its settings: nothing is emailed, and codes are shown on screen",
+            sender=settings.mail_sender,
+            missing=missing,
         )
     app.state.email_codes = email_codes(settings, shows_code=app.state.otp_sender.shows_code)
     app.state.google_for_everyone = settings.google_sign_in_for_everyone

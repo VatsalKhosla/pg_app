@@ -1,7 +1,8 @@
 """Email (ADR 0068): sign-in codes and every message the site sends, from the founders' Google
 Workspace address through Gmail's SMTP server, until text messages can go too (they need DLT
-registration). Three adapters: one writes each message to the log (development and tests), one
-sends nothing and says so, and one hands it to an SMTP server.
+registration). Three adapters here: one writes each message to the log (development and tests),
+one sends nothing and says so, and one hands it to an SMTP server. A fourth, in app/core/gmail.py,
+sends through Gmail's API over HTTPS, for a host that blocks SMTP's ports (ADR 0074).
 """
 
 import asyncio

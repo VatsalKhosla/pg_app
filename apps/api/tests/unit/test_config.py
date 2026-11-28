@@ -587,6 +587,17 @@ def test_production_sends_email_only_with_the_login_and_the_address(
     assert "an-app-password-for-smtp" not in str(raised.value)
 
 
+def test_production_sends_by_gmails_api_only_with_a_service_account_key(
+    environment: pytest.MonkeyPatch,
+) -> None:
+    _deployed(environment, "production").setenv("MAIL_SENDER", "gmail_api")
+    environment.setenv("MAIL_FROM", "support@example.in")
+    environment.setenv("GMAIL_SERVICE_ACCOUNT", "not a service account key")
+
+    with pytest.raises(ValidationError, match="MAIL_SENDER=gmail_api needs GMAIL_SERVICE_ACCOUNT"):
+        Settings()
+
+
 @pytest.mark.parametrize("app_env", ["local", "staging"])
 def test_elsewhere_smtp_waits_for_its_password_and_sends_nothing_meanwhile(
     environment: pytest.MonkeyPatch, app_env: str
@@ -602,10 +613,8 @@ def test_elsewhere_smtp_waits_for_its_password_and_sends_nothing_meanwhile(
     environment.setenv("SMTP_PASSWORD", "an-app-password-for-smtp")
     ready = Settings()
 
-    assert (waiting.smtp_ready, waiting.mail_sender_in_use) == (False, "unavailable")
-    assert waiting.smtp_missing == ["SMTP_PASSWORD"]
-    assert (ready.smtp_ready, ready.mail_sender_in_use) == (True, "smtp")
-    assert ready.smtp_missing == []
+    assert (waiting.mail_missing, waiting.mail_sender_in_use) == (["SMTP_PASSWORD"], "unavailable")
+    assert (ready.mail_missing, ready.mail_sender_in_use) == ([], "smtp")
 
 
 def test_the_smtp_password_stays_out_of_repr(environment: pytest.MonkeyPatch) -> None:

@@ -13,6 +13,8 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from app.core.gmail import ServiceAccountKey, parse_service_account_key
+
 # The brand is undecided; it lives only here and in apps/web/src/config/brand.ts (CLAUDE.md).
 BRAND_NAME: Final = "Fix Your Stay"
 
@@ -139,14 +141,18 @@ class Settings(DatabaseSettings):
     text_sender: Literal["console", "unavailable"] = "console"
     # Email (ADR 0068): sign-in codes and every message to a person with an address. "console"
     # writes them to the log (local only); "smtp" sends through an SMTP server (Gmail's, with a
-    # Google Workspace account's app password); "unavailable" sends nothing.
-    mail_sender: Literal["console", "smtp", "unavailable"] = "console"
+    # Google Workspace account's app password); "gmail_api" through Gmail's API over HTTPS, for a
+    # host that blocks SMTP's ports (ADR 0074); "unavailable" sends nothing.
+    mail_sender: Literal["console", "smtp", "gmail_api", "unavailable"] = "console"
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = Field(default=587, ge=1, le=65535)
     smtp_username: str | None = None
     smtp_password: SecretStr | None = None
     # The address messages come from (a Workspace account or one of its aliases).
     mail_from: str | None = None
+    # For "gmail_api": a Google service account's JSON key (the downloaded file's text, or base64
+    # of it), which the Workspace lets send mail as MAIL_FROM, with gmail.send only (ADR 0074).
+    gmail_service_account: SecretStr | None = None
     # Sign-in by a code sent to a phone (ADR 0068): off until the SMS sender's DLT registration is
     # done, when email codes and Google carry sign-in.
     phone_sign_in: bool = True
@@ -254,6 +260,7 @@ class Settings(DatabaseSettings):
         "smtp_username",
         "smtp_password",
         "mail_from",
+        "gmail_service_account",
         "field_encryption_keys",
         mode="before",
     )
@@ -336,38 +343,44 @@ class Settings(DatabaseSettings):
         return self
 
     @model_validator(mode="after")
-    def _smtp_complete(self) -> Self:
-        # Production refuses to start with an SMTP sender missing its login. Anywhere else it waits
+    def _mail_sender_complete(self) -> Self:
+        # Production refuses to start with a sender missing what it needs. Anywhere else it waits
         # for it, sending nothing meanwhile (`mail_sender_in_use`), so the founders' setting the
-        # app password on the host is the one step that turns email on (ADR 0073).
-        if self.mail_sender == "smtp" and self.app_env == "production" and not self.smtp_ready:
-            msg = "MAIL_SENDER=smtp needs SMTP_USERNAME, SMTP_PASSWORD and MAIL_FROM"
+        # secret on the host is the one step that turns email on (ADRs 0073, 0074).
+        if self.app_env == "production" and (missing := self.mail_missing):
+            msg = f"MAIL_SENDER={self.mail_sender} needs {' and '.join(missing)}"
             raise ValueError(msg)
         return self
 
     @property
-    def smtp_missing(self) -> list[str]:
-        """The SMTP login and sending address's settings still unset, by their names."""
-        return [
-            name
-            for name, value in (
+    def gmail_key(self) -> ServiceAccountKey | None:
+        """The Gmail API sender's service account key, if GMAIL_SERVICE_ACCOUNT holds one."""
+        if self.gmail_service_account is None:
+            return None
+        return parse_service_account_key(self.gmail_service_account.get_secret_value())
+
+    @property
+    def mail_missing(self) -> list[str]:
+        """What the chosen mail sender still lacks, by the settings' names (none for those that
+        need nothing). A GMAIL_SERVICE_ACCOUNT that isn't a service account's key counts."""
+        needed: tuple[tuple[str, object], ...]
+        if self.mail_sender == "smtp":
+            needed = (
                 ("SMTP_USERNAME", self.smtp_username),
                 ("SMTP_PASSWORD", self.smtp_password),
                 ("MAIL_FROM", self.mail_from),
             )
-            if value is None
-        ]
+        elif self.mail_sender == "gmail_api":
+            needed = (("GMAIL_SERVICE_ACCOUNT", self.gmail_key), ("MAIL_FROM", self.mail_from))
+        else:
+            return []
+        return [name for name, value in needed if value is None]
 
     @property
-    def smtp_ready(self) -> bool:
-        """Whether the SMTP login and the sending address are all set."""
-        return not self.smtp_missing
-
-    @property
-    def mail_sender_in_use(self) -> Literal["console", "smtp", "unavailable"]:
-        """The sender in use: "smtp" without its login (outside production) sends nothing yet, as
-        "unavailable" doesn't, and a test site shows sign-in codes on screen meanwhile."""
-        if self.mail_sender == "smtp" and not self.smtp_ready:
+    def mail_sender_in_use(self) -> Literal["console", "smtp", "gmail_api", "unavailable"]:
+        """The sender in use: one still missing what it needs (outside production) sends nothing
+        yet, as "unavailable" doesn't, and a test site shows sign-in codes on screen meanwhile."""
+        if self.mail_missing:
             return "unavailable"
         return self.mail_sender
 

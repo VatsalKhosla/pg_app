@@ -77,18 +77,16 @@ services:
       - key: TEXT_SENDER
         value: unavailable
       # Email carries sign-in codes and messages (ADR 0068), from support@fixyourstay.in through
-      # Gmail. It waits only for SMTP_PASSWORD, that Workspace account's app password, which the
-      # founders set on the service: until then nothing is emailed and the sign-in page shows the
-      # code, and from then on codes and messages go by email (ADR 0073). Phone sign-in is off
-      # until the SMS sender's DLT registration is done.
+      # Gmail's API over HTTPS: the free plan blocks SMTP's ports (ADR 0074). It waits only for
+      # GMAIL_SERVICE_ACCOUNT, the service account's JSON key, which the founders set on the
+      # service: until then nothing is emailed and the sign-in page shows the code. Phone sign-in
+      # is off until the SMS sender's DLT registration is done.
       - key: MAIL_SENDER
-        value: smtp
-      - key: SMTP_USERNAME
-        value: support@fixyourstay.in
-      - key: SMTP_PASSWORD
-        sync: false
+        value: gmail_api
       - key: MAIL_FROM
         value: support@fixyourstay.in
+      - key: GMAIL_SERVICE_ACCOUNT
+        sync: false
       - key: PHONE_SIGN_IN
         value: "false"
       # Google sign-in for everyone: off until the OAuth client's audience is External and

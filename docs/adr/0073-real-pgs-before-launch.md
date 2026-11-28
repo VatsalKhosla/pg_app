@@ -1,6 +1,6 @@
 # ADR 0073: fixyourstay.in carries the founders' real PGs before launch: the samples go, a visit comes first, and email waits only for its password
 
-- Status: accepted
+- Status: accepted. Its email step moved to Gmail's API on 2026-11-28 (ADR 0074): Render's free plan blocks SMTP.
 - Date: 2026-11-26
 - Build step: the founders' request of 2026-11-26, "remove the fictional pg, also make all the testing things launch ready … except for lawyer review pending"
 

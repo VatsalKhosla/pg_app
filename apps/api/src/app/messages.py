@@ -4,6 +4,7 @@ wording, so an email reads as its text would. Used by the API (sign-in codes) an
 from typing import TYPE_CHECKING, Final
 
 from app.config import BRAND_NAME
+from app.core.gmail import GmailApiMailer
 from app.core.mail import ConsoleMailer, Mailer, NoMailer, SmtpMailer
 from app.modules.booking.texts import TEMPLATES as BOOKING
 from app.modules.compliance.texts import TEMPLATES as COMPLIANCE
@@ -37,6 +38,12 @@ def build_mailer(settings: Settings) -> Mailer:
             sender=sender,
             name=BRAND_NAME,
         )
+    if settings.mail_sender_in_use == "gmail_api":
+        key, sender = settings.gmail_key, settings.mail_from
+        if key is None or sender is None:  # not in use without them
+            msg = "MAIL_SENDER=gmail_api needs GMAIL_SERVICE_ACCOUNT and MAIL_FROM"
+            raise ValueError(msg)
+        return GmailApiMailer(key=key, sender=sender, name=BRAND_NAME)
     if settings.mail_sender_in_use == "console":
         return ConsoleMailer()
     return NoMailer()
