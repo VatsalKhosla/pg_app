@@ -138,7 +138,21 @@ def test_without_its_header_row_a_file_says_so() -> None:
 
     assert parsed.pgs == ()
     [problem] = parsed.problems
-    assert problem.startswith("The header row is missing")
+    assert problem.startswith("The template's header row is missing")
+    assert "this one starts A Fictional Owner, 98765 43210" in problem
+
+
+def test_a_google_forms_export_is_named_as_such() -> None:
+    survey = (
+        "Timestamp,1. Your Name,2. Contact Number / WhatsApp Number,"
+        '3. Name of PG / Property,"4. Where"\n'
+        "2026/11/20 10:00:00,A Fictional Owner,9876543210,Fictional House,A fictional lane\n"
+    )
+
+    [problem] = parse_listing_import(survey).problems
+
+    assert problem.startswith("This is the survey's own responses export (Google Forms)")
+    assert "(Timestamp, 1. Your Name, 2. Contact Number / WhatsApp Number, 3. Name of PG" in problem
 
 
 def test_each_wrong_row_is_named_and_left_out() -> None:

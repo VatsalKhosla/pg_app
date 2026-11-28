@@ -36,6 +36,8 @@ DELIMITERS: Final = (",", "\t", ";")
 # columns a line must name to be taken for it.
 HEADER_SEARCH_LINES: Final = 5
 HEADER_MIN_COLUMNS: Final = 2
+# How many of a wrong first line's cells an error repeats.
+SHOWN_CELLS: Final = 4
 
 REQUIRED: Final = (
     "owner_name",
@@ -240,6 +242,26 @@ def _header(lines: list[str]) -> _Header | None:
     return None if best is None else best[1]
 
 
+def _not_the_template(lines: list[str]) -> str:
+    """Why a file without the template's header row can't be read, saying what it starts with."""
+    first = next((line for line in lines if line.strip()), "")
+    delimiter = max(DELIMITERS, key=first.count)
+    cells = [cell.strip() for cell in next(csv.reader([first], delimiter=delimiter), [])]
+    shown = ", ".join(cell[:40] for cell in cells[:SHOWN_CELLS] if cell)
+    if cells and column_name(cells[0]) == "timestamp":
+        # Google Forms' responses export always starts with its Timestamp column.
+        return (
+            "This is the survey's own responses export (Google Forms), not the import template:"
+            f" its columns are the survey's questions ({shown}, ...). Put the answers into the"
+            " template (Download the template), one row per room type, and import that."
+        )
+    return (
+        "The template's header row is missing: the file's first line must name its columns"
+        f" ({', '.join(REQUIRED[:3])}, ...), and this one starts {shown or 'empty'}. Copy the"
+        " whole file, header row included."
+    )
+
+
 def parse_listing_import(text: str) -> ParsedImport:
     """The PGs a filled-in template describes, and every problem with its rows."""
     if len(text) > MAX_TEXT:
@@ -247,14 +269,7 @@ def parse_listing_import(text: str) -> ParsedImport:
     lines = text.lstrip("\ufeff").splitlines(keepends=True)
     header = _header(lines)
     if header is None:
-        return ParsedImport(
-            (),
-            (
-                "The header row is missing: the file's first line must name its columns, as the "
-                f"template's does ({', '.join(REQUIRED[:3])}, ...). Copy the whole file, header "
-                "row included.",
-            ),
-        )
+        return ParsedImport((), (_not_the_template(lines),))
     if missing := [name for name in REQUIRED if name not in header.columns]:
         found = ", ".join(column for column in header.columns if column) or "nothing"
         return ParsedImport(
